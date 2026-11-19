@@ -163,5 +163,6 @@ exclude_also = [
     "if TYPE_CHECKING:",
     "raise NotImplementedError",
     "@(abc\\.)?abstractmethod",
-    "\\.\\.\\.",
+    # Only a bare `...` statement (Protocol / overload stubs), never e.g. `x[..., 0]`.
+    "^\\s*\\.\\.\\.\\s*$",
 ]
