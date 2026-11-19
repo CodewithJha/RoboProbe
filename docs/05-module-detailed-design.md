@@ -223,6 +223,13 @@ never calls `eval`/`compile`. Disallowed constructs and categorical parameters a
 parameter units, and `rejection_sample(sampler, feasible, n, rng, max_attempts=scenario.constraint_max_attempts)`
 raises `ValidationError` when the sampler cannot supply `n` feasible points.
 
+Pins (T-025, `roboprobe.scenario.pins`, FR-SCN-007): `with_pins(pins)` validates ids, types and bounds, and
+requires at least one free enabled parameter. It returns the same space (same `id` and `version`) with the
+read-only `pins` mapping, which campaigns persist in `pins` jsonb. Pinned ids leave `params`/`dim`, so
+normalisation and samplers only see free dimensions. `nominal_values()` reports the pinned values, so
+`make_scenario(free_values)` re-inserts the pins (and rejects other values for pinned ids), and
+`scenario_hash` includes them.
+
 Materialisation is the backend's job (`SimulatorBackend.materialize`) but uses shared helpers in
 `roboprobe.scenario.materialize`: `render_template(template: str, ctx: dict) -> str` (Jinja2,
 `StrictUndefined`) and `place_obstacle(path: Polyline, along: float, clearance: float, side: Literal[-1,1]) -> Pose2D`.

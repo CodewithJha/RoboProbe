@@ -7,6 +7,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Pins and sub-spaces (T-025): `ScenarioSpace.with_pins` and `roboprobe.scenario.pins.validate_pins`. Pinned parameters
+  leave `params`/`dim` but keep the space id and version; `make_scenario` re-inserts them, so the hash includes them.
 - Perception and friction models (T-031b): `roboprobe.perturbation.perception.PerceptionModel` (P3 depth degradation:
   η, `p_valid`, `σ_d`, `r_max`; constants in versioned `configs/perception/oakd_lowlight_v1.yaml`) and
   `roboprobe.perturbation.friction` (`traction`, `apply_slip`, P5).

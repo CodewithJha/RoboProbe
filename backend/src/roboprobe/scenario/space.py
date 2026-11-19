@@ -27,15 +27,25 @@ import ast
 import functools
 from collections.abc import Mapping, Sequence
 from pathlib import Path
+from types import MappingProxyType
 from typing import Annotated, Literal, Self, cast
 
 import numpy.typing as npt
 import pydantic
-from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 from roboprobe.core import errors
 from roboprobe.core.types import ParamType, ParamValue, Scenario, TaskSpec
 from roboprobe.scenario import hashing, normalize
+from roboprobe.scenario import pins as pins_module
 from roboprobe.scenario import task as task_loader
 from roboprobe.scenario._documents import (
     document_error,
@@ -214,16 +224,37 @@ class ScenarioSpace(_Frozen):
     parameters: tuple[ParameterSpec, ...]
     constraints: tuple[Constraint, ...] = ()
     oracle_thresholds: Literal["default"] | dict[str, JsonValue] = "default"
+    pins: Mapping[str, ParamValue] = Field(default_factory=lambda: MappingProxyType({}))
+    """Pinned values (FR-SCN-007); set through :meth:`with_pins`, never part of ``version``."""
+
+    @field_validator("pins", mode="after")
+    @classmethod
+    def _freeze_pins(cls, pins: Mapping[str, ParamValue]) -> Mapping[str, ParamValue]:
+        return MappingProxyType(dict(pins))
+
+    @field_serializer("pins")
+    def _serialize_pins(self, pins: Mapping[str, ParamValue]) -> dict[str, ParamValue]:
+        return dict(pins)
 
     @property
     def params(self) -> tuple[ParameterSpec, ...]:
-        """Enabled parameters, in file order; these span the search space."""
-        return tuple(p for p in self.parameters if p.enabled)
+        """Free parameters (enabled, not pinned), in file order; they span the search space."""
+        return tuple(p for p in self.parameters if p.enabled and p.id not in self.pins)
 
     @property
     def dim(self) -> int:
-        """Search-space dimension ``d`` (number of enabled parameters)."""
+        """Search-space dimension ``d`` (number of free parameters)."""
         return len(self.params)
+
+    def with_pins(self, pins: Mapping[str, object]) -> ScenarioSpace:
+        """Return this space with ``pins`` added; ``id`` and ``version`` stay the same.
+
+        Raises:
+            roboprobe.core.errors.ValidationError: If a pin is unknown, invalid or out of bounds,
+                or nothing would stay free.
+        """
+        merged = pins_module.validate_pins(self, pins)
+        return self.model_copy(update={"pins": MappingProxyType(merged)})
 
     def param(self, param_id: str) -> ParameterSpec:
         """Return the parameter with ``param_id`` (enabled or not).
@@ -238,8 +269,8 @@ class ScenarioSpace(_Frozen):
         raise errors.NotFoundError(msg, context={"space_id": self.id, "param_id": param_id})
 
     def nominal_values(self) -> dict[str, ParamValue]:
-        """Nominal value of every parameter; disabled parameters are always held here."""
-        return {spec.id: spec.nominal for spec in self.parameters}
+        """Every parameter's value at nominal with pins applied (disabled ones always stay here)."""
+        return {spec.id: self.pins.get(spec.id, spec.nominal) for spec in self.parameters}
 
     @functools.cached_property
     def _constraint_set(self) -> ConstraintSet:
@@ -281,22 +312,27 @@ class ScenarioSpace(_Frozen):
         """Validate ``values`` and build the frozen, hashed :class:`Scenario`.
 
         Enabled parameters missing from ``values`` and every disabled parameter take their nominal
-        value. Values are normalised to their parameter type (``int``, ``float`` or ``str``) so
-        equal points always hash equally (e.g. ``2`` and ``2.0`` for a float parameter).
+        value; pinned parameters take their pin and may not be set to anything else. Values are
+        normalised to their parameter type (``int``, ``float`` or ``str``) so equal points always
+        hash equally (e.g. ``2`` and ``2.0`` for a float parameter).
 
         Raises:
             roboprobe.core.errors.ValidationError: For unknown ids, a disabled parameter set away
-                from its nominal value, a wrong type or out-of-bounds value (every problem is
-                listed in ``context["errors"]``), or a violated constraint.
+                from its nominal value, a pinned parameter set away from its pin, a wrong type or
+                out-of-bounds value (every problem is listed in ``context["errors"]``), or a
+                violated constraint.
         """
         source = f"scenario in {self.id}"
         merged: dict[str, object] = {**self.nominal_values(), **values}
         known = {spec.id for spec in self.parameters}
         issues = [(f"/{key}", "unknown parameter") for key in values if key not in known]
+        held = self.nominal_values()
         issues += [
-            (f"/{spec.id}", f"disabled parameter is held at its nominal value {spec.nominal!r}")
+            (f"/{spec.id}", _held_message(spec, held[spec.id], pinned=spec.id in self.pins))
             for spec in self.parameters
-            if not spec.enabled and spec.id in values and values[spec.id] != spec.nominal
+            if (not spec.enabled or spec.id in self.pins)
+            and spec.id in values
+            and values[spec.id] != held[spec.id]
         ]
         if issues:
             raise document_error(source, issues)
@@ -469,6 +505,12 @@ def _check_references(
                 issues.append(("/task", f"{where}: unknown parameter {ref!r}"))
     if issues:
         raise document_error(source, issues, _CODE)
+
+
+def _held_message(spec: ParameterSpec, held: ParamValue, *, pinned: bool) -> str:
+    if pinned:
+        return f"parameter is pinned to {held!r}"
+    return f"disabled parameter is held at its nominal value {spec.nominal!r}"
 
 
 def _resolve_task_path(task_ref: str, base_dir: Path, source: str) -> Path:
