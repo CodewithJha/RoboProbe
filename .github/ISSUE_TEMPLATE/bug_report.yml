@@ -1,0 +1,55 @@
+name: Bug report
+description: Something in the docs or (later) the code is wrong or broken
+title: "bug: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for reporting! Security issues must NOT be filed here — see SECURITY.md."
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - "S1 - data loss / wrong verdicts"
+        - "S2 - feature broken"
+        - "S3 - degraded"
+        - "S4 - cosmetic"
+    validations: {required: true}
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      placeholder: "v0.1.0 or commit SHA"
+    validations: {required: true}
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [docs, scenario, selection, oracles, analysis/risk, runner, backend-kinematic2d, backend-gazebo, api, dashboard, ci/devops, other]
+    validations: {required: true}
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. ...\n2. ..."
+    validations: {required: true}
+  - type: textarea
+    id: expected
+    attributes: {label: Expected behaviour}
+    validations: {required: true}
+  - type: textarea
+    id: actual
+    attributes: {label: Actual behaviour}
+    validations: {required: true}
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Docker version, backend, run/campaign ids, manifest.json if relevant
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant JSON log lines (remove secrets)
+      render: shell

@@ -71,4 +71,4 @@ Trunk-based: short-lived branches off `main`, squash merge, delete branch after 
 Use [templates/rfc-template.md](templates/rfc-template.md) for anything that adds a module, changes a public interface/schema, adds a dependency of note, or changes evaluation methodology. Flow: draft RFC PR in `docs/rfc/NNNN-title.md` → discussion → decision recorded as ADR → implementation tasks added to 22.
 
 ## 8. Templates
-- [ADR template](templates/adr-template.md) · [RFC template](templates/rfc-template.md) · [Task template](templates/task-template.md) · [Bug report template](templates/bug-report-template.md) · PR template in `.github/pull_request_template.md`.
+- [ADR template](templates/adr-template.md) · [RFC template](templates/rfc-template.md) · [Task template](templates/task-template.md) · [Bug report template](templates/bug-report-template.md) · PR template in `.github/PULL_REQUEST_TEMPLATE.md`.

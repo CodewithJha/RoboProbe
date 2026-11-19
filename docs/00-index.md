@@ -51,6 +51,7 @@ disagree, the docs win until a change is recorded (see [§4 Change control](#4-c
 | ADR | [Architecture Decision Records](adr/README.md) | One record per major decision (ADR-0001 … ADR-0016) | Everyone |
 | TPL | [Templates](templates/) | ADR, RFC, task, bug report | Everyone |
 | RFC | [RFCs](rfc/README.md) · [Evidence](evidence/README.md) | Proposals; spikes, experiment results, generated reports | Everyone |
+| OSS | [README](../README.md) · [CONTRIBUTING](../CONTRIBUTING.md) · [CODE_OF_CONDUCT](../CODE_OF_CONDUCT.md) · [SECURITY](../SECURITY.md) · [SUPPORT](../SUPPORT.md) · [GOVERNANCE](../GOVERNANCE.md) · [CHANGELOG](../CHANGELOG.md) · [CITATION](../CITATION.cff) · [AGENTS](../AGENTS.md) | Root-level community and project files | Everyone |
 
 Numbers are **stable document IDs**, not a reading order (26–34 were added after the core set; see §2 for reading paths).
 

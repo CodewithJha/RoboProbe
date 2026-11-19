@@ -52,7 +52,7 @@ RoboProbe/
 ├── scripts/                       # gen_config_docs.py, check_mermaid.sh, seed_demo.py, …
 └── .github/
     ├── workflows/                 # ci.yml, docs.yml, images.yml, nightly-sim.yml, release.yml (20)
-    ├── ISSUE_TEMPLATE/  pull_request_template.md  CODEOWNERS  dependabot.yml
+    ├── ISSUE_TEMPLATE/  PULL_REQUEST_TEMPLATE.md  CODEOWNERS  dependabot.yml
 ```
 
 ## 2. Layering (enforced)

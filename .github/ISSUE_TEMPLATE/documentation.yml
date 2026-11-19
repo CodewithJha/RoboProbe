@@ -1,0 +1,22 @@
+name: Documentation
+description: Report unclear, missing or inconsistent documentation
+title: "docs: "
+labels: ["documentation"]
+body:
+  - type: input
+    id: doc
+    attributes:
+      label: Document and section
+      placeholder: "docs/07-intelligent-test-selection-algorithms.md §5.3"
+    validations: {required: true}
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of issue
+      options: [unclear, incorrect, inconsistent with another doc, missing, broken link or diagram, typo]
+    validations: {required: true}
+  - type: textarea
+    id: details
+    attributes:
+      label: Details and suggested fix
+    validations: {required: true}

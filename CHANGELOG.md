@@ -4,6 +4,12 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33`).
 
 ## [Unreleased]
+### Added
+- Open-source community files: `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SUPPORT.md`, `GOVERNANCE.md`,
+  `CITATION.cff`, `.editorconfig`, `.github/CODEOWNERS`, issue forms (bug, feature, docs) and `config.yml`.
+### Changed
+- README rewritten as a full project landing page; `CONTRIBUTING.md` and `SECURITY.md` expanded;
+  PR template renamed to `.github/PULL_REQUEST_TEMPLATE.md`.
 
 ## [0.0.1] - 2026-11-19
 ### Added

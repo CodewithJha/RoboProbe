@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use RoboProbe or its design in your work, please cite it as below."
+title: "RoboProbe: Intelligent Virtual Robotics Testing & Failure Discovery Platform"
+abstract: >-
+  RoboProbe is an open-source, software-only testing layer for autonomous robots that runs on top of an
+  established simulator (Gazebo Harmonic with ROS 2 Jazzy and Nav2). It generates and adaptively selects
+  test scenarios using Gaussian-process Bayesian optimisation on a continuous robustness score, detects
+  failures with temporal-logic-style oracles, clusters and explains failure modes, and maps safe,
+  uncertain and failure-prone regions of the scenario space.
+type: software
+authors:
+  - family-names: Jha
+    given-names: Priyanshu
+    alias: CodewithJha
+repository-code: "https://github.com/CodewithJha/RoboProbe"
+url: "https://github.com/CodewithJha/RoboProbe"
+license: MIT
+version: 0.0.1
+date-released: 2026-11-19
+keywords:
+  - robotics
+  - simulation-based testing
+  - failure discovery
+  - falsification
+  - Bayesian optimization
+  - active learning
+  - ROS 2
+  - Gazebo
+  - Nav2

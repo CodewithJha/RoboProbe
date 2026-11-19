@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest an idea or improvement
+title: "feat: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What problem would this solve? Who benefits?
+    validations: {required: true}
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations: {required: true}
+  - type: textarea
+    id: alternatives
+    attributes: {label: Alternatives considered}
+  - type: input
+    id: refs
+    attributes:
+      label: Related requirements / docs
+      placeholder: "e.g. PR-16, FR-SIM-004, docs/10"
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - label: This is a large change and I am willing to write an RFC (docs/templates/rfc-template.md)
+        - label: This keeps RoboProbe free and open-source only (no paid services)
+          required: true
