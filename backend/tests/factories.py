@@ -29,6 +29,7 @@ from roboprobe.core.types import (
 __all__ = [
     "DEFAULT_CLEARANCE_M",
     "DEFAULT_DT_S",
+    "DEFAULT_PATH_LENGTH_M",
     "DEFAULT_SPEED_MPS",
     "DEFAULT_TRACE_SAMPLES",
     "make_observation",
@@ -46,6 +47,8 @@ DEFAULT_SPEED_MPS = 0.5
 """Constant forward speed of the synthetic straight-line run [m/s]."""
 DEFAULT_CLEARANCE_M = 1.0
 """Constant distance to the nearest obstacle in the synthetic run [m]."""
+DEFAULT_PATH_LENGTH_M = DEFAULT_SPEED_MPS * DEFAULT_DT_S * (DEFAULT_TRACE_SAMPLES - 1)
+"""Distance covered by the default synthetic run (``n`` samples span ``n - 1`` periods) [m]."""
 
 
 def make_scenario(**overrides: Any) -> Scenario:
@@ -92,7 +95,7 @@ def make_run_outcome(**overrides: Any) -> RunOutcome:
         "robustness": 0.4,
         "primary_failure": None,
         "oracle_results": (make_oracle_result(),),
-        "metrics": {"path_length_m": DEFAULT_SPEED_MPS * DEFAULT_DT_S * DEFAULT_TRACE_SAMPLES},
+        "metrics": {"path_length_m": DEFAULT_PATH_LENGTH_M},
     }
     return RunOutcome.model_validate(fields | overrides)
 

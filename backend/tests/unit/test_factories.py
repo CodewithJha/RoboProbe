@@ -5,14 +5,16 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 from tests.factories import (
     DEFAULT_CLEARANCE_M,
     DEFAULT_DT_S,
+    DEFAULT_PATH_LENGTH_M,
     DEFAULT_SPEED_MPS,
     DEFAULT_TRACE_SAMPLES,
     make_observation,
@@ -32,12 +34,12 @@ BACKEND_DIR = Path(__file__).resolve().parents[2]
 @pytest.mark.parametrize(
     "factory", [make_scenario, make_observation, make_oracle_result, make_run_outcome]
 )
-def test_model_factories_build_valid_frozen_models(factory: object) -> None:
-    model = factory()  # type: ignore[operator]
-    assert model.model_config["frozen"]
-    with pytest.raises(ValidationError):
-        model.model_copy().__setattr__("model_fields_set_probe", 1)
-    type(model).model_validate(model.model_dump())
+def test_model_factories_build_valid_frozen_models(factory: Callable[[], BaseModel]) -> None:
+    model = factory()
+    assert type(model).model_validate(model.model_dump()) == model
+    first_field = next(iter(type(model).model_fields))
+    with pytest.raises(ValidationError, match="frozen"):
+        setattr(model, first_field, getattr(model, first_field))
 
 
 def test_overrides_are_applied_and_validated() -> None:
@@ -64,6 +66,13 @@ def test_default_trace_is_a_successful_straight_line() -> None:
     assert trace.nav_status[-1] == NavStatus.SUCCEEDED
     assert set(trace.nav_status[:-1]) == {NavStatus.ACTIVE}
     assert trace.goal_x == pytest.approx(trace.gt_x[-1])
+
+
+def test_default_outcome_path_length_matches_default_trace() -> None:
+    trace = make_trace()
+    travelled = float(trace.gt_x[-1] - trace.gt_x[0])
+    assert travelled == pytest.approx(DEFAULT_PATH_LENGTH_M)
+    assert make_run_outcome().metrics["path_length_m"] == pytest.approx(travelled)
 
 
 def test_trace_parameters_and_column_overrides() -> None:
