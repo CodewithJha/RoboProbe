@@ -8,6 +8,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - JSON Schemas (T-020a): `schemas/{scenario_space,scenario,task,campaign,experiment}.schema.json`
   (Draft 2020-12, `additionalProperties: false`) with valid/invalid fixtures. The tests validate the examples
   in docs 06/07/12/19 directly from the Markdown sources.
+- CLI skeleton (T-008): `roboprobe` console script (Typer/Rich) with `--version`, `--config`, `--log-level`,
+  `--json`; append-only `COMMAND_GROUPS` registration; exit codes 0/1/2/3 per docs/05 §11 (`ConfigError`/`ValidationError` → 2).
 - Seed derivation (T-002c): `roboprobe.core.seeding` with `stable_hash`, `derive_seed`, `make_rng`,
   `random_campaign_seed` and the canonical stream keys (docs/21 §3); golden seeds pinned as a reproducibility contract.
 - Architecture contracts (T-009): five import-linter contracts (`layers`, `domain-independence`,

@@ -67,6 +67,9 @@ dev = [
     "types-PyYAML>=6.0",
 ]
 
+[project.scripts]
+roboprobe = "roboprobe.cli.main:app"
+
 [project.urls]
 Homepage = "https://github.com/CodewithJha/RoboProbe"
 Documentation = "https://github.com/CodewithJha/RoboProbe/tree/main/docs"
