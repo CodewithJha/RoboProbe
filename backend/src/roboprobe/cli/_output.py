@@ -88,6 +88,7 @@ class Output:
 
     @staticmethod
     def _emit_json(console: Console, payload: JsonValue) -> None:
-        # Bypass Rich markup/highlighting/wrapping so the output is byte-for-byte valid JSON.
-        console.file.write(json.dumps(payload, sort_keys=True, ensure_ascii=False) + "\n")
+        # Bypass Rich markup/highlighting/wrapping so the output is byte-for-byte valid JSON; ASCII
+        # escapes keep it encodable on any terminal or pipe encoding (e.g. cp1252 on Windows).
+        console.file.write(json.dumps(payload, sort_keys=True) + "\n")
         console.file.flush()

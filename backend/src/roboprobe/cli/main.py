@@ -32,7 +32,16 @@ from roboprobe.cli._context import CliState, LogLevel
 from roboprobe.cli._output import Output
 from roboprobe.core.errors import ConfigError, RoboProbeError, ValidationError
 
-__all__ = ["COMMAND_GROUPS", "ExitCode", "app", "create_app", "exit_code_for"]
+__all__ = [
+    "COMMAND_GROUPS",
+    "CONFIG_FILE_ENV",
+    "DISTRIBUTION_NAME",
+    "LOG_LEVEL_ENV",
+    "ExitCode",
+    "app",
+    "create_app",
+    "exit_code_for",
+]
 
 DISTRIBUTION_NAME = "roboprobe"
 CONFIG_FILE_ENV = "ROBOPROBE_CONFIG_FILE"

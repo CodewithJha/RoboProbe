@@ -172,5 +172,12 @@ def test_output_data_json_is_compact_and_sorted(capsys: pytest.CaptureFixture[st
     assert capsys.readouterr().out == '{"a": [1, 2], "b": 1}\n'
 
 
+def test_output_json_escapes_non_ascii(capsys: pytest.CaptureFixture[str]) -> None:
+    Output(json_mode=True).data({"label": "Lagerhalle Süd"})
+    out = capsys.readouterr().out
+    assert out.isascii()
+    assert json.loads(out) == {"label": "Lagerhalle Süd"}
+
+
 def test_no_command_groups_registered_yet() -> None:
     assert tuple(COMMAND_GROUPS) == ()
