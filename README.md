@@ -194,6 +194,19 @@ make demo         # runs a small S-PROBE campaign
 # open http://localhost:8080
 ```
 
+### Backend development (available now)
+Requires `git`, `make` and [`uv`](https://docs.astral.sh/uv/) (uv installs Python 3.12 itself).
+
+```bash
+cp .env.example .env                        # environment template (docs/27)
+cp roboprobe.example.toml roboprobe.toml    # optional config file template (docs/27 §5)
+make setup        # uv sync --locked --all-extras in backend/ + pre-commit hooks
+make lint         # ruff check + ruff format --check
+make typecheck    # mypy --strict on backend/src
+make test         # pytest (excludes `sim` and `slow` markers); `make test-fast` runs in parallel
+make help         # list every target
+```
+
 ## Repository structure
 Current (design phase):
 ```
