@@ -7,6 +7,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Backend container image (T-005a): `docker/backend.Dockerfile` — multi-stage uv build (`api`, `worker`, `ml` extras,
+  CPU-only torch), digest-pinned `python:3.12-slim` runtime, non-root uid 10001, `ENTRYPOINT ["roboprobe"]`, OCI labels
+  from build args, `/data/artifacts` volume; allow-list `.dockerignore`.
 - `roboprobe config show [--sources]` (T-003b): every resolved key as a dotted path, secrets masked, source per key
   (`cli`, `env`, `.env`, `toml:<path>`, `secrets`, `default`), `--json` for scripts; `config.loaded` event logs sources only.
   `load_settings(config_file=...)` lets the global `--config` flag select the TOML file.

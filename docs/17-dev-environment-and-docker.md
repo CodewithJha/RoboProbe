@@ -78,24 +78,24 @@ services:
   migrate:
     <<: *backend
     profiles: [core]
-    command: ["roboprobe", "db", "upgrade"]
+    command: ["db", "upgrade"]
     restart: "no"
     depends_on: {postgres: {condition: service_healthy}}
   api:
     <<: *backend
     profiles: [core]
-    command: ["roboprobe", "api"]
+    command: ["api"]
     ports: ["127.0.0.1:${ROBOPROBE_API_PORT:-8000}:8000"]
     depends_on: {migrate: {condition: service_completed_successfully}}
   orchestrator:
     <<: *backend
     profiles: [core]
-    command: ["roboprobe", "orchestrator"]
+    command: ["orchestrator"]
     depends_on: {migrate: {condition: service_completed_successfully}}
   worker-k2d:
     <<: *backend
     profiles: [core]
-    command: ["roboprobe", "worker", "--backend", "kinematic2d"]
+    command: ["worker", "--backend", "kinematic2d"]
     deploy: {replicas: ${ROBOPROBE_K2D_REPLICAS:-2}}
     depends_on: {migrate: {condition: service_completed_successfully}}
   worker-gazebo:
@@ -125,6 +125,13 @@ volumes: {pgdata: {}}
 | `roboprobe-web` | `node:24` build → `nginxinc/nginx-unprivileged` | static SPA, `config.json` templated from env at start | ≤ 60 MB |
 
 All images run as non-root, read-only root FS where possible, with OCI labels (`org.opencontainers.image.revision` = git SHA) used by provenance.
+
+`roboprobe-backend` (`docker/backend.Dockerfile`, T-005a) has `ENTRYPOINT ["roboprobe"]`, so compose `command:` lists only the
+subcommand. It runs as `roboprobe` (uid/gid 10001) with code under `/app` (read-only for that user) and `/data/artifacts` as
+the only writable volume (`ROBOPROBE_STORAGE__ARTIFACT_ROOT` points there); it works with `read_only: true` plus a `/tmp` tmpfs.
+Build locally with
+`docker build -f docker/backend.Dockerfile --build-arg VERSION=$(git describe --tags --always) --build-arg REVISION=$(git rev-parse HEAD) -t roboprobe-backend:dev .`;
+`.dockerignore` allow-lists the build context, so `.env`, `secrets/` and `data/` never reach a layer.
 
 ## 6. Running Gazebo visually (debugging)
 

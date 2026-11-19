@@ -1,0 +1,12 @@
+# Build context for docker/*.Dockerfile: allow-list only what images need (keeps secrets, .env,
+# data/, caches and node_modules out of the context and out of every layer).
+*
+!backend/pyproject.toml
+!backend/uv.lock
+!backend/src/
+!schemas/
+!configs/
+!tasks/
+**/__pycache__/
+**/*.py[cod]
+**/.DS_Store
