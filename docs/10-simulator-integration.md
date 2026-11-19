@@ -173,6 +173,11 @@ not a live ROS connection — keeps the worker free of rclpy state and makes cra
 | Controller | regulated pure pursuit: lookahead 0.6 m, speed scaled by curvature and obstacle proximity (< 1 m), max speed P1 |
 | Output | the same `Trace` schema as Gazebo |
 
+Ray casting (T-030b, `roboprobe.geometry.raycast`): `GridRayCaster(grid).cast(pose, BeamSpec(angles, r_min, r_max),
+rects, include_rects=...)` marches at half a cell (vectorised, chunked) and refines to the exact cell entry;
+rectangles are analytic and the lidar passes `include_rects=False`. A 180-beam cast takes ≈ 0.3 ms median (gate
+0.5 ms in `tests/benchmark/thresholds.yaml`).
+
 ### 7.2 Designed ground-truth failure mechanisms (for recall evaluation)
 
 The model parameters are calibrated (task T-034) so that these mechanisms exist; the dense reference set

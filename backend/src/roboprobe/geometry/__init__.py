@@ -18,13 +18,17 @@ from roboprobe.geometry.distance import (
 )
 from roboprobe.geometry.footprint import CircleFootprint, Footprint, PolygonFootprint
 from roboprobe.geometry.grid import OccupancyGrid
+from roboprobe.geometry.raycast import BeamSpec, GridRayCaster, cast
 
 __all__ = [
+    "BeamSpec",
     "CircleFootprint",
     "Footprint",
+    "GridRayCaster",
     "OccupancyGrid",
     "PolygonFootprint",
     "Rect",
+    "cast",
     "footprint_grid_distance",
     "footprint_rect_distance",
     "min_obstacle_distance",
