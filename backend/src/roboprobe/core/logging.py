@@ -45,6 +45,7 @@ EVENTS: frozenset[str] = frozenset(
         "analysis.finished",
         "api.request",
         "config.loaded",
+        "scenario.unit_clipped",
     }
 )
 """Event catalogue (docs/34 §6). Extend, never rename; a test fails on unknown event names."""

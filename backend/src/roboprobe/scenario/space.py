@@ -22,15 +22,17 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Annotated, Literal, Self
 
+import numpy.typing as npt
 import pydantic
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
 from roboprobe.core import errors
 from roboprobe.core.types import ParamType, ParamValue, TaskSpec
+from roboprobe.scenario import normalize
 from roboprobe.scenario import task as task_loader
 from roboprobe.scenario._documents import (
     document_error,
@@ -240,6 +242,32 @@ class ScenarioSpace(_Frozen):
     def constraint_set(self) -> ConstraintSet:
         """Compiled constraints; compile once and reuse it for batch checks."""
         return ConstraintSet(tuple(c.compile() for c in self.constraints))
+
+    def to_unit(self, values: Mapping[str, object]) -> normalize.FloatArray:
+        """Encode ``values`` as a unit vector of shape ``(dim,)`` (docs/06 §4.1).
+
+        Raises:
+            roboprobe.core.errors.ValidationError: If an enabled value is missing or invalid.
+        """
+        return normalize.to_unit(self.params, values)
+
+    def to_unit_batch(self, rows: Sequence[Mapping[str, object]]) -> normalize.FloatArray:
+        """Encode ``n`` value mappings as a ``(n, dim)`` unit matrix."""
+        return normalize.to_unit_batch(self.params, rows)
+
+    def from_unit(self, u: npt.ArrayLike) -> dict[str, ParamValue]:
+        """Decode a unit vector of shape ``(dim,)`` into values of the enabled parameters.
+
+        Disabled parameters are omitted; they stay at :meth:`nominal_values`.
+
+        Raises:
+            roboprobe.core.errors.ValidationError: If ``u`` has the wrong shape or is not finite.
+        """
+        return normalize.from_unit(self.params, u)
+
+    def from_unit_batch(self, u: npt.ArrayLike) -> list[dict[str, ParamValue]]:
+        """Decode a ``(n, dim)`` unit matrix into ``n`` value mappings."""
+        return normalize.from_unit_batch(self.params, u)
 
     def is_feasible(self, values: Mapping[str, ParamValue]) -> bool:
         """Whether ``values`` (parameter units, keyed by id) satisfy every constraint.
