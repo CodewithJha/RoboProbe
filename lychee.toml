@@ -1,0 +1,30 @@
+# lychee link-checker configuration (https://lychee.cli.rs/usage/config/).
+# scripts/check_docs.sh runs it offline by default (repo-relative links and anchors only, deterministic);
+# LINKS_ONLINE=1 (CI) additionally checks external URLs with retries.
+
+# Validate `#fragment` anchors of local Markdown files (e.g. docs/27-configuration-reference.md#3-keys).
+include_fragments = "anchor-only"
+
+# Network behaviour for online runs.
+max_retries = 3
+retry_wait_time = 2
+timeout = 20
+max_concurrency = 16
+accept = ["200..=299", "429"]
+user_agent = "Mozilla/5.0 (compatible; RoboProbe-docs-linkcheck; +https://github.com/CodewithJha/RoboProbe)"
+
+# Cache results between runs (.lycheecache is git-ignored).
+cache = true
+max_cache_age = "1d"
+
+exclude_path = ['(^|/)node_modules/', '(^|/)\.venv/', '^web/dist/', '^ros_ws/(build|install|log)/', '^data/']
+
+exclude = [
+  # Placeholder hosts used in examples and the deployment guide.
+  '^https?://(localhost|127\.0\.0\.1|0\.0\.0\.0)',
+  '^https?://[^/]*\.example(\.(com|org))?/',
+  # Links that only resolve for signed-in users or are rate-limited for bots.
+  '^https://github\.com/[^/]+/[^/]+/(security/advisories/new|settings|edit/|new/)',
+  '^https://(www\.)?linkedin\.com/',
+  '^https://doi\.org/',
+]

@@ -4,6 +4,7 @@ All notable changes to this project are documented here. Format: [Keep a Changel
 versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33`).
 
 ## [Unreleased]
+
 ### Added
 - Test infrastructure (T-017): Hypothesis `dev`/`ci`/`nightly` profiles (`HYPOTHESIS_PROFILE`), `tests/factories.py`
   domain builders, `tests/fakes/` package, PostgreSQL 17 fixtures (`ROBOPROBE_TEST_DATABASE_URL` or Testcontainers) with per-test rollback.
@@ -19,6 +20,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   `--json`; append-only `COMMAND_GROUPS` registration; exit codes 0/1/2/3 per docs/05 §11 (`ConfigError`/`ValidationError` → 2).
 - Seed derivation (T-002c): `roboprobe.core.seeding` with `stable_hash`, `derive_seed`, `make_rng`,
   `random_campaign_seed` and the canonical stream keys (docs/21 §3); golden seeds pinned as a reproducibility contract.
+- Docs quality gate (T-006b): `make docs-check` / `scripts/check_docs.sh` runs markdownlint-cli2, a mermaid-cli
+  render of every Mermaid block, lychee link and anchor checks and an ADR index check; `.github/workflows/docs.yml`
+  runs it on Markdown changes, plus a weekly external link check.
 - Architecture contracts (T-009): five import-linter contracts (`layers`, `domain-independence`,
   `adapters-wired-in-bootstrap`, `adapters-point-inward`, `services-never-import-bootstrap`) enforcing docs/16 §2, run by `make lint`;
   how to read a failure is documented in `CONTRIBUTING.md`.
@@ -45,12 +49,18 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   catalogue enforced by an AST test.
 - Open-source community files: `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SUPPORT.md`, `GOVERNANCE.md`,
   `CITATION.cff`, `.editorconfig`, `.github/CODEOWNERS`, issue forms (bug, feature, docs) and `config.yml`.
+
 ### Changed
+
+- Docs: fixed Markdown that rendered incorrectly (paragraphs swallowed into tables, unescaped `|` in table code spans,
+  missing blank lines, bare URLs) and normalised formatting to pass markdownlint.
 - README rewritten as a full project landing page; `CONTRIBUTING.md` and `SECURITY.md` expanded;
   PR template renamed to `.github/PULL_REQUEST_TEMPLATE.md`.
 
 ## [0.0.1] - 2026-11-19
+
 ### Added
+
 - Complete Phase-0 specification: vision, PRD, SRS, personas & use cases, architecture (C4), module design,
   scenario schema, selection algorithms, failure taxonomy, analysis & risk mapping, simulator integration,
   data model, API, dashboard UX/UI, workflows, tech stack, ADR-0001…ADR-0016, repository standards,

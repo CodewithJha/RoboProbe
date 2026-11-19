@@ -1,0 +1,86 @@
+# Documentation quality gate (doc 20 §1). Local equivalent: `make docs-check`.
+name: docs
+
+on:
+  pull_request:
+    paths:
+      - "**/*.md"
+      - ".markdownlint.jsonc"
+      - ".markdownlint-cli2.jsonc"
+      - "lychee.toml"
+      - "scripts/check_docs.sh"
+      - "scripts/check_mermaid.sh"
+      - "scripts/check_adr_index.py"
+      - "scripts/tests/**"
+      - ".github/actions/setup-lychee/**"
+      - ".github/workflows/docs.yml"
+  push:
+    branches: [main]
+    paths:
+      - "**/*.md"
+      - ".markdownlint.jsonc"
+      - ".markdownlint-cli2.jsonc"
+      - "lychee.toml"
+      - "scripts/check_docs.sh"
+      - "scripts/check_mermaid.sh"
+      - "scripts/check_adr_index.py"
+      - "scripts/tests/**"
+      - ".github/actions/setup-lychee/**"
+      - ".github/workflows/docs.yml"
+  schedule:
+    - cron: "17 3 * * 1" # weekly external link-rot check
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  PYTHON_VERSION: "3.12"
+  LYCHEE_VERSION: "0.24.2"
+  # mermaid-cli uses the runner's preinstalled Chrome instead of downloading its own.
+  PUPPETEER_SKIP_DOWNLOAD: "true"
+  PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
+
+jobs:
+  docs-check:
+    name: docs-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: ./.github/actions/setup-lychee
+        with:
+          version: ${{ env.LYCHEE_VERSION }}
+      - name: markdownlint, Mermaid render, relative links and anchors, ADR index
+        run: scripts/check_docs.sh
+
+  external-links:
+    name: external links
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: .lycheecache
+          key: lychee-${{ github.sha }}
+          restore-keys: lychee-
+      - uses: ./.github/actions/setup-lychee
+        with:
+          version: ${{ env.LYCHEE_VERSION }}
+      - name: Check external URLs (retries and accepted codes in lychee.toml)
+        env:
+          LINKS_ONLINE: "1"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: scripts/check_docs.sh links
