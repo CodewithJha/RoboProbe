@@ -243,3 +243,11 @@ forbidden_modules = [
     "roboprobe.cli",
 ]
 allow_indirect_imports = false
+
+[[tool.importlinter.contracts]]
+id = "services-never-import-bootstrap"
+name = "Application services never reach for the composition root"
+type = "forbidden"
+source_modules = ["roboprobe.runner", "roboprobe.experiments", "roboprobe.reporting"]
+forbidden_modules = ["roboprobe.bootstrap"]
+allow_indirect_imports = false

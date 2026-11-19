@@ -92,6 +92,7 @@ Python 3.12 · `ruff` + `mypy --strict` · Google docstrings with `Implements: <
 | `domain-independence` | Domain and kernel never import `roboprobe.store`, `roboprobe.backends`, `roboprobe.api`, `roboprobe.bootstrap`, `fastapi`, `sqlalchemy` or `rclpy`, directly or indirectly. |
 | `adapters-wired-in-bootstrap` | Application and interface packages never *directly* import `roboprobe.store` / `roboprobe.backends`; concrete adapters are wired in `roboprobe.bootstrap`. |
 | `adapters-point-inward` | `store` and `backends` depend only on domain and kernel, never on application, interface or bootstrap. |
+| `services-never-import-bootstrap` | `runner`, `experiments` and `reporting` receive their dependencies by injection and never import `roboprobe.bootstrap`. |
 
 A failure names the broken contract and the offending import chain, e.g.
 

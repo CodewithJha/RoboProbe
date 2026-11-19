@@ -5,8 +5,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ## [Unreleased]
 ### Added
-- Architecture contracts (T-009): four import-linter contracts (`layers`, `domain-independence`,
-  `adapters-wired-in-bootstrap`, `adapters-point-inward`) enforcing docs/16 §2, run by `make lint`;
+- Architecture contracts (T-009): five import-linter contracts (`layers`, `domain-independence`,
+  `adapters-wired-in-bootstrap`, `adapters-point-inward`, `services-never-import-bootstrap`) enforcing docs/16 §2, run by `make lint`;
   how to read a failure is documented in `CONTRIBUTING.md`.
 - Backend monorepo skeleton (T-001): `backend/` uv project for package `roboprobe` with extras `ml`, `worker`,
   `api`, `dev` and a committed `uv.lock` (CPU-only PyTorch index); layered sub-package layout from docs/16 §1;
