@@ -23,9 +23,10 @@ setup: ## Create the backend venv from uv.lock (all extras) and install git hook
 lock: ## Regenerate backend/uv.lock after changing dependencies (never hand-edit it)
 	$(UV) lock --directory $(BACKEND_DIR)
 
-lint: ## Ruff lint + format check
+lint: ## Ruff lint + format check + import-linter architecture contracts
 	$(UV_RUN) ruff check .
 	$(UV_RUN) ruff format --check .
+	$(UV_RUN) lint-imports
 
 format: ## Apply ruff fixes and formatting
 	$(UV_RUN) ruff check --fix .

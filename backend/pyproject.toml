@@ -166,3 +166,80 @@ exclude_also = [
     # Only a bare `...` statement (Protocol / overload stubs), never e.g. `x[..., 0]`.
     "^\\s*\\.\\.\\.\\s*$",
 ]
+
+# --- import-linter: layering contracts (docs/16 §2, docs/34 SOLID "D") ---
+# Run with `make lint` (`lint-imports`). How to read a failure: CONTRIBUTING.md "Architecture contracts".
+[tool.importlinter]
+root_packages = ["roboprobe"]
+# Needed so third-party packages (fastapi, sqlalchemy, rclpy) can appear in forbidden contracts.
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+id = "layers"
+name = "Layers: interface -> application -> domain -> kernel"
+type = "layers"
+containers = ["roboprobe"]
+# Higher layers may import lower ones, never the reverse. "|" siblings are independent of each
+# other; ":" siblings share a layer and may import each other.
+layers = [
+    "api | cli",
+    "runner : experiments : reporting",
+    "selection : oracles : analysis : risk : metrics : scenario",
+    "core : geometry : perturbation",
+]
+
+[[tool.importlinter.contracts]]
+id = "domain-independence"
+name = "Domain and kernel never depend on infrastructure, interfaces or frameworks"
+type = "forbidden"
+source_modules = [
+    "roboprobe.selection",
+    "roboprobe.oracles",
+    "roboprobe.analysis",
+    "roboprobe.risk",
+    "roboprobe.metrics",
+    "roboprobe.scenario",
+    "roboprobe.core",
+    "roboprobe.geometry",
+    "roboprobe.perturbation",
+]
+forbidden_modules = [
+    "roboprobe.store",
+    "roboprobe.backends",
+    "roboprobe.api",
+    "roboprobe.bootstrap",
+    "fastapi",
+    "sqlalchemy",
+    "rclpy",
+]
+allow_indirect_imports = false
+
+[[tool.importlinter.contracts]]
+id = "adapters-wired-in-bootstrap"
+name = "Only bootstrap imports concrete adapters (store, backends) next to application services"
+type = "forbidden"
+source_modules = [
+    "roboprobe.runner",
+    "roboprobe.experiments",
+    "roboprobe.reporting",
+    "roboprobe.api",
+    "roboprobe.cli",
+]
+forbidden_modules = ["roboprobe.store", "roboprobe.backends"]
+# Direct imports only: interfaces legitimately reach adapters *through* bootstrap.
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+id = "adapters-point-inward"
+name = "Adapters depend only on domain and kernel, never on application or interface layers"
+type = "forbidden"
+source_modules = ["roboprobe.store", "roboprobe.backends"]
+forbidden_modules = [
+    "roboprobe.runner",
+    "roboprobe.experiments",
+    "roboprobe.reporting",
+    "roboprobe.bootstrap",
+    "roboprobe.api",
+    "roboprobe.cli",
+]
+allow_indirect_imports = false
