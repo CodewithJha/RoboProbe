@@ -7,6 +7,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Metrics and health (T-004b): `roboprobe.core.metrics_registry` defines every docs/21 §5.2 metric in a dedicated
+  registry (Null Object when `observability.metrics_enabled=false`); `roboprobe.core.health` with `run_checks` and an
+  internal `/healthz` (200/503 JSON) + `/metrics` server for workers and the orchestrator.
 - `roboprobe config show [--sources]` (T-003b): every resolved key as a dotted path, secrets masked, source per key
   (`cli`, `env`, `.env`, `toml:<path>`, `secrets`, `default`), `--json` for scripts; `config.loaded` event logs sources only.
   `load_settings(config_file=...)` lets the global `--config` flag select the TOML file.
