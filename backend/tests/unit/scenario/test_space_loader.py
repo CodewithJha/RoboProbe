@@ -6,6 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 import yaml
 
@@ -108,7 +109,7 @@ def test_unknown_parameter_lookup() -> None:
         load_warehouse().param("robot.nope")
 
 
-def test_is_feasible_placeholder_until_constraint_evaluator() -> None:
+def test_unconstrained_space_is_always_feasible() -> None:
     space = load_warehouse()
     assert space.is_feasible(space.nominal_values())
 
@@ -128,6 +129,23 @@ def test_valid_mixed_space() -> None:
     assert space.param("env.layout").type is ParamType.CATEGORICAL
     assert space.param("env.people").prior.weights == (4, 3, 2, 1)
     assert space.constraints[0].referenced_ids() == {"env.people", "task.clearance"}
+
+
+def test_is_feasible_applies_the_constraints() -> None:
+    space = ScenarioSpace.from_yaml(FIXTURES / "valid" / "mixed.yaml", base_dir=FIXTURES)
+    values = space.nominal_values()
+    assert space.is_feasible({**values, "env.people": 3, "task.clearance": 0.5})
+    assert not space.is_feasible({**values, "env.people": 3, "task.clearance": 0.2})
+    batch = np.array([[3, 0.5], [3, 0.2], [0, 0.0]])
+    mask = space.constraint_set().mask(batch, ["env.people", "task.clearance"])
+    assert mask.tolist() == [True, False, True]
+
+
+def test_constraint_reasons_are_reported_per_expression() -> None:
+    path = FIXTURES / "invalid" / "constraint_disallowed_call.yaml"
+    with pytest.raises(errors.ValidationError, match="only calls to abs, max, min") as exc:
+        ScenarioSpace.from_yaml(path, base_dir=FIXTURES)
+    assert issue_paths(exc) == ["/constraints/0/expr"]
 
 
 def expected_path(path: Path) -> str:

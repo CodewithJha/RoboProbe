@@ -201,8 +201,15 @@ parameters stay at their nominal value (`nominal_values()`). Loading goes throug
 `from_yaml(path, *, base_dir, max_bytes, strict_task)` / `from_text(...)` and reports every problem as
 `ValidationError(SPACE_INVALID)` with JSON-pointer paths. `ParameterSpec` also carries `enabled: bool = True`,
 `PriorSpec` the prior arguments (`mean`, `std`, `a`, `b`, `weights`), and `Constraint(expr, note)` exposes
-`referenced_ids()`. `to_unit`/`from_unit` land with T-021, `make_scenario`/`nominal()` with T-024 and
-`is_feasible` with T-022 (it returns `True` until then).
+`referenced_ids()`. `to_unit`/`from_unit` land with T-021 and `make_scenario`/`nominal()` with T-024.
+
+Constraints (T-022, `roboprobe.scenario.constraints`): `compile_constraint(expr)` parses with
+`ast.parse(mode="eval")`, whitelists nodes (numeric literals, dotted parameter ids, `+ - * / **`, unary `+ -`,
+comparisons, `and/or/not`, `abs/min/max`) with static number/boolean typing, and builds a NumPy closure; it
+never calls `eval`/`compile`. Disallowed constructs and categorical parameters are rejected at load time.
+`ScenarioSpace.is_feasible` / `constraint_set().mask(batch, columns)` evaluate points or `(n, d)` batches in
+parameter units, and `rejection_sample(sampler, feasible, n, rng, max_attempts=scenario.constraint_max_attempts)`
+raises `ValidationError` when the sampler cannot supply `n` feasible points.
 
 Materialisation is the backend's job (`SimulatorBackend.materialize`) but uses shared helpers in
 `roboprobe.scenario.materialize`: `render_template(template: str, ctx: dict) -> str` (Jinja2,

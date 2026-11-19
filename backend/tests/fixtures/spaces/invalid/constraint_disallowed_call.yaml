@@ -1,0 +1,10 @@
+# expect-path: /constraints/0/expr
+schema_version: 1
+id: bad_v1
+name: Bad
+task: tasks/corridor.yaml
+parameters:
+  - {id: task.along, name: Along, group: task, type: float, unit: "-", low: 0.2, high: 0.8, nominal: 0.5, prior: {kind: uniform}}
+  - {id: task.clearance, name: Clearance, group: task, type: float, unit: m, low: 0, high: 1, nominal: 0.5, prior: {kind: uniform}}
+constraints:
+  - {expr: "__import__('os').system('true') == 0"}

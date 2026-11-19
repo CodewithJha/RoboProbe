@@ -170,6 +170,10 @@
 # Target real-time factor of the simulation.
 # real_time_factor = 1.0
 
+[scenario]
+# Sampler draws before rejection sampling of constrained spaces gives up.
+# constraint_max_attempts = 1000
+
 [selection.probe]
 # Warm-up share of the budget [0-1].
 # n0_fraction = 0.1

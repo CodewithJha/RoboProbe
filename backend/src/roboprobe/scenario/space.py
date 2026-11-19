@@ -39,6 +39,7 @@ from roboprobe.scenario._documents import (
     read_document,
     validate_document,
 )
+from roboprobe.scenario.constraints import CompiledConstraint, ConstraintSet, compile_constraint
 
 __all__ = ["Constraint", "ParameterSpec", "PriorSpec", "ScenarioSpace"]
 
@@ -169,7 +170,7 @@ class ParameterSpec(_Frozen):
 class Constraint(_Frozen):
     """Feasibility constraint, e.g. ``robot.max_speed * comms.cmd_delay_ms <= 150``.
 
-    Only parsing and reference extraction live here; evaluation is the restricted evaluator (T-022).
+    Evaluation goes through the restricted evaluator (:mod:`roboprobe.scenario.constraints`).
     """
 
     expr: str
@@ -187,6 +188,14 @@ class Constraint(_Frozen):
             for node in ast.walk(tree)
             if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name)
         )
+
+    def compile(self) -> CompiledConstraint:
+        """Whitelist-compile the expression (vectorised ``evaluate``/``evaluate_batch``).
+
+        Raises:
+            roboprobe.core.errors.ValidationError: If the expression is not allowed.
+        """
+        return compile_constraint(self.expr)
 
 
 class ScenarioSpace(_Frozen):
@@ -228,9 +237,17 @@ class ScenarioSpace(_Frozen):
         """Nominal value of every parameter; disabled parameters are always held here."""
         return {spec.id: spec.nominal for spec in self.parameters}
 
+    def constraint_set(self) -> ConstraintSet:
+        """Compiled constraints; compile once and reuse it for batch checks."""
+        return ConstraintSet(tuple(c.compile() for c in self.constraints))
+
     def is_feasible(self, values: Mapping[str, ParamValue]) -> bool:
-        """Whether ``values`` satisfy the constraints (always ``True`` until T-022 lands)."""
-        return True
+        """Whether ``values`` (parameter units, keyed by id) satisfy every constraint.
+
+        Raises:
+            roboprobe.core.errors.ValidationError: If a referenced value is missing.
+        """
+        return self.constraint_set().is_satisfied(values)
 
     @classmethod
     def from_yaml(
@@ -347,15 +364,20 @@ def _check_references(
     source: str,
 ) -> None:
     known = {p.id for p in parameters}
+    categorical = {p.id for p in parameters if p.type is ParamType.CATEGORICAL}
     issues: Issues = []
     for index, constraint in enumerate(constraints):
         pointer = f"/constraints/{index}/expr"
         try:
-            unknown = sorted(constraint.referenced_ids() - known)
-        except SyntaxError as exc:
-            issues.append((pointer, f"invalid expression: {exc.msg}"))
+            referenced = constraint.compile().param_ids
+        except errors.ValidationError as exc:
+            issues.append((pointer, str(exc.context.get("reason", exc))))
             continue
-        issues.extend((pointer, f"unknown parameter {ref!r}") for ref in unknown)
+        issues.extend((pointer, f"unknown parameter {ref!r}") for ref in sorted(referenced - known))
+        issues.extend(
+            (pointer, f"categorical parameter {ref!r} cannot be used in a constraint")
+            for ref in sorted(referenced & categorical)
+        )
     for index, obstacle in enumerate(task.injected_obstacles):
         for field in ("along", "lateral"):
             ref = getattr(obstacle.placement, field)
