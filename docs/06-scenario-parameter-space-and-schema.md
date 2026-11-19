@@ -63,6 +63,9 @@ Let `L` = illuminance, `L_ref = 300 lux`, `L_min = 5 lux`, `η = clip( log10(L_r
 - range noise `σ_d = 0.005 + 0.01·r² · (1 + 4·η)` (stereo error grows ∝ r²)
 - max effective range `r_max = 3.0 · (1 − 0.6·η)` m
 Constants live in `configs/perception/oakd_lowlight_v1.yaml` so they can be changed and are versioned in the manifest.
+Implemented by `roboprobe.perturbation.perception.PerceptionModel` (T-031b): `from_yaml(path)`, `degrade(ranges, L, rng)`
+with the run's `perception` stream; rays beyond `r_max` or failing the `p_valid` draw read `+inf`, noisy ranges are floored
+at 0 m, and non-finite rays pass through.
 
 ### 3.4 Lidar noise and dropout (P4, P8)
 
@@ -76,6 +79,8 @@ Implemented by `roboprobe.perturbation.lidar.apply_lidar_noise` / `apply_dropout
 Gazebo: ground-plane `mu`, `mu2` set to P5 (wheel surfaces keep defaults). kinematic2d: effective
 traction `τ = min(1, P5 / μ_req)` where `μ_req = |a|/g + 0.15`; realised velocity `v_real = v_cmd·τ` with
 yaw-rate slip `ω_real = ω_cmd · τ^1.5`; odometry still reports commanded wheel motion ⇒ odometry drift.
+Implemented by `roboprobe.perturbation.friction.traction()` / `apply_slip()` (T-031b); `μ_base = 0.15` and the exponent
+1.5 are named defaults that the kinematic2d model file may override.
 
 ### 3.6 Command delay (P6)
 

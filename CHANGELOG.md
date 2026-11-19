@@ -7,10 +7,12 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Perception and friction models (T-031b): `roboprobe.perturbation.perception.PerceptionModel` (P3 depth degradation:
+  η, `p_valid`, `σ_d`, `r_max`; constants in versioned `configs/perception/oakd_lowlight_v1.yaml`) and
+  `roboprobe.perturbation.friction` (`traction`, `apply_slip`, P5).
 - Unit-hypercube normalisation (T-021): `roboprobe.scenario.normalize` and `ScenarioSpace.to_unit/from_unit`
   (+ batch variants) for linear, log, int (bin centres) and categorical parameters per docs/06 §4.1, with
   Hypothesis round-trip properties (10 000 examples each). New log event `scenario.unit_clipped`.
-
 - Web helpers (T-086c): `web/src/lib/format.ts` for locale-aware display formatting (`formatValue` with unit
   symbols, `formatLux` with significant digits, `formatDuration`, `formatRelative`, `formatPValue`, `formatA12`; tunables
   in `formatConfig`), and `web/src/lib/keyboard.ts` (`KeyboardManager` / `registerShortcut`) for single keys and `g b`
