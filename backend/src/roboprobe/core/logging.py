@@ -108,8 +108,7 @@ class _LoggerFactory:
 
 def _static_fields(fields: Mapping[str, str]) -> Processor:
     def add(_logger: WrappedLogger, _method: str, event_dict: EventDict) -> EventDict:
-        for key, value in fields.items():
-            event_dict.setdefault(key, value)
+        event_dict.update(fields)  # mandatory context always wins over call-site keys
         return event_dict
 
     return add

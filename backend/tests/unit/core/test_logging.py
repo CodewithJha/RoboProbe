@@ -172,14 +172,21 @@ def test_capture_logs_sees_events() -> None:
     assert logs == [{"event": "analysis.finished", "n_runs": 3, "log_level": "info"}]
 
 
+def _receiver_name(node: ast.expr) -> str:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        return node.attr
+    return ""
+
+
 def _logged_events(tree: ast.AST) -> Iterator[ast.expr]:
     for node in ast.walk(tree):
         if (
             isinstance(node, ast.Call)
             and isinstance(node.func, ast.Attribute)
             and node.func.attr in LOG_METHODS
-            and isinstance(node.func.value, ast.Name)
-            and "log" in node.func.value.id.lower()
+            and "log" in _receiver_name(node.func.value).lower()
             and node.args
         ):
             yield node.args[0]
@@ -202,6 +209,19 @@ def test_catalogue_names_are_dotted_and_lowercase() -> None:
 
 
 def test_ast_scan_detects_violations() -> None:
-    sample = ast.parse('log.info("nope.event")\nlogger.warning(f"x{y}")\nfoo.info("ignored")')
+    sample = ast.parse(
+        'log.info("nope.event")\n'
+        'logger.warning(f"x{y}")\n'
+        'self._log.error("in.class")\n'
+        'foo.info("ignored")\n'
+        'get()().info("ignored")'
+    )
     args = list(_logged_events(sample))
-    assert len(args) == 2
+    assert [ast.unparse(a) for a in args] == ["'nope.event'", "f'x{y}'", "'in.class'"]
+
+
+def test_mandatory_fields_cannot_be_overridden() -> None:
+    stream = _configure()
+    structlog.get_logger("roboprobe.x").info("api.request", service="spoofed", version="0")
+    (line,) = _lines(stream)
+    assert (line["service"], line["version"]) == ("roboprobe-test", "1.2.3")
