@@ -16,16 +16,29 @@ WEB_DIR     ?= web
 # cd (not --dir) so corepack resolves the pnpm version pinned in web/package.json.
 PNPM_WEB    := cd $(WEB_DIR) && $(PNPM)
 DOCS_CHECKS ?=
+PYTHON      ?= python3
+# Docker Compose stack (docs/17 §4). `make up PROFILES="core dev"` also publishes Postgres on loopback.
+DOCKER      ?= docker
+PROFILES    ?= core
+SECRETS_DIR ?= secrets
+DB_PASSWORD_FILE := $(SECRETS_DIR)/db_password
+COMPOSE_FILE ?= docker/compose.yaml
+# Created up front so Docker does not create the bind-mount source as root (compose.yaml mounts it).
+ARTIFACTS_DIR ?= data/artifacts
+COMPOSE     := $(DOCKER) compose -f $(COMPOSE_FILE) $(if $(wildcard .env),--env-file .env)
+COMPOSE_UP  := $(COMPOSE) $(addprefix --profile ,$(PROFILES))
+# `make up UP_FLAGS=` runs pulled release images instead of building the backend locally.
+UP_FLAGS    ?= --build
 
 .DEFAULT_GOAL := help
 .PHONY: help setup lock lint format typecheck test test-fast test-cov pre-commit docs-check clean \
-	config-docs config-docs-check
+	config-docs config-docs-check up down db-up logs ps
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
-setup: ## Install backend (uv.lock, all extras) and web (pnpm-lock.yaml) deps, then git hooks
+setup: $(DB_PASSWORD_FILE) ## Install backend + web deps and git hooks; create the local DB secret
 	$(UV) sync --locked --all-extras --directory $(BACKEND_DIR)
 	$(PNPM_WEB) install --frozen-lockfile
 	$(UV_RUN) pre-commit install --install-hooks
@@ -76,3 +89,25 @@ config-docs: ## Regenerate docs/27 §4 tables, .env.example and roboprobe.exampl
 
 config-docs-check: ## Fail (with a diff) if generated configuration docs/templates are stale
 	$(UV_RUN) python $(CONFIG_DOCS_SCRIPT) --check
+
+$(DB_PASSWORD_FILE): ## Generate a random local DB password (git-ignored; never overwritten)
+	@mkdir -p $(SECRETS_DIR) && chmod 700 $(SECRETS_DIR)
+	@umask 022 && $(PYTHON) -c 'import secrets; print(secrets.token_urlsafe(32))' > $@
+	@echo "created $@"
+
+up: $(DB_PASSWORD_FILE) ## Start the stack (PROFILES, default core); fails if the migrate job fails
+	@mkdir -p $(ARTIFACTS_DIR)
+	$(COMPOSE_UP) up -d $(UP_FLAGS)
+	$(COMPOSE_UP) wait migrate
+
+down: ## Stop and remove every container and the network (volumes kept)
+	$(COMPOSE) --profile '*' down --remove-orphans
+
+db-up: $(DB_PASSWORD_FILE) ## Start only Postgres and wait until healthy (PROFILES="core dev" to publish it)
+	$(COMPOSE_UP) up -d --wait postgres $(if $(filter dev,$(PROFILES)),postgres-port)
+
+logs: ## Follow logs of all running services
+	$(COMPOSE) --profile '*' logs -f
+
+ps: ## List stack containers
+	$(COMPOSE) --profile '*' ps -a
