@@ -1,0 +1,30 @@
+// markdownlint configuration for RoboProbe docs (rules: https://github.com/DavidAnson/markdownlint#rules--aliases).
+// Pragmatic profile: structural rules that catch rendering bugs stay on; purely stylistic ones are relaxed.
+// Run via `make docs-check` (scripts/check_docs.sh).
+{
+  "default": true,
+
+  // Specs are written with long lines and wide tables; wrapping them hurts diffs more than it helps.
+  "MD013": false,
+
+  // ADRs use MADR-style "+" sub-bullets for pros/cons; list markers are a formatting concern, not a correctness one.
+  "MD004": false,
+
+  // docs/25 numbers references continuously across sections so they can be cited as [n].
+  "MD029": false,
+
+  // README uses a centred HTML hero block (badges, logo) and an emphasised tagline instead of a leading H1.
+  "MD033": {
+    "allowed_elements": ["a", "br", "details", "div", "img", "kbd", "p", "picture", "source", "sub", "summary", "sup"]
+  },
+  "MD036": false,
+  "MD041": false,
+
+  // CHANGELOG repeats "Added"/"Changed" under every release (Keep a Changelog).
+  "MD024": { "siblings_only": true },
+
+  "MD046": { "style": "fenced" },
+  "MD048": { "style": "backtick" },
+  "MD049": { "style": "asterisk" },
+  "MD050": { "style": "asterisk" }
+}

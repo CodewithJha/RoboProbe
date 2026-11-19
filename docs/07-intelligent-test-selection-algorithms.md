@@ -10,6 +10,7 @@
 - Budget `B` simulations (typ. 100–500 on Gazebo, 200–2 000 on kinematic2d), batch size `q` = number of free workers.
 
 The selector pursues three goals, in this order of priority:
+
 1. **Falsification** — find any `x` with `ρ(x) < 0` quickly (MET-03).
 2. **Diversity** — find *distinct* failure regions (modes), not 50 copies of one (MET-02).
 3. **Boundary characterisation** — estimate the level set `{x : E[ρ(x)] = 0}` to build the risk map (MET-08).
@@ -73,44 +74,52 @@ Probability of failure: **`p_fail(x) = Φ(−μ(x)/σ(x))`**, used by the risk m
 Let `φ, Φ` be the standard normal pdf/cdf, `z(x) = −μ(x)/σ(x)`.
 
 ### 5.1 LogEI for falsification (minimise ρ)
+
 Improvement below incumbent `ρ* = min_i ρ_i`: `EI(x) = (ρ* − μ)Φ(γ) + σφ(γ)`, `γ = (ρ* − μ)/σ`.
 We use BoTorch's numerically stable `qLogNoisyExpectedImprovement` on `−ρ` (maximisation form), which
 handles noise and batches with pending points (`X_pending`). Used **until the first failure is found**.
 
 ### 5.2 Expected violation (EV) — failure-mode search after the first failure
+
 After a failure exists, `ρ*` is very negative and EI collapses around it. We switch to the expected
 amount by which a new point *violates* the specification, independent of the incumbent:
 
-```
+```text
 EV(x) = E[max(0, −ρ(x))] = (−μ(x)) · Φ(z(x)) + σ(x) · φ(z(x))
 ```
 
 ### 5.3 Diversity penalty (local penalisation of known modes)
+
 Let `{m_1 … m_K}` be the medoids of currently known failure clusters (09 §3; recomputed every 10
 observations with a cheap HDBSCAN on failing points). With per-dimension radius
 `r_j = κ · ℓ_j` (`ℓ_j` GP lengthscale, `κ = 0.5`):
 
-```
+```text
 penalty(x) = Π_k ( 1 − exp( −½ · Σ_j ((x_j − m_kj) / r_j)² ) )
 α_falsify(x) = log EV(x) + λ · log(penalty(x) + 1e−12)       (λ = 1.0)
 ```
+
 This pushes proposals away from already-explained failure regions, so the budget buys *new* modes.
 
 ### 5.4 Straddle for boundary refinement (level-set estimation)
+
 `α_boundary(x) = β · σ(x) − |μ(x)|`, with `β = 1.96` (Bryan et al., 2005). High where the model is
 uncertain **and** near the `ρ = 0` contour.
 
 ### 5.5 Categorical / integer parameters
+
 None in `warehouse_v1`. If present: integers are relaxed to continuous during optimisation and rounded
 (with de-duplication); categoricals use `MixedSingleTaskGP` and `optimize_acqf_mixed`.
 
 ### 5.6 Batch proposals (`q > 1`)
+
 - LogEI: native `q` batch with `X_pending`.
 - EV, straddle: **Kriging Believer** — select greedily; after each pick, condition the GP on the
   pseudo-observation `(x_pick, μ(x_pick))` via `model.condition_on_observations` (no refit), re-optimise.
 - Batches must be pairwise distinct (normalised L∞ > 1e-3).
 
 ### 5.7 Acquisition optimisation
+
 `botorch.optim.optimize_acqf(bounds=[0,1]^d, num_restarts=10, raw_samples=512)`, `options={"maxiter": 200}`;
 seeds fixed by `torch.Generator` derived from `(strategy_seed, n_obs)`. Infeasible results (constraints)
 are projected by rejection: re-optimise with the offending point added to a tabu list (max 3 tries),
@@ -196,15 +205,18 @@ function PROBE_PROPOSE(history H, pending P, q):
 | `max_gp_points` | 1500 | |
 
 ### 6.4 Complexity
+
 GP fit `O(n³)` → n = 500 ≈ 0.3 s, n = 1500 ≈ 3 s on a laptop CPU (float64). Acquisition optimisation
 ≈ 0.2–0.8 s per slot. Total `propose(q=4)` ≤ 2 s for n ≤ 500 (NFR-PERF-002). Negligible versus a
 60–150 s Gazebo episode, and acceptable versus a 1–2 s kinematic2d episode.
 
 ## 7. `S-BO` and `S-LSE` (ablations)
+
 `S-BO`: warm-up then qLogNEI for the whole budget (no diversity, no boundary). `S-LSE`: warm-up then
 straddle only. Together with `S-PROBE` they answer "which ingredient matters?" in EXP-03.
 
 ## 8. Optional strategies
+
 - **`S-CEM`** [V1-optional]: maintain a truncated-Gaussian mixture proposal; each round sample 20,
   keep the elite 20 % lowest ρ, refit; standard rare-event baseline used in AV falsification literature.
 - **`S-AST`** [FUT]: when disturbances become *time-varying* (e.g. lighting flicker schedule, delay

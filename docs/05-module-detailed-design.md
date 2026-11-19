@@ -148,6 +148,7 @@ class SimulatorBackend(Protocol):
 ```
 
 ### 2.2 Adapters
+
 | Class | Package | Notes |
 |-------|---------|-------|
 | `Kinematic2DBackend` | `roboprobe.backends.kinematic2d` | in-process; see 10 §7 |
@@ -217,6 +218,7 @@ class Strategy(ABC):
 ```
 
 Rules every strategy MUST obey (strategy contract test suite, 18 §4.3):
+
 1. Proposals lie inside the (pinned) space and satisfy constraints.
 2. No duplicate of a pending or already observed point (normalised L∞ distance > 1e-6) unless `allow_repeats`.
 3. Determinism: same `seed`, same history ⇒ same proposals (use `torch.manual_seed` + `np.random.Generator` derived from `(seed, len(history))`).
@@ -241,6 +243,7 @@ class RobustnessGP:
 ## 5. M4 — Simulation Runner — `roboprobe.runner`
 
 ### 5.1 Orchestrator
+
 ```python
 class CampaignLoop:
     def __init__(self, campaign_id: UUID, uow_factory: Callable[[], UnitOfWork], settings: RunnerSettings): ...
@@ -250,12 +253,14 @@ class CampaignLoop:
 class Scheduler:
     def target_inflight(self, online_workers: int, batch_size: int) -> int: ...   # = ceil(min(batch_size, workers) * runner.inflight_factor)
 ```
+
 Tick (every `runner.tick_interval_s`, default 1.0 s): read campaign → if not RUNNING return; count `inflight = PENDING+CLAIMED+RUNNING`;
 `free = target_inflight − inflight`; if free > 0 and budget remaining: load history, `strategy.propose(q=free)`,
 insert runs in one transaction with `seed = derive_seed(campaign_seed, "run", ordinal)`; persist
 `strategy.state_dict()` every tick (resumability, NFR-REL-002). Leader election: `pg_try_advisory_lock(hashtext(campaign_id))`.
 
 ### 5.2 Worker
+
 ```python
 class WorkerProcess:
     def __init__(self, backend: SimulatorBackend, uow_factory, artifact_store: ArtifactStore, settings: WorkerSettings): ...
@@ -264,10 +269,12 @@ class WorkerProcess:
     def execute(self, run: ClaimedRun) -> None: ...     # materialize -> run_episode -> oracles -> persist
     def heartbeat(self) -> None: ...                    # every worker.heartbeat_interval_s, background thread
 ```
+
 Worker states: `IDLE → CLAIMING → PREPARING → RUNNING → EVALUATING → UPLOADING → IDLE`; `DRAINING` on SIGTERM
 (finish current run, claim no more).
 
 ### 5.3 Reaper
+
 `Reaper.reap(now) -> int` runs inside the orchestrator every `runner.reaper_interval_s`: runs in CLAIMED/RUNNING whose
 `worker.last_heartbeat < now − runner.heartbeat_timeout_s` → back to PENDING while `attempt < runner.max_attempts`, else ERROR + verdict INVALID.
 
@@ -285,6 +292,7 @@ class VerdictEngine:
     def judge(self, result: EpisodeResult, task: TaskSpec) -> RunOutcome: ...
 def compute_run_metrics(trace: Trace, task: TaskSpec) -> dict[str, float]: ...
 ```
+
 Oracle classes: `ClearanceOracle (O-CLEAR)`, `GoalOracle (O-GOAL)`, `ProgressOracle (O-PROG)`,
 `LocalizationOracle (O-LOC)`, `NavStatusOracle (O-NAV)`, `StabilityOracle (O-STAB)`, `OscillationOracle (O-OSC)`.
 Exact math in 08 §3.
@@ -308,6 +316,7 @@ class InteractionTester:
     def conclude(self, mode, confirm_runs) -> InteractionVerdict: ...
 def analyze_campaign(campaign_id: UUID, uow: UnitOfWork, artifact_store: ArtifactStore) -> AnalysisReport: ...
 ```
+
 Mode identity across re-analysis: new clusters matched to previous modes by Hungarian assignment on
 Jaccard similarity of member runs (≥ 0.5 ⇒ same `mode_id`, keeps user labels).
 
@@ -344,6 +353,7 @@ class ArtifactStore:
 ```
 
 ## 10. API — `roboprobe.api`
+
 FastAPI app factory `create_app(settings: ApiSettings) -> FastAPI`; routers per resource in
 `roboprobe/api/routers/{spaces,campaigns,runs,modes,risk,experiments,workers,reports,events,health}.py`;
 DTOs in `roboprobe/api/schemas/` (never expose ORM objects). Spec in 12.
@@ -380,6 +390,7 @@ Exit codes: 0 ok, 1 runtime error, 2 validation/usage error, 3 campaign finished
 (only with `--fail-on-failure`, for regression CI).
 
 ## 12. Reporting — `roboprobe.reporting`
+
 `render_campaign_report(campaign_id, uow, store) -> Path` and `render_experiment_report(...)`; Jinja2
 templates in `roboprobe/reporting/templates/`; figures produced with Matplotlib (SVG) for the static
 report so it works offline; the dashboard uses Plotly.js for interactive versions of the same figures.

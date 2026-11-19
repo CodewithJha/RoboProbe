@@ -75,6 +75,7 @@ next scenario where that model expects failures, is uncertain, or is near the pa
 ## 5. Target users
 
 Detailed in [03](03-personas-user-stories-use-cases.md). In short:
+
 1. **Robotics test engineer / student researcher** (primary — the project owner): defines a scenario space, launches campaigns, reads failure reports.
 2. **Robot software developer**: receives a failure, replays it, fixes the stack, re-runs regression scenarios.
 3. **Evaluator / supervisor**: reads the experiment comparison and the final report.
@@ -123,6 +124,7 @@ high-risk configurations. The plugin points that make these possible are listed 
 > combinations of conditions that expose hidden weaknesses in a robotic system?**
 
 Operationalised hypotheses (tested in 19):
+
 - **H1:** `S-PROBE` needs significantly fewer simulations to the first failure than `S-RANDOM` and `S-LHS`.
 - **H2:** `S-PROBE` discovers significantly more distinct failure modes per fixed budget.
 - **H3:** `S-PROBE` discovers interaction failures (≥ 2 parameters jointly necessary) that `S-OFAT` cannot.

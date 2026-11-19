@@ -65,6 +65,7 @@ stateDiagram-v2
     FAILED --> [*]
     CANCELLED --> [*]
 ```
+
 Stop rules (campaign `stop_rules`, all optional): `max_modes`, `max_wall_s`, `max_consecutive_invalid` (default 10 ⇒ auto-pause), `invalid_ratio` (> 0.2 after ≥ 20 runs ⇒ auto-pause).
 
 ## 4. Worker executes a run
@@ -158,6 +159,7 @@ flowchart TD
     S --> C["Comparison stored in experiments.results"]
     C --> V["Trials view and experiment report"]
 ```
+
 Fairness rules: identical budget, backend, space, SUT profile and seed set for every strategy; the
 `k`-th seed of every strategy uses the same derived seed stream for the simulator (common random
 numbers) so differences come from the strategy, not luck.

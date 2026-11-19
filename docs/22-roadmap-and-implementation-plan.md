@@ -44,6 +44,7 @@ gantt
     M10 Experiments             :m10, after m9, 14d
     M11 Release 1.0             :m11, after m10, 7d
 ```
+
 T-090 (Gazebo feasibility spike) is scheduled early (parallel to M2) to retire risk R-01.
 
 ## 2. Dependency graph (milestones)
@@ -65,6 +66,7 @@ flowchart LR
 Columns: ID · title · size · depends on · implements · key docs · acceptance (beyond DoD).
 
 ### M1 — Foundation
+
 | ID | Task | Size | Deps | Implements | Docs | Acceptance |
 |----|------|------|------|-----------|------|-----------|
 | T-001 | Monorepo skeleton: `backend/` uv project, `web/` Vite app, Makefile, pre-commit, `.env.example`, `roboprobe.example.toml` | M | – | NFR-MNT-001 | 16, 17 | `make setup && make lint && make test` pass on empty code |
@@ -75,6 +77,7 @@ Columns: ID · title · size · depends on · implements · key docs · acceptan
 | T-006 | CI workflows `ci.yml`, `docs.yml` (incl. mermaid check), dependabot, PR/issue templates, CODEOWNERS | M | T-001 | 20 | 20 | workflows green on PR |
 
 ### Storage
+
 | ID | Task | Size | Deps | Implements | Docs | Acceptance |
 |----|------|------|------|-----------|------|-----------|
 | T-010 | SQLAlchemy ORM models + Alembic `0001_initial` exactly per 11 §3 | L | T-002 | FR-STO-001 | 11 | migration up/down/up test |
@@ -84,6 +87,7 @@ Columns: ID · title · size · depends on · implements · key docs · acceptan
 | T-014 | Campaign export/import bundle | S | T-011, T-013 | FR-STO-003 | 11 | round-trip test |
 
 ### M2 — Scenario (M2 module) & kinematic2d (M1)
+
 | ID | Task | Size | Deps | Implements | Docs | Acceptance |
 |----|------|------|------|-----------|------|-----------|
 | T-020 | JSON Schemas (`schemas/`) + space YAML loader + semantic checks | M | T-002 | FR-SCN-001/002 | 06 §4–5 | invalid fixtures → precise errors |
@@ -101,6 +105,7 @@ Columns: ID · title · size · depends on · implements · key docs · acceptan
 | T-035 | Backend port, registry, `Kinematic2DBackend`, `ReplayBackend`, backend contract suite | M | T-033 | FR-RUN-006 | 05 §2, 18 §4.3 | contract green |
 
 ### M3 — Oracles (M5) & runner (M4)
+
 | ID | Task | Size | Deps | Implements | Docs | Acceptance |
 |----|------|------|------|-----------|------|-----------|
 | T-036 | Oracle base + InfraCheck + `O-CLEAR`, `O-GOAL` | M | T-002 | FR-ORC-001/002 | 08 | golden traces |
@@ -117,6 +122,7 @@ Columns: ID · title · size · depends on · implements · key docs · acceptan
 | T-047 | Compose: orchestrator + worker-k2d services; `make demo` | S | T-045 | ADR-0013 | 17 | demo campaign completes |
 
 ### M4 — Baselines, metrics, experiments
+
 | ID | Task | Size | Deps | Implements | Docs | Acceptance |
 |----|------|------|------|-----------|------|-----------|
 | T-050 | Strategy base, registry, contract suite | M | T-023 | FR-SEL-001/005/006/007 | 05 §4, 18 §4.3 | contract green |
@@ -128,6 +134,7 @@ Columns: ID · title · size · depends on · implements · key docs · acceptan
 | T-103 | k2d reference set generation + GT mode labelling tool | M | T-034, T-102 | MET-02/08 | 19 §3 | artefact hash recorded |
 
 ### M5 — Intelligent selection
+
 | ID | Task | Size | Deps | Implements | Docs | Acceptance |
 |----|------|------|------|-----------|------|-----------|
 | T-055 | `RobustnessGP` (fit/predict/p_fail, subsampling, fallbacks) | M | T-050 | FR-SEL-002, FR-RSK-001 | 07 §4 | calibration test on synthetic GP draws |
@@ -140,6 +147,7 @@ Columns: ID · title · size · depends on · implements · key docs · acceptan
 | T-062 | [V1-opt] S-CEM | S | T-050 | FR-SEL-009 | 07 §8 | contract green |
 
 ### M6 — Analysis & risk
+
 | ID | Task | Size | Deps | Implements | Docs | Acceptance |
 |----|------|------|------|-----------|------|-----------|
 | T-070 | Feature builder + HDBSCAN clusterer + fallbacks | M | T-011 | FR-ANA-001 | 09 §3 | ARI ≥ 0.9 synthetic |
@@ -154,6 +162,7 @@ Columns: ID · title · size · depends on · implements · key docs · acceptan
 | T-079 | Experiment report | M | T-101, T-078 | FR-EXP-003 | 19 §7 | report renders |
 
 ### M7 — API
+
 | ID | Task | Size | Deps | Implements | Docs | Acceptance |
 |----|------|------|------|-----------|------|-----------|
 | T-080 | App factory, error handling (problem+json), auth token, CORS, health, meta | M | T-011 | FR-API-001/003, NFR-SEC-001 | 12 §1 | error envelope tests |
@@ -163,6 +172,7 @@ Columns: ID · title · size · depends on · implements · key docs · acceptan
 | T-084 | Experiments + reports endpoints; OpenAPI snapshot + oasdiff | S | T-102, T-078 | FR-API-001 | 12 | snapshot committed |
 
 ### M8 — Dashboard
+
 | ID | Task | Size | Deps | Implements | Docs | Acceptance |
 |----|------|------|------|-----------|------|-----------|
 | T-085 | Web foundation: tokens, fonts, MarginRail, routing, providers, runtime config, generated API client | M | T-084 | FR-DSH-008 | 13 §1, §5 | contrast test; a11y |
@@ -177,6 +187,7 @@ Columns: ID · title · size · depends on · implements · key docs · acceptan
 | T-114 | Accessibility & performance pass (axe, keyboard, bundle budget) | S | T-110…T-113 | NFR-ACC-001 | 13 §7 | Lighthouse ≥ 95 |
 
 ### M9 — Gazebo backend
+
 | ID | Task | Size | Deps | Implements | Docs | Acceptance |
 |----|------|------|------|-----------|------|-----------|
 | T-090 | **Spike:** headless TB4 + Nav2 warehouse in Docker on owner's laptop; measure RTF, startup, CPU; record findings | S | T-005 | R-01 | 10 | `docs/evidence/T-090-gazebo-spike.md` |
@@ -190,6 +201,7 @@ Columns: ID · title · size · depends on · implements · key docs · acceptan
 | T-098 | Sim test suite + nightly workflow | M | T-097 | 18 §4.8 | 20 | nightly green |
 
 ### M10/M11 — Evaluation & release
+
 | ID | Task | Size | Deps | Implements | Docs | Acceptance |
 |----|------|------|------|-----------|------|-----------|
 | T-104 | Experiment configs EXP-01…EXP-07 | S | T-102 | 19 §4 | 19 | configs validate |
@@ -200,4 +212,5 @@ Columns: ID · title · size · depends on · implements · key docs · acceptan
 | T-123 | Release v1.0.0 | S | T-122 | 33 | 20 §6 | GitHub Release |
 
 ## 4. Parallelisation guidance for multiple agents
+
 Independent streams after M1: (A) storage T-010…T-014, (B) scenario T-020…T-026, (C) geometry/perturbation T-030/T-031, (D) oracles T-036…T-039, (E) Gazebo spike T-090. Interfaces in 05 are frozen, so streams integrate through the ports. Never assign two agents tasks touching the same module in the same week.

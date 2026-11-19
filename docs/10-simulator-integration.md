@@ -135,6 +135,7 @@ Communication worker ↔ episode: **files + exit code** (`episode_done.json`, `t
 not a live ROS connection — keeps the worker free of rclpy state and makes crashes easy to classify as F-INFRA.
 
 ## 6. Ground truth & recording
+
 - Ground-truth pose: Gazebo pose publisher plugin bridged to ROS (`ground_truth_pose_topic` in `topics.yaml`).
 - Minimum distance `d(t)`: computed geometrically by `ground_truth_monitor` from the TB4 footprint
   polygon at the ground-truth pose against (a) the ground-truth occupancy map distance transform and
@@ -146,6 +147,7 @@ not a live ROS connection — keeps the worker free of rclpy state and makes cra
 ## 7. kinematic2d backend (development & evaluation test double)
 
 ### 7.1 Model
+
 | Element | Implementation |
 |---------|---------------|
 | World | occupancy grid (0.05 m) exported from the warehouse map + analytic pallet rectangle |
@@ -162,6 +164,7 @@ not a live ROS connection — keeps the worker free of rclpy state and makes cra
 | Output | the same `Trace` schema as Gazebo |
 
 ### 7.2 Designed ground-truth failure mechanisms (for recall evaluation)
+
 The model parameters are calibrated (task T-034) so that these mechanisms exist; the dense reference set
 (20 000 Sobol runs) then defines the actual ground-truth modes used by MET-02/MET-08.
 
@@ -175,22 +178,26 @@ The model parameters are calibrated (task T-034) so that these mechanisms exist;
 `multi_mode_6d` (07 §9) is the analytic mirror of this table.
 
 ### 7.3 Determinism
+
 Single `np.random.Generator(PCG64)` per stream (sensor, localisation, perception), derived from the run
 seed; no wall-clock dependence; float64 everywhere ⇒ identical trace hash across runs on the same platform (NFR-REP-001).
 
 ## 8. Performance & laptop guidance
+
 - Headless server only (`headless:=True`, no RViz), `--headless-rendering` (EGL) for camera/GPU-lidar sensors; on machines without a usable GPU set `LIBGL_ALWAYS_SOFTWARE=1` (Mesa llvmpipe) — slower but works.
 - Target RTF configurable (`backends.gazebo_nav2.physics.real_time_factor`, default 1.0; try 2.0 when CPU allows; Nav2 uses `/clock`).
 - Parallelism: `max_parallel_per_host` default 1 on a 4-core laptop, 2 on 8 cores; measured in T-090.
 - [V1] Optimisation: **warm reset** for parameters that don't require world reload (P1, P2/P7 via entity set_pose, P4, P6, P8) — group proposals by world-level params (P3, P5) is future work; MVP always cold-starts.
 
 ## 9. Isolation & cleanup
+
 Each Gazebo episode runs with unique `ROS_DOMAIN_ID` (`backends.gazebo_nav2.domain_id_base + slot`),
 `GZ_PARTITION=rp_<worker>_<slot>`, `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`, its own process group and
 `workdir`. On teardown: SIGINT → wait `teardown_grace_s` (10) → SIGTERM → wait 5 → SIGKILL group; then
 `pgrep` check; leftover processes ⇒ worker marks itself unhealthy and restarts its container (Docker `restart: unless-stopped`).
 
 ## 10. Adding another simulator (Webots, MuJoCo, Isaac Sim)
+
 1. Create package `roboprobe_backend_<name>` implementing `SimulatorBackend`, producing the standard `Trace`.
 2. Map each scenario parameter it supports (`capabilities.supported_params`); unsupported enabled params ⇒ campaign creation fails with a clear error.
 3. Register entry point `roboprobe.backends = <name> = pkg.module:Backend`.
