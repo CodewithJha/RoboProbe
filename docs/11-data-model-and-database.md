@@ -411,6 +411,14 @@ artifacts/
 
 File-level metadata: `run_id`, `backend`, `trace_schema_version`, `goal_x`, `goal_y`, `sample_hz`.
 
+Implementation (`roboprobe.backends.trace_io`, T-018): each field carries its unit as Arrow field metadata
+(`unit`). File-level values are JSON-encoded strings. `meta` holds the whole `Trace.meta`, and `run_id`,
+`backend` and `sample_hz` are copied from it when present. `rtf` is the only nullable column: an all-null
+column means the backend records no RTF (`Trace.rtf is None`). `read_trace` rejects other schema versions,
+missing or mistyped columns, nulls and invariant violations with one `ValidationError`.
+`validate_trace(trace, *, min_hz, max_gap_s)` returns the FR-RUN-004 sampling problems (rate, gaps); the caller
+supplies the thresholds from settings.
+
 ## 7. Retention & size estimates
 
 | Item | Size | 1 000-run campaign |

@@ -82,6 +82,7 @@ class Trace:                            # columnar, one row per sample (>= 10 Hz
     nav_status: npt.NDArray[np.int8]    # NavStatus: 0 idle 1 active 2 succeeded 3 aborted 4 canceled
     goal_x: float; goal_y: float
     meta: Mapping[str, JsonValue]       # backend-specific extras (read-only copy)
+    rtf: npt.NDArray[np.float32] | None = None   # real-time factor per sample (wall-clock backends)
 
 class OracleResult(BaseModel, frozen=True):
     oracle_id: str                      # "O-CLEAR"

@@ -53,7 +53,9 @@ class Trace:
     Every column is a 1-D array of the same length ``n``. Arrays are stored as read-only views
     and ``meta`` as a read-only mapping copy, so a trace cannot be mutated through its
     attributes (the caller's own array objects are not modified). Units: time [s], positions
-    and distances [m], angles [rad], linear velocity [m/s], angular velocity [rad/s].
+    and distances [m], angles [rad], linear velocity [m/s], angular velocity [rad/s]. ``rtf``
+    (real-time factor per sample, float32) is optional; only wall-clock backends such as Gazebo
+    record it.
 
     Raises:
         ValueError: On wrong dtype or dimensionality, mismatched lengths, a time column that is
@@ -80,6 +82,7 @@ class Trace:
     goal_x: float
     goal_y: float
     meta: Mapping[str, JsonValue] = field(default_factory=dict)
+    rtf: npt.NDArray[np.float32] | None = None
 
     def __post_init__(self) -> None:
         """Validate columns and freeze them as read-only views."""
@@ -113,6 +116,22 @@ class Trace:
                 raise ValueError(msg)
             object.__setattr__(self, name, value)
         object.__setattr__(self, "meta", MappingProxyType(dict(self.meta)))
+        if self.rtf is not None:
+            self._freeze_rtf(self.rtf, n or 0)
+
+    def _freeze_rtf(self, rtf: object, n: int) -> None:
+        if not isinstance(rtf, np.ndarray) or rtf.ndim != 1 or rtf.dtype != np.float32:
+            msg = "Trace.rtf must be a 1-D float32 numpy array or None"
+            raise ValueError(msg)
+        if rtf.shape[0] != n:
+            msg = f"Trace.rtf has length {rtf.shape[0]}, expected {n} (length of t)"
+            raise ValueError(msg)
+        if not np.all(np.isfinite(rtf)) or np.any(rtf < 0):
+            msg = "Trace.rtf must be finite and non-negative"
+            raise ValueError(msg)
+        view = rtf.view()
+        view.flags.writeable = False
+        object.__setattr__(self, "rtf", view)
 
     @property
     def n_samples(self) -> int:

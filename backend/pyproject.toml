@@ -67,6 +67,7 @@ dev = [
     "types-PyYAML>=6.0",
     "types-jsonschema>=4.23",
     "scipy-stubs>=1.14",
+    "pyarrow-stubs>=17",
 ]
 
 [project.scripts]

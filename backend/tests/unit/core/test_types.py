@@ -375,3 +375,28 @@ def observations(draw: st.DrawFn) -> Observation:
 @given(observations())
 def test_observation_json_round_trip(obs: Observation) -> None:
     assert Observation.model_validate_json(obs.model_dump_json()) == obs
+
+
+def test_trace_rtf_is_optional_and_frozen() -> None:
+    assert make_trace().rtf is None
+    rtf = np.ones(5, dtype=np.float32)
+    trace = make_trace(rtf=rtf)
+    assert trace.rtf is not None
+    assert not trace.rtf.flags.writeable
+    assert rtf.flags.writeable
+
+
+@pytest.mark.parametrize(
+    ("rtf", "match"),
+    [
+        (np.ones(5), "float32"),
+        ([1.0] * 5, "float32"),
+        (np.ones((5, 1), dtype=np.float32), "1-D"),
+        (np.ones(4, dtype=np.float32), "length 4"),
+        (np.array([1, 1, 1, 1, -1], dtype=np.float32), "non-negative"),
+        (np.array([1, 1, 1, 1, np.nan], dtype=np.float32), "finite"),
+    ],
+)
+def test_trace_rejects_bad_rtf(rtf: Any, match: str) -> None:
+    with pytest.raises(ValueError, match=match):
+        make_trace(rtf=rtf)
