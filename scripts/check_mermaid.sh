@@ -22,7 +22,7 @@ fi
 if (($# > 0)); then
   files=("$@")
 else
-  mapfile -t files < <(git ls-files -z -- '*.md' | xargs -0 grep -l '^[[:space:]]*```mermaid' || true)
+  mapfile -t files < <(git ls-files -z -- '*.md' | xargs -0 -r grep -l '^[[:space:]]*```mermaid' || true)
 fi
 
 if ((${#files[@]} == 0)); then

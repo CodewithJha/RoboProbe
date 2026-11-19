@@ -39,7 +39,7 @@ lychee_cmd() {
   elif command -v lychee >/dev/null 2>&1; then
     echo lychee
   elif command -v docker >/dev/null 2>&1; then
-    echo "docker run --rm -v $ROOT:$ROOT -w $ROOT $LYCHEE_IMAGE"
+    echo "docker run --rm --user $(id -u):$(id -g) -v $ROOT:$ROOT -w $ROOT $LYCHEE_IMAGE"
   else
     echo "links: lychee not found; install it (https://lychee.cli.rs/installation/) or Docker" >&2
     return 1

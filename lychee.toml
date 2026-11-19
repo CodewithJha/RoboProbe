@@ -17,7 +17,7 @@ user_agent = "Mozilla/5.0 (compatible; RoboProbe-docs-linkcheck; +https://github
 cache = true
 max_cache_age = "1d"
 
-exclude_path = ['(^|/)node_modules/', '(^|/)\.venv/', '^web/dist/', '^ros_ws/(build|install|log)/', '^data/']
+exclude_path = ['(^|/)node_modules/', '(^|/)\.venv/', '(^|/)web/dist/', '(^|/)ros_ws/(build|install|log)/', '(^|/)data/']
 
 exclude = [
   # Placeholder hosts used in examples and the deployment guide.

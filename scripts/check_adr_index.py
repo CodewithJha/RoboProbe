@@ -24,6 +24,8 @@ from pathlib import Path
 ADR_FILE_PATTERN = re.compile(r"^ADR-(?P<number>\d{4})-[a-z0-9-]+\.md$")
 ADR_LINK_PATTERN = re.compile(r"\[ADR-(?P<number>\d{4})\]\((?P<target>[^)#\s]+)\)")
 STATUS_FIELD_PATTERN = re.compile(r"^\|\s*Status\s*\|\s*(?P<status>[^|]+?)\s*\|", re.MULTILINE)
+# Zero-based column of the status cell in index rows: | ADR | Title | Status | ...
+STATUS_COLUMN = 2
 HEADING_PATTERN = re.compile(r"^(?P<hashes>#{1,6})\s+(?P<title>.+?)\s*$")
 
 DEFAULT_ADR_DIR = Path("docs/adr")
@@ -65,12 +67,19 @@ class IndexSpec:
 
 
 def read_adr_statuses(adr_dir: Path) -> dict[Path, str | None]:
-    """Map each ADR file in ``adr_dir`` to the value of its ``Status`` field (None if absent)."""
+    """Map each ADR file in ``adr_dir`` to the value of its ``Status`` field (None if absent).
+
+    Raises:
+        LookupError: if ``adr_dir`` contains no ADR files.
+    """
     statuses: dict[Path, str | None] = {}
     for path in sorted(adr_dir.iterdir()):
         if ADR_FILE_PATTERN.match(path.name):
             match = STATUS_FIELD_PATTERN.search(path.read_text(encoding="utf-8"))
             statuses[path.resolve()] = match.group("status") if match else None
+    if not statuses:
+        msg = f"no ADR files in {adr_dir}"
+        raise LookupError(msg)
     return statuses
 
 
@@ -110,8 +119,7 @@ def parse_index(markdown: str, base_dir: Path) -> list[IndexEntry]:
         if link is None:
             continue
         cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
-        status_column = 2
-        status = cells[status_column] if len(cells) > status_column else None
+        status = cells[STATUS_COLUMN] if len(cells) > STATUS_COLUMN else None
         entries.append(
             IndexEntry(link.group("number"), (base_dir / link.group("target")).resolve(), status)
         )
@@ -176,9 +184,6 @@ def main(argv: list[str] | None = None) -> int:
         print(f"adr-index: error: {exc}", file=sys.stderr)
         return EXIT_USAGE
 
-    if not statuses:
-        print(f"adr-index: error: no ADR files in {args.adr_dir}", file=sys.stderr)
-        return EXIT_USAGE
     for problem in problems:
         print(f"adr-index: {problem}", file=sys.stderr)
     if problems:

@@ -128,6 +128,18 @@ class CheckAdrIndexTest(unittest.TestCase):
         self.assertEqual(code, check_adr_index.EXIT_USAGE)
         self.assertIn("no heading containing", err)
 
+    def test_empty_adr_directory_is_a_usage_error(self) -> None:
+        """No ADR files at all is reported once, as a usage error."""
+        self._write_indexes(
+            _row("0001") + _row("0002"), _row("0001", "adr/") + _row("0002", "adr/")
+        )
+        for adr in self.adr_dir.glob("ADR-*.md"):
+            adr.unlink()
+        code, err = self._run()
+        self.assertEqual(code, check_adr_index.EXIT_USAGE)
+        self.assertEqual(err.count("\n"), 1)
+        self.assertIn("no ADR files", err)
+
 
 if __name__ == "__main__":
     unittest.main()
