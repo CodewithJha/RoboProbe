@@ -10,6 +10,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Perception and friction models (T-031b): `roboprobe.perturbation.perception.PerceptionModel` (P3 depth degradation:
   η, `p_valid`, `σ_d`, `r_max`; constants in versioned `configs/perception/oakd_lowlight_v1.yaml`) and
   `roboprobe.perturbation.friction` (`traction`, `apply_slip`, P5).
+- Scenario hashing (T-024): `roboprobe.scenario.hashing` (`canonical_json`, `content_hash`, `scenario_hash`) with
+  golden hashes, and `ScenarioSpace.make_scenario` / `nominal()`; space versions and SUT config hashes now use the
+  same public canonicaliser (values unchanged).
 - Unit-hypercube normalisation (T-021): `roboprobe.scenario.normalize` and `ScenarioSpace.to_unit/from_unit`
   (+ batch variants) for linear, log, int (bin centres) and categorical parameters per docs/06 §4.1, with
   Hypothesis round-trip properties (10 000 examples each). New log event `scenario.unit_clipped`.
