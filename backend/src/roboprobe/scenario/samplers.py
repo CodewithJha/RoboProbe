@@ -279,7 +279,10 @@ class GridSampler:
         if n > self.size:
             msg = f"grid has {self.size} points, cannot draw {n}"
             raise errors.ValidationError(msg, context={"n": n, "size": self.size})
-        grid = self.points()
         if n == self.size:
-            return grid
-        return grid[rng.permutation(self.size)[:n]]
+            return self.points()
+        # Draw flat indices without materialising the grid, which can be far larger than n.
+        flat = rng.choice(self.size, size=n, replace=False, shuffle=True)
+        coords = np.column_stack(np.unravel_index(flat, (self.levels,) * self.dim))
+        subset: FloatArray = coords.astype(np.float64) / (self.levels - 1)
+        return subset

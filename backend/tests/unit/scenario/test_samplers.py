@@ -208,6 +208,13 @@ def test_grid_subset_is_a_seeded_permutation_of_distinct_points() -> None:
     np.testing.assert_array_equal(subset, grid.sample(20, rng(1)))
 
 
+def test_huge_grid_subset_does_not_materialise_the_grid() -> None:
+    grid = samplers.GridSampler(12, 10)  # 10**12 points
+    subset = grid.sample(5, rng(2))
+    assert subset.shape == (5, 12)
+    assert set(np.unique(subset * 9).round(9)) <= set(range(10))
+
+
 def test_grid_rejects_too_many_points_and_too_few_levels() -> None:
     with pytest.raises(errors.ValidationError, match="cannot draw"):
         samplers.GridSampler(2, 2).sample(5, rng())
