@@ -19,6 +19,7 @@
 | Rate limits | none (local tool) |
 
 ### 1.1 Error envelope
+
 ```json
 {
   "type": "https://github.com/CodewithJha/RoboProbe/docs/errors#invalid-state-transition",
@@ -30,6 +31,7 @@
   "errors": []
 }
 ```
+
 Error codes (stable strings): `VALIDATION_ERROR` (422), `NOT_FOUND` (404), `CAMPAIGN_INVALID_TRANSITION` (409),
 `SPACE_INVALID` (422), `BACKEND_UNSUPPORTED_PARAM` (422), `NO_WORKERS` (409, warning-level when starting), `PRECONDITION_FAILED` (412),
 `UNAUTHORIZED` (401), `INTERNAL` (500, includes `trace_id`).
@@ -75,6 +77,7 @@ Colon-suffixed command routes (`:start`) follow the "custom method" convention; 
 ## 3. Key schemas (Pydantic DTOs; JSON shown)
 
 ### 3.1 `CampaignCreate`
+
 ```json
 {
   "name": "warehouse night-shift probe",
@@ -92,9 +95,11 @@ Colon-suffixed command routes (`:start`) follow the "custom method" convention; 
   "start": true
 }
 ```
+
 Validation: space exists; backend registered and supports all enabled, unpinned parameters; strategy id known and params validate against the strategy's own Pydantic params model; `1 ≤ batch_size ≤ 32`; `budget ≤ campaign.max_budget` (config).
 
 ### 3.2 `Campaign`
+
 ```json
 {
   "id": "01937f0e-6a1b-7c3e-9f00-4b5e2a9d1c11",
@@ -114,6 +119,7 @@ Validation: space exists; backend registered and supports all enabled, unpinned 
 ```
 
 ### 3.3 `Run`
+
 ```json
 {
   "id": "0193…",
@@ -138,6 +144,7 @@ Validation: space exists; backend registered and supports all enabled, unpinned 
 ```
 
 ### 3.4 `RiskSlice`
+
 ```json
 {"x_param": "robot.max_speed", "y_param": "env.illuminance", "anchor": "nominal", "resolution": 50,
  "x_values": [0.1, …], "y_values": [5.0, …],
@@ -146,6 +153,7 @@ Validation: space exists; backend registered and supports all enabled, unpinned 
 ```
 
 ### 3.5 `ExperimentComparison`
+
 ```json
 {"experiment_id": "…", "metrics": ["MET-01", "MET-02", "MET-03"],
  "strategies": {"S-PROBE": {"MET-03": {"median": 18, "iqr": [12, 27], "ci95": [14, 22]}},
@@ -177,9 +185,11 @@ Heartbeat comment `: ping` every `api.sse.ping_interval_s` (15 s).
 | `:pause` | RUNNING | → PAUSED; no new runs enqueued; in-flight runs finish |
 | `:resume` | PAUSED | → RUNNING |
 | `:cancel` | CREATED, RUNNING, PAUSED | → CANCELLED; PENDING runs → CANCELLED; running episodes cancelled best-effort |
+
 All return `202 Accepted` with the updated `Campaign` and are idempotent (repeating `:pause` on PAUSED returns 202, no-op).
 
 ## 6. Example session (curl)
+
 ```bash
 API=http://127.0.0.1:8000/api/v1
 curl -s -X POST $API/spaces -H 'Content-Type: application/yaml' --data-binary @configs/scenario_spaces/warehouse_v1.yaml
@@ -189,6 +199,7 @@ curl -s "$API/campaigns/<id>/modes" | jq '.items[] | {code,label,size}'
 ```
 
 ## 7. Non-functional
+
 p95 ≤ 200 ms for list endpoints at 10 000 runs (keyset pagination + indexes in 11 §3); trace endpoint
 downsamples server-side; responses gzip-compressed (`GZipMiddleware`, min 1 KB); CORS allow-list from
 `ROBOPROBE_API_CORS_ORIGINS` (no wildcard).

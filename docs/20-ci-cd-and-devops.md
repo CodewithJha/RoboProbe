@@ -37,27 +37,34 @@ flowchart LR
 ```
 
 ## 3. Branch protection (`main`)
+
 Required checks: `lint`, `test-backend (ubuntu)`, `test-integration`, `test-web`, `build-web`, `openapi-check`, `docs` (if triggered). Linear history, squash merge, no force pushes, conversation resolution required.
 
 ## 4. Caching & speed
+
 `astral-sh/setup-uv` with cache keyed on `uv.lock`; `pnpm` store cache keyed on lockfile; Docker layer cache `type=gha`; Hypothesis database cached; tests parallelised with `pytest-xdist -n auto` for unit tiers.
 
 ## 5. Environments & configuration
+
 | Env | Where | Config source |
 |-----|-------|---------------|
 | `ci` | GitHub runners | workflow `env:` + service containers; `ROBOPROBE_ENV=ci` |
 | `local` | developer laptop | `.env` + `roboprobe.toml` |
 | `lab` (optional) | spare machine / free-tier VM running remote workers | `.env.lab`, secrets via files, WireGuard/SSH tunnel to DB |
+
 Secrets in CI: only `GITHUB_TOKEN` (GHCR push). No external secret is needed.
 
 ## 6. Release & deployment flow
+
 1. Merge to `main` → images `:main` and `:sha-<7>` pushed.
 2. Release: bump version (33), update `CHANGELOG.md`, tag `vX.Y.Z` → `release.yml` publishes images `:vX.Y.Z` and a GitHub Release.
 3. Deploy on a machine: `ROBOPROBE_IMAGE_TAG=vX.Y.Z make up` (migrations run automatically via the `migrate` one-shot service) — see 29.
 4. Rollback: set previous tag and `make up`; DB migrations are backward-compatible for one minor version (expand/contract pattern, 33 §5).
 
 ## 7. Dependency management
+
 Dependabot weekly for `uv`, `npm`, `github-actions`, `docker`; grouped minor/patch updates; major updates as separate PRs with a changelog review. ROS/Gazebo base images pinned by digest and updated monthly via a manual PR after `nightly-sim` passes.
 
 ## 8. Observability of CI
+
 Test reports as JUnit XML uploaded and summarised in the job summary; coverage uploaded as artefact and summarised (no paid coverage service required; Codecov free tier optional).

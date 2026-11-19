@@ -4,7 +4,7 @@
 
 ## 1. Target repository tree (created progressively by tasks in 22)
 
-```
+```text
 RoboProbe/
 ├── README.md  AGENTS.md  CONTRIBUTING.md  CHANGELOG.md  SECURITY.md  LICENSE  .gitignore
 ├── Makefile                       # thin wrappers: make setup | up | down | test | lint | docs-check
@@ -93,7 +93,9 @@ flowchart TB
     AD --> L1
     AD --> L2
 ```
+
 `import-linter` contracts (in `backend/pyproject.toml`):
+
 1. *Layers:* `roboprobe.api | roboprobe.cli` → `roboprobe.runner | roboprobe.experiments | roboprobe.reporting` → `roboprobe.selection | roboprobe.oracles | roboprobe.analysis | roboprobe.risk | roboprobe.metrics | roboprobe.scenario` → `roboprobe.core`.
 2. *Independence:* domain packages may not import `roboprobe.store`, `roboprobe.backends`, `roboprobe.api`, `fastapi`, `sqlalchemy`, `rclpy`.
 3. *Only `bootstrap`* may import concrete adapters together with application services.
@@ -106,6 +108,7 @@ contract 2 as well. The executable form (ids `layers`, `domain-independence`, `a
 `adapters-point-inward`, `services-never-import-bootstrap`) lives in `[tool.importlinter]` and is run by `make lint`.
 
 ## 3. Python standards
+
 - Formatting & lint: **ruff** (`ruff format`, line length 100; rules `E,F,W,I,N,UP,B,A,C4,SIM,RET,PTH,D,ANN,PL,RUF,S,TRY,ERA`; `D` with Google convention; `PLR2004` magic-value rule ON).
 - Typing: **mypy --strict** on `src/`; no `Any` in public signatures except JSON payload aliases (`JsonValue`); `numpy.typing` for arrays with shapes documented in docstrings.
 - Naming: modules `snake_case`; classes `PascalCase`; functions/vars `snake_case`; constants `UPPER_SNAKE` (only true constants); private `_leading`; IDs from docs kept verbatim in strings (`"S-PROBE"`, `"F-COL"`).
@@ -117,16 +120,19 @@ contract 2 as well. The executable form (ids `layers`, `domain-independence`, `a
 - File size guide: ≤ 400 lines per module, ≤ 50 lines per function (soft; reviewers ask for splits).
 
 ## 4. TypeScript/React standards
+
 - `strict: true`, `noUncheckedIndexedAccess: true`; ESLint (typescript-eslint strict, react-hooks, jsx-a11y) + Prettier.
 - Components: function components, named exports, one component per file, `PascalCase.tsx` + `PascalCase.module.css` + `PascalCase.test.tsx`.
 - No `any`; API types only from generated `api/schema.d.ts`.
 - No hard-coded URLs/colours/sizes: URLs from runtime config, colours/spacing from tokens.
 
 ## 5. ROS 2 package standards
+
 - `ament_python`, nodes as classes inheriting `rclpy.node.Node`, all tunables as declared ROS parameters loaded from the generated YAML (never literals); topic names from `config/topics.yaml`.
 - Follow ROS 2 naming (snake_case topics, `~/` private params); launch files in Python.
 
 ## 6. Git conventions
+
 - Default branch `main` (protected: PR + green CI required, linear history).
 - Branches: `feat/T-041-worker-heartbeat`, `fix/…`, `docs/…`, `chore/…`, `spike/…`.
 - Commits: **Conventional Commits** — `type(scope): summary` (types: feat, fix, docs, test, refactor, perf, build, ci, chore, revert); scope = package or doc (`selection`, `api`, `docs`); body references task/requirement IDs (`Refs: T-041, FR-RUN-002`).
@@ -135,4 +141,5 @@ contract 2 as well. The executable form (ids `layers`, `domain-independence`, `a
 - Tags: `vMAJOR.MINOR.PATCH` (33).
 
 ## 7. Generated & vendored files
+
 `uv.lock`, `pnpm-lock.yaml`, `web/src/api/schema.d.ts`, `api/openapi.json`, config tables in 27 are generated — regenerate, never hand-edit; CI checks freshness.

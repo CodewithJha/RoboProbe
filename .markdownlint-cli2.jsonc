@@ -1,0 +1,6 @@
+// markdownlint-cli2 runner options; rule configuration lives in .markdownlint.jsonc.
+{
+  "globs": ["**/*.md"],
+  "ignores": ["**/node_modules/**", "**/.venv/**", "web/dist/**", "ros_ws/build/**", "ros_ws/install/**", "ros_ws/log/**", "data/**"],
+  "gitignore": true
+}

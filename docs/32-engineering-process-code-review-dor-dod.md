@@ -16,9 +16,11 @@ stateDiagram-v2
     Blocked --> InProgress: unblocked
     Done --> [*]
 ```
+
 Tracking: GitHub Issues (one per `T-NNN`, label `milestone:Mx`, `size:S|M|L`, `area:*`) + a GitHub Project board (free).
 
 ## 2. Definition of Ready (DoR) — a task may start only if
+
 - [ ] It has an ID `T-NNN`, a clear goal and size ≤ L.
 - [ ] Linked requirement IDs (FR/NFR/PR) and design sections exist and are unambiguous.
 - [ ] Acceptance criteria are testable (stated in 22 or the issue).
@@ -27,6 +29,7 @@ Tracking: GitHub Issues (one per `T-NNN`, label `milestone:Mx`, `size:S|M|L`, `a
 - [ ] Open questions resolved or a documented default chosen.
 
 ## 3. Definition of Done (DoD) — a task is Done only if
+
 - [ ] Code implements the linked requirements; docstrings reference IDs.
 - [ ] Tests written first or alongside; new/changed behaviour covered; coverage gates hold (18 §3).
 - [ ] `make lint typecheck test` green locally; CI green.
@@ -40,6 +43,7 @@ Tracking: GitHub Issues (one per `T-NNN`, label `milestone:Mx`, `size:S|M|L`, `a
 - [ ] Commits authored and committed solely by the repository owner's identity (see `AGENTS.md`).
 
 ## 4. Pull request rules
+
 - One task per PR; ≤ 400 changed lines (excluding generated/lock files) — split otherwise.
 - Title: Conventional Commit (`feat(selection): add straddle acquisition`), body via template: summary, linked `T-NNN`/requirements, test evidence, screenshots for UI, risk/rollback notes, checklist.
 - Draft PRs welcome for early feedback; CI must be green before review is requested.
@@ -47,6 +51,7 @@ Tracking: GitHub Issues (one per `T-NNN`, label `milestone:Mx`, `size:S|M|L`, `a
 ## 5. Code review guidelines
 
 ### 5.1 Reviewer checklist
+
 **Correctness** — does it meet the AC? edge cases (empty history, INVALID runs, d=1, NaNs)? concurrency/transactions correct?
 **Design** — respects layering (16 §2) and ports; SOLID (34 §2); no leaking ORM/DTO into domain; small cohesive functions.
 **Config** — no magic numbers/paths/URLs; defaults documented; secrets as `SecretStr`.
@@ -59,16 +64,21 @@ Tracking: GitHub Issues (one per `T-NNN`, label `milestone:Mx`, `size:S|M|L`, `a
 **Docs** — updated where behaviour changed; ADR if a decision changed.
 
 ### 5.2 Review etiquette
+
 Comment on code, not people; label comments `blocking:`, `suggestion:`, `nit:`, `question:`; approve when only nits remain. Authors respond to every comment (fix or explain). AI-generated code is reviewed exactly like human code — including running it.
 
 ### 5.3 Review SLA (self-managed project)
+
 Reviews within 48 h; stale PRs (> 7 days) are closed or rebased.
 
 ## 6. Branching & merging
+
 Trunk-based: short-lived branches off `main`, squash merge, delete branch after merge. Release tags from `main` (33). Hotfix: `fix/…` branch → PR → patch release.
 
 ## 7. RFC process (for larger changes)
+
 Use [templates/rfc-template.md](templates/rfc-template.md) for anything that adds a module, changes a public interface/schema, adds a dependency of note, or changes evaluation methodology. Flow: draft RFC PR in `docs/rfc/NNNN-title.md` → discussion → decision recorded as ADR → implementation tasks added to 22.
 
 ## 8. Templates
+
 - [ADR template](templates/adr-template.md) · [RFC template](templates/rfc-template.md) · [Task template](templates/task-template.md) · [Bug report template](templates/bug-report-template.md) · PR template in `.github/PULL_REQUEST_TEMPLATE.md`.

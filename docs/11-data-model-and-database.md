@@ -3,6 +3,7 @@
 > Related: [ADR-0007](adr/ADR-0007-postgresql-store-and-job-queue.md) · [ADR-0008](adr/ADR-0008-artifact-storage-local-content-addressed.md) · [05 §9](05-module-detailed-design.md#9-storage--roboprobestore) · [12 API](12-api-specification.md)
 
 ## 1. Principles
+
 - PostgreSQL 17 is the **system of record** and the **job queue**; large data (traces, bags, figures) lives in the artefact store, referenced by SHA-256.
 - UUIDv7 primary keys (time-ordered; generated in Python with `uuid6`/`uuid_utils`, column type `uuid`).
 - `timestamptz` everywhere (UTC). Soft enums via `CHECK` constraints (easier migrations than PG enums).
@@ -356,6 +357,7 @@ FROM workers w
 WHERE r.worker_id = w.id AND r.status IN ('CLAIMED','RUNNING')
   AND w.last_heartbeat < now() - make_interval(secs => :heartbeat_timeout_s);
 ```
+
 After each state-changing transaction: `INSERT INTO events …; NOTIFY roboprobe_events, '<event id>'`
 (outbox pattern: the API's listener reads new rows by id, so a missed NOTIFY is recovered by polling `id > last_id`).
 
@@ -381,7 +383,8 @@ stateDiagram-v2
 ## 6. Artefact store
 
 ### 6.1 Layout (`ARTIFACT_ROOT`, default `./data/artifacts`)
-```
+
+```text
 artifacts/
   sha256/ab/cd/abcdef…(full hash).<ext>        # content-addressed blobs (immutable)
   runs/<campaign_id>/<run_id>/                  # human-browsable symlinks to blobs
@@ -392,6 +395,7 @@ artifacts/
 ```
 
 ### 6.2 Trace Parquet schema (`trace_schema_version = 1`, zstd compression)
+
 | Column | Type | Unit |
 |--------|------|------|
 | `t` | float64 | s |
@@ -404,18 +408,23 @@ artifacts/
 | `roll`, `pitch` | float64 | rad |
 | `nav_status` | int8 | enum (05 §1) |
 | `rtf` | float32 | – |
+
 File-level metadata: `run_id`, `backend`, `trace_schema_version`, `goal_x`, `goal_y`, `sample_hz`.
 
 ## 7. Retention & size estimates
+
 | Item | Size | 1 000-run campaign |
 |------|------|--------------------|
 | Run row + oracle rows | ~3 KB | 3 MB |
 | Trace (120 s @ 20 Hz) | ~80 KB | 80 MB |
 | MCAP bag (failures only) | 5–30 MB | 0.5–3 GB (if 10 % fail) |
+
 Retention policy configurable: `storage.retention.bags_days` (default 30), `storage.retention.keep_failure_bags` (true).
+
 `roboprobe gc` deletes unreferenced blobs.
 
 ## 8. Migrations & versioning
+
 - Alembic `env.py` reads `ROBOPROBE_DATABASE_URL`; naming convention for constraints set in `MetaData(naming_convention=…)` so autogenerate is stable.
 - Each migration: reviewed SQL, `upgrade()` and `downgrade()`, a migration test (upgrade → downgrade → upgrade on an empty DB and on a seeded fixture DB).
 - JSON payload versions (`scenario schema_version`, `analysis_schema_version`, `trace_schema_version`) are migrated lazily by readers with explicit upcasters in `roboprobe.store.upcasters`.

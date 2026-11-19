@@ -11,9 +11,11 @@
 |------|-------|---------------|-------------|----------|
 | **Service settings** | per process / deployment | `roboprobe.core.settings` (`pydantic-settings`) | env vars, `.env`, `roboprobe.toml` | DB URL, ports, worker concurrency, timeouts, paths |
 | **Domain configuration** | per campaign / experiment | Pydantic models in domain packages (`OracleThresholds`, `ProbeParams`, …) | YAML files in `configs/`, API payloads; **snapshotted** into DB + manifest | oracle thresholds, strategy hyper-parameters, analysis weights |
+
 Service settings provide *defaults* for domain configuration (`defaults.oracles.*`); a campaign may override them; the resolved values are frozen into the campaign row (`oracle_config`, `strategy_params`).
 
 ## 2. Sources & precedence (highest first)
+
 1. CLI flags (`--budget`, `--workers`, …)
 2. Environment variables: prefix `ROBOPROBE_`, nested delimiter `__` (e.g. `ROBOPROBE_RUNNER__TICK_INTERVAL_S=0.5`)
 3. `.env` file in the working directory (git-ignored; template `.env.example`)
@@ -23,6 +25,7 @@ Service settings provide *defaults* for domain configuration (`defaults.oracles.
 `roboprobe config show [--sources]` prints the resolved tree and which source set each value; secrets are masked.
 
 Implementation notes (`roboprobe.core.settings`, T-003a):
+
 - `ROBOPROBE_CONFIG_FILE` and `ROBOPROBE_SECRETS_DIR` locate the other sources and are therefore read from the
   process environment only (not from `.env` or the TOML file).
 - Recognised secret files: `db_password` (sets `database.password_file`) and `api_token` (sets `api.token`).
@@ -72,7 +75,9 @@ edit the field descriptions in `backend/src/roboprobe/core/settings/`, never the
 fails on drift. `.env.example` and `roboprobe.example.toml` are generated the same way.
 
 <!-- BEGIN GENERATED: config-tables -->
+
 ### 4.1 Core & database
+
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
 | `env` | enum: `local` / `ci` / `lab` / `prod` | `local` | `ROBOPROBE_ENV` | Deployment environment. |
@@ -83,6 +88,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `database.notify_channel` | str | `roboprobe_events` | `ROBOPROBE_DATABASE__NOTIFY_CHANNEL` | PostgreSQL LISTEN/NOTIFY channel for live events. |
 
 ### 4.2 Storage
+
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
 | `storage.artifact_root` | Path | `data/artifacts` | `ROBOPROBE_STORAGE__ARTIFACT_ROOT` | Root directory of run artefacts [path]. |
@@ -93,6 +99,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `storage.backend` | str | `local` | `ROBOPROBE_STORAGE__BACKEND` | Artifact store plugin key in the `roboprobe.stores` entry-point group. |
 
 ### 4.3 API
+
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
 | `api.host` | str | `127.0.0.1` | `ROBOPROBE_API__HOST` | Bind address; any non-loopback address requires `api.token`. |
@@ -107,6 +114,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `api.idempotency_ttl_s` | int | `86400` | `ROBOPROBE_API__IDEMPOTENCY_TTL_S` | Retention of idempotency keys [s]. |
 
 ### 4.4 Runner (orchestrator) & worker
+
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
 | `runner.tick_interval_s` | float | `1.0` | `ROBOPROBE_RUNNER__TICK_INTERVAL_S` | Campaign loop tick [s]. |
@@ -136,6 +144,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `worker.health_port` | int | `9101` | `ROBOPROBE_WORKER__HEALTH_PORT` | Internal `/healthz` + metrics port. |
 
 ### 4.5 Backends
+
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
 | `backends.kinematic2d.dt` | float | `0.05` | `ROBOPROBE_BACKENDS__KINEMATIC2D__DT` | Integration time step [s]. |
@@ -162,6 +171,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `backends.gazebo_nav2.perception_model_file` | Path | `configs/perception/oakd_lowlight_v1.yaml` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__PERCEPTION_MODEL_FILE` | Perception degradation constants (docs/06 §3.3) [path]. |
 
 ### 4.6 Oracles (`oracles.*`, defaults for campaigns) — see 08 §4
+
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
 | `oracles.clear.d_norm` | float | `0.5` | `ROBOPROBE_ORACLES__CLEAR__D_NORM` | Clearance normaliser [m]. |
@@ -186,6 +196,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `oracles.infra.spawn_tolerance_m` | float | `0.2` | `ROBOPROBE_ORACLES__INFRA__SPAWN_TOLERANCE_M` | Allowed deviation of the spawn pose [m]. |
 
 ### 4.7 Selection defaults (`selection.*`) — see 07 §6.3
+
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
 | `selection.probe.n0_fraction` | float | `0.1` | `ROBOPROBE_SELECTION__PROBE__N0_FRACTION` | Warm-up share of the budget [0-1]. |
@@ -214,6 +225,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `selection.propose_timeout_s` | float | `10.0` | `ROBOPROBE_SELECTION__PROPOSE_TIMEOUT_S` | Time limit for `propose` before falling back [s]. |
 
 ### 4.8 Analysis & risk
+
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
 | `analysis.feature_weights.param` | float | `1.0` | `ROBOPROBE_ANALYSIS__FEATURE_WEIGHTS__PARAM` | Scenario-parameter block weight. |
@@ -238,6 +250,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `risk.volume_samples` | int | `8192` | `ROBOPROBE_RISK__VOLUME_SAMPLES` | Monte-Carlo samples for region volume estimates. |
 
 ### 4.9 Experiments
+
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
 | `experiments.default_seeds` | int | `30` | `ROBOPROBE_EXPERIMENTS__DEFAULT_SEEDS` | Seeds per strategy and design. |
@@ -250,6 +263,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `experiments.coverage_bins` | int | `5` | `ROBOPROBE_EXPERIMENTS__COVERAGE_BINS` | Bins per axis for coverage metrics. |
 
 ### 4.10 Logging & observability
+
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
 | `logging.level` | enum: `DEBUG` / `INFO` / `WARNING` / `ERROR` / `CRITICAL` | `INFO` | `ROBOPROBE_LOGGING__LEVEL` | Minimum log level. |
@@ -258,9 +272,11 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `observability.metrics_enabled` | bool | `true` | `ROBOPROBE_OBSERVABILITY__METRICS_ENABLED` | Expose Prometheus metrics. |
 | `observability.otlp_endpoint` | AnyHttpUrl? | – | `ROBOPROBE_OBSERVABILITY__OTLP_ENDPOINT` | OTLP collector URL; tracing is off when unset. |
 | `observability.service_name` | str? | – | `ROBOPROBE_OBSERVABILITY__SERVICE_NAME` | Service name in logs/traces; derived per process (`roboprobe-api`, ...). |
+
 <!-- END GENERATED -->
 
 ### 4.11 Web (runtime `config.json`, served by nginx from env)
+
 | Key | Env | Default |
 |-----|-----|---------|
 | `apiBaseUrl` | `ROBOPROBE_WEB_API_BASE_URL` | `/api/v1` (proxied) |
@@ -276,9 +292,11 @@ Build/dev-time variables (Vite, `web/.env.example`; read in `web/vite.config.ts`
 | `VITE_API_PROXY_TARGET` | `http://127.0.0.1:8000` | `pnpm --dir web dev` only: origin that `/api/*` requests are proxied to |
 
 ### 4.12 Compose-level variables (`.env`)
+
 `ROBOPROBE_IMAGE_TAG` (dev), `ROBOPROBE_API_PORT` (8000), `ROBOPROBE_WEB_PORT` (8080), `ROBOPROBE_DB_NAME`/`ROBOPROBE_DB_USER` (roboprobe), `ROBOPROBE_K2D_REPLICAS` (2).
 
 ## 5. Example `roboprobe.toml`
+
 ```toml
 env = "local"
 
@@ -300,6 +318,7 @@ e_max = 0.5
 ```
 
 ## 6. Rules for contributors
+
 1. A new tunable ⇒ new settings/params field with type, default, unit in the description, validation (`Field(gt=0)` …), and doc regeneration.
 2. Never read `os.environ` outside `roboprobe.core.settings`.
 3. Never put secrets in TOML/YAML committed to git; use `SecretStr` + env/secret file.

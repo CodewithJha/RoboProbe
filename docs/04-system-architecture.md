@@ -65,6 +65,7 @@ flowchart LR
     INFRA -.->|"implements"| PORTS
     DOM --> P4
 ```
+
 Swapping any adapter (simulator, database/queue, artefact store) or adding a plugin touches only the
 `INFRA` box and the composition root; domain and application code are unchanged.
 
@@ -274,7 +275,9 @@ with a `DATABASE_URL` and an artefact sink (rsync/S3-compatible MinIO optional, 
 | S3 shared artefacts | `storage.backend=s3` (MinIO adapter) | new adapter (plugin), no core change |
 | S4 cluster | same images on Kubernetes; Postgres managed/operator | deployment manifests only (future RFC) |
 | S5 very large n | sparse/variational GP or local GPs in a new `Strategy` | new strategy plugin |
+
 Queue semantics (SKIP LOCKED) and stateless workers make S1–S4 linear in worker count until the
+
 database becomes the bottleneck (far beyond 100 workers at ~1 run/min each).
 
 ## 11. Cross-cutting concepts

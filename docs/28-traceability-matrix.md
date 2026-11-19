@@ -53,11 +53,13 @@
 | NFR-OBS-001/002 | 21 §5 | log schema + metrics tests | PR |
 
 ## 3. Backward traceability rule
+
 Every test, module and task must reference at least one requirement ID or ADR. Code without a
 requirement is either (a) infrastructure covered by an ADR/NFR, or (b) scope creep to be removed or
 proposed via RFC.
 
 ## 4. Use cases → requirements
+
 | UC | Requirements |
 |----|-------------|
 | UC-01 | FR-SCN-001/002/006 |

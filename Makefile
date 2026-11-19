@@ -15,9 +15,10 @@ PNPM        ?= pnpm
 WEB_DIR     ?= web
 # cd (not --dir) so corepack resolves the pnpm version pinned in web/package.json.
 PNPM_WEB    := cd $(WEB_DIR) && $(PNPM)
+DOCS_CHECKS ?=
 
 .DEFAULT_GOAL := help
-.PHONY: help setup lock lint format typecheck test test-fast test-cov pre-commit clean \
+.PHONY: help setup lock lint format typecheck test test-fast test-cov pre-commit docs-check clean \
 	config-docs config-docs-check
 
 help: ## List available targets
@@ -61,6 +62,9 @@ test-cov: ## Default pytest run with the coverage gate from docs/18 §3 (backend
 
 pre-commit: ## Run every pre-commit hook on the whole repository
 	$(UV_RUN) pre-commit run --all-files
+
+docs-check: ## Docs gate: markdownlint, Mermaid render, links, ADR index (DOCS_CHECKS="links" to subset)
+	scripts/check_docs.sh $(DOCS_CHECKS)
 
 clean: ## Remove caches and build artefacts
 	rm -rf $(BACKEND_DIR)/.pytest_cache $(BACKEND_DIR)/.mypy_cache $(BACKEND_DIR)/.ruff_cache \

@@ -155,4 +155,4 @@ inside node labels.
 3. Requirement IDs are never reused. A removed requirement is marked `~~FR-XXX-NNN~~ (withdrawn: reason)`.
 4. The traceability matrix in 02 §7 must stay consistent with 22.
 
-_Last updated: 2026-11-19 by Priyanshu Jha._
+*Last updated: 2026-11-19 by Priyanshu Jha.*

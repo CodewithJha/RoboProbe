@@ -3,6 +3,7 @@
 > Related: [31 Threat model](31-threat-model.md) · [ADR-0014](adr/ADR-0014-seeding-and-provenance.md) · [34 §6 Logging standards](34-design-principles-patterns-and-conventions.md) · [30 Runbook](30-operations-runbook.md)
 
 ## 1. Security controls (summary; analysis in 31)
+
 | Control | Implementation |
 |---------|---------------|
 | Network exposure | API/web bind `127.0.0.1` by default; Postgres not published outside compose network except `dev` profile |
@@ -16,6 +17,7 @@
 | Web | CSP `default-src 'self'`, no inline scripts, CORS allow-list, `X-Content-Type-Options`, `Referrer-Policy` |
 
 ## 2. Reproducibility principles
+
 1. Everything that influences a run is either in the scenario, the seed, the config snapshot or a versioned artefact.
 2. Randomness only through injected generators derived from the seed tree.
 3. Every run carries a provenance manifest; every report embeds the manifests of the runs it shows.
@@ -34,9 +36,11 @@ flowchart TD
     RN --> SIM["simulator seed (Gazebo --seed, ROS node params)"]
     SS --> ANA["analysis stream<br/>key: analysis/n_obs"]
 ```
+
 `derive_seed(root: int, *path: str | int) -> int`: `SeedSequence(root, spawn_key=tuple(stable_hash(p) for p in path)).generate_state(1, np.uint64)[0] & (2**63-1)`, `stable_hash` = first 4 bytes of SHA-256 as int (never Python `hash`). Experiment seed `k` → `campaign_seed = derive_seed(experiment_seed, "rep", k)` (common random numbers).
 
 ## 4. Provenance manifest (`manifest.json`, `manifest_schema_version: 1`)
+
 ```json
 {
   "manifest_schema_version": 1,
@@ -55,14 +59,17 @@ flowchart TD
   "timing": {"wall_s": 96.2, "sim_s": 58.4, "rtf_mean": 0.98}
 }
 ```
+
 Host names are hashed (privacy when sharing bundles).
 
 ## 5. Observability
 
 ### 5.1 Logs
+
 JSON lines via structlog to stdout (Docker collects); fields: `ts` (UTC ISO), `level`, `logger`, `event`, `service`, `version`, `campaign_id`, `run_id`, `worker_id`, `trace_id`, plus event-specific keys. Event names are dotted and stable (`run.claimed`, `episode.launch_failed`, `selector.fallback`) — catalogue in 34 §6. Episode subprocess logs are captured to the `episode.log` artefact, not to the main log stream.
 
 ### 5.2 Metrics (Prometheus, `/metrics` on API; workers/orchestrator expose on an internal port)
+
 | Metric | Type | Labels |
 |--------|------|--------|
 | `roboprobe_runs_total` | counter | backend, verdict, primary_failure |
@@ -74,13 +81,17 @@ JSON lines via structlog to stdout (Docker collects); fields: `ts` (UTC ISO), `l
 | `roboprobe_episode_rtf` | histogram | backend |
 | `roboprobe_infra_errors_total` | counter | backend, reason |
 | `roboprobe_api_request_duration_seconds` | histogram | route, method, status |
+
 Optional `observability` compose profile ships Prometheus + Grafana with a provisioned dashboard (`docker/observability/`).
 
 ### 5.3 Tracing (optional)
+
 OpenTelemetry SDK with OTLP exporter disabled by default (`observability.otlp_endpoint` unset). Spans: `campaign.tick`, `strategy.propose`, `run.execute` (child spans `materialize`, `episode`, `judge`, `persist`). `trace_id` propagated into run rows' log context.
 
 ### 5.4 Health
+
 `/health/live` (process up), `/health/ready` (DB reachable, migrations at head, artefact root writable). Worker health = heartbeat age; orchestrator health = last tick age (`/healthz` internal).
 
 ### 5.5 Alerts (in-app, no paid alerting)
+
 SSE `alert` events + banner: `INFRA_UNHEALTHY` (auto-pause), `NO_WORKERS` (campaign RUNNING but no worker for backend for 60 s), `DISK_LOW` (artefact volume < `storage.min_free_gb`), `GP_FALLBACK_REPEATED` (≥ 3 consecutive fallbacks).

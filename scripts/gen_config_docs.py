@@ -244,7 +244,7 @@ def render_tables(
     aliases = {".".join(path): name for name, path in ENV_ALIASES.items()}
     lines: list[str] = []
     for heading, names in sections:
-        lines += [f"### {heading}", "| Key | Type | Default | Env var | Description |"]
+        lines += [f"### {heading}", "", "| Key | Type | Default | Env var | Description |"]
         lines.append("|-----|------|---------|---------|-------------|")
         for name in names:
             for field in _fields_of(root, name):
@@ -339,7 +339,7 @@ def replace_block(text: str, block: str) -> str:
         msg = f"markers {BEGIN_MARKER!r} / {END_MARKER!r} not found in order"
         raise ValueError(msg)
     head = text[: start + len(BEGIN_MARKER)]
-    return f"{head}\n{block.rstrip()}\n{text[end:]}"
+    return f"{head}\n\n{block.strip()}\n\n{text[end:]}"
 
 
 def _renderers(

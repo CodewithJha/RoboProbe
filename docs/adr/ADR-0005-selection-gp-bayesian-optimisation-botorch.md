@@ -8,12 +8,15 @@
 | Supersedes / Superseded by | – |
 
 ## Context
+
 The concept allows RL, Bayesian optimisation, active learning or other adaptive methods. Our scenarios are static, episode-level vectors in d = 6–8 with budgets of 100–500 expensive, noisy evaluations. We need failures fast, *diverse* failures, and a calibrated uncertainty map.
 
 ## Decision
+
 Use a **Gaussian-process surrogate on continuous robustness ρ** (BoTorch `SingleTaskGP`, Matérn-5/2 ARD) with **qLogNEI** for initial falsification, **expected violation + diversity penalty** for mode search, **straddle** for boundary refinement, and local refinement around new modes — combined in the phased `S-PROBE` strategy (07 §6). Use BoTorch directly (not Ax) for custom acquisitions. Implement RL-based AST only as future work for time-varying disturbances.
 
 ## Alternatives considered
+
 | Option | Assessment |
 |--------|-----------|
 | Ax | Easier, but custom acquisitions/diversity are awkward; can wrap later |
@@ -24,6 +27,7 @@ Use a **Gaussian-process surrogate on continuous robustness ρ** (BoTorch `Singl
 | Neural surrogate | Data-hungry at n ≤ 500 |
 
 ## Consequences
+
 - + State-of-the-art sample efficiency in low d
 - + Same model gives the risk map (p_fail) — one model, two uses
 - + Explainable proposals (μ, σ, phase)
@@ -31,4 +35,5 @@ Use a **Gaussian-process surrogate on continuous robustness ρ** (BoTorch `Singl
 - − Hyper-parameters need validation (EXP-03 ablation)
 
 ## Verification / compliance
+
 Benchmark tests in 07 §9 and EXP-01..EXP-03 in 19.

@@ -1,0 +1,21 @@
+name: Set up lychee
+description: Install a pinned lychee link-checker release binary onto PATH.
+inputs:
+  version:
+    description: lychee release version (without the `lychee-v` prefix)
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        LYCHEE_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        dest="$RUNNER_TEMP/lychee-$LYCHEE_VERSION"
+        mkdir -p "$dest"
+        curl -sSfL "https://github.com/lycheeverse/lychee/releases/download/lychee-v${LYCHEE_VERSION}/lychee-x86_64-unknown-linux-gnu.tar.gz" \
+          | tar -xz -C "$dest"
+        bin="$(find "$dest" -type f -name lychee -perm -u+x | head -n 1)"
+        dirname "$bin" >>"$GITHUB_PATH"
+        "$bin" --version

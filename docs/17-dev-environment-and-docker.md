@@ -14,6 +14,7 @@
 Minimum hardware: 4 cores, 16 GB RAM, 25 GB free disk (Gazebo image ≈ 3–4 GB). No GPU required.
 
 ## 2. Prerequisites
+
 `git`, Docker Engine ≥ 24 + Compose v2, `uv` (installs Python 3.12 automatically), Node.js 24 LTS + `pnpm` (via `corepack enable`), `make`.
 
 ## 3. First-time setup (one command each)
@@ -28,6 +29,7 @@ open http://localhost:8080
 ```
 
 Native (no Docker) inner loop for core work:
+
 ```bash
 make db-up                                  # only postgres in Docker
 uv run roboprobe db upgrade
@@ -54,6 +56,7 @@ Health checks: postgres `pg_isready`; api `GET /health/ready`; workers expose `/
 Scaling: `docker compose up -d --scale worker-k2d=6` · Gazebo: `--profile gazebo up -d --scale worker-gazebo=2`.
 
 ### 4.1 Compose skeleton (illustrative; the real file is created in T-005)
+
 ```yaml
 name: roboprobe
 x-backend: &backend
@@ -124,12 +127,15 @@ volumes: {pgdata: {}}
 All images run as non-root, read-only root FS where possible, with OCI labels (`org.opencontainers.image.revision` = git SHA) used by provenance.
 
 ## 6. Running Gazebo visually (debugging)
+
 `make gz-debug RUN=<run_id>` re-materialises a run and launches Gazebo GUI + RViz in the container with X11/WSLg forwarding (`DISPLAY`, `/tmp/.X11-unix`). Not used in automated runs.
 
 ## 7. Useful make targets
+
 `setup, up, down, logs, ps, db-up, db-shell, migrate, test, test-fast, test-sim, lint, typecheck, fmt, web-dev, docs-check (markdownlint + mermaid + links), config-docs, demo, gz-build, gz-debug, clean`.
 
 ## 8. Troubleshooting (dev)
+
 | Symptom | Fix |
 |---------|-----|
 | `worker-gazebo` RTF < 0.5 | lower `ROBOPROBE_BACKENDS__GAZEBO_NAV2__MAX_PARALLEL_PER_HOST` to 1; close browsers; check `LIBGL_ALWAYS_SOFTWARE` |
@@ -137,4 +143,5 @@ All images run as non-root, read-only root FS where possible, with OCI labels (`
 | DDS discovery across workers | ensure unique `ROS_DOMAIN_ID` per slot and `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST` |
 | WSL2 out of memory | `.wslconfig` `memory=10GB`, `swap=8GB` |
 | Port already used | change `ROBOPROBE_API_PORT` / `ROBOPROBE_WEB_PORT` in `.env` |
+
 More in [30 Operations runbook](30-operations-runbook.md).

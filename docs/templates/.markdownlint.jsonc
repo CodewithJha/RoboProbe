@@ -1,0 +1,5 @@
+// Templates use angle-bracket placeholders such as <short title>, which markdownlint parses as inline HTML.
+{
+  "extends": "../../.markdownlint.jsonc",
+  "MD033": false
+}

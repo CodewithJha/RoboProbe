@@ -36,11 +36,13 @@ shape/pattern (○ pass, ✕ fail, △ uncertain hatching) so meaning never depe
 All text/background pairs meet WCAG 2.2 AA (4.5:1); verified by an automated contrast test on the token file.
 
 ### 1.2 Typography
+
 - UI: **IBM Plex Sans** (SIL OFL, self-hosted via `@fontsource`), sizes 12/14/16/20/28 px, line-height 1.45.
 - Data & ids: **IBM Plex Mono** for run ids, hashes, parameter values, code.
 - Numbers in tables use tabular figures (`font-variant-numeric: tabular-nums`).
 
 ### 1.3 Spacing, shape, motion
+
 - 4 px base unit; card padding 16 px; section gap 24 px.
 - Corners: 3 px (cards), 2 px (tags) — deliberately "paper-cut", not pill-shaped.
 - Shadows: none; elevation by a 1 px ink-tinted border + `--paper-raised`.
@@ -72,7 +74,8 @@ Routes (React Router): `/` Bench · `/campaigns/new` · `/campaigns/:id` (tabs: 
 ## 3. Screens
 
 ### 3.1 Bench (home) — FR-DSH-001
-```
+
+```text
 ┌──┬──────────────────────────────────────────────────────────────────────────┐
 │RP│  Bench                                             [ + New campaign ]   │
 │  │  ┌ Active ──────────────────────────────┐ ┌ Workbench ───────────────┐  │
@@ -84,16 +87,19 @@ Routes (React Router): `/` Bench · `/campaigns/new` · `/campaigns/:id` (tabs: 
 │  │  Recent cases: specimen tags  [FM-03 F-COL · speed↑ light↓ noise↑]      │
 └──┴──────────────────────────────────────────────────────────────────────────┘
 ```
+
 Margin rail icons: Bench, Campaigns, Trials, Spaces, Workbench, Settings; theme toggle at the bottom.
 
 ### 3.2 New campaign wizard — FR-DSH-001, US-002 (4 steps, all defaults pre-filled)
+
 1. **Space** — pick space + version; table of parameters with range sliders to *pin* values (FR-SCN-007); live dimension count.
 2. **Robot & backend** — SUT profile, backend (disabled if no worker online, with explanation), repeats.
 3. **Strategy** — card per strategy with a one-sentence plain-language description ("Learns where failures hide and probes there"), budget, batch size (default = online workers), seed (random default, editable). Advanced accordion: strategy params with validation from `/meta`.
 4. **Review** — YAML preview (copyable — equals the CLI config), estimated duration = budget × typical episode time / workers, "Start now" checkbox.
 
 ### 3.3 Campaign console (live) — FR-DSH-002, US-003, US-012, US-013
-```
+
+```text
 ┌──┬─────────────────────────────────────────────────────────────────────────────┐
 │  │ night-shift probe · S-PROBE · kinematic2d · seed 42   [Pause][Cancel][⋯]   │
 │  │ ┌ Progress ───────┐ ┌ Discovery curve (unique cases vs runs) ────────────┐ │
@@ -109,10 +115,12 @@ Margin rail icons: Bench, Campaigns, Trials, Spaces, Workbench, Settings; theme 
 │  │ Spine (left margin): one tick per run, coloured by verdict, click = jump  │
 └──┴─────────────────────────────────────────────────────────────────────────────┘
 ```
+
 "Why this scenario?" popover per entry: phase, predicted μ ± σ, acquisition value, nearest known case.
 Alert banner when `alert` SSE event arrives (e.g. INFRA_UNHEALTHY auto-pause).
 
 ### 3.4 Run entry (detail) — FR-DSH-005, US-007, US-017
+
 - Header: verdict notch, ρ, primary class, warnings, seed, scenario hash, worker, durations; actions: *Replay ×N*, *Export scenario*, *Open bag* (download), *Copy CLI command*.
 - **Parameter panel:** each parameter with value, unit, position within range (mini track) and delta from nominal.
 - **Top-down trajectory plot:** map underlay, ground-truth path (ink), estimated path (dashed accent), pallet rectangle, failure marker ✕ at `first_violation_t`, robot footprint ghosts every 2 s.
@@ -121,8 +129,10 @@ Alert banner when `alert` SSE event arrives (e.g. INFRA_UNHEALTHY auto-pause).
 - **Provenance drawer:** manifest JSON (pretty), artefact list with SHA-256.
 
 ### 3.5 Casebook (failure modes) — FR-DSH-003, US-004, US-005, US-018
+
 Grid of **case cards**:
-```
+
+```text
 ┌ FM-03 ─────────────────────────── ✕ F-COL · 23 runs ┐
 │ "dark-fast-noisy collision"            [rename ✎]   │
 │ speed      ├──────────[████]┤  0.38–0.50 m/s        │
@@ -134,11 +144,13 @@ Grid of **case cards**:
 │ [Medoid run] [Minimal scenario] [Replay ×5] [Export] │
 └──────────────────────────────────────────────────────┘
 ```
+
 Status chip per case: open / accepted / fixed / duplicate. Side panel "Insights": SHAP importance bars,
 interaction heatmap (parameter × parameter), GP lengthscale comparison, classifier CV AUC with
 confidence label.
 
 ### 3.6 Risk atlas — FR-DSH-004, US-006
+
 - Left: **pair matrix** — `d×d` small multiples (upper triangle) of `p_fail` slices; click to enlarge.
 - Main: enlarged slice heatmap (`p_fail` colour ramp from `--risk-safe` through `--risk-uncertain` to `--risk-failure`, with hatching for UNCERTAIN), evaluated points (○/✕), contour line at `p_fail = 0.5`; axes in physical units (log axis for illuminance).
 - Anchor selector: nominal or any case medoid; sliders for the other parameters (re-query slice).
@@ -146,19 +158,23 @@ confidence label.
 - Click a cell → "Probe here" (manual run, UC-05).
 
 ### 3.7 Trials (experiments) & comparison — FR-DSH-006, US-010
+
 Design table (strategies × seeds × budget), progress per cell; comparison page: discovery curves with
 95 % bands per strategy, box plots per metric, statistics table (median, IQR, p, p_Holm, Â12 + verbal
 effect), "threats to validity" notes field.
 
 ### 3.8 Spaces, Workbench, Settings
+
 Spaces: list, YAML viewer with schema validation messages, parameter table. Workbench: workers (backend,
 status, current run, last heartbeat age, version). Settings: API token, theme, number formatting, SSE status.
 
 ### 3.9 Report export — FR-DSH-007
+
 Server-rendered HTML (12 `/reports`) styled with the same tokens + print stylesheet (A4, page breaks
 before each case, figure captions, run ids as footnotes).
 
 ## 4. Interaction & state rules
+
 - Data fetching: TanStack Query; cache keys mirror API paths; SSE events invalidate/patch matching queries (`run.finished` → prepend to stream + update counters without refetch).
 - Optimistic UI only for rename/label; lifecycle commands show pending state until the server confirms.
 - Empty states always explain the next action ("No cases yet — failures will appear here as the campaign runs").
@@ -167,7 +183,8 @@ before each case, figure captions, run ids as footnotes).
 - Keyboard: `g b` Bench, `g c` current campaign, `/` search, `j/k` move in entry stream, `r` replay selected run, `?` shortcuts dialog. All interactive elements reachable by Tab with the `--margin-line` focus ring.
 
 ## 5. Frontend architecture
-```
+
+```text
 web/src/
   app/            router.tsx, providers.tsx (QueryClient, Theme, SSE)
   api/            generated client (openapi-typescript) + typed hooks per resource
@@ -179,6 +196,7 @@ web/src/
   lib/            format.ts (units, durations), sse.ts, keyboard.ts
   test/           msw handlers, fixtures
 ```
+
 - Charts: Plotly.js (`react-plotly.js`, partial bundle: heatmap, scatter, box) for analytical charts; trajectory plot and condition strip as hand-written SVG components (small, testable).
 - Styling: CSS Modules + tokens (no CSS-in-JS runtime); Radix UI primitives (dialog, popover, tabs, tooltip) for accessibility.
 - Types: API types generated from `api/openapi.json` (`openapi-typescript`) — never hand-written.
@@ -196,6 +214,7 @@ web/src/
 | `Spine` | `runs: {ordinal, verdict}[]` | vertical tick timeline in margin rail; virtualised |
 
 ## 7. Usability acceptance
+
 - SC-6: a first-time user starts a campaign in ≤ 5 min (hallway test with 3 people, recorded in `docs/evidence/`).
 - Lighthouse accessibility ≥ 95; axe-core: 0 serious/critical violations on every route (Playwright).
 - Bundle: initial JS ≤ 350 KB gzip (Plotly lazy-loaded on Atlas/Insights/Trials only).

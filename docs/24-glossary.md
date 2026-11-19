@@ -66,7 +66,7 @@
 | **Sobol sequence** | Low-discrepancy quasi-random sequence. |
 | **SSE** | Server-Sent Events (one-way HTTP streaming). |
 | **STL** | Signal Temporal Logic — specification language with quantitative robustness semantics. |
-| **Straddle** | Level-set acquisition `1.96σ − |μ|`. |
+| **Straddle** | Level-set acquisition `1.96σ − \|μ\|`. |
 | **Strategy** | Test-selection algorithm `S-*` (07). |
 | **SUT / SUT profile** | System under test (robot stack) / its configuration set. |
 | **Surrogate** | Cheap model approximating the expensive simulator response (GP). |
