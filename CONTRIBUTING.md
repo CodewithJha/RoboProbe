@@ -50,7 +50,7 @@ make setup            # uv sync (Python 3.12), pnpm install, pre-commit install
 git switch main && git pull upstream main
 git switch -c feat/T-041-worker-heartbeat
 # write failing tests first, then the implementation
-make lint typecheck test      # must be green
+make lint typecheck test      # must be green (lint includes the architecture contracts)
 make docs-check               # if you touched docs (markdownlint, Mermaid, links)
 git commit                    # Conventional Commit message
 git push origin HEAD          # open a PR against CodewithJha/RoboProbe:main
@@ -81,6 +81,30 @@ Local stack: `make up` (Docker Compose `core` profile) · `make demo` (sample ca
 
 ## 7. Coding standards (summary)
 Python 3.12 · `ruff` + `mypy --strict` · Google docstrings with `Implements: <IDs>` · no hard-coded tunables (typed settings, `docs/27`) · injected RNG and clock · layered hexagonal architecture enforced by import-linter · TypeScript strict + ESLint/Prettier · tests first. Full details: [`docs/16`](docs/16-repository-structure-and-coding-standards.md), [`docs/34`](docs/34-design-principles-patterns-and-conventions.md).
+
+### Architecture contracts
+`make lint` runs [import-linter](https://import-linter.readthedocs.io/) (`lint-imports`) with the contracts in
+`backend/pyproject.toml` (`[tool.importlinter]`), which encode the layering of [`docs/16` §2](docs/16-repository-structure-and-coding-standards.md#2-layering-enforced):
+
+| Contract id | Rule |
+|-------------|------|
+| `layers` | `api \| cli` → `runner`, `experiments`, `reporting` → domain (`selection`, `oracles`, `analysis`, `risk`, `metrics`, `scenario`) → kernel (`core`, `geometry`, `perturbation`); never upwards. |
+| `domain-independence` | Domain and kernel never import `roboprobe.store`, `roboprobe.backends`, `roboprobe.api`, `roboprobe.bootstrap`, `fastapi`, `sqlalchemy` or `rclpy`, directly or indirectly. |
+| `adapters-wired-in-bootstrap` | Application and interface packages never *directly* import `roboprobe.store` / `roboprobe.backends`; concrete adapters are wired in `roboprobe.bootstrap`. |
+| `adapters-point-inward` | `store` and `backends` depend only on domain and kernel, never on application, interface or bootstrap. |
+| `services-never-import-bootstrap` | `runner`, `experiments` and `reporting` receive their dependencies by injection and never import `roboprobe.bootstrap`. |
+
+A failure names the broken contract and the offending import chain, e.g.
+
+```text
+Domain and kernel never depend on infrastructure, interfaces or frameworks BROKEN
+-   roboprobe.selection -> sqlalchemy (l.5)
+```
+
+Read it as *importer → imported (line)*. Fix the design rather than the contract: depend on a Protocol in
+`roboprobe.core` (or the module's `base.py`) and inject the concrete class from `roboprobe.bootstrap`.
+Changing a contract needs an ADR. To check a contract locally, temporarily add the forbidden import
+(e.g. `import sqlalchemy` in `roboprobe/selection/__init__.py`), run `make lint`, and revert.
 
 ## 8. Good first issues
 Look for the `good first issue` label. Good starting points that need little context:

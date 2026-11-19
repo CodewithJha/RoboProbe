@@ -97,6 +97,13 @@ flowchart TB
 1. *Layers:* `roboprobe.api | roboprobe.cli` → `roboprobe.runner | roboprobe.experiments | roboprobe.reporting` → `roboprobe.selection | roboprobe.oracles | roboprobe.analysis | roboprobe.risk | roboprobe.metrics | roboprobe.scenario` → `roboprobe.core`.
 2. *Independence:* domain packages may not import `roboprobe.store`, `roboprobe.backends`, `roboprobe.api`, `fastapi`, `sqlalchemy`, `rclpy`.
 3. *Only `bootstrap`* may import concrete adapters together with application services.
+4. *Adapters point inward:* `roboprobe.store` and `roboprobe.backends` may not import application, interface or bootstrap packages.
+5. *Services never import bootstrap:* `runner`, `experiments`, `reporting` get dependencies injected; only interfaces call composition roots.
+
+Notation: in contract 1, packages listed on the same layer may import each other, except the interface
+packages `api` and `cli`, which are independent. Kernel packages (`core`, `geometry`, `perturbation`) are bound by
+contract 2 as well. The executable form (ids `layers`, `domain-independence`, `adapters-wired-in-bootstrap`,
+`adapters-point-inward`, `services-never-import-bootstrap`) lives in `[tool.importlinter]` and is run by `make lint`.
 
 ## 3. Python standards
 - Formatting & lint: **ruff** (`ruff format`, line length 100; rules `E,F,W,I,N,UP,B,A,C4,SIM,RET,PTH,D,ANN,PL,RUF,S,TRY,ERA`; `D` with Google convention; `PLR2004` magic-value rule ON).
