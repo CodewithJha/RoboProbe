@@ -101,16 +101,19 @@ export function formatDuration(ms: number, options: Pick<FormatOptions, 'locale'
   if (!Number.isFinite(ms) || ms < 0) {
     return formatConfig.missing;
   }
-  if (ms < MS_PER_SECOND) {
-    return `${decimal(Math.round(ms), 0, options.locale)}${NBSP}ms`;
+  const wholeMs = Math.round(ms);
+  if (wholeMs < MS_PER_SECOND) {
+    return `${String(wholeMs)}${NBSP}ms`;
   }
-  if (ms < MS_PER_MINUTE) {
-    const seconds = decimal(ms / MS_PER_SECOND, formatConfig.secondsFractionDigits, options.locale);
-    return `${seconds}${NBSP}s`;
+  // Pick the band by the value as displayed, so 59,999 ms reads `1 m 00 s`, never `60 s`.
+  const scale = 10 ** formatConfig.secondsFractionDigits;
+  const shownSeconds = Math.round((ms / MS_PER_SECOND) * scale) / scale;
+  if (shownSeconds < SECONDS_PER_MINUTE) {
+    return `${decimal(shownSeconds, formatConfig.secondsFractionDigits, options.locale)}${NBSP}s`;
   }
   const pad = (n: number): string => String(n).padStart(TWO_DIGITS, '0');
   if (ms < MS_PER_HOUR) {
-    const totalSeconds = Math.floor(ms / MS_PER_SECOND);
+    const totalSeconds = Math.max(Math.floor(ms / MS_PER_SECOND), SECONDS_PER_MINUTE);
     const minutes = Math.floor(totalSeconds / SECONDS_PER_MINUTE);
     return `${String(minutes)}${NBSP}m ${pad(totalSeconds % SECONDS_PER_MINUTE)}${NBSP}s`;
   }
