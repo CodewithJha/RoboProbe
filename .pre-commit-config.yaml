@@ -58,3 +58,9 @@ repos:
         language: system
         files: ^web/
         pass_filenames: false
+      - id: config-docs
+        name: config reference up to date (docs/27, templates)
+        entry: make config-docs-check
+        language: system
+        files: ^(backend/src/roboprobe/core/settings/|scripts/gen_config_docs\.py$|docs/27-|\.env\.example$|roboprobe\.example\.toml$)
+        pass_filenames: false

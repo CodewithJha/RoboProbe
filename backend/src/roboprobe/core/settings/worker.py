@@ -26,6 +26,7 @@ class WorkerSettings(SettingsSection):
         default_factory=socket.gethostname,
         min_length=1,
         description="Worker id prefix; id = `<prefix>:<pid>:<slot>` (default: host name).",
+        json_schema_extra={"doc_default": "<hostname>"},
     )
     concurrency: int = Field(default=1, gt=0, description="Simulation slots per process.")
     poll_interval_s: float = Field(default=1.0, gt=0, description="Queue poll interval [s].")

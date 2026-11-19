@@ -1,3 +1,4 @@
+import re
 import shutil
 from pathlib import Path
 
@@ -124,11 +125,15 @@ def test_repository_templates_load_cleanly(settings_env: Path, template: str) ->
     load_settings()
 
 
-def test_example_toml_values_are_applied(settings_env: Path) -> None:
-    shutil.copy(REPO_ROOT / "roboprobe.example.toml", settings_env / "roboprobe.toml")
+def test_uncommented_example_toml_round_trips_defaults(settings_env: Path) -> None:
+    lines = (REPO_ROOT / "roboprobe.example.toml").read_text().splitlines()
+    key_line = re.compile(r"^# [a-z0-9_]+ = (?!\.\.\.)(?!\s*\()")
+    active = [line.removeprefix("# ") if key_line.match(line) else line for line in lines]
+    (settings_env / "roboprobe.toml").write_text("\n".join(active) + "\n")
     settings = load_settings()
-    assert settings.worker.concurrency == 2
-    assert settings.backends.gazebo_nav2.software_rendering is True
+    assert settings.model_dump(exclude={"worker": {"id_prefix"}}) == RoboProbeSettings().model_dump(
+        exclude={"worker": {"id_prefix"}}
+    )
 
 
 def test_alias_field_explained_by_alias(settings_env: Path) -> None:

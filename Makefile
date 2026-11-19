@@ -8,13 +8,17 @@ UV_RUN      := $(UV) run --directory $(BACKEND_DIR)
 PYTEST_ARGS ?=
 FAST_MARKERS ?= unit or property or contract
 XDIST_WORKERS ?= auto
+# Paths below are relative to BACKEND_DIR because Python tools run there.
+SCRIPTS_DIR ?= ../scripts
+CONFIG_DOCS_SCRIPT ?= $(SCRIPTS_DIR)/gen_config_docs.py
 PNPM        ?= pnpm
 WEB_DIR     ?= web
 # cd (not --dir) so corepack resolves the pnpm version pinned in web/package.json.
 PNPM_WEB    := cd $(WEB_DIR) && $(PNPM)
 
 .DEFAULT_GOAL := help
-.PHONY: help setup lock lint format typecheck test test-fast test-cov pre-commit clean
+.PHONY: help setup lock lint format typecheck test test-fast test-cov pre-commit clean \
+	config-docs config-docs-check
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -29,18 +33,19 @@ lock: ## Regenerate backend/uv.lock after changing dependencies (never hand-edit
 	$(UV) lock --directory $(BACKEND_DIR)
 
 lint: ## Ruff + import-linter contracts (backend); ESLint (0 warnings) + Prettier check (web)
-	$(UV_RUN) ruff check .
-	$(UV_RUN) ruff format --check .
+	$(UV_RUN) ruff check . $(SCRIPTS_DIR)
+	$(UV_RUN) ruff format --check . $(SCRIPTS_DIR)
 	$(UV_RUN) lint-imports
 	$(PNPM_WEB) lint
 
 format: ## Apply ruff fixes and formatting; Prettier for web
-	$(UV_RUN) ruff check --fix .
-	$(UV_RUN) ruff format .
+	$(UV_RUN) ruff check --fix . $(SCRIPTS_DIR)
+	$(UV_RUN) ruff format . $(SCRIPTS_DIR)
 	$(PNPM_WEB) format
 
-typecheck: ## mypy --strict on backend/src; tsc --build (strict) for web
+typecheck: ## mypy --strict on backend/src and scripts/; tsc --build (strict) for web
 	$(UV_RUN) mypy
+	$(UV_RUN) mypy $(SCRIPTS_DIR)
 	$(PNPM_WEB) typecheck
 
 test: ## Default pytest run (excludes `sim` and `slow`) and Vitest for web
@@ -61,3 +66,9 @@ clean: ## Remove caches and build artefacts
 	rm -rf $(BACKEND_DIR)/.pytest_cache $(BACKEND_DIR)/.mypy_cache $(BACKEND_DIR)/.ruff_cache \
 		$(BACKEND_DIR)/htmlcov $(BACKEND_DIR)/coverage.xml $(BACKEND_DIR)/.coverage $(BACKEND_DIR)/dist \
 		$(WEB_DIR)/dist $(WEB_DIR)/coverage
+
+config-docs: ## Regenerate docs/27 §4 tables, .env.example and roboprobe.example.toml from settings
+	$(UV_RUN) python $(CONFIG_DOCS_SCRIPT)
+
+config-docs-check: ## Fail (with a diff) if generated configuration docs/templates are stale
+	$(UV_RUN) python $(CONFIG_DOCS_SCRIPT) --check
