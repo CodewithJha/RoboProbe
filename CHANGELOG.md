@@ -7,6 +7,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- SUT profiles (T-016): `roboprobe.scenario.sut_profile.load_sut_profile()` (strict YAML, `schemas/sut_profile.schema.json`,
+  per-backend typed config, id = file name, `provisional` keys rejected when strict) with a stable `config_hash`;
+  `configs/sut_profiles/k2d_default.yaml` and `tb4_nav2_default.yaml`.
 - Compose `core` stack (T-005b): `docker/compose.yaml` with digest-pinned Postgres 17 (`db_password` Docker secret,
   `pg_isready` health check, `pgdata` volume), one-shot `migrate` on the backend image (placeholder `--version`), the
   `x-backend` anchor, and a `dev`-profile loopback forwarder publishing Postgres; `make up` / `down` / `db-up` / `logs` /

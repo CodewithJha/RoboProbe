@@ -24,7 +24,7 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 SCHEMAS_DIR = REPO_ROOT / "schemas"
 DOCS_DIR = REPO_ROOT / "docs"
 FIXTURES_DIR = Path(__file__).resolve().parents[2] / "fixtures" / "schemas"
-SCHEMA_NAMES = ("scenario_space", "scenario", "task", "campaign", "experiment")
+SCHEMA_NAMES = ("scenario_space", "scenario", "task", "campaign", "experiment", "sut_profile")
 SCHEMA_BASE_URI = "https://github.com/CodewithJha/RoboProbe/schemas/"
 
 

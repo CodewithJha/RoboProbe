@@ -101,6 +101,13 @@ Materialisation writes into `workdir/<run_id>/`:
 
 Friction and lighting are world properties ⇒ a fresh world load per run (no warm reset in MVP; see §8).
 
+**SUT profiles** (`configs/sut_profiles/<id>.yaml`, schema `schemas/sut_profile.schema.json`, loader
+`roboprobe.scenario.sut_profile.load_sut_profile`, T-016) select the robot stack: for `gazebo_nav2` the base
+`base_nav2_params`, the `speed_param_paths` that receive P1 and a nested `nav2_overrides` overlay; for `kinematic2d` the
+`model_file` and per-constant `gain_overrides`. `config_hash` = sha256 of the canonical JSON of backend + validated
+config, so only behaviour-relevant edits change it (docs/33 comparability rule). Values awaiting verification are
+listed under `provisional` and rejected by strict loading.
+
 ## 5. Episode lifecycle (Gazebo)
 
 ```mermaid
