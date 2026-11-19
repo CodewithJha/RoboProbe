@@ -259,6 +259,9 @@ class ScenarioSpace(_Frozen):
         """Decode a unit vector of shape ``(dim,)`` into values of the enabled parameters.
 
         Disabled parameters are omitted; they stay at :meth:`nominal_values`.
+
+        Raises:
+            roboprobe.core.errors.ValidationError: If ``u`` has the wrong shape or is not finite.
         """
         return normalize.from_unit(self.params, u)
 
