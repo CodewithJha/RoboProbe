@@ -104,7 +104,8 @@ Implementation notes (T-002a): the types live in the package `roboprobe.core.typ
 `__init__`). `Proposal.phase` is the `Phase` literal of doc 11 `runs.phase`; `NavStatus(IntEnum)` names the
 `nav_status` codes; `Observation`/`RunOutcome` enforce `robustness is None` ⇔ `verdict == INVALID`. The
 package also provides `Pose2D`, `TaskSpec` (with `GoalTolerance`, `TimeLimitSpec`, `InjectedObstacle`,
-`ObstaclePlacement`; fields per doc 06 §7) and `SutProfile` (doc 11 `sut_profiles`). `Trace` validates
+`ObstaclePlacement`; fields per doc 06 §7, plus optional `name`/`description` and the `provisional` field list
+added by T-027) and `SutProfile` (doc 11 `sut_profiles`). `Trace` validates
 dtypes, equal column lengths and a finite, strictly increasing `t`, and exposes its columns as read-only views.
 
 ## 2. M1 — Simulator backends — `roboprobe.backends`

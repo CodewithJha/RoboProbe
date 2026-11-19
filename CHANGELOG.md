@@ -7,6 +7,11 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 ### Added
 - Test infrastructure (T-017): Hypothesis `dev`/`ci`/`nightly` profiles (`HYPOTHESIS_PROFILE`), `tests/factories.py`
   domain builders, `tests/fakes/` package, PostgreSQL 17 fixtures (`ROBOPROBE_TEST_DATABASE_URL` or Testcontainers) with per-test rollback.
+- Task loader (T-027): `roboprobe.scenario.task` (`load_task` with TBD guard and strict mode for provisional
+  values, `load_nominal_path`, `time_limit_s`), `tasks/warehouse_delivery_v1.yaml` with a provisional goal and
+  nominal path, `scripts/check_no_tbd.py`, and a strict YAML/JSON-Schema document helper (safe tags only,
+  duplicate keys rejected, size limit, JSON-pointer errors). JSON Schemas ship inside the wheel as
+  `roboprobe/schemas/`.
 - JSON Schemas (T-020a): `schemas/{scenario_space,scenario,task,campaign,experiment}.schema.json`
   (Draft 2020-12, `additionalProperties: false`) with valid/invalid fixtures. The tests validate the examples
   in docs 06/07/12/19 directly from the Markdown sources.

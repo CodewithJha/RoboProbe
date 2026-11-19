@@ -30,6 +30,7 @@ from roboprobe.core.types.models import (
     Scenario,
     Severity,
     SutProfile,
+    TaskField,
     TaskSpec,
     TimeLimitSpec,
 )
@@ -56,6 +57,7 @@ __all__ = [
     "Scenario",
     "Severity",
     "SutProfile",
+    "TaskField",
     "TaskSpec",
     "TimeLimitSpec",
     "Trace",

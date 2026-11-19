@@ -102,6 +102,23 @@
           "$ref": "#/$defs/positive"
         }
       }
+    },
+    "provisional": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "Fields holding provisional values awaiting verification; rejected by the strict loader and `scripts/check_no_tbd.py --strict`.",
+      "items": {
+        "enum": [
+          "world",
+          "map",
+          "start",
+          "goal",
+          "goal_tolerance",
+          "nominal_path",
+          "injected_obstacles",
+          "time_limit"
+        ]
+      }
     }
   },
   "$defs": {
