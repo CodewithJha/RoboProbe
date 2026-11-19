@@ -21,6 +21,19 @@ Service settings provide *defaults* for domain configuration (`defaults.oracles.
 5. Secret files: `ROBOPROBE_SECRETS_DIR` (default `/run/secrets`) — e.g. file `db_password`
 6. Defaults in the settings classes
 `roboprobe config show [--sources]` prints the resolved tree and which source set each value; secrets are masked.
+
+Implementation notes (`roboprobe.core.settings`, T-003a):
+- Recognised secret files: `db_password` (sets `database.password_file`) and `api_token` (sets `api.token`).
+- Env aliases `ROBOPROBE_DATABASE_URL` / `ROBOPROBE_API_TOKEN` are read from the process environment; the
+  canonical `ROBOPROBE_DATABASE__URL` / `ROBOPROBE_API__TOKEN` wins when both are set. Empty values count as unset.
+- Unknown keys fail validation inside every section and at the top level of the TOML file and CLI overrides;
+  unknown top-level `ROBOPROBE_*` variables are ignored because `.env` also carries compose variables (§4.12).
+- A password already present in `database.url` takes precedence over `database.password_file`.
+- `worker.backend` is optional at load time and enforced by the worker entry point, so non-worker
+  processes (API, CLI) can load the same configuration.
+- Cross-field rules: `api.page_limit_default ≤ api.page_limit_max`, `runner.retry.base_delay_s ≤ max_delay_s`,
+  `selection.probe.weights` sum to 1, `risk.thresholds.safe < failure`,
+  `worker.heartbeat_interval_s < runner.heartbeat_timeout_s`, non-loopback `api.host` ⇒ `api.token`.
 Validation happens at process start; invalid config ⇒ exit code 2 with a list of errors (fail fast).
 
 ## 3. Settings model tree

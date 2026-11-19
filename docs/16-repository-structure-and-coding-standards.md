@@ -24,7 +24,7 @@ RoboProbe/
 │   ├── uv.lock
 │   ├── migrations/                # Alembic (env.py, versions/)
 │   ├── src/roboprobe/
-│   │   ├── core/                  # types.py, settings.py, errors.py, seeding.py, logging.py, clock.py
+│   │   ├── core/                  # types/, settings/ (one module per section), errors.py, seeding.py, logging.py, clock.py
 │   │   ├── bootstrap/             # composition roots: api.py, orchestrator.py, worker.py, cli.py
 │   │   ├── scenario/              # space.py, samplers.py, normalize.py, constraints.py, materialize.py
 │   │   ├── selection/             # base.py, baselines.py, surrogate.py, acquisition.py, bo.py, lse.py, probe.py, benchmarks.py, registry.py

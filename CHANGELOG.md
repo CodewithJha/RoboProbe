@@ -25,6 +25,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Error hierarchy (T-002b): `roboprobe.core.errors` with `RoboProbeError` and its subclasses (docs/34 §5),
   stable `ErrorCode` values including every API envelope code (docs/12 §1.1), picklable errors with
   read-only `context`, and `is_transient()` for retry decisions.
+- Typed layered settings (T-003a): `roboprobe.core.settings` package with the full docs/27 §4.1–4.10 tree,
+  `load_settings()` (CLI > env > `.env` > TOML > secret files > defaults, fail-fast `ConfigError` listing every
+  problem) and `explain_sources()`.
 - Open-source community files: `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SUPPORT.md`, `GOVERNANCE.md`,
   `CITATION.cff`, `.editorconfig`, `.github/CODEOWNERS`, issue forms (bug, feature, docs) and `config.yml`.
 ### Changed
