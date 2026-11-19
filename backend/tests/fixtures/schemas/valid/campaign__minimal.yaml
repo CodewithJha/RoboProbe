@@ -1,0 +1,5 @@
+schema_version: 1
+space: {id: warehouse_v1}
+backend: kinematic2d
+strategy: {id: S-RANDOM}
+budget: 50

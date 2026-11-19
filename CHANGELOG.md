@@ -5,6 +5,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ## [Unreleased]
 ### Added
+- JSON Schemas (T-020a): `schemas/{scenario_space,scenario,task,campaign,experiment}.schema.json`
+  (Draft 2020-12, `additionalProperties: false`) with valid/invalid fixtures. The tests validate the examples
+  in docs 06/07/12/19 directly from the Markdown sources.
 - Seed derivation (T-002c): `roboprobe.core.seeding` with `stable_hash`, `derive_seed`, `make_rng`,
   `random_campaign_seed` and the canonical stream keys (docs/21 §3); golden seeds pinned as a reproducibility contract.
 - Architecture contracts (T-009): five import-linter contracts (`layers`, `domain-independence`,

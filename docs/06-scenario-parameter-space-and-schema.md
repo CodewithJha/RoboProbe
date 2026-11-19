@@ -247,6 +247,11 @@ requires `low > 0`; unique ids; constraint expressions parse with the restricted
 (`ast`-based: numbers, parameter ids, `+ - * / ** < <= > >= == and or not`, `abs min max`; no attribute
 access or calls otherwise).
 
+The committed file `schemas/scenario_space.schema.json` is authoritative. It matches the listing above and
+additionally rejects unknown keys inside `prior` (typos such as `mena`) and puts `required: [type]` in the `if`
+clauses, so a missing `type` is reported once. Sibling schemas: `scenario`, `task`,
+`campaign` (also validates `CampaignCreate`, 12 §3.1) and `experiment` (19 §4).
+
 ## 6. Scenario & regression-scenario file (`schemas/scenario.schema.json`)
 
 ```yaml

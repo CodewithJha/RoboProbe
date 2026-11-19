@@ -1,0 +1,11 @@
+schema: experiment
+pointer: /metrics/0
+document:
+  schema_version: 1
+  id: exp_bad
+  backend: kinematic2d
+  space: {id: warehouse_v1}
+  strategies: [{id: S-RANDOM}]
+  seeds: {root: 1}
+  budget: 10
+  metrics: [first_failure]

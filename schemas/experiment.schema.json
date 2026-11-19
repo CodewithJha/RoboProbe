@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/CodewithJha/RoboProbe/schemas/experiment.schema.json",
+  "title": "RoboProbe experiment",
+  "description": "Strategy-comparison experiment: one campaign per strategy x seed (docs/19 §4, docs/14 §8). Campaign seed k = derive_seed(seeds.root, 'rep', k) (docs/21 §3).",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "backend",
+    "space",
+    "strategies",
+    "seeds",
+    "budget"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{2,40}$"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "description": {
+      "type": "string"
+    },
+    "backend": {
+      "$ref": "#/$defs/backend_id"
+    },
+    "space": {
+      "$ref": "#/$defs/space_ref"
+    },
+    "sut_profile_id": {
+      "$ref": "#/$defs/profile_id"
+    },
+    "strategies": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/experiment_strategy"
+      }
+    },
+    "seeds": {
+      "type": "object",
+      "required": [
+        "root"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "root": {
+          "$ref": "#/$defs/seed"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Defaults to experiments.default_seeds (config)."
+        }
+      }
+    },
+    "budget": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "repeats": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "batch_size": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "pins": {
+      "$ref": "#/$defs/pins"
+    },
+    "oracle_overrides": {
+      "$ref": "#/$defs/oracle_overrides"
+    },
+    "stop_rules": {
+      "$ref": "#/$defs/stop_rules"
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^MET-[0-9]{2}$"
+      },
+      "uniqueItems": true
+    },
+    "tags": {
+      "$ref": "#/$defs/tags"
+    }
+  },
+  "$defs": {
+    "space_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{2,40}$"
+    },
+    "space_ref": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/space_id"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{12}$",
+          "description": "space_version: first 12 hex chars of the canonical space hash (docs/06 §4)."
+        }
+      }
+    },
+    "param_id": {
+      "type": "string",
+      "pattern": "^[a-z]+\\.[a-z0-9_]+$",
+      "description": "Parameter id `<group>.<name>` (docs/06 §2)."
+    },
+    "param_value": {
+      "type": [
+        "number",
+        "string"
+      ]
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9223372036854775807,
+      "description": "63-bit seed (docs/21 §3)."
+    },
+    "strategy_id": {
+      "type": "string",
+      "pattern": "^S-[A-Z0-9]+(-[A-Z0-9]+)*$"
+    },
+    "backend_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "profile_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "pins": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/param_id"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/param_value"
+      }
+    },
+    "oracle_overrides": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": [
+            "number",
+            "boolean"
+          ]
+        }
+      },
+      "description": "Per-oracle threshold overrides, e.g. {loc: {e_max: 0.4}} (docs/08 §4)."
+    },
+    "stop_rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "All optional (docs/14 §4).",
+      "properties": {
+        "max_modes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "max_wall_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "max_consecutive_invalid": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "invalid_ratio": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "experiment_strategy": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/strategy_id"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Distinguishes variants of one strategy, e.g. ablations (docs/19 EXP-03)."
+        },
+        "params": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

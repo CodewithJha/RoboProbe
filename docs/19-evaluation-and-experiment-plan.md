@@ -48,7 +48,25 @@ Reference set `REF` (k2d): 20 000 scrambled-Sobol scenarios, seed 20261119, each
 | EXP-06 | gazebo_nav2 | – | replay of each EXP-04 mode medoid × 5 | – | – | ≈ 2 h | reproducibility H6 |
 | EXP-07 | kinematic2d | d=6 vs d=8; noise ×2 | RANDOM, PROBE | 30 | 300 | ≈ 2 h | scalability with dimension/noise |
 
-Experiment YAMLs: `configs/experiments/exp01_k2d_main.yaml` …, executed with `roboprobe experiment run`.
+Experiment YAMLs: `configs/experiments/exp01_k2d_main.yaml` …, executed with `roboprobe experiment run`;
+validated by `schemas/experiment.schema.json`. Example (EXP-01, abridged):
+
+```yaml
+schema_version: 1
+id: exp01_k2d_main
+name: kinematic2d main comparison (H1-H4)
+backend: kinematic2d
+space: {id: warehouse_v1}
+sut_profile_id: k2d_default
+strategies:
+  - {id: S-RANDOM}
+  - {id: S-SOBOL}
+  - {id: S-BO}
+  - {id: S-PROBE, params: {epsilon: 0.05}}
+seeds: {root: 20261119, count: 30}   # campaign seed k = derive_seed(root, "rep", k) (21 §3)
+budget: 200
+metrics: [MET-01, MET-02, MET-03]
+```
 
 ## 5. Statistical analysis protocol
 1. For each metric and each pair (S-PROBE vs X): two-sided **Mann–Whitney U** test, α = 0.05; **Holm–Bonferroni** correction over all pairs within a metric.

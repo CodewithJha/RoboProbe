@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/CodewithJha/RoboProbe/schemas/scenario.schema.json",
+  "title": "RoboProbe scenario / regression scenario",
+  "description": "A concrete scenario, e.g. exported from a run for regression CI (docs/06 §6).",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "space",
+    "values"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "kind": {
+      "const": "scenario"
+    },
+    "space": {
+      "$ref": "#/$defs/space_ref"
+    },
+    "values": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "$ref": "#/$defs/param_id"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/param_value"
+      }
+    },
+    "seed": {
+      "$ref": "#/$defs/seed"
+    },
+    "expect": {
+      "type": "object",
+      "required": [
+        "verdict"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "verdict": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "INVALID"
+          ]
+        },
+        "failure_class": {
+          "enum": [
+            "F-COL",
+            "F-NEAR",
+            "F-TIMEOUT",
+            "F-STUCK",
+            "F-LOC",
+            "F-PLAN",
+            "F-INST",
+            "F-OSC",
+            "F-INFRA"
+          ]
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_run": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "failure_mode": {
+          "type": "string"
+        },
+        "exported_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "space_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{2,40}$"
+    },
+    "space_ref": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/space_id"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{12}$",
+          "description": "space_version: first 12 hex chars of the canonical space hash (docs/06 §4)."
+        }
+      }
+    },
+    "param_id": {
+      "type": "string",
+      "pattern": "^[a-z]+\\.[a-z0-9_]+$",
+      "description": "Parameter id `<group>.<name>` (docs/06 §2)."
+    },
+    "param_value": {
+      "type": [
+        "number",
+        "string"
+      ]
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9223372036854775807,
+      "description": "63-bit seed (docs/21 §3)."
+    }
+  }
+}
