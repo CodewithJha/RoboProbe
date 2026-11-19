@@ -67,7 +67,7 @@ def write(tmp_path: Path, document: dict[str, Any] | str, name: str | None = Non
 def error_paths(exc: pytest.ExceptionInfo[errors.ValidationError]) -> list[str]:
     found = exc.value.context["errors"]
     assert isinstance(found, list)
-    return [e["path"] for e in found if isinstance(e, dict)]  # type: ignore[misc]
+    return [str(e["path"]) for e in found if isinstance(e, dict)]
 
 
 @pytest.mark.parametrize("path", sorted(PROFILES_DIR.glob("*.yaml")), ids=lambda p: p.stem)
@@ -138,7 +138,7 @@ def test_unknown_backend_is_rejected(tmp_path: Path) -> None:
     assert "/backend" in error_paths(exc)
 
 
-def test_unsupported_backend_without_schema_drift_guard(
+def test_backend_without_config_model_is_rejected(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(sut_profile, "PROFILE_CONFIGS", {})
