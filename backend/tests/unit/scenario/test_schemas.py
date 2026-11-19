@@ -191,6 +191,13 @@ def test_removing_a_required_field_fails_with_json_pointer(
     assert any(pointer(e) == expected and repr(field) in e.message for e in required_errors)
 
 
+def test_missing_parameter_type_reports_only_that_error() -> None:
+    space = copy.deepcopy(example("space-06-4"))
+    del space["parameters"][0]["type"]
+    messages = [e.message for e in errors("scenario_space", space)]
+    assert messages == ["'type' is a required property"]
+
+
 @pytest.mark.parametrize("key", DOC_EXAMPLES)
 def test_unknown_top_level_keys_are_rejected(key: str) -> None:
     document = example(key) | {"unexpected": True}

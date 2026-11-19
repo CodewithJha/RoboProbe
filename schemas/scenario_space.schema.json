@@ -160,7 +160,10 @@
                   "int"
                 ]
               }
-            }
+            },
+            "required": [
+              "type"
+            ]
           },
           "then": {
             "required": [
@@ -175,7 +178,10 @@
               "type": {
                 "const": "categorical"
               }
-            }
+            },
+            "required": [
+              "type"
+            ]
           },
           "then": {
             "required": [
