@@ -1,0 +1,6 @@
+# Performance and scientific-regression gates for tests/benchmark (docs/18 §5, §7).
+# Thresholds are configuration, not code: adjust them here with a recorded calibration run.
+
+raycast:
+  # NFR-PERF-001 budget for the kinematic2d lidar (T-030b): median time of one 180-beam cast.
+  lidar_180_beams_median_s: 0.0005

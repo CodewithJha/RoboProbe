@@ -18,6 +18,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   and `list()` feeds the `?` dialog.
 - Perturbation models (T-031a): `roboprobe.perturbation.lidar` (`apply_lidar_noise` P4, `apply_dropout` P8; pure,
   seeded, NumPy-only) and `roboprobe.perturbation.delay.CommandDelayBuffer` (P6 time-indexed FIFO), shared with the ROS nodes.
+- Ray casting (T-030b): `roboprobe.geometry.raycast` with `BeamSpec`, `GridRayCaster` and `cast` — vectorised
+  half-cell marching with exact cell-entry refinement, analytic rectangles (optionally ignored for the lidar), ranges
+  clipped to `[r_min, r_max]`; benchmark gate in `tests/benchmark/thresholds.yaml`.
 - SUT profiles (T-016): `roboprobe.scenario.sut_profile.load_sut_profile()` (strict YAML, `schemas/sut_profile.schema.json`,
   per-backend typed config, id = file name, `provisional` keys rejected when strict) with a stable `config_hash`;
   `configs/sut_profiles/k2d_default.yaml` and `tb4_nav2_default.yaml`.
