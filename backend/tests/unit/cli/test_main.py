@@ -6,6 +6,7 @@ import json
 from collections.abc import Callable
 from importlib.metadata import version
 from pathlib import Path
+from typing import get_args
 
 import pytest
 import typer
@@ -22,6 +23,7 @@ from roboprobe.cli.main import (
     exit_code_for,
 )
 from roboprobe.core import errors
+from roboprobe.core.settings.observability import LogLevel as SettingsLogLevel
 
 pytestmark = pytest.mark.unit
 
@@ -177,6 +179,10 @@ def test_output_json_escapes_non_ascii(capsys: pytest.CaptureFixture[str]) -> No
     out = capsys.readouterr().out
     assert out.isascii()
     assert json.loads(out) == {"label": "Lagerhalle Süd"}
+
+
+def test_cli_log_levels_match_the_settings_vocabulary() -> None:
+    assert {level.value for level in LogLevel} == set(get_args(SettingsLogLevel))
 
 
 def test_registered_groups_have_unique_names_and_appear_in_help() -> None:
