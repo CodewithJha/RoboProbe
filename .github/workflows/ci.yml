@@ -1,0 +1,178 @@
+# PR pipeline (doc 20 §1–§4, §8). Required checks on main (doc 20 §3): lint, test-backend (ubuntu-latest),
+# test-integration, test-web, build-web. Later tasks append their own jobs (append-only blocks).
+# Security: least-privilege token, no pull_request_target (doc 31 TM-11), third-party actions pinned by SHA.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "24"
+  ROBOPROBE_ENV: ci
+  HYPOTHESIS_PROFILE: ci
+  FORCE_COLOR: "1"
+  # Tier selection mirrors `make test-fast` (Makefile FAST_MARKERS).
+  FAST_MARKERS: unit or property or contract
+  # Every collected test must carry one of these tier markers (backend/pyproject.toml).
+  TIER_MARKERS: unit or property or contract or integration or benchmark or sim or slow
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: ./.github/actions/setup-web
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: ruff, ruff format, import-linter, ESLint, Prettier
+        run: make lint
+      - name: mypy --strict, tsc
+        run: make typecheck
+      - name: Every test has a tier marker
+        working-directory: backend
+        # pytest exits 5 when nothing is collected, which is the success case here.
+        run: |
+          set +e
+          uv run pytest --collect-only -q -m "not ($TIER_MARKERS)"
+          status=$?
+          if [ "$status" -ne 5 ]; then
+            echo "::error::tests without a tier marker (see list above); add pytestmark = pytest.mark.<tier>"
+            exit 1
+          fi
+
+  test-backend:
+    name: test-backend (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Restore Hypothesis example database
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: backend/.hypothesis
+          key: hypothesis-${{ matrix.os }}-${{ github.sha }}
+          restore-keys: hypothesis-${{ matrix.os }}-
+      - name: Unit, property and contract tests (coverage gate from backend/pyproject.toml)
+        working-directory: backend
+        run: >-
+          uv run pytest -m "$FAST_MARKERS" -n auto
+          --junitxml=test-results/junit-backend.xml
+          --cov --cov-report=xml:test-results/coverage.xml --cov-report=term
+      - name: Coverage summary
+        if: ${{ !cancelled() }}
+        working-directory: backend
+        run: uv run coverage report --format=markdown >>"$GITHUB_STEP_SUMMARY" || true
+      - name: Test summary
+        if: ${{ !cancelled() }}
+        uses: test-summary/action@37b508cfee6d4d080eedd00b5bb240a6a784a6a5 # v2.6
+        with:
+          paths: backend/test-results/junit-*.xml
+      - name: Upload reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-reports-${{ matrix.os }}
+          path: backend/test-results/
+          if-no-files-found: ignore
+
+  test-integration:
+    name: test-integration
+    needs: [lint, test-backend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: roboprobe
+          POSTGRES_PASSWORD: roboprobe-ci # throw-away service container, not a secret
+          POSTGRES_DB: roboprobe_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U roboprobe -d roboprobe_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      ROBOPROBE_TEST_DATABASE_URL: postgresql+psycopg://roboprobe:roboprobe-ci@localhost:5432/roboprobe_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Integration tests (PostgreSQL 17 service)
+        working-directory: backend
+        run: uv run pytest -m integration --junitxml=test-results/junit-integration.xml
+      - name: Test summary
+        if: ${{ !cancelled() }}
+        uses: test-summary/action@37b508cfee6d4d080eedd00b5bb240a6a784a6a5 # v2.6
+        with:
+          paths: backend/test-results/junit-*.xml
+      - name: Upload reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: integration-reports
+          path: backend/test-results/
+          if-no-files-found: ignore
+
+  test-web:
+    name: test-web
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-web
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Vitest with coverage (threshold in web/vite.config.ts)
+        working-directory: web
+        run: pnpm test:coverage --reporter=default --reporter=junit --outputFile.junit=test-results/junit-web.xml
+      - name: Test summary
+        if: ${{ !cancelled() }}
+        uses: test-summary/action@37b508cfee6d4d080eedd00b5bb240a6a784a6a5 # v2.6
+        with:
+          paths: web/test-results/junit-*.xml
+      - name: Upload reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: web-reports
+          path: |
+            web/test-results/
+            web/coverage/
+          if-no-files-found: ignore
+
+  build-web:
+    name: build-web
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-web
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: tsc -b && vite build
+        working-directory: web
+        run: pnpm build

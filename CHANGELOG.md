@@ -17,6 +17,10 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   `ScenarioSpace.from_yaml/from_text`) with schema plus semantic validation and JSON-pointer errors (`SPACE_INVALID`).
   The space version is a content hash that ignores comments and formatting. Ships `configs/scenario_spaces/warehouse_v1.yaml`
   (P1–P8, d = 6 by default, 8 with P7/P8 enabled).
+- CI pipeline (T-006a): `.github/workflows/ci.yml` with `lint` (ruff, mypy, import-linter, ESLint, Prettier, tsc and a
+  tier-marker guard), `test-backend` (ubuntu/macos, unit+property+contract with the coverage gate), `test-integration`
+  (PostgreSQL 17 service), `test-web` (Vitest + coverage) and `build-web`. Actions are pinned by SHA, with
+  least-privilege permissions, JUnit and coverage job summaries and artefacts; shared setup lives in `.github/actions/setup-{backend,web}`.
 - Test infrastructure (T-017): Hypothesis `dev`/`ci`/`nightly` profiles (`HYPOTHESIS_PROFILE`), `tests/factories.py`
   domain builders, `tests/fakes/` package, PostgreSQL 17 fixtures (`ROBOPROBE_TEST_DATABASE_URL` or Testcontainers) with per-test rollback.
 - Task loader (T-027): `roboprobe.scenario.task` (`load_task` with TBD guard and strict mode for provisional
