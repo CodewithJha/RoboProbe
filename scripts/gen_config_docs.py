@@ -72,7 +72,10 @@ SECTIONS: Sequence[tuple[str, Sequence[str]]] = (
     ("4.4 Runner (orchestrator) & worker", ("runner", "worker")),
     ("4.5 Backends", ("backends",)),
     ("4.6 Oracles (`oracles.*`, defaults for campaigns) — see 08 §4", ("oracles",)),
-    ("4.7 Selection defaults (`selection.*`) — see 07 §6.3", ("selection",)),
+    (
+        "4.7 Scenario & selection defaults (`scenario.*`, `selection.*`) — see 06, 07 §6.3",
+        ("scenario", "selection"),
+    ),
     ("4.8 Analysis & risk", ("analysis", "risk")),
     ("4.9 Experiments", ("experiments",)),
     ("4.10 Logging & observability", ("logging", "observability")),

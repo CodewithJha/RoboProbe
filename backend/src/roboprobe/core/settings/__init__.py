@@ -31,6 +31,7 @@ from roboprobe.core.settings.experiments import ExperimentSettings
 from roboprobe.core.settings.observability import LoggingSettings, ObservabilitySettings
 from roboprobe.core.settings.oracles import OracleThresholds
 from roboprobe.core.settings.runner import RunnerSettings
+from roboprobe.core.settings.scenario import ScenarioSettings
 from roboprobe.core.settings.selection import SelectionDefaults
 from roboprobe.core.settings.storage import StorageSettings
 from roboprobe.core.settings.worker import WorkerSettings
@@ -51,6 +52,7 @@ __all__ = [
     "RiskSettings",
     "RoboProbeSettings",
     "RunnerSettings",
+    "ScenarioSettings",
     "SelectionDefaults",
     "StorageSettings",
     "WorkerSettings",
@@ -92,6 +94,7 @@ class RoboProbeSettings(BaseSettings):
     runner: RunnerSettings = Field(default_factory=RunnerSettings)
     worker: WorkerSettings = Field(default_factory=WorkerSettings)
     backends: BackendsSettings = Field(default_factory=BackendsSettings)
+    scenario: ScenarioSettings = Field(default_factory=ScenarioSettings)
     selection: SelectionDefaults = Field(default_factory=SelectionDefaults)
     oracles: OracleThresholds = Field(default_factory=OracleThresholds)
     analysis: AnalysisSettings = Field(default_factory=AnalysisSettings)
