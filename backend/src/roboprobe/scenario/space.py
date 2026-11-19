@@ -24,6 +24,7 @@ Implements: FR-SCN-001, FR-SCN-002, PR-01
 from __future__ import annotations
 
 import ast
+import functools
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Annotated, Literal, Self, cast
@@ -240,9 +241,15 @@ class ScenarioSpace(_Frozen):
         """Nominal value of every parameter; disabled parameters are always held here."""
         return {spec.id: spec.nominal for spec in self.parameters}
 
-    def constraint_set(self) -> ConstraintSet:
-        """Compiled constraints; compile once and reuse it for batch checks."""
+    @functools.cached_property
+    def _constraint_set(self) -> ConstraintSet:
+        # Safe on a frozen model: constraints never change, and cached_property writes to the
+        # instance __dict__ directly (pydantic ignores it for fields, equality and dumps).
         return ConstraintSet(tuple(c.compile() for c in self.constraints))
+
+    def constraint_set(self) -> ConstraintSet:
+        """Compiled constraints (compiled once per space, then cached)."""
+        return self._constraint_set
 
     def to_unit(self, values: Mapping[str, object]) -> normalize.FloatArray:
         """Encode ``values`` as a unit vector of shape ``(dim,)`` (docs/06 §4.1).
