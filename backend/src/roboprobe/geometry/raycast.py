@@ -30,7 +30,7 @@ from typing import Final
 import numpy as np
 import numpy.typing as npt
 
-from roboprobe.geometry._arrays import POSE_DIM, FloatArray
+from roboprobe.geometry._arrays import POSE_DIM, FloatArray, rotation
 from roboprobe.geometry.distance import Rect
 from roboprobe.geometry.grid import OccupancyGrid
 
@@ -189,8 +189,7 @@ def cast(
 def _cast_rect(rect: Rect, origin: FloatArray, directions: FloatArray) -> FloatArray:
     """Analytic distance to a rectangle per beam (``inf`` if missed, ``0`` from inside)."""
     local_origin = rect.to_local(origin)
-    c, s = np.cos(rect.yaw), np.sin(rect.yaw)
-    local_dirs = directions @ np.array([[c, -s], [s, c]])
+    local_dirs = directions @ rotation(np.array([rect.yaw]))[0]
     half = np.array([rect.length, rect.width]) / 2
     return _slab_entry(local_origin, local_dirs, -half, half)
 
