@@ -18,6 +18,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   in `formatConfig`), and `web/src/lib/keyboard.ts` (`KeyboardManager` / `registerShortcut`) for single keys and `g b`
   chords. The chord timeout is set in `keyboardConfig`, form fields and contenteditable are ignored, conflicts are detected,
   and `list()` feeds the `?` dialog.
+- Trace Parquet I/O (T-018): `roboprobe.backends.trace_io` with `write_trace`/`read_trace` (schema v1, zstd, units
+  in field metadata, goal/meta as file metadata), `validate_trace` for sample-rate and gap checks, and an optional
+  `Trace.rtf` column. Adds the `pyarrow-stubs` dev dependency.
 - Perturbation models (T-031a): `roboprobe.perturbation.lidar` (`apply_lidar_noise` P4, `apply_dropout` P8; pure,
   seeded, NumPy-only) and `roboprobe.perturbation.delay.CommandDelayBuffer` (P6 time-indexed FIFO), shared with the ROS nodes.
 - Ray casting (T-030b): `roboprobe.geometry.raycast` with `BeamSpec`, `GridRayCaster` and `cast` — vectorised
@@ -75,7 +78,6 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   nominal path, `scripts/check_no_tbd.py`, and a strict YAML/JSON-Schema document helper (safe tags only,
   duplicate keys rejected, size limit, JSON-pointer errors). JSON Schemas ship inside the wheel as
   `roboprobe/schemas/`.
-
 - JSON Schemas (T-020a): `schemas/{scenario_space,scenario,task,campaign,experiment}.schema.json`
   (Draft 2020-12, `additionalProperties: false`) with valid/invalid fixtures. The tests validate the examples
   in docs 06/07/12/19 directly from the Markdown sources.
