@@ -187,3 +187,72 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Generated config reference and templates are up to date (T-003c)
         run: make config-docs-check
+
+  # --- Supply chain (T-006c; doc 20 §1/§7, doc 31 TM-10) ---
+  security:
+    name: security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PIP_AUDIT_VERSION: "2.10.1"
+      GITLEAKS_VERSION: "8.28.0" # keep in step with .pre-commit-config.yaml
+      AUDIT_FAIL_ON: high
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # gitleaks scans commits
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: ./.github/actions/setup-web
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Unit tests of the gate scripts
+        run: python3 -m unittest discover -s scripts/tests
+      - name: pip-audit (backend, locked versions)
+        run: |
+          req="$RUNNER_TEMP/requirements.txt"
+          # Strip local version labels (torch 2.x+cpu) so the upstream release is audited.
+          uv export --directory backend --frozen --all-extras --no-hashes --no-emit-project \
+            --format requirements-txt | sed -E 's/^([A-Za-z0-9._-]+==[^ ;+]+)\+[^ ;]+/\1/' >"$req"
+          # pip-audit exits 1 on any finding; check_audit.py applies the severity gate and ignore file.
+          uvx "pip-audit==${PIP_AUDIT_VERSION}" -r "$req" --disable-pip --no-deps \
+            --format json --output "$RUNNER_TEMP/pip-audit.json" || test -s "$RUNNER_TEMP/pip-audit.json"
+          python3 scripts/check_audit.py --pip-audit "$RUNNER_TEMP/pip-audit.json" --fail-on "$AUDIT_FAIL_ON"
+      - name: pnpm audit (web, production dependencies)
+        working-directory: web
+        run: |
+          pnpm audit --prod --json >"$RUNNER_TEMP/pnpm-audit.json" || test -s "$RUNNER_TEMP/pnpm-audit.json"
+          python3 ../scripts/check_audit.py --pnpm-audit "$RUNNER_TEMP/pnpm-audit.json" --fail-on "$AUDIT_FAIL_ON"
+      - name: gitleaks (PR commits; full history on main)
+        env:
+          LOG_OPTS: ${{ github.event_name == 'pull_request' && format('{0}..{1}', github.event.pull_request.base.sha, github.event.pull_request.head.sha) || '--all' }}
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" git --redact --no-banner --exit-code 1 --log-opts="$LOG_OPTS" .
+
+  license-check:
+    name: license-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      PIP_LICENSES_VERSION: "5.5.5"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: ./.github/actions/setup-web
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Licence reports
+        run: |
+          uvx "pip-licenses==${PIP_LICENSES_VERSION}" --python backend/.venv/bin/python --from=mixed \
+            --format=json --output-file "$RUNNER_TEMP/pip-licenses.json"
+          (cd web && pnpm licenses list --prod --json) >"$RUNNER_TEMP/pnpm-licenses.json"
+      - name: Every dependency licence is on scripts/allowed_licenses.txt
+        run: >-
+          python3 scripts/check_licenses.py
+          --pip-licenses "$RUNNER_TEMP/pip-licenses.json"
+          --pnpm-licenses "$RUNNER_TEMP/pnpm-licenses.json"

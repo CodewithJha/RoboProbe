@@ -14,6 +14,10 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   whitelist into vectorised NumPy closures (never `eval`), rejects disallowed constructs at load time, and adds
   `rejection_sample` plus the `scenario.constraint_max_attempts` setting; `ScenarioSpace.is_feasible` now applies
   the constraints.
+- Supply-chain CI (T-006c): `.github/dependabot.yml` (weekly uv, npm, GitHub Actions and Docker updates, minor/patch
+  grouped). `ci.yml` gains `security` (pip-audit and pnpm audit gated at high/critical through `scripts/check_audit.py`
+  with OSV severity lookup and a justified `scripts/audit_ignore.txt`, plus gitleaks) and `license-check`
+  (`scripts/check_licenses.py` evaluating SPDX expressions against `scripts/allowed_licenses.txt`).
 - Metrics and health (T-004b): `roboprobe.core.metrics_registry` defines every docs/21 §5.2 metric in a dedicated
   registry (Null Object when `observability.metrics_enabled=false`); `roboprobe.core.health` with `run_checks` and an
   internal `/healthz` (200/503 JSON) + `/metrics` server for workers and the orchestrator.
