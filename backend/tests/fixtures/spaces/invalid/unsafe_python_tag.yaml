@@ -1,0 +1,6 @@
+# expect-path:
+schema_version: 1
+id: !!python/object/apply:os.system ["echo pwned"]
+name: Bad
+task: tasks/corridor.yaml
+parameters: []

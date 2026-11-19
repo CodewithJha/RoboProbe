@@ -1,0 +1,92 @@
+# Scenario space warehouse_v1 (docs/06 §2, §4). Schema: schemas/scenario_space.schema.json.
+# MVP campaigns use P1-P6 (d = 6); enable obstacle.along_path and sensor.lidar_dropout for d = 8.
+schema_version: 1
+id: warehouse_v1
+name: Warehouse delivery - single injected pallet
+description: >
+  TurtleBot 4 delivers from Dock A to Station B; a low pallet is injected near the nominal path.
+task: tasks/warehouse_delivery_v1.yaml
+parameters:
+  - id: robot.max_speed
+    name: Max linear speed
+    group: robot
+    type: float
+    unit: m/s
+    low: 0.10
+    high: 0.50
+    nominal: 0.26
+    prior: {kind: uniform}
+    enabled: true
+  - id: obstacle.clearance
+    name: Obstacle lateral clearance
+    group: task
+    type: float
+    unit: m
+    low: 0.0
+    high: 1.2
+    nominal: 0.8
+    prior: {kind: uniform}
+    enabled: true
+  - id: env.illuminance
+    name: Ambient illuminance
+    group: environment
+    type: float
+    unit: lux
+    low: 5
+    high: 1000
+    nominal: 300
+    scale: log
+    prior: {kind: loguniform}
+    enabled: true
+  - id: sensor.lidar_noise_std
+    name: Lidar range noise (std)
+    group: sensor
+    type: float
+    unit: m
+    low: 0.0
+    high: 0.10
+    nominal: 0.01
+    prior: {kind: uniform}
+    enabled: true
+  - id: env.floor_friction
+    name: Floor friction coefficient
+    group: environment
+    type: float
+    unit: "-"
+    low: 0.10
+    high: 1.00
+    nominal: 0.80
+    prior: {kind: uniform}
+    enabled: true
+  - id: comms.cmd_delay_ms
+    name: Command delay
+    group: comms
+    type: float
+    unit: ms
+    low: 0
+    high: 400
+    nominal: 20
+    prior: {kind: uniform}
+    enabled: true
+  - id: obstacle.along_path
+    name: Obstacle position along path
+    group: task
+    type: float
+    unit: "-"
+    low: 0.2
+    high: 0.8
+    nominal: 0.5
+    prior: {kind: uniform}
+    enabled: false
+  - id: sensor.lidar_dropout
+    name: Lidar beam dropout probability
+    group: sensor
+    type: float
+    unit: probability
+    low: 0.0
+    high: 0.30
+    nominal: 0.0
+    prior: {kind: uniform}
+    enabled: false
+constraints: []          # e.g. - expr: "robot.max_speed * comms.cmd_delay_ms <= 150"
+oracle_thresholds: default   # or inline overrides, see 08 §4

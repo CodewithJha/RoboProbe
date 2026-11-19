@@ -1,0 +1,11 @@
+schema_version: 1
+id: corridor_v1
+world: {kinematic2d: worlds/corridor.json}
+map: maps/corridor.yaml
+start: {x: 0.0, y: 0.0, yaw: 0.0}
+goal: {x: 10.0, y: 0.0, yaw: 0.0}
+goal_tolerance: {xy: 0.25, yaw: 0.5}
+nominal_path: paths/corridor.csv
+injected_obstacles:
+  - {model: box, size: [0.5, 0.5, 0.2], placement: {along: task.along, lateral: task.clearance, side: left}}
+time_limit: {factor: 2.5, offset_s: 10, cap_s: 120}
