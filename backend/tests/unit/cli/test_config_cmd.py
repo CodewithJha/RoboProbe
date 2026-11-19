@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import logging
 from pathlib import Path
 
 import pytest
@@ -111,15 +110,24 @@ def test_invalid_config_json_error_lists_each_problem(
     assert [e["loc"] for e in error["context"]["errors"]] == ["worker.concurrency"]
 
 
-def test_config_loaded_event_carries_sources_not_values(
-    settings_env: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+def test_config_loaded_event_goes_to_stderr_with_sources_only(
+    settings_env: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("ROBOPROBE_API__TOKEN", TOKEN)
-    with caplog.at_level(logging.INFO, logger="roboprobe.cli.config"):
-        _show()
-    (record,) = [r for r in caplog.records if r.getMessage() == "config.loaded"]
-    assert record.sources == ["default", "env"]  # type: ignore[attr-defined]
-    assert TOKEN not in caplog.text
+    result = runner.invoke(app, ["--json", "config", "show"])
+    assert result.exit_code == ExitCode.OK
+    json.loads(result.stdout)  # stdout stays pure JSON
+    (line,) = [json.loads(raw) for raw in result.stderr.splitlines()]
+    assert line["event"] == "config.loaded"
+    assert line["service"] == "roboprobe-cli"
+    assert line["sources"] == ["default", "env"]
+    assert TOKEN not in result.stderr
+
+
+def test_log_level_flag_silences_info_events(settings_env: Path) -> None:
+    result = runner.invoke(app, ["--json", "--log-level", "warning", "config", "show"])
+    assert result.exit_code == ExitCode.OK
+    assert result.stderr == ""
 
 
 def test_group_without_subcommand_shows_help() -> None:

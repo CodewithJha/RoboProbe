@@ -5,16 +5,24 @@ Layer: Interface (L4).
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from enum import StrEnum
+from importlib.metadata import version
 from pathlib import Path
 
 import typer
 
 from roboprobe.cli._output import Output
+from roboprobe.core.logging import configure_logging
 from roboprobe.core.settings import RoboProbeSettings, load_settings
 
-__all__ = ["CliState", "LogLevel", "get_state"]
+__all__ = ["CLI_SERVICE_NAME", "DISTRIBUTION_NAME", "CliState", "LogLevel", "get_state"]
+
+DISTRIBUTION_NAME = "roboprobe"
+"""Installed distribution whose metadata provides the version."""
+CLI_SERVICE_NAME = "roboprobe-cli"
+"""``service`` field of CLI log lines (docs/27 §4.10 derived service names)."""
 
 
 class LogLevel(StrEnum):
@@ -42,14 +50,25 @@ class CliState:
     config_file: Path | None = None
     log_level: LogLevel | None = None
 
-    def load_settings(self) -> RoboProbeSettings:
-        """Resolve settings with the global flags applied as the highest-precedence source.
+    def bootstrap(self) -> RoboProbeSettings:
+        """Resolve settings and configure logging; the CLI composition root until T-046.
+
+        Global flags are applied as the highest-precedence source (``--log-level`` becomes the
+        ``logging.level`` CLI override, ``--config`` selects the TOML file). Logs go to stderr so
+        stdout stays machine-readable.
+
+        Returns:
+            The validated settings.
 
         Raises:
             ConfigError: If the resolved configuration is invalid (mapped to exit code 2).
         """
         overrides = {} if self.log_level is None else {"logging.level": self.log_level.value}
-        return load_settings(overrides, config_file=self.config_file)
+        settings = load_settings(overrides, config_file=self.config_file)
+        configure_logging(
+            settings.logging, CLI_SERVICE_NAME, version(DISTRIBUTION_NAME), stream=sys.stderr
+        )
+        return settings
 
 
 def get_state(ctx: typer.Context) -> CliState:

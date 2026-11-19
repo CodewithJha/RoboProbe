@@ -8,9 +8,9 @@ Layer: Interface (L4).
 
 from __future__ import annotations
 
-import logging
 from typing import Annotated
 
+import structlog
 import typer
 from pydantic import JsonValue
 
@@ -21,7 +21,7 @@ __all__ = ["app"]
 
 app = typer.Typer(name="config", help="Inspect the resolved configuration.", no_args_is_help=True)
 
-_log = logging.getLogger(__name__)
+_log = structlog.get_logger(__name__)
 
 KEY_COLUMN = "key"
 VALUE_COLUMN = "value"
@@ -37,9 +37,9 @@ def show(
 ) -> None:
     """Print every resolved setting as a dotted key (secrets masked)."""
     state = get_state(ctx)
-    settings = state.load_settings()
+    settings = state.bootstrap()
     provenance = explain_sources(settings)
-    _log.info("config.loaded", extra={"sources": sorted(set(provenance.values()))})
+    _log.info("config.loaded", sources=sorted(set(provenance.values())))
 
     values: dict[str, JsonValue] = dict(flatten(settings.model_dump(mode="json", by_alias=True)))
     keys = sorted(values)
