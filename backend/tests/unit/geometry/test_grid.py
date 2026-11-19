@@ -74,6 +74,7 @@ def test_input_array_is_copied() -> None:
     ("occupied", "resolution", "origin", "match"),
     [
         (np.zeros(3, dtype=bool), RES, (0.0, 0.0), "2-D"),
+        (np.full((3, 3), 50), RES, (0.0, 0.0), "boolean mask"),
         (np.zeros((0, 3), dtype=bool), RES, (0.0, 0.0), "non-empty"),
         (np.zeros((3, 3), dtype=bool), 0.0, (0.0, 0.0), "resolution"),
         (np.zeros((3, 3), dtype=bool), math.nan, (0.0, 0.0), "resolution"),

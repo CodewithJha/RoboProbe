@@ -27,7 +27,11 @@ __all__ = ["OccupancyGrid"]
 
 @dataclass(frozen=True, slots=True, eq=False)
 class OccupancyGrid:
-    """Immutable boolean occupancy grid; build once per world and reuse for every pose."""
+    """Immutable boolean occupancy grid; build once per world and reuse for every pose.
+
+    ``occupied`` must already be a boolean mask: threshold ROS occupancy values (0-100, -1
+    unknown) with the map's ``occupied_thresh`` before building, since non-zero means occupied.
+    """
 
     occupied: npt.NDArray[np.bool_] = field(repr=False)
     resolution: float
@@ -36,7 +40,12 @@ class OccupancyGrid:
 
     def __post_init__(self) -> None:
         """Validate inputs and precompute the distance field."""
-        occupied = np.asarray(self.occupied, dtype=np.bool_)
+        occupied = np.asarray(self.occupied)
+        if occupied.dtype != np.bool_:
+            msg = (
+                f"occupied must be a boolean mask (threshold occupancy first), got {occupied.dtype}"
+            )
+            raise ValueError(msg)
         if occupied.ndim != POINT_DIM or occupied.size == 0:
             msg = f"occupied must be a non-empty 2-D array, got shape {occupied.shape}"
             raise ValueError(msg)
