@@ -84,6 +84,9 @@ Component tests for ConditionStrip, RiskHeatmap, RobustnessBar (rendering & a11y
 ## 5. Test data & fixtures
 - `fixtures/spaces/warehouse_v1.yaml`, `fixtures/traces/*.parquet` (golden), `fixtures/db/seed_small.sql` (1 campaign, 60 runs, 3 modes) for API/web tests, `fixtures/reference/` small reference set for risk tests.
 - Factories (`tests/factories.py`) build domain objects; no shared mutable fixtures.
+- Fakes of ports live in `tests/fakes/` and pass the same contract tests as the real adapters.
+- Hypothesis profiles (`tests/conftest.py`): `dev` (default), `ci` (200 examples), `nightly` (2000), selected with `HYPOTHESIS_PROFILE`.
+- Integration DB (`tests/integration/conftest.py`): `postgres_url` uses `ROBOPROBE_TEST_DATABASE_URL` if set (CI service container), else a session-scoped `postgres:17` Testcontainers container, else skips with the reason; `pg_connection` rolls back each test's transaction.
 
 ## 6. Non-functional testing
 | NFR | Method |
