@@ -32,7 +32,7 @@ if [[ "${1:-}" == "--render-one" ]]; then
   exit 0
 fi
 
-ROOT="$(git rev-parse --show-toplevel)"
+ROOT="$(git -C "$(dirname "$SELF")" rev-parse --show-toplevel)"
 cd "$ROOT"
 
 if (($# > 0)); then

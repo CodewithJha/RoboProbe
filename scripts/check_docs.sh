@@ -21,7 +21,7 @@ LINKS_ONLINE="${LINKS_ONLINE:-0}"
 PYTHON="${PYTHON:-python3}"
 ALL_CHECKS=(markdownlint mermaid links adr-index)
 
-ROOT="$(git rev-parse --show-toplevel)" || exit 2
+ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)" || exit 2
 cd "$ROOT" || exit 2
 SCRIPTS="$ROOT/scripts"
 
