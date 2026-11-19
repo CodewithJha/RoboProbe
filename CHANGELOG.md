@@ -13,6 +13,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   ruff, mypy `--strict`, pytest markers and coverage gate configuration; root `Makefile`
   (`setup`, `lint`, `typecheck`, `test`, `test-fast`, `test-cov`), `.pre-commit-config.yaml`, `.env.example`
   and `roboprobe.example.toml`.
+- Shared core types (T-002a): `roboprobe.core.types` with the normative enums, frozen value objects
+  (`Scenario`, `Proposal`, `Observation`, `OracleResult`, `RunOutcome`, `TaskSpec`, `SutProfile`, `Pose2D`)
+  and the validated, read-only columnar `Trace` (docs/05 §1).
 - Open-source community files: `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SUPPORT.md`, `GOVERNANCE.md`,
   `CITATION.cff`, `.editorconfig`, `.github/CODEOWNERS`, issue forms (bug, feature, docs) and `config.yml`.
 ### Changed

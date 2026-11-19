@@ -79,9 +79,9 @@ class Trace:                            # columnar, one row per sample (>= 10 Hz
     min_obstacle_dist: ...              # true min distance robot footprint -> any obstacle [m]
     contact: npt.NDArray[np.bool_]      # physics contact flag
     roll: ...; pitch: ...               # for instability
-    nav_status: npt.NDArray[np.int8]    # 0 idle 1 active 2 succeeded 3 aborted 4 canceled
+    nav_status: npt.NDArray[np.int8]    # NavStatus: 0 idle 1 active 2 succeeded 3 aborted 4 canceled
     goal_x: float; goal_y: float
-    meta: Mapping[str, Any]             # backend-specific extras
+    meta: Mapping[str, JsonValue]       # backend-specific extras (read-only copy)
 
 class OracleResult(BaseModel, frozen=True):
     oracle_id: str                      # "O-CLEAR"
@@ -99,6 +99,13 @@ class RunOutcome(BaseModel, frozen=True):
     oracle_results: tuple[OracleResult, ...]
     metrics: dict[str, float]           # path_length, duration, mean_speed, max_loc_error, ...
 ```
+
+Implementation notes (T-002a): the types live in the package `roboprobe.core.types` (re-exported from
+`__init__`). `Proposal.phase` is the `Phase` literal of doc 11 `runs.phase`; `NavStatus(IntEnum)` names the
+`nav_status` codes; `Observation`/`RunOutcome` enforce `robustness is None` ⇔ `verdict == INVALID`. The
+package also provides `Pose2D`, `TaskSpec` (with `GoalTolerance`, `TimeLimitSpec`, `InjectedObstacle`,
+`ObstaclePlacement`; fields per doc 06 §7) and `SutProfile` (doc 11 `sut_profiles`). `Trace` validates
+dtypes, equal column lengths and a finite, strictly increasing `t`, and exposes its columns as read-only views.
 
 ## 2. M1 — Simulator backends — `roboprobe.backends`
 
