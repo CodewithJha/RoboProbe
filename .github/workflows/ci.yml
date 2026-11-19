@@ -21,7 +21,6 @@ env:
   NODE_VERSION: "24"
   ROBOPROBE_ENV: ci
   HYPOTHESIS_PROFILE: ci
-  FORCE_COLOR: "1"
   # Tier selection mirrors `make test-fast` (Makefile FAST_MARKERS).
   FAST_MARKERS: unit or property or contract
   # Every collected test must carry one of these tier markers (backend/pyproject.toml).
