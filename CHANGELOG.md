@@ -6,6 +6,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 ## [Unreleased]
 
 ### Added
+
 - Test infrastructure (T-017): Hypothesis `dev`/`ci`/`nightly` profiles (`HYPOTHESIS_PROFILE`), `tests/factories.py`
   domain builders, `tests/fakes/` package, PostgreSQL 17 fixtures (`ROBOPROBE_TEST_DATABASE_URL` or Testcontainers) with per-test rollback.
 - Task loader (T-027): `roboprobe.scenario.task` (`load_task` with TBD guard and strict mode for provisional
