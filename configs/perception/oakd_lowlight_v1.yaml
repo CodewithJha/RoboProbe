@@ -1,0 +1,19 @@
+# OAK-D style stereo depth degradation under low light (docs/06 §3.3). Versioned domain
+# configuration: copy to a new id (e.g. oakd_lowlight_v2) instead of editing values in place, since
+# `id` is recorded in every run manifest (docs/21 §4).
+#
+#   η       = clip(log10(L_ref / L) / log10(L_ref / L_min), 0, 1)      (0 bright, 1 darkest)
+#   p_valid = 1 − valid_loss · η²
+#   σ_d     = sigma_base_m + sigma_r2_per_m · r² · (1 + sigma_dark_gain · η)
+#   r_max   = r_max_bright_m · (1 − r_max_dark_reduction · η)
+schema_version: 1
+id: oakd_lowlight_v1
+constants:
+  l_ref_lux: 300.0           # L_ref: at or above this illuminance depth is unaffected (η = 0)
+  l_min_lux: 5.0             # L_min: at or below this illuminance degradation is maximal (η = 1)
+  valid_loss: 0.85           # share of returns lost at η = 1
+  sigma_base_m: 0.005        # range noise floor [m]
+  sigma_r2_per_m: 0.01       # stereo error growth ∝ r² [1/m]
+  sigma_dark_gain: 4.0       # noise multiplier growth with darkness
+  r_max_bright_m: 3.0        # effective max range in bright light [m]
+  r_max_dark_reduction: 0.6  # share of max range lost at η = 1

@@ -7,6 +7,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Perception and friction models (T-031b): `roboprobe.perturbation.perception.PerceptionModel` (P3 depth degradation:
+  η, `p_valid`, `σ_d`, `r_max`; constants in versioned `configs/perception/oakd_lowlight_v1.yaml`) and
+  `roboprobe.perturbation.friction` (`traction`, `apply_slip`, P5).
 - Perturbation models (T-031a): `roboprobe.perturbation.lidar` (`apply_lidar_noise` P4, `apply_dropout` P8; pure,
   seeded, NumPy-only) and `roboprobe.perturbation.delay.CommandDelayBuffer` (P6 time-indexed FIFO), shared with the ROS nodes.
 - SUT profiles (T-016): `roboprobe.scenario.sut_profile.load_sut_profile()` (strict YAML, `schemas/sut_profile.schema.json`,
