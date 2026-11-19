@@ -11,6 +11,11 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   (+ batch variants) for linear, log, int (bin centres) and categorical parameters per docs/06 §4.1, with
   Hypothesis round-trip properties (10 000 examples each). New log event `scenario.unit_clipped`.
 
+- Web helpers (T-086c): `web/src/lib/format.ts` for locale-aware display formatting (`formatValue` with unit
+  symbols, `formatLux` with significant digits, `formatDuration`, `formatRelative`, `formatPValue`, `formatA12`; tunables
+  in `formatConfig`), and `web/src/lib/keyboard.ts` (`KeyboardManager` / `registerShortcut`) for single keys and `g b`
+  chords. The chord timeout is set in `keyboardConfig`, form fields and contenteditable are ignored, conflicts are detected,
+  and `list()` feeds the `?` dialog.
 - Perturbation models (T-031a): `roboprobe.perturbation.lidar` (`apply_lidar_noise` P4, `apply_dropout` P8; pure,
   seeded, NumPy-only) and `roboprobe.perturbation.delay.CommandDelayBuffer` (P6 time-indexed FIFO), shared with the ROS nodes.
 - SUT profiles (T-016): `roboprobe.scenario.sut_profile.load_sut_profile()` (strict YAML, `schemas/sut_profile.schema.json`,
