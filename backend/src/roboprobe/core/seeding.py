@@ -20,6 +20,8 @@ from typing import Final
 
 import numpy as np
 
+from roboprobe.core import errors
+
 __all__ = [
     "ANALYSIS",
     "LOCALIZATION",
@@ -93,8 +95,11 @@ def derive_seed(root: int, *path: str | int) -> int:
         A seed in ``[0, SEED_MAX]``.
 
     Raises:
-        ValueError: If ``root`` is negative (raised by :class:`numpy.random.SeedSequence`).
+        errors.ValidationError: If ``root`` is negative.
     """
+    if root < 0:
+        msg = "seed root must be non-negative"
+        raise errors.ValidationError(msg, context={"root": root})
     spawn_key = tuple(stable_hash(part) for part in path)
     state = np.random.SeedSequence(root, spawn_key=spawn_key).generate_state(1, np.uint64)
     return int(state[0]) & SEED_MAX

@@ -18,7 +18,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from roboprobe.core import seeding
+from roboprobe.core import errors, seeding
 from roboprobe.core.seeding import (
     ANALYSIS,
     LOCALIZATION,
@@ -112,9 +112,10 @@ def test_stream_keys_are_unique() -> None:
     assert len({stable_hash(key) for key in keys}) == len(keys)
 
 
-def test_negative_root_is_rejected() -> None:
-    with pytest.raises(ValueError):
+def test_negative_root_is_rejected_with_a_domain_error() -> None:
+    with pytest.raises(errors.ValidationError) as excinfo:
         derive_seed(-1, RUN)
+    assert excinfo.value.context == {"root": -1}
 
 
 @pytest.mark.property
