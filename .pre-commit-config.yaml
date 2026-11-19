@@ -45,3 +45,16 @@ repos:
         types_or: [python, pyi]
         files: ^backend/src/
         pass_filenames: false
+      - id: eslint-web
+        name: eslint (web)
+        entry: bash -c 'cd web && pnpm exec eslint . --max-warnings 0'
+        language: system
+        files: ^web/.*\.(ts|tsx|js|jsx)$
+        # Run inside web/ so corepack picks the pinned pnpm and paths resolve; lint the whole app.
+        pass_filenames: false
+      - id: prettier-web
+        name: prettier (web)
+        entry: bash -c 'cd web && pnpm exec prettier --write .'
+        language: system
+        files: ^web/
+        pass_filenames: false
