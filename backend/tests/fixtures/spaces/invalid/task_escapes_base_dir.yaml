@@ -1,0 +1,7 @@
+# expect-path: /task
+schema_version: 1
+id: bad_v1
+name: Bad
+task: ../../../../tasks/warehouse_delivery_v1.yaml
+parameters:
+  - {id: env.people, name: People, group: environment, type: int, unit: count, low: 0, high: 1, nominal: 0, prior: {kind: uniform}}

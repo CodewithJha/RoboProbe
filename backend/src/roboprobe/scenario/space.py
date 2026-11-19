@@ -275,10 +275,11 @@ class ScenarioSpace(_Frozen):
         """Like :meth:`from_yaml` for in-memory content (e.g. an API upload named ``source``)."""
         document = load_yaml_document(text, source=source, code=_CODE, max_bytes=max_bytes)
         validate_document(document, schema=_SCHEMA, source=source, code=_CODE)
-        assert isinstance(document, dict)  # noqa: S101 - guaranteed by the schema
+        if not isinstance(document, dict):  # pragma: no cover - the schema requires an object
+            raise document_error(source, [("", "space document must be a mapping")], _CODE)
         parameters = _build_parameters(document["parameters"], source)
         constraints = tuple(Constraint.model_validate(c) for c in document.get("constraints", []))
-        task_path = (base_dir or Path()) / document["task"]
+        task_path = _resolve_task_path(document["task"], base_dir or Path(), source)
         task, task_document = _load_task(task_path, source, strict=strict_task)
         _check_references(parameters, constraints, task, source)
         inlined = {**document, "task": task_document}
@@ -363,6 +364,16 @@ def _check_references(
                 issues.append(("/task", f"{where}: unknown parameter {ref!r}"))
     if issues:
         raise document_error(source, issues, _CODE)
+
+
+def _resolve_task_path(task_ref: str, base_dir: Path, source: str) -> Path:
+    """Resolve ``task`` relative to ``base_dir``, refusing paths that escape it (uploads; TM-02)."""
+    root = base_dir.resolve()
+    path = (root / task_ref).resolve()
+    if Path(task_ref).is_absolute() or not path.is_relative_to(root):
+        issue = ("/task", "task path must stay inside the base directory")
+        raise document_error(source, [issue], _CODE)
+    return path
 
 
 def _canonical(value: object) -> object:
