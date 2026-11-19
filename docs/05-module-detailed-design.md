@@ -214,6 +214,9 @@ raises `ValidationError` when the sampler cannot supply `n` feasible points.
 Materialisation is the backend's job (`SimulatorBackend.materialize`) but uses shared helpers in
 `roboprobe.scenario.materialize`: `render_template(template: str, ctx: dict) -> str` (Jinja2,
 `StrictUndefined`) and `place_obstacle(path: Polyline, along: float, clearance: float, side: Literal[-1,1]) -> Pose2D`.
+As built (T-028): templates render in a `SandboxedEnvironment` (no autoescape, trailing newline kept) and every
+failure is a `ValidationError`; `along` is the path fraction (P7), the outgoing segment defines the heading at an
+interior vertex, repeated points are ignored, and `side_sign("left" | "right")` maps task-file sides to `+1`/`-1`.
 
 ## 4. M3 — Intelligent Test Selector — `roboprobe.selection`
 
