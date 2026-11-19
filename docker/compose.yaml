@@ -1,0 +1,68 @@
+# RoboProbe local / single-host stack (docs/17 §4, docs/29). Run through the Makefile:
+#   make up      -> --profile core up -d      make down -> stop and remove containers + network
+#   make db-up   -> postgres only             add `--profile dev` to publish Postgres on 127.0.0.1
+# Every tunable comes from ../.env (docs/27 §4.12); only image names/tags have defaults here.
+# Later tasks append *new service blocks only* (api/orchestrator/worker: T-047, web: T-116,
+# gazebo: T-095, observability: T-125).
+name: roboprobe
+
+x-backend: &backend
+  image: ghcr.io/codewithjha/roboprobe-backend:${ROBOPROBE_IMAGE_TAG:-dev}
+  build:
+    context: ..
+    dockerfile: docker/backend.Dockerfile
+  env_file:
+    - path: ../.env
+      required: false
+  environment:
+    # In-network DSN without a password: the `db_password` secret is merged in by the settings
+    # loader from /run/secrets (docs/27 §2), so the password never appears in env or URLs.
+    ROBOPROBE_DATABASE__URL: postgresql+psycopg://${ROBOPROBE_DB_USER:-roboprobe}@postgres:5432/${ROBOPROBE_DB_NAME:-roboprobe}
+  secrets: [db_password]
+  volumes: ["../data/artifacts:/data/artifacts"]
+  read_only: true
+  tmpfs: [/tmp]
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:17@sha256:b60e90042aa6b8dbecd58e224b3e36114dbf8ad754465264c2476ad58a86e45c
+    profiles: [core]
+    environment:
+      POSTGRES_DB: ${ROBOPROBE_DB_NAME:-roboprobe}
+      POSTGRES_USER: ${ROBOPROBE_DB_USER:-roboprobe}
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets: [db_password]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  # Dev-only host access to Postgres (Compose cannot publish a port per profile, so a tiny TCP
+  # forwarder carries it). Bound to loopback only (docs/21 §1).
+  postgres-port:
+    image: alpine/socat:1.8.0.3@sha256:beb4a68d9e4fe6b0f21ea774a0fde6c31f580dde6368939ed70100c5385b015e
+    profiles: [dev]
+    command: ["TCP-LISTEN:5432,fork,reuseaddr", "TCP:postgres:5432"]
+    ports: ["127.0.0.1:${ROBOPROBE_DB_PORT:-5432}:5432"]
+    read_only: true
+    depends_on: {postgres: {condition: service_healthy}}
+    restart: unless-stopped
+
+  migrate:
+    <<: *backend
+    profiles: [core]
+    # Placeholder until migrations exist: switched to ["db", "upgrade"] by T-045a.
+    command: ["--version"]
+    restart: "no"
+    depends_on: {postgres: {condition: service_healthy}}
+
+secrets:
+  db_password:
+    file: ../secrets/db_password
+
+volumes:
+  pgdata: {}

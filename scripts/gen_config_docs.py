@@ -87,6 +87,7 @@ COMPOSE_VARIABLES: Sequence[tuple[str, str, str]] = (
     ("ROBOPROBE_WEB_PORT", "8080", "Host port published for the dashboard."),
     ("ROBOPROBE_DB_NAME", "roboprobe", "PostgreSQL database name."),
     ("ROBOPROBE_DB_USER", "roboprobe", "PostgreSQL user name."),
+    ("ROBOPROBE_DB_PORT", "5432", "Loopback host port for Postgres (dev profile only)."),
     ("ROBOPROBE_K2D_REPLICAS", "2", "Number of kinematic2d worker containers."),
 )
 

@@ -42,7 +42,7 @@ Docker Engine ≥ 24 + Compose v2; 16 GB RAM (8 GB without Gazebo); 25 GB disk; 
 git clone https://github.com/CodewithJha/RoboProbe.git && cd RoboProbe
 git checkout v1.0.0                       # or main
 cp .env.example .env
-mkdir -p secrets && openssl rand -base64 24 > secrets/db_password.txt
+make secrets/db_password                  # random DB password (git-ignored, never overwritten)
 export ROBOPROBE_IMAGE_TAG=v1.0.0
 docker compose -f docker/compose.yaml --profile core pull
 docker compose -f docker/compose.yaml --profile core up -d     # == make up
