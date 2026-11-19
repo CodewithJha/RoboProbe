@@ -182,6 +182,13 @@ Env example: `ROBOPROBE_ORACLES__LOC__E_MAX=0.4`.
 | `defaultTheme` | `ROBOPROBE_WEB_DEFAULT_THEME` | `system` |
 | `featureFlags` | `ROBOPROBE_WEB_FEATURES` | `trials,reports` |
 
+Build/dev-time variables (Vite, `web/.env.example`; read in `web/vite.config.ts`, never in components):
+
+| Env | Default | Notes |
+|-----|---------|-------|
+| `VITE_API_BASE_URL` | `/api/v1` | baked into the bundle; overridden at runtime by `config.json` `apiBaseUrl` |
+| `VITE_API_PROXY_TARGET` | `http://127.0.0.1:8000` | `pnpm --dir web dev` only: origin that `/api/*` requests are proxied to |
+
 ### 4.12 Compose-level variables (`.env`)
 `ROBOPROBE_IMAGE_TAG` (dev), `ROBOPROBE_API_PORT` (8000), `ROBOPROBE_WEB_PORT` (8080), `ROBOPROBE_DB_NAME`/`ROBOPROBE_DB_USER` (roboprobe), `ROBOPROBE_K2D_REPLICAS` (2).
 
