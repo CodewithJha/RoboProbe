@@ -1,0 +1,98 @@
+"""Command delay (P6) — docs/06 §3.6.
+
+A velocity command published at time ``t`` takes effect at ``t + delay_s``. kinematic2d uses
+:class:`CommandDelayBuffer` directly; the ROS ``cmd_delay`` relay node (``/cmd_vel_nav`` ->
+buffer -> ``/cmd_vel``) wraps the same class. P6 is specified in milliseconds; callers convert
+(``delay_s = P6 / 1000``).
+
+NumPy-free and dependency-free so the ROS package can vendor it.
+"""
+
+from __future__ import annotations
+
+import math
+from collections import deque
+
+__all__ = ["DEFAULT_TIME_TOLERANCE_S", "CommandDelayBuffer"]
+
+DEFAULT_TIME_TOLERANCE_S = 1e-9
+"""Slack when comparing due times, absorbing float error from accumulated ``t += dt`` steps."""
+
+
+class CommandDelayBuffer[T]:
+    """Time-indexed FIFO that releases each command ``delay_s`` after it was pushed.
+
+    Commands are released in push order. With ``delay_s == 0`` a command is due at the time it
+    was pushed (passthrough). Times are simulation seconds and must not go backwards.
+
+    Example:
+        >>> buf = CommandDelayBuffer[str](delay_s=0.1)
+        >>> buf.push(0.0, "a")
+        >>> buf.pop_due(0.05)
+        []
+        >>> buf.pop_due(0.1)
+        ['a']
+    """
+
+    def __init__(self, delay_s: float, *, tolerance_s: float = DEFAULT_TIME_TOLERANCE_S) -> None:
+        """Create an empty buffer.
+
+        Args:
+            delay_s: Delay P6 [s], finite and ``>= 0``.
+            tolerance_s: Due-time comparison slack [s], finite and ``>= 0``.
+
+        Raises:
+            ValueError: If ``delay_s`` or ``tolerance_s`` is negative or not finite.
+        """
+        for name, value in (("delay_s", delay_s), ("tolerance_s", tolerance_s)):
+            if not (math.isfinite(value) and value >= 0.0):
+                msg = f"{name} must be finite and >= 0, got {value}"
+                raise ValueError(msg)
+        self._delay_s = delay_s
+        self._tolerance_s = tolerance_s
+        self._queue: deque[tuple[float, T]] = deque()
+        self._last_t = -math.inf
+
+    @property
+    def delay_s(self) -> float:
+        """Configured delay [s]."""
+        return self._delay_s
+
+    def __len__(self) -> int:
+        """Number of commands not yet released."""
+        return len(self._queue)
+
+    def push(self, t: float, command: T) -> None:
+        """Enqueue ``command`` published at time ``t``.
+
+        Raises:
+            ValueError: If ``t`` is not finite or earlier than a previous ``push``/``pop_due``.
+        """
+        self._advance(t)
+        self._queue.append((t + self._delay_s, command))
+
+    def pop_due(self, t: float) -> list[T]:
+        """Release, in push order, every command due at or before time ``t``.
+
+        Raises:
+            ValueError: If ``t`` is not finite or earlier than a previous ``push``/``pop_due``.
+        """
+        self._advance(t)
+        horizon = t + self._tolerance_s
+        released: list[T] = []
+        while self._queue and self._queue[0][0] <= horizon:
+            released.append(self._queue.popleft()[1])
+        return released
+
+    def clear(self) -> None:
+        """Drop all pending commands (e.g. on episode reset); the clock is kept."""
+        self._queue.clear()
+
+    def _advance(self, t: float) -> None:
+        if not math.isfinite(t):
+            msg = f"time must be finite, got {t}"
+            raise ValueError(msg)
+        if t < self._last_t:
+            msg = f"time went backwards: {t} < {self._last_t}"
+            raise ValueError(msg)
+        self._last_t = t

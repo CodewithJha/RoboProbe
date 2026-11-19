@@ -68,6 +68,8 @@ Constants live in `configs/perception/oakd_lowlight_v1.yaml` so they can be chan
 
 `r' = r + N(0, P4²)` clipped to `[range_min, range_max]`; with probability P8 a beam becomes `+inf`
 (no return). Noise is drawn from the run's `sensor` RNG stream (21 §3) so replays are identical.
+Implemented by `roboprobe.perturbation.lidar.apply_lidar_noise` / `apply_dropout` (T-031a): beams that are already
+`+inf`/`nan` are left untouched, and one draw per beam is made on every call so P4/P8 never shift later draws.
 
 ### 3.5 Floor friction (P5)
 
@@ -79,6 +81,8 @@ yaw-rate slip `ω_real = ω_cmd · τ^1.5`; odometry still reports commanded whe
 
 FIFO buffer on velocity commands: a command published at `t` is applied at `t + P6/1000`.
 Implemented as a ROS 2 relay node (`/cmd_vel_nav` → buffer → `/cmd_vel`) and as a deque in kinematic2d.
+Both use `roboprobe.perturbation.delay.CommandDelayBuffer` (T-031a): `push(t, cmd)` / `pop_due(t)`, FIFO order,
+zero delay = passthrough, time must not go backwards.
 
 ## 4. Space YAML (canonical example — `configs/scenario_spaces/warehouse_v1.yaml`)
 
