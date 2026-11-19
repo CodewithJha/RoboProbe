@@ -73,8 +73,11 @@ def build_worker(settings: RoboProbeSettings) -> WorkerProcess:
 - Levels: `DEBUG` diagnostic detail (off by default), `INFO` lifecycle events, `WARNING` degraded but continuing (fallbacks, retries), `ERROR` operation failed (run INVALID, API 500), `CRITICAL` process cannot continue.
 - Every log line is an **event name** + key-values; no string interpolation of variables into the message.
 - Mandatory context: `service`, `version`; bound when available: `campaign_id`, `run_id`, `worker_id`, `experiment_id`, `trace_id`.
-- Never log secrets, tokens, full DSNs, or raw large arrays; log sizes/hashes instead.
-- Event catalogue (extend, don't rename):
+- Never log secrets, tokens, full DSNs, or raw large arrays; log sizes/hashes instead. As a safety net, values of keys
+  matching `token|password|secret|dsn|authorization` are masked by the redaction processor and tracebacks never
+  include frame locals.
+- Event catalogue (extend, don't rename; mirrored by `roboprobe.core.logging.EVENTS`, and a unit test fails on any
+  logged event name missing from it):
 
 | Event | Level | Keys |
 |-------|-------|------|
