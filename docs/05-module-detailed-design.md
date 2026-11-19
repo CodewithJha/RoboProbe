@@ -230,6 +230,18 @@ normalisation and samplers only see free dimensions. `nominal_values()` reports 
 `make_scenario(free_values)` re-inserts the pins (and rejects other values for pinned ids), and
 `scenario_hash` includes them.
 
+Samplers (T-023, `roboprobe.scenario.samplers`) take the injected `Generator` on every call and never use a
+global RNG.
+
+- `PriorSampler(params)` draws `v ~ U(0,1)`, maps it through the prior's inverse CDF in parameter units, and
+  returns the scale-aware unit encoding. `loguniform` on a `log` parameter is therefore uniform in `u`. Integer
+  `k` owns `[k-0.5, k+0.5)`, and `discrete` weights pick a level, then a point inside that level's bin.
+- `LatinHypercubeSampler` returns a fresh design per call.
+- `SobolSampler(d, seed=None)` is seeded once (from `seed` or the first `rng`) and continues its sequence
+  across calls. Persist `seed` and `position`, then resume with `fast_forward(position)`.
+- `GridSampler(d, levels)` / `GridSampler.for_budget(d, B)` lists points lexicographically (first dimension
+  slowest). It returns the full grid in that order, or an `rng`-permuted subset when `n < levels**d`.
+
 Materialisation is the backend's job (`SimulatorBackend.materialize`) but uses shared helpers in
 `roboprobe.scenario.materialize`: `render_template(template: str, ctx: dict) -> str` (Jinja2,
 `StrictUndefined`) and `place_obstacle(path: Polyline, along: float, clearance: float, side: Literal[-1,1]) -> Pose2D`.

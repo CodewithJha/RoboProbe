@@ -17,7 +17,7 @@ classifiers = [
 # Base dependencies (doc 15 §1). Minimums only; exact versions are pinned in uv.lock.
 dependencies = [
     "numpy>=2.0",
-    "scipy>=1.14",
+    "scipy>=1.15",
     "pydantic>=2.8",
     "pydantic-settings>=2.4",
     "PyYAML>=6.0",

@@ -15,6 +15,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Scenario hashing (T-024): `roboprobe.scenario.hashing` (`canonical_json`, `content_hash`, `scenario_hash`) with
   golden hashes, and `ScenarioSpace.make_scenario` / `nominal()`; space versions and SUT config hashes now use the
   same public canonicaliser (values unchanged).
+- Samplers (T-023): `roboprobe.scenario.samplers` with the `Sampler` protocol, `UniformSampler`, `PriorSampler`
+  (prior inverse-CDF, scale-aware), `LatinHypercubeSampler` (random-cd), resumable scrambled `SobolSampler` and
+  `GridSampler` (+ `for_budget`). The SciPy floor is raised to 1.15 for the `rng=` API.
 - Unit-hypercube normalisation (T-021): `roboprobe.scenario.normalize` and `ScenarioSpace.to_unit/from_unit`
   (+ batch variants) for linear, log, int (bin centres) and categorical parameters per docs/06 §4.1, with
   Hypothesis round-trip properties (10 000 examples each). New log event `scenario.unit_clipped`.
