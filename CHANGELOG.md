@@ -15,6 +15,11 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Geometry kernel (T-030a): `roboprobe.geometry` with circle/polygon footprints, `OccupancyGrid` (world↔cell, SciPy
   EDT distance field), exact point/segment/rectangle/polygon distances and vectorised `min_obstacle_distance`;
   NumPy/SciPy only so the ROS package can vendor it. Adds `scipy-stubs` to the dev extra.
+- Web design tokens (T-085a): `web/src/styles/tokens.json` holds the light and dark themes plus the font, space,
+  radius and motion tokens, rendered to `tokens.css` by `pnpm gen:tokens` (staleness checked in `pnpm lint`) and
+  copied to the report theme. Also: self-hosted IBM Plex WOFF2 fonts (OFL, `web/public/fonts/`), `base.css` (reset,
+  paper grid, focus ring, reduced motion), A4 `print.css`, `applyTheme` for `data-theme`/`system`, a WCAG contrast
+  test over `tokens.pairs.json`, and Stylelint (no raw hex or px font sizes outside tokens).
 - Compose `core` stack (T-005b): `docker/compose.yaml` with digest-pinned Postgres 17 (`db_password` Docker secret,
   `pg_isready` health check, `pgdata` volume), one-shot `migrate` on the backend image (placeholder `--version`), the
   `x-backend` anchor, and a `dev`-profile loopback forwarder publishing Postgres; `make up` / `down` / `db-up` / `logs` /

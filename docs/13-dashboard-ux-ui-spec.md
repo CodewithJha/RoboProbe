@@ -17,6 +17,12 @@ language borrows from engineering paper and instrument panels:
 
 ### 1.1 Design tokens (`web/src/styles/tokens.css`)
 
+Source of truth: `web/src/styles/tokens.json`. `pnpm --dir web gen:tokens` renders it to `tokens.css` and copies it to
+`backend/src/roboprobe/reporting/assets/tokens.json` for the report theme; `pnpm lint` fails if either output is stale.
+Light is the default. The OS dark preference applies unless `data-theme` on `<html>` pins a theme (runtime
+`defaultTheme`, doc 27 §4.11). Stylelint rejects raw hex colours and px font sizes outside `tokens.css`. The pairs that
+are contrast-checked are listed in `tokens.pairs.json`.
+
 | Token | Light ("Paper") | Dark ("Night Shift") | Use |
 |-------|-----------------|----------------------|-----|
 | `--paper` | `#F6F3EC` | `#1E2124` | app background |
@@ -192,7 +198,7 @@ web/src/
     bench/ campaigns/ console/ runs/ casebook/ atlas/ trials/ spaces/ workbench/ reports/
   components/     ConditionStrip, SpecimenTag, VerdictNotch, RobustnessBar, RiskHeatmap,
                   TrajectoryPlot, TimelineChart, MarginRail, Spine, StatTable, EmptyState
-  styles/         tokens.css, base.css, print.css
+  styles/         tokens.json → tokens.css (generated), fonts.css, base.css, print.css, theme.ts
   lib/            format.ts (units, durations), sse.ts, keyboard.ts
   test/           msw handlers, fixtures
 ```

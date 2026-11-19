@@ -1,0 +1,26 @@
+/* Print layer (doc 13): A4 pages, ink on white, no navigation chrome. */
+
+@page {
+  size: a4;
+  margin: 15mm;
+}
+
+@media print {
+  body {
+    color: black;
+    background: white;
+  }
+
+  [data-print='hide'],
+  .margin-rail {
+    display: none !important;
+  }
+
+  .break-before-page {
+    break-before: page;
+  }
+
+  .avoid-break {
+    break-inside: avoid;
+  }
+}

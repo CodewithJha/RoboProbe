@@ -1,0 +1,29 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "rules": {
+    "color-no-hex": [
+      true,
+      {
+        "message": "Use a design token (var(--…)) from src/styles/tokens.json instead of a raw hex colour"
+      }
+    ],
+    "declaration-property-unit-disallowed-list": [
+      { "font-size": ["px"] },
+      { "message": "Use a --font-size-* token instead of a raw px font size" }
+    ],
+    "custom-property-pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+  },
+  "overrides": [
+    {
+      "files": ["src/styles/tokens.css"],
+      "rules": {
+        "color-no-hex": null,
+        "declaration-property-unit-disallowed-list": null,
+        "color-function-notation": null,
+        "color-function-alias-notation": null,
+        "alpha-value-notation": null,
+        "color-hex-length": null
+      }
+    }
+  ]
+}
