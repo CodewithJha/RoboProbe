@@ -1,0 +1,196 @@
+"""Exact and grid-based distances between footprints and obstacles (docs/10 §6).
+
+``min_obstacle_distance`` is *the* algorithm behind the ``min_obstacle_dist`` trace column in both
+backends: the clearance between the robot footprint at each pose and (a) the occupancy grid's
+distance field and (b) analytic rectangles (e.g. the injected pallet). Distances are in metres,
+``>= 0``; ``0`` means contact or overlap. Everything is vectorised over ``n`` poses.
+
+Layer: Kernel (L1); NumPy/SciPy only so it can be vendored into the ROS package.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+from dataclasses import dataclass
+from functools import cache
+
+import numpy as np
+import numpy.typing as npt
+
+from roboprobe.geometry._arrays import POINT_DIM, FloatArray, as_points, as_poses, rotation
+from roboprobe.geometry.footprint import CircleFootprint, Footprint, PolygonFootprint
+from roboprobe.geometry.grid import OccupancyGrid
+
+__all__ = [
+    "Rect",
+    "footprint_grid_distance",
+    "footprint_rect_distance",
+    "min_obstacle_distance",
+    "point_rect_distance",
+    "point_segment_distance",
+    "polygon_distance",
+]
+
+_SAMPLES_PER_CELL = 2
+"""Footprint area samples per grid cell along each axis for polygon-vs-grid distances."""
+
+
+@dataclass(frozen=True, slots=True)
+class Rect:
+    """Oriented rectangle: centre ``(x, y)``, full ``length`` x ``width`` [m], heading ``yaw``."""
+
+    x: float
+    y: float
+    yaw: float
+    length: float
+    width: float
+
+    def __post_init__(self) -> None:
+        """Validate the size."""
+        if not all(np.isfinite([self.x, self.y, self.yaw, self.length, self.width])):
+            msg = "rectangle fields must be finite"
+            raise ValueError(msg)
+        if self.length <= 0 or self.width <= 0:
+            msg = f"rectangle size must be > 0, got {self.length} x {self.width}"
+            raise ValueError(msg)
+
+    def corners(self) -> FloatArray:
+        """World corners ``(4, 2)`` in counter-clockwise order."""
+        half = np.array([self.length, self.width]) / 2
+        local = half * np.array([[1, 1], [-1, 1], [-1, -1], [1, -1]], dtype=np.float64)
+        world = local @ rotation(np.array([self.yaw]))[0].T + np.array([self.x, self.y])
+        return np.asarray(world, dtype=np.float64)
+
+    def to_local(self, points: npt.ArrayLike) -> FloatArray:
+        """Express world ``points`` (``(..., 2)``) in the rectangle frame."""
+        offset = as_points(points) - np.array([self.x, self.y])
+        return np.asarray(offset @ rotation(np.array([self.yaw]))[0], dtype=np.float64)
+
+
+def point_segment_distance(
+    points: npt.ArrayLike, start: npt.ArrayLike, end: npt.ArrayLike
+) -> FloatArray:
+    """Distance from ``points`` to segments ``start``-``end`` (broadcastable ``(..., 2)``)."""
+    p, a, b = as_points(points), as_points(start, "start"), as_points(end, "end")
+    ab = b - a
+    denom = np.sum(ab * ab, axis=-1)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        t = np.where(denom > 0, np.sum((p - a) * ab, axis=-1) / denom, 0.0)
+    closest = a + np.clip(t, 0.0, 1.0)[..., None] * ab
+    return np.asarray(np.linalg.norm(p - closest, axis=-1), dtype=np.float64)
+
+
+def point_rect_distance(points: npt.ArrayLike, rect: Rect) -> FloatArray:
+    """Exact distance from ``points`` (``(..., 2)``) to a filled rectangle (``0`` inside)."""
+    local = np.abs(rect.to_local(points))
+    half = np.array([rect.length, rect.width]) / 2
+    return np.asarray(np.linalg.norm(np.maximum(local - half, 0.0), axis=-1), dtype=np.float64)
+
+
+def _cross(o: FloatArray, a: FloatArray, b: FloatArray) -> FloatArray:
+    return np.asarray(
+        (a[..., 0] - o[..., 0]) * (b[..., 1] - o[..., 1])
+        - (a[..., 1] - o[..., 1]) * (b[..., 0] - o[..., 0]),
+        dtype=np.float64,
+    )
+
+
+def _segments_intersect(
+    a0: FloatArray, a1: FloatArray, b0: FloatArray, b1: FloatArray
+) -> npt.NDArray[np.bool_]:
+    """Proper crossing of segments (broadcast); touching cases already give distance 0."""
+    d1, d2 = _cross(b0, b1, a0), _cross(b0, b1, a1)
+    d3, d4 = _cross(a0, a1, b0), _cross(a0, a1, b1)
+    return np.asarray((d1 * d2 < 0) & (d3 * d4 < 0), dtype=np.bool_)
+
+
+def _points_in_polygon(points: FloatArray, polygon: FloatArray) -> npt.NDArray[np.bool_]:
+    """Even-odd rule; ``points`` ``(n, m, 2)``, ``polygon`` ``(n, k, 2)`` -> ``(n, m)``."""
+    v0 = polygon[:, None, :, :]
+    v1 = np.roll(polygon, -1, axis=1)[:, None, :, :]
+    p = points[:, :, None, :]
+    straddles = (v0[..., 1] > p[..., 1]) != (v1[..., 1] > p[..., 1])
+    with np.errstate(invalid="ignore", divide="ignore"):
+        x_cross = v0[..., 0] + (p[..., 1] - v0[..., 1]) * (v1[..., 0] - v0[..., 0]) / (
+            v1[..., 1] - v0[..., 1]
+        )
+    crossings = straddles & (p[..., 0] < x_cross)
+    return np.asarray(np.count_nonzero(crossings, axis=-1) % 2 == 1, dtype=np.bool_)
+
+
+def polygon_distance(a: npt.ArrayLike, b: npt.ArrayLike) -> FloatArray:
+    """Distance ``(n,)`` between filled simple polygons ``a`` ``(n, k, 2)`` and ``b`` ``(n, j, 2)``.
+
+    ``0`` when they overlap (edge crossing or containment), otherwise the minimum vertex-to-edge
+    distance in both directions, which is exact for non-intersecting polygons.
+    """
+    pa, pb = as_points(a, "a"), as_points(b, "b")
+    a0, a1 = pa, np.roll(pa, -1, axis=1)
+    b0, b1 = pb, np.roll(pb, -1, axis=1)
+    # vertex of one polygon to every edge of the other: (n, k, j)
+    a_to_b = point_segment_distance(pa[:, :, None, :], b0[:, None, :, :], b1[:, None, :, :])
+    b_to_a = point_segment_distance(pb[:, :, None, :], a0[:, None, :, :], a1[:, None, :, :])
+    gap = np.minimum(a_to_b.min(axis=(1, 2)), b_to_a.min(axis=(1, 2)))
+    crossing = _segments_intersect(
+        a0[:, :, None, :], a1[:, :, None, :], b0[:, None, :, :], b1[:, None, :, :]
+    ).any(axis=(1, 2))
+    contained = _points_in_polygon(pa[:, :1], pb)[:, 0] | _points_in_polygon(pb[:, :1], pa)[:, 0]
+    return np.where(crossing | contained, 0.0, gap)
+
+
+def footprint_rect_distance(footprint: Footprint, poses: npt.ArrayLike, rect: Rect) -> FloatArray:
+    """Exact clearance ``(n,)`` between the footprint at each pose and a rectangle."""
+    if isinstance(footprint, CircleFootprint):
+        centre_gap = point_rect_distance(footprint.centres(poses), rect)
+        return np.maximum(centre_gap - footprint.radius, 0.0)
+    world = footprint.at(poses)
+    corners = np.broadcast_to(rect.corners(), (world.shape[0], 4, POINT_DIM))
+    return polygon_distance(world, corners)
+
+
+@cache
+def _area_samples(footprint: PolygonFootprint, spacing: float) -> FloatArray:
+    """Robot-frame points covering the polygon (boundary at ``spacing`` plus interior lattice)."""
+    vertices = footprint.vertices
+    edges = []
+    for start, end in zip(vertices, np.roll(vertices, -1, axis=0), strict=True):
+        steps = max(int(np.ceil(np.linalg.norm(end - start) / spacing)), 1)
+        t = np.arange(steps)[:, None] / steps
+        edges.append(start + t * (end - start))
+    boundary = np.concatenate(edges)
+    lo, hi = vertices.min(axis=0), vertices.max(axis=0)
+    xs = np.arange(lo[0], hi[0] + spacing, spacing)
+    ys = np.arange(lo[1], hi[1] + spacing, spacing)
+    lattice = np.stack(np.meshgrid(xs, ys), axis=-1).reshape(-1, POINT_DIM)
+    inside = _points_in_polygon(lattice[None], vertices[None])[0]
+    samples = np.concatenate([boundary, lattice[inside]])
+    samples.setflags(write=False)
+    return samples
+
+
+def footprint_grid_distance(
+    footprint: Footprint, poses: npt.ArrayLike, grid: OccupancyGrid
+) -> FloatArray:
+    """Clearance ``(n,)`` between the footprint at each pose and grid obstacles (+/- one cell)."""
+    pose = as_poses(poses)
+    if isinstance(footprint, CircleFootprint):
+        return np.maximum(grid.distance_at(pose[:, :POINT_DIM]) - footprint.radius, 0.0)
+    samples = _area_samples(footprint, grid.resolution / _SAMPLES_PER_CELL)
+    world = np.einsum("nij,kj->nki", rotation(pose[:, 2]), samples) + pose[:, None, :POINT_DIM]
+    return np.asarray(grid.distance_at(world).min(axis=1), dtype=np.float64)
+
+
+def min_obstacle_distance(
+    footprint: Footprint,
+    poses: npt.ArrayLike,
+    grid: OccupancyGrid | None = None,
+    rects: Sequence[Rect] = (),
+) -> FloatArray:
+    """Minimum clearance ``(n,)`` to the grid and all rectangles (``inf`` if there are none)."""
+    pose = as_poses(poses)
+    result = np.full(pose.shape[0], np.inf)
+    if grid is not None:
+        result = np.minimum(result, footprint_grid_distance(footprint, pose, grid))
+    for rect in rects:
+        result = np.minimum(result, footprint_rect_distance(footprint, pose, rect))
+    return result

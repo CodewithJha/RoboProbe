@@ -148,6 +148,9 @@ not a live ROS connection — keeps the worker free of rclpy state and makes cra
   polygon at the ground-truth pose against (a) the ground-truth occupancy map distance transform and
   (b) the analytic pallet rectangle from `episode.yaml`. Same algorithm as kinematic2d (shared pure
   Python module `roboprobe.geometry`, vendored into the ROS package) ⇒ backend-independent oracles.
+  As built (T-030a): `min_obstacle_distance(footprint, poses, grid, rects)` is vectorised over `(n, 3)` poses;
+  rectangle distances are exact, grid distances use the SciPy EDT minus half a cell (within one cell); points off
+  the map count as distance 0; the package imports only NumPy/SciPy (enforced by a unit test).
 - Roll/pitch from ground-truth orientation; `nav_status` from the action feedback/result; recoveries from `/behavior_tree_log`.
 - Optional rosbag2 (MCAP storage) of `/scan`, `/cmd_vel`, `/amcl_pose`, `/tf`, ground truth when `record_bag` (default: failures only — the worker re-records on confirmatory replays, since a run's verdict is unknown in advance; option `record_bag: always`).
 

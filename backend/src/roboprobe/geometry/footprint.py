@@ -1,0 +1,67 @@
+"""Robot footprints in the robot frame and their placement at world poses.
+
+Frames: the robot frame has its origin at the base and ``+x`` forward; a world pose is
+``(x, y, yaw)`` in metres and radians, ``yaw`` counter-clockwise from world ``+x``.
+
+Layer: Kernel (L1); NumPy only so it can be vendored into the ROS package (docs/10 §6).
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+import numpy as np
+import numpy.typing as npt
+
+from roboprobe.geometry._arrays import POINT_DIM, FloatArray, as_points, as_poses, rotation
+
+__all__ = ["CircleFootprint", "Footprint", "PolygonFootprint"]
+
+_MIN_VERTICES = 3
+
+
+@dataclass(frozen=True, slots=True)
+class CircleFootprint:
+    """Disc of ``radius`` metres centred on the robot origin (e.g. TB4: 0.17 m)."""
+
+    radius: float
+
+    def __post_init__(self) -> None:
+        """Validate the radius."""
+        if not (np.isfinite(self.radius) and self.radius > 0):
+            msg = f"radius must be finite and > 0, got {self.radius}"
+            raise ValueError(msg)
+
+    def centres(self, poses: npt.ArrayLike) -> FloatArray:
+        """Disc centres ``(n, 2)`` in the world frame for ``(n, 3)`` poses."""
+        return as_poses(poses)[:, :POINT_DIM].copy()
+
+
+@dataclass(frozen=True, slots=True, eq=False)
+class PolygonFootprint:
+    """Simple polygon (``(k, 2)`` vertices in order, robot frame, metres), ``k >= 3``.
+
+    Compared and hashed by identity (it wraps an array); build it once and reuse it.
+    """
+
+    vertices: FloatArray = field(repr=False)
+
+    def __post_init__(self) -> None:
+        """Validate and freeze the vertex array."""
+        vertices = as_points(self.vertices, "vertices")
+        if vertices.ndim != POINT_DIM or len(vertices) < _MIN_VERTICES:
+            msg = f"a polygon footprint needs a (k >= 3, 2) vertex array, got {vertices.shape}"
+            raise ValueError(msg)
+        vertices = vertices.copy()
+        vertices.setflags(write=False)
+        object.__setattr__(self, "vertices", vertices)
+
+    def at(self, poses: npt.ArrayLike) -> FloatArray:
+        """World-frame vertices ``(n, k, 2)`` for ``(n, 3)`` poses."""
+        pose = as_poses(poses)
+        rotated = np.einsum("nij,kj->nki", rotation(pose[:, 2]), self.vertices)
+        return np.asarray(rotated + pose[:, None, :POINT_DIM], dtype=np.float64)
+
+
+Footprint = CircleFootprint | PolygonFootprint
+"""Any supported footprint."""
