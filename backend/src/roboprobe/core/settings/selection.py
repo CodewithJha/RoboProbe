@@ -1,0 +1,125 @@
+"""Default test-selection hyper-parameters (docs/27 §4.7, docs/07 §6.3).
+
+Layer: Kernel (L1). Campaigns may override these; resolved values are snapshotted per campaign.
+"""
+
+import itertools
+import math
+from typing import Self
+
+from pydantic import Field, field_validator, model_validator
+
+from roboprobe.core.settings._base import SettingsSection
+
+__all__ = [
+    "AcquisitionDefaults",
+    "GpDefaults",
+    "GridDefaults",
+    "OfatDefaults",
+    "ProbeDefaults",
+    "ProbeWeights",
+    "SelectionDefaults",
+]
+
+_MIN_LEVELS = 2
+
+
+class ProbeWeights(SettingsSection):
+    """Phase mixture of S-PROBE after warm-up; must sum to 1."""
+
+    mode_search: float = Field(default=0.6, ge=0, le=1, description="Mode-search share.")
+    boundary: float = Field(default=0.25, ge=0, le=1, description="Boundary-refinement share.")
+    refine: float = Field(default=0.15, ge=0, le=1, description="Local refinement share.")
+
+    @model_validator(mode="after")
+    def _check_sum(self) -> Self:
+        if not math.isclose(self.mode_search + self.boundary + self.refine, 1.0):
+            msg = "selection.probe.weights must sum to 1"
+            raise ValueError(msg)
+        return self
+
+
+class ProbeDefaults(SettingsSection):
+    """S-PROBE strategy defaults."""
+
+    n0_fraction: float = Field(
+        default=0.1, gt=0, le=1, description="Warm-up share of the budget [0-1]."
+    )
+    n0_min_factor: int = Field(
+        default=2, ge=1, description="Minimum warm-up runs as a multiple of the dimension d."
+    )
+    weights: ProbeWeights = Field(default_factory=ProbeWeights)
+    epsilon: float = Field(default=0.05, ge=0, le=1, description="Random exploration share.")
+    lambda_div: float = Field(default=1.0, ge=0, description="Diversity penalty weight.")
+    kappa_radius: float = Field(
+        default=0.5, gt=0, description="Diversity radius in GP length-scales."
+    )
+    beta_straddle: float = Field(default=1.96, gt=0, description="Straddle (LSE) beta.")
+    refine_bisect_steps: int = Field(default=4, ge=0, description="Boundary bisection steps.")
+    refine_perturb_n: int = Field(default=4, ge=0, description="Perturbations per refined point.")
+    refine_perturb_std: float = Field(
+        default=0.05, gt=0, description="Perturbation std in the unit cube."
+    )
+    adapt_window: int = Field(default=20, gt=0, description="Window for phase-weight adaptation.")
+
+
+class GpDefaults(SettingsSection):
+    """Gaussian-process surrogate defaults."""
+
+    max_points: int = Field(default=1500, gt=0, description="Training points kept by the GP.")
+    noise_lower_bound: float = Field(default=1e-4, gt=0, description="Likelihood noise floor.")
+    torch_threads: int = Field(default=4, ge=1, description="Torch intra-op threads.")
+
+
+class AcquisitionDefaults(SettingsSection):
+    """Acquisition-function optimiser defaults (BoTorch `optimize_acqf`)."""
+
+    num_restarts: int = Field(default=10, gt=0, description="Optimiser restarts.")
+    raw_samples: int = Field(default=512, gt=0, description="Raw samples for initialisation.")
+    maxiter: int = Field(default=200, gt=0, description="Optimiser iterations.")
+    dedupe_tol: float = Field(
+        default=1e-3, gt=0, description="Distance under which candidates are duplicates."
+    )
+
+
+class OfatDefaults(SettingsSection):
+    """One-factor-at-a-time baseline defaults."""
+
+    levels: tuple[float, ...] = Field(
+        default=(0.0, 0.25, 0.5, 0.75, 1.0),
+        description="Levels in the unit interval, strictly increasing.",
+    )
+
+    @field_validator("levels")
+    @classmethod
+    def _check_levels(cls, levels: tuple[float, ...]) -> tuple[float, ...]:
+        if len(levels) < _MIN_LEVELS:
+            msg = f"selection.ofat.levels needs at least {_MIN_LEVELS} levels"
+            raise ValueError(msg)
+        in_unit = all(0 <= x <= 1 for x in levels)
+        if not in_unit or any(a >= b for a, b in itertools.pairwise(levels)):
+            msg = "selection.ofat.levels must be strictly increasing values in [0, 1]"
+            raise ValueError(msg)
+        return levels
+
+
+class GridDefaults(SettingsSection):
+    """Grid baseline defaults."""
+
+    min_levels: int = Field(default=2, ge=_MIN_LEVELS, description="Minimum levels per axis.")
+
+
+class SelectionDefaults(SettingsSection):
+    """Defaults for every selection strategy."""
+
+    probe: ProbeDefaults = Field(default_factory=ProbeDefaults)
+    gp: GpDefaults = Field(default_factory=GpDefaults)
+    acq: AcquisitionDefaults = Field(default_factory=AcquisitionDefaults)
+    ofat: OfatDefaults = Field(default_factory=OfatDefaults)
+    grid: GridDefaults = Field(default_factory=GridDefaults)
+    mode_cache_refresh_every: int = Field(
+        default=10, gt=0, description="Refresh the failure-mode cache every N observations."
+    )
+    propose_timeout_s: float = Field(
+        default=10.0, gt=0, description="Time limit for `propose` before falling back [s]."
+    )
