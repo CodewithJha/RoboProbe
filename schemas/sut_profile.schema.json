@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/CodewithJha/RoboProbe/schemas/sut_profile.schema.json",
+  "title": "RoboProbe SUT profile",
+  "description": "Robot-stack configuration under test (docs/10 §4, docs/11 `sut_profiles`): kinematic2d controller constants or a Nav2 parameter set. Domain configuration, never env-driven (docs/27 §1). The file name must be `<id>.yaml`.",
+  "type": "object",
+  "required": ["schema_version", "id", "backend", "config"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{2,40}$"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "description": {
+      "type": "string"
+    },
+    "backend": {
+      "enum": ["kinematic2d", "gazebo_nav2"]
+    },
+    "config": {
+      "type": "object"
+    },
+    "provisional": {
+      "description": "Top-level `config` keys whose values await verification (e.g. by T-091); rejected when loading strictly.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "backend": { "const": "kinematic2d" } },
+        "required": ["backend"]
+      },
+      "then": {
+        "properties": { "config": { "$ref": "#/$defs/kinematic2d_config" } }
+      }
+    },
+    {
+      "if": {
+        "properties": { "backend": { "const": "gazebo_nav2" } },
+        "required": ["backend"]
+      },
+      "then": {
+        "properties": { "config": { "$ref": "#/$defs/gazebo_nav2_config" } }
+      }
+    }
+  ],
+  "$defs": {
+    "relative_path": {
+      "description": "Repository- or package-relative POSIX path; no absolute paths, no `..` segments.",
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$))[A-Za-z0-9_.\\-/]+$"
+    },
+    "param_path": {
+      "description": "Dotted parameter path with optional list indices, e.g. `velocity_smoother.ros__parameters.max_velocity[0]`.",
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\[[0-9]+\\])?(\\.[A-Za-z_][A-Za-z0-9_]*(\\[[0-9]+\\])?)*$"
+    },
+    "scalar": {
+      "type": ["number", "integer", "boolean", "string"]
+    },
+    "kinematic2d_config": {
+      "type": "object",
+      "required": ["model_file"],
+      "additionalProperties": false,
+      "properties": {
+        "model_file": {
+          "$ref": "#/$defs/relative_path",
+          "description": "kinematic2d model file holding the robot, controller and planner constants (T-029)."
+        },
+        "gain_overrides": {
+          "description": "Constants overridden for this profile, keyed by their dotted path in `model_file`.",
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/param_path" },
+          "additionalProperties": { "$ref": "#/$defs/scalar" }
+        }
+      }
+    },
+    "gazebo_nav2_config": {
+      "type": "object",
+      "required": ["base_nav2_params", "speed_param_paths"],
+      "additionalProperties": false,
+      "properties": {
+        "base_nav2_params": {
+          "$ref": "#/$defs/relative_path",
+          "description": "Package-relative Nav2 parameter file the overlay is applied to."
+        },
+        "speed_param_paths": {
+          "description": "Nav2 parameters set to the P1 speed value (docs/10 §4).",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/param_path" }
+        },
+        "nav2_overrides": {
+          "description": "Nested Nav2 parameters deep-merged over `base_nav2_params` for this profile.",
+          "type": "object"
+        }
+      }
+    }
+  }
+}

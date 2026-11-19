@@ -1,0 +1,11 @@
+# kinematic2d default robot stack (docs/10 §7.1). The controller, planner and robot constants live
+# in the model file (T-029, calibrated in T-034); a profile only points at it and may override
+# individual constants by dotted path, e.g. `controller.lookahead_m: 0.8`.
+schema_version: 1
+id: k2d_default
+backend: kinematic2d
+name: kinematic2d default
+description: Regulated pure pursuit + A* with the calibrated kinematic2d_v1 constants.
+config:
+  model_file: configs/backends/kinematic2d_v1.yaml
+  gain_overrides: {}
