@@ -14,6 +14,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   `pg_isready` health check, `pgdata` volume), one-shot `migrate` on the backend image (placeholder `--version`), the
   `x-backend` anchor, and a `dev`-profile loopback forwarder publishing Postgres; `make up` / `down` / `db-up` / `logs` /
   `ps`; `make setup` generates `secrets/db_password`; new compose variable `ROBOPROBE_DB_PORT`.
+- Materialisation helpers (T-028): `roboprobe.scenario.materialize.render_template` (sandboxed Jinja2,
+  `StrictUndefined`, byte-identical output) and `place_obstacle` (arc-length placement with left normal and
+  tangent-aligned yaw, docs/06 §3.2) shared by both backends.
 - Backend container image (T-005a): `docker/backend.Dockerfile` — multi-stage uv build (`api`, `worker`, `ml` extras,
   CPU-only torch), digest-pinned `python:3.12-slim` runtime, non-root uid 10001, `ENTRYPOINT ["roboprobe"]`, OCI labels
   from build args, `/data/artifacts` volume; allow-list `.dockerignore`.
