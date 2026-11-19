@@ -168,7 +168,11 @@ class ConfigError(RoboProbeError):
 
 
 class ValidationError(RoboProbeError):
-    """Domain input failed validation (spaces, scenarios, campaign requests)."""
+    """Domain input failed validation (spaces, scenarios, campaign requests).
+
+    Not to be confused with :class:`pydantic.ValidationError`: modules that use both should import
+    this module (``from roboprobe.core import errors``) and refer to ``errors.ValidationError``.
+    """
 
     default_code = ErrorCode.VALIDATION_ERROR
 
