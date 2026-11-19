@@ -27,9 +27,7 @@ from roboprobe.core.settings.observability import LogLevel as SettingsLogLevel
 
 pytestmark = pytest.mark.unit
 
-# Plain help text whatever the caller's terminal: Typer forces a Rich terminal under
-# GITHUB_ACTIONS or FORCE_COLOR, and TERM=dumb makes Rich emit no ANSI styling.
-runner = CliRunner(env={"TERM": "dumb", "NO_COLOR": "1"})
+runner = CliRunner()
 
 
 def _probe_app(action: Callable[[CliState], None]) -> typer.Typer:

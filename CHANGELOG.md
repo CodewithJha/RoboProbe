@@ -19,7 +19,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   (P1–P8, d = 6 by default, 8 with P7/P8 enabled).
 - CI pipeline (T-006a): `.github/workflows/ci.yml` with `lint` (ruff, mypy, import-linter, ESLint, Prettier, tsc and a
   tier-marker guard), `test-backend` (ubuntu/macos, unit+property+contract with the coverage gate), `test-integration`
-  (PostgreSQL 17 service), `test-web` (Vitest + coverage) and `build-web`. Actions are pinned by SHA, with
+  (PostgreSQL 17 service), `test-web` (Vitest + coverage), `build-web` and `config-docs-check`. Actions are pinned by SHA, with
   least-privilege permissions, JUnit and coverage job summaries and artefacts; shared setup lives in `.github/actions/setup-{backend,web}`.
 - Test infrastructure (T-017): Hypothesis `dev`/`ci`/`nightly` profiles (`HYPOTHESIS_PROFILE`), `tests/factories.py`
   domain builders, `tests/fakes/` package, PostgreSQL 17 fixtures (`ROBOPROBE_TEST_DATABASE_URL` or Testcontainers) with per-test rollback.

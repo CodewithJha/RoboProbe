@@ -1,5 +1,5 @@
 # PR pipeline (doc 20 §1–§4, §8). Required checks on main (doc 20 §3): lint, test-backend (ubuntu-latest),
-# test-integration, test-web, build-web. Later tasks append their own jobs (append-only blocks).
+# test-integration, test-web, build-web; config-docs-check is advisory. Later tasks append their own jobs (append-only blocks).
 # Security: least-privilege token, no pull_request_target (doc 31 TM-11), third-party actions pinned by SHA.
 name: ci
 
@@ -175,3 +175,15 @@ jobs:
       - name: tsc -b && vite build
         working-directory: web
         run: pnpm build
+
+  config-docs-check:
+    name: config-docs-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Generated config reference and templates are up to date (T-003c)
+        run: make config-docs-check
