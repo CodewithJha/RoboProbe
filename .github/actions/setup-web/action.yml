@@ -1,0 +1,21 @@
+name: Set up web
+description: Install pnpm (version from web/package.json) and Node, then install web dependencies from the lockfile.
+inputs:
+  node-version:
+    description: Node.js version
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      with:
+        package_json_file: web/package.json
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
+        cache-dependency-path: web/pnpm-lock.yaml
+    - name: pnpm install (frozen lockfile)
+      shell: bash
+      working-directory: web
+      run: pnpm install --frozen-lockfile

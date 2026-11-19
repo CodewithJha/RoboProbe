@@ -38,7 +38,7 @@ flowchart LR
 
 ## 3. Branch protection (`main`)
 
-Required checks: `lint`, `test-backend (ubuntu)`, `test-integration`, `test-web`, `build-web`, `openapi-check`, `docs` (if triggered). Linear history, squash merge, no force pushes, conversation resolution required.
+Required checks (exact GitHub check names): `lint`, `test-backend (ubuntu-latest)`, `test-integration`, `test-web`, `build-web`, `openapi-check` (once T-084b adds it), `docs-check` (from `docs.yml`; only runs when Markdown changes). `test-backend (macos-latest)` runs on every PR but is advisory. Linear history, squash merge, no force pushes, conversation resolution required.
 
 ## 4. Caching & speed
 
