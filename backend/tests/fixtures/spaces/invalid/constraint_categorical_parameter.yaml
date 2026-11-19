@@ -1,0 +1,11 @@
+# expect-path: /constraints/0/expr
+schema_version: 1
+id: bad_v1
+name: Bad
+task: tasks/corridor.yaml
+parameters:
+  - {id: task.along, name: Along, group: task, type: float, unit: "-", low: 0.2, high: 0.8, nominal: 0.5, prior: {kind: uniform}}
+  - {id: env.layout, name: Layout, group: environment, type: categorical, unit: "-", choices: [wide, narrow],
+     nominal: wide, prior: {kind: uniform}}
+constraints:
+  - {expr: "env.layout < 1"}

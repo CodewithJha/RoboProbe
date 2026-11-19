@@ -53,6 +53,7 @@ classDiagram
       runner: RunnerSettings
       worker: WorkerSettings
       backends: BackendsSettings
+      scenario: ScenarioSettings
       selection: SelectionDefaults
       oracles: OracleThresholds
       analysis: AnalysisSettings
@@ -195,10 +196,11 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `oracles.infra.startup_timeout_s` | float | `60.0` | `ROBOPROBE_ORACLES__INFRA__STARTUP_TIMEOUT_S` | Time allowed for the stack to become ACTIVE [s]. |
 | `oracles.infra.spawn_tolerance_m` | float | `0.2` | `ROBOPROBE_ORACLES__INFRA__SPAWN_TOLERANCE_M` | Allowed deviation of the spawn pose [m]. |
 
-### 4.7 Selection defaults (`selection.*`) — see 07 §6.3
+### 4.7 Scenario & selection defaults (`scenario.*`, `selection.*`) — see 06, 07 §6.3
 
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
+| `scenario.constraint_max_attempts` | int | `1000` | `ROBOPROBE_SCENARIO__CONSTRAINT_MAX_ATTEMPTS` | Sampler draws before rejection sampling of constrained spaces gives up. |
 | `selection.probe.n0_fraction` | float | `0.1` | `ROBOPROBE_SELECTION__PROBE__N0_FRACTION` | Warm-up share of the budget [0-1]. |
 | `selection.probe.n0_min_factor` | int | `2` | `ROBOPROBE_SELECTION__PROBE__N0_MIN_FACTOR` | Minimum warm-up runs as a multiple of the dimension d. |
 | `selection.probe.weights.mode_search` | float | `0.6` | `ROBOPROBE_SELECTION__PROBE__WEIGHTS__MODE_SEARCH` | Mode-search share. |
