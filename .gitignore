@@ -1,0 +1,58 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.python-version
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.benchmarks/
+.ipynb_checkpoints/
+
+# --- Node / web ---
+node_modules/
+web/dist/
+web/.vite/
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+playwright-report/
+test-results/
+
+# --- ROS 2 / colcon ---
+ros_ws/build/
+ros_ws/install/
+ros_ws/log/
+
+# --- RoboProbe runtime data ---
+data/
+backups/
+*.mcap
+*.db3
+
+# --- Secrets & local config ---
+.env
+.env.*
+!.env.example
+secrets/
+roboprobe.toml
+!roboprobe.example.toml
+
+# --- OS / editors ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
