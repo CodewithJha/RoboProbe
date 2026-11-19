@@ -27,6 +27,8 @@ COMPOSE_FILE ?= docker/compose.yaml
 ARTIFACTS_DIR ?= data/artifacts
 COMPOSE     := $(DOCKER) compose -f $(COMPOSE_FILE) $(if $(wildcard .env),--env-file .env)
 COMPOSE_UP  := $(COMPOSE) $(addprefix --profile ,$(PROFILES))
+# `make up UP_FLAGS=` runs pulled release images instead of building the backend locally.
+UP_FLAGS    ?= --build
 
 .DEFAULT_GOAL := help
 .PHONY: help setup lock lint format typecheck test test-fast test-cov pre-commit docs-check clean \
@@ -95,7 +97,7 @@ $(DB_PASSWORD_FILE): ## Generate a random local DB password (git-ignored; never 
 
 up: $(DB_PASSWORD_FILE) ## Start the stack (PROFILES, default core); fails if the migrate job fails
 	@mkdir -p $(ARTIFACTS_DIR)
-	$(COMPOSE_UP) up -d --build
+	$(COMPOSE_UP) up -d $(UP_FLAGS)
 	$(COMPOSE_UP) wait migrate
 
 down: ## Stop and remove every container and the network (volumes kept)

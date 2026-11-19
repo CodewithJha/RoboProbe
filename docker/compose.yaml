@@ -27,7 +27,7 @@ x-backend: &backend
 services:
   postgres:
     image: postgres:17@sha256:b60e90042aa6b8dbecd58e224b3e36114dbf8ad754465264c2476ad58a86e45c
-    profiles: [core]
+    profiles: [core, dev]
     environment:
       POSTGRES_DB: ${ROBOPROBE_DB_NAME:-roboprobe}
       POSTGRES_USER: ${ROBOPROBE_DB_USER:-roboprobe}
