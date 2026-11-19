@@ -1,0 +1,47 @@
+# Pre-commit hooks (docs/16 §3, docs/32 §3). Install with `make setup`; run all with `make pre-commit`.
+# ruff and mypy run from the locked backend environment so hook and CI versions never drift.
+default_install_hook_types: [pre-commit]
+minimum_pre_commit_version: "3.8.0"
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.28.0
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff (lint)
+        entry: uv run --directory backend ruff check --fix --force-exclude
+        language: system
+        types_or: [python, pyi]
+        files: ^backend/
+        # ruff resolves paths relative to backend/, so lint the whole project instead of argv.
+        pass_filenames: false
+      - id: ruff-format
+        name: ruff (format)
+        entry: uv run --directory backend ruff format --force-exclude
+        language: system
+        types_or: [python, pyi]
+        files: ^backend/
+        pass_filenames: false
+      - id: mypy
+        name: mypy (strict)
+        entry: uv run --directory backend mypy
+        language: system
+        types_or: [python, pyi]
+        files: ^backend/src/
+        pass_filenames: false

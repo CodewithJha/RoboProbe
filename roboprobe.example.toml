@@ -1,0 +1,30 @@
+# RoboProbe configuration file template (docs/27 §5).
+# Copy to ./roboprobe.toml (git-ignored) or point ROBOPROBE_CONFIG_FILE at your copy.
+# Precedence, highest first: CLI flags > ROBOPROBE_* env vars > .env > this file > secret files
+# > built-in defaults (docs/27 §2). Every key is optional; the values shown are the documented
+# defaults unless marked "example". Never put secrets here: use env vars or secret files.
+
+# Deployment environment: local | ci | lab | prod
+env = "local"
+
+[database]
+# SQLAlchemy DSN. Keep the password out of the URL; supply it via database.password_file.
+url = "postgresql+psycopg://roboprobe@localhost:5432/roboprobe"
+
+[storage]
+# Root directory for run artefacts (traces, reports, bags).
+artifact_root = "./data/artifacts"
+
+[worker]
+# Simulation slots per worker process (example; default 1).
+concurrency = 2
+
+[backends.gazebo_nav2]
+# Gazebo episodes allowed in parallel on one host.
+max_parallel_per_host = 1
+# Force Mesa software rendering (sets LIBGL_ALWAYS_SOFTWARE=1); useful on GPU-less hosts (example).
+software_rendering = true
+
+[oracles.loc]
+# Localisation oracle: maximum tolerated pose error in metres.
+e_max = 0.5

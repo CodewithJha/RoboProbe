@@ -5,6 +5,11 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ## [Unreleased]
 ### Added
+- Backend monorepo skeleton (T-001): `backend/` uv project for package `roboprobe` with extras `ml`, `worker`,
+  `api`, `dev` and a committed `uv.lock` (CPU-only PyTorch index); layered sub-package layout from docs/16 §1;
+  ruff, mypy `--strict`, pytest markers and coverage gate configuration; root `Makefile`
+  (`setup`, `lint`, `typecheck`, `test`, `test-fast`, `test-cov`), `.pre-commit-config.yaml`, `.env.example`
+  and `roboprobe.example.toml`.
 - Open-source community files: `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SUPPORT.md`, `GOVERNANCE.md`,
   `CITATION.cff`, `.editorconfig`, `.github/CODEOWNERS`, issue forms (bug, feature, docs) and `config.yml`.
 ### Changed

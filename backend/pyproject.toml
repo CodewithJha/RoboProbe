@@ -1,0 +1,168 @@
+[project]
+name = "roboprobe"
+version = "0.0.1"
+description = "Intelligent, simulation-based robustness testing for autonomous mobile robots."
+license = "MIT"
+authors = [{ name = "CodewithJha" }]
+requires-python = ">=3.12,<3.13"
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Testing",
+    "Typing :: Typed",
+]
+# Base dependencies (doc 15 §1). Minimums only; exact versions are pinned in uv.lock.
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.14",
+    "pydantic>=2.8",
+    "pydantic-settings>=2.4",
+    "PyYAML>=6.0",
+    "jsonschema>=4.23",
+    "structlog>=24.1",
+    "prometheus-client>=0.20",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "psycopg[binary]>=3.2",
+    "typer>=0.12",
+    "rich>=13.7",
+    "uuid-utils>=0.9",
+    "matplotlib>=3.9",
+]
+
+[project.optional-dependencies]
+ml = [
+    "torch>=2.4",
+    "gpytorch>=1.15",
+    "botorch>=0.18",
+    "scikit-learn>=1.5",
+    "shap>=0.46",
+]
+worker = [
+    "pyarrow>=17",
+    "pandas>=2.2",
+    "lxml>=5.0",
+    "jinja2>=3.1",
+]
+api = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sse-starlette>=2.1",
+]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "pytest-xdist>=3.6",
+    "hypothesis>=6.112",
+    "pytest-benchmark>=4.0",
+    "testcontainers[postgres]>=4.8",
+    "mypy>=1.11",
+    "ruff>=0.6",
+    "import-linter>=2.1",
+    "pip-audit>=2.7",
+    "pre-commit>=3.8",
+    "types-PyYAML>=6.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/CodewithJha/RoboProbe"
+Documentation = "https://github.com/CodewithJha/RoboProbe/tree/main/docs"
+Issues = "https://github.com/CodewithJha/RoboProbe/issues"
+Changelog = "https://github.com/CodewithJha/RoboProbe/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/roboprobe"]
+
+# --- uv: CPU-only PyTorch wheels so CI never downloads CUDA builds (doc 15 §1, ADR-0004) ---
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+# --- ruff (doc 16 §3) ---
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "RET", "PTH",
+    "D", "ANN", "PL", "RUF", "S", "TRY", "ERA",
+]
+# D203/D213 conflict with the Google convention's D211/D212.
+ignore = ["D203", "D213"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+known-first-party = ["roboprobe"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests: asserts and literal expectations are the point; docstrings optional.
+"tests/**/*.py" = ["S101", "PLR2004", "D100", "D101", "D102", "D103", "D104", "ANN"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+# --- mypy (doc 16 §3) ---
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src"]
+mypy_path = "src"
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+plugins = ["pydantic.mypy"]
+
+# --- pytest (doc 18) ---
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--import-mode=importlib",
+    "-m", "not sim and not slow",
+]
+markers = [
+    "unit: fast, isolated tests of a single unit",
+    "property: Hypothesis property-based tests",
+    "contract: interface/port contract tests run against every implementation",
+    "integration: tests touching real infrastructure (PostgreSQL via Testcontainers, filesystem)",
+    "benchmark: pytest-benchmark performance and scientific-regression gates",
+    "sim: tests that need a simulator backend (Gazebo); excluded by default",
+    "slow: long-running tests; excluded by default",
+]
+xfail_strict = true
+filterwarnings = ["error"]
+
+# --- coverage (doc 18 §3: line >= 85 %, branch >= 75 %) ---
+[tool.coverage.run]
+source = ["roboprobe"]
+branch = true
+omit = ["*/roboprobe/backends/gazebo_nav2/*"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@(abc\\.)?abstractmethod",
+    # Only a bare `...` statement (Protocol / overload stubs), never e.g. `x[..., 0]`.
+    "^\\s*\\.\\.\\.\\s*$",
+]
