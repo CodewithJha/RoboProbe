@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/CodewithJha/RoboProbe/schemas/task.schema.json",
+  "title": "RoboProbe task file",
+  "description": "Navigation task under test (docs/06 §1, §7). `TBD_Tnnn` placeholders are allowed by the schema and rejected by the loader's TBD guard (T-027).",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "id",
+    "world",
+    "map",
+    "start",
+    "goal",
+    "goal_tolerance",
+    "nominal_path",
+    "time_limit"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{2,40}$"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "description": {
+      "type": "string"
+    },
+    "world": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "World file per backend name."
+    },
+    "map": {
+      "type": "string",
+      "minLength": 1
+    },
+    "start": {
+      "$ref": "#/$defs/pose"
+    },
+    "goal": {
+      "$ref": "#/$defs/pose"
+    },
+    "goal_tolerance": {
+      "type": "object",
+      "required": [
+        "xy",
+        "yaw"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "xy": {
+          "$ref": "#/$defs/positive",
+          "description": "[m]"
+        },
+        "yaw": {
+          "$ref": "#/$defs/positive",
+          "description": "[rad]"
+        }
+      }
+    },
+    "nominal_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "injected_obstacles": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/injected_obstacle"
+      }
+    },
+    "time_limit": {
+      "type": "object",
+      "required": [
+        "factor",
+        "offset_s",
+        "cap_s"
+      ],
+      "additionalProperties": false,
+      "description": "T_max = min(factor * nominal_path_length / max_speed + offset_s, cap_s).",
+      "properties": {
+        "factor": {
+          "$ref": "#/$defs/positive"
+        },
+        "offset_s": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cap_s": {
+          "$ref": "#/$defs/positive"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "tbd": {
+      "type": "string",
+      "pattern": "^TBD_T[0-9]{3}$",
+      "description": "Placeholder for a value fixed by the named task (e.g. TBD_T092); loaders reject it (T-027)."
+    },
+    "number_or_tbd": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "$ref": "#/$defs/tbd"
+        }
+      ]
+    },
+    "positive": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "pose": {
+      "type": "object",
+      "required": [
+        "x",
+        "y",
+        "yaw"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "$ref": "#/$defs/number_or_tbd"
+        },
+        "y": {
+          "$ref": "#/$defs/number_or_tbd"
+        },
+        "yaw": {
+          "$ref": "#/$defs/number_or_tbd"
+        }
+      },
+      "description": "Planar pose: x, y [m], yaw [rad]."
+    },
+    "param_id": {
+      "type": "string",
+      "pattern": "^[a-z]+\\.[a-z0-9_]+$",
+      "description": "Parameter id `<group>.<name>` (docs/06 §2)."
+    },
+    "injected_obstacle": {
+      "type": "object",
+      "required": [
+        "model",
+        "size",
+        "placement"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "size": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "description": "[x, y, z] in metres.",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/positive"
+              },
+              {
+                "$ref": "#/$defs/tbd"
+              }
+            ]
+          }
+        },
+        "placement": {
+          "type": "object",
+          "required": [
+            "along",
+            "lateral",
+            "side"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "along": {
+              "$ref": "#/$defs/param_id"
+            },
+            "lateral": {
+              "$ref": "#/$defs/param_id"
+            },
+            "side": {
+              "enum": [
+                "left",
+                "right"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

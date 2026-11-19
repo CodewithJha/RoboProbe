@@ -1,0 +1,10 @@
+schema: experiment
+pointer: /strategies
+document:
+  schema_version: 1
+  id: exp_bad
+  backend: kinematic2d
+  space: {id: warehouse_v1}
+  strategies: []
+  seeds: {root: 1, count: 3}
+  budget: 10

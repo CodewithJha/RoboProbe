@@ -1,0 +1,10 @@
+schema: scenario_space
+pointer: /parameters/0/group
+document:
+  schema_version: 1
+  id: bad_v1
+  name: Bad group
+  task: tasks/t.yaml
+  parameters:
+    - {id: robot.max_speed, name: Speed, group: weather, type: float, unit: m/s,
+       low: 0.1, high: 0.5, nominal: 0.2, prior: {kind: uniform}}

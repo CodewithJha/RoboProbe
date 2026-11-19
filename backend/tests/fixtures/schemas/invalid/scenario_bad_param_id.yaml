@@ -1,0 +1,7 @@
+schema: scenario
+pointer: /values
+document:
+  schema_version: 1
+  kind: scenario
+  space: {id: warehouse_v1}
+  values: {MaxSpeed: 0.3}

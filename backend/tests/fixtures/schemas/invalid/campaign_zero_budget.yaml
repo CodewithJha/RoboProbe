@@ -1,0 +1,7 @@
+schema: campaign
+pointer: /budget
+document:
+  space: {id: warehouse_v1}
+  backend: kinematic2d
+  strategy: {id: S-PROBE}
+  budget: 0
