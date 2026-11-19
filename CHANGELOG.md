@@ -16,6 +16,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Shared core types (T-002a): `roboprobe.core.types` with the normative enums, frozen value objects
   (`Scenario`, `Proposal`, `Observation`, `OracleResult`, `RunOutcome`, `TaskSpec`, `SutProfile`, `Pose2D`)
   and the validated, read-only columnar `Trace` (docs/05 §1).
+- Injectable clock (T-002d): `roboprobe.core.clock` with the `Clock` protocol, `SystemClock` (tz-aware UTC)
+  and the deterministic `FakeClock` (`advance`, instant `sleep`).
 - `web/` dashboard skeleton: Vite 6 + React 19 + TypeScript (strict), ESLint (typescript-eslint strict,
   react-hooks, jsx-a11y, `dangerouslySetInnerHTML` ban) + Prettier, Vitest + Testing Library, pnpm 9 (T-007).
 - Open-source community files: `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SUPPORT.md`, `GOVERNANCE.md`,
