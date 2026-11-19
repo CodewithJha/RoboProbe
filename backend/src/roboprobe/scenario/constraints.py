@@ -26,6 +26,7 @@ Implements: FR-SCN-004, NFR-SEC-003
 from __future__ import annotations
 
 import ast
+import itertools
 import operator
 import re
 from collections.abc import Callable, Collection, Mapping, Sequence
@@ -71,11 +72,11 @@ _COMPARE_OPS: Final[Mapping[type[ast.cmpop], Callable[[FloatArray, FloatArray], 
     ast.Eq: np.equal,
     ast.NotEq: np.not_equal,
 }
-_FUNCTIONS: Final[Mapping[str, tuple[int, Callable[..., FloatArray]]]] = {
-    # name -> (minimum argument count, implementation)
-    "abs": (1, np.abs),
-    "min": (2, lambda *xs: np.minimum.reduce(np.broadcast_arrays(*xs))),
-    "max": (2, lambda *xs: np.maximum.reduce(np.broadcast_arrays(*xs))),
+_FUNCTIONS: Final[Mapping[str, tuple[int, int | None, Callable[..., FloatArray]]]] = {
+    # name -> (minimum, maximum or None = unbounded argument count, implementation)
+    "abs": (1, 1, np.abs),
+    "min": (2, None, lambda *xs: np.minimum.reduce(np.broadcast_arrays(*xs))),
+    "max": (2, None, lambda *xs: np.maximum.reduce(np.broadcast_arrays(*xs))),
 }
 
 
@@ -159,10 +160,10 @@ class _Compiler:
         if name is None or spec is None:
             allowed = ", ".join(sorted(_FUNCTIONS))
             raise self._reject(node, f"only calls to {allowed} are allowed")
-        min_args, fn = spec
+        min_args, max_args, fn = spec
         if node.keywords or any(isinstance(a, ast.Starred) for a in node.args):
             raise self._reject(node, f"{name}() takes positional arguments only")
-        if len(node.args) < min_args or (name == "abs" and len(node.args) != 1):
+        if len(node.args) < min_args or (max_args is not None and len(node.args) > max_args):
             raise self._reject(node, f"wrong number of arguments to {name}()")
         args = [self.num(arg) for arg in node.args]
         return "num", lambda values: fn(*(arg(values) for arg in args))
@@ -179,8 +180,8 @@ class _Compiler:
 
         def evaluate(values: _Values) -> BoolArray:
             evaluated = [operand(values) for operand in operands]
-            pairs = zip(ops, evaluated, evaluated[1:], strict=False)
-            return np.logical_and.reduce([cmp(a, b) for cmp, a, b in pairs])  # type: ignore[no-any-return]
+            pairs = zip(ops, itertools.pairwise(evaluated), strict=True)
+            return np.logical_and.reduce([cmp(a, b) for cmp, (a, b) in pairs])  # type: ignore[no-any-return]
 
         return "bool", evaluate
 
