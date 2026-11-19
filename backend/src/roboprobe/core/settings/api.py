@@ -39,7 +39,7 @@ class ApiSettings(SettingsSection):
     )
     token: SecretStr | None = Field(
         default=None,
-        description="Bearer token required on every request. Alias env var: `ROBOPROBE_API_TOKEN`.",
+        description="Bearer token required on every request (and for any non-loopback `host`).",
     )
     cors_origins: tuple[str, ...] = Field(
         default=("http://localhost:5173", "http://localhost:8080"),

@@ -27,8 +27,7 @@ class DatabaseSettings(SettingsSection):
         default=SecretStr("postgresql+psycopg://roboprobe@localhost:5432/roboprobe"),
         description=(
             "SQLAlchemy DSN of the RoboProbe database. Keep the password out of the URL and use "
-            "`password_file` or the `db_password` secret file instead. Alias env var: "
-            "`ROBOPROBE_DATABASE_URL`."
+            "`password_file` or the `db_password` secret file instead."
         ),
     )
     password_file: Path | None = Field(

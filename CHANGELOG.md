@@ -49,11 +49,16 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Structured logging (T-004a): `roboprobe.core.logging` with `configure_logging()` (JSON/console, `ts`, `level`,
   `logger`, `service`, `version`), `bind_context()` for correlation ids, secret redaction and the `EVENTS`
   catalogue enforced by an AST test.
+- Configuration reference generator (T-003c): `scripts/gen_config_docs.py` renders docs/27 §4.1–4.10,
+  `.env.example` and `roboprobe.example.toml` from the settings models; `make config-docs` /
+  `make config-docs-check` (fails with a diff on drift); a pre-commit hook runs the check.
 - Open-source community files: `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SUPPORT.md`, `GOVERNANCE.md`,
   `CITATION.cff`, `.editorconfig`, `.github/CODEOWNERS`, issue forms (bug, feature, docs) and `config.yml`.
 
 ### Changed
 
+- `.env.example` and `roboprobe.example.toml` now list every setting (commented out, with defaults and
+  descriptions) instead of a hand-picked subset.
 - Docs: fixed Markdown that rendered incorrectly (paragraphs swallowed into tables, unescaped `|` in table code spans,
   missing blank lines, bare URLs) and normalised formatting to pass markdownlint.
 - README rewritten as a full project landing page; `CONTRIBUTING.md` and `SECURITY.md` expanded;
