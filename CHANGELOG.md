@@ -7,6 +7,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Backend container image (T-005a): `docker/backend.Dockerfile` — multi-stage uv build (`api`, `worker`, `ml` extras,
+  CPU-only torch), digest-pinned `python:3.12-slim` runtime, non-root uid 10001, `ENTRYPOINT ["roboprobe"]`, OCI labels
+  from build args, `/data/artifacts` volume; allow-list `.dockerignore`.
 - Metrics and health (T-004b): `roboprobe.core.metrics_registry` defines every docs/21 §5.2 metric in a dedicated
   registry (Null Object when `observability.metrics_enabled=false`); `roboprobe.core.health` with `run_checks` and an
   internal `/healthz` (200/503 JSON) + `/metrics` server for workers and the orchestrator.
