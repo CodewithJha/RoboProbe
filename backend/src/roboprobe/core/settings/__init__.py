@@ -14,6 +14,7 @@ Implements: ADR-0015, docs/27 §2-§4.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any, Literal, Self
 
 import pydantic
@@ -53,6 +54,7 @@ __all__ = [
     "StorageSettings",
     "WorkerSettings",
     "explain_sources",
+    "flatten",
     "load_settings",
 ]
 
@@ -120,11 +122,14 @@ class RoboProbeSettings(BaseSettings):
         return self
 
 
-def load_settings(cli_overrides: Mapping[str, Any] | None = None) -> RoboProbeSettings:
+def load_settings(
+    cli_overrides: Mapping[str, Any] | None = None, *, config_file: Path | None = None
+) -> RoboProbeSettings:
     """Resolve settings from every source and validate them (fail fast).
 
     Args:
         cli_overrides: Highest-precedence values, nested or dotted (``{"worker.concurrency": 4}``).
+        config_file: Explicit TOML file (CLI ``--config``); overrides ``ROBOPROBE_CONFIG_FILE``.
 
     Returns:
         The validated, immutable settings tree; :func:`explain_sources` reports provenance.
@@ -134,7 +139,7 @@ def load_settings(cli_overrides: Mapping[str, Any] | None = None) -> RoboProbeSe
             so secrets are never echoed).
     """
     try:
-        layers = collect_layers(RoboProbeSettings, cli_overrides)
+        layers = collect_layers(RoboProbeSettings, cli_overrides, config_file)
     except ValueError as exc:
         raise ConfigError(str(exc)) from None
     known = RoboProbeSettings.model_fields.keys()

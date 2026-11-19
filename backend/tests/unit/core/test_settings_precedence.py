@@ -72,6 +72,21 @@ def test_missing_explicit_config_file_fails(
         load_settings()
 
 
+def test_config_file_argument_wins_over_env_variable(
+    settings_env: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from_env = settings_env / "env.toml"
+    from_env.write_text("[worker]\nconcurrency = 3\n")
+    from_arg = settings_env / "arg.toml"
+    from_arg.write_text("[worker]\nconcurrency = 4\n")
+    monkeypatch.setenv("ROBOPROBE_CONFIG_FILE", str(from_env))
+    settings = load_settings(config_file=from_arg)
+    assert settings.worker.concurrency == 4
+    assert explain_sources(settings)["worker.concurrency"] == f"toml:{from_arg}"
+    with pytest.raises(ConfigError, match="config file points to a missing file"):
+        load_settings(config_file=settings_env / "nope.toml")
+
+
 def test_nested_env_and_json_values(settings_env: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ROBOPROBE_ORACLES__LOC__E_MAX", "0.4")
     monkeypatch.setenv("ROBOPROBE_API__CORS_ORIGINS", '["http://example.test"]')

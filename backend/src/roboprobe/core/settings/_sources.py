@@ -74,7 +74,9 @@ class SourceLayer:
 
 
 def collect_layers(
-    settings_cls: type[BaseSettings], cli_overrides: Mapping[str, Any] | None
+    settings_cls: type[BaseSettings],
+    cli_overrides: Mapping[str, Any] | None,
+    config_file: Path | None = None,
 ) -> list[SourceLayer]:
     """Read every source, highest precedence first.
 
@@ -83,6 +85,8 @@ def collect_layers(
     Args:
         settings_cls: Root settings class whose ``model_config`` defines prefix and delimiter.
         cli_overrides: Nested mapping or dotted keys (``{"runner.max_budget": 50}``).
+        config_file: Explicit TOML file (e.g. the CLI ``--config`` flag); wins over
+            ``ROBOPROBE_CONFIG_FILE`` and ``./roboprobe.toml``.
 
     Returns:
         Source layers, highest precedence first; empty layers are kept for explainability.
@@ -91,7 +95,7 @@ def collect_layers(
         ValueError: If the explicit config file is missing or a TOML file cannot be parsed.
     """
     environ: Mapping[str, str] = os.environ
-    toml_path = _toml_path(environ)
+    toml_path = _toml_path(environ, config_file)
     secrets_dir = Path(environ.get(SECRETS_DIR_ENV) or DEFAULT_SECRETS_DIR)
     readers: list[tuple[str, bool, Callable[[], Tree]]] = [
         ("cli", True, lambda: expand_dotted(cli_overrides or {})),
@@ -150,12 +154,13 @@ def _aliases(environ: Mapping[str, str]) -> Tree:
     return tree
 
 
-def _toml_path(environ: Mapping[str, str]) -> Path | None:
-    explicit = environ.get(CONFIG_FILE_ENV)
+def _toml_path(environ: Mapping[str, str], config_file: Path | None) -> Path | None:
+    explicit = config_file or environ.get(CONFIG_FILE_ENV)
     if explicit:
         path = Path(explicit)
         if not path.is_file():
-            msg = f"{CONFIG_FILE_ENV} points to a missing file: {path}"
+            origin = "config file" if config_file else CONFIG_FILE_ENV
+            msg = f"{origin} points to a missing file: {path}"
             raise ValueError(msg)
         return path
     return DEFAULT_CONFIG_FILE if DEFAULT_CONFIG_FILE.is_file() else None

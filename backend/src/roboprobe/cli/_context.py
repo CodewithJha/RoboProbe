@@ -12,6 +12,7 @@ from pathlib import Path
 import typer
 
 from roboprobe.cli._output import Output
+from roboprobe.core.settings import RoboProbeSettings, load_settings
 
 __all__ = ["CliState", "LogLevel", "get_state"]
 
@@ -40,6 +41,15 @@ class CliState:
     output: Output
     config_file: Path | None = None
     log_level: LogLevel | None = None
+
+    def load_settings(self) -> RoboProbeSettings:
+        """Resolve settings with the global flags applied as the highest-precedence source.
+
+        Raises:
+            ConfigError: If the resolved configuration is invalid (mapped to exit code 2).
+        """
+        overrides = {} if self.log_level is None else {"logging.level": self.log_level.value}
+        return load_settings(overrides, config_file=self.config_file)
 
 
 def get_state(ctx: typer.Context) -> CliState:

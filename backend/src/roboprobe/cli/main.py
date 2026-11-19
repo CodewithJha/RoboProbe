@@ -28,6 +28,7 @@ from typing import Annotated, Any
 import typer
 from typer.core import TyperGroup
 
+from roboprobe.cli import config
 from roboprobe.cli._context import CliState, LogLevel
 from roboprobe.cli._output import Output
 from roboprobe.core.errors import ConfigError, RoboProbeError, ValidationError
@@ -47,7 +48,7 @@ DISTRIBUTION_NAME = "roboprobe"
 CONFIG_FILE_ENV = "ROBOPROBE_CONFIG_FILE"
 LOG_LEVEL_ENV = "ROBOPROBE_LOGGING__LEVEL"
 
-COMMAND_GROUPS: Sequence[typer.Typer] = ()
+COMMAND_GROUPS: Sequence[typer.Typer] = (config.app,)
 """Registered command groups, in ``--help`` order (append-only; see module docstring)."""
 
 

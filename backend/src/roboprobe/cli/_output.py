@@ -32,6 +32,18 @@ def _stderr_console() -> Console:
     return Console(stderr=True)
 
 
+def _cell(value: JsonValue) -> str:
+    """Table cell text: strings verbatim, everything else as JSON (``null``, ``true``, lists)."""
+    return value if isinstance(value, str) else json.dumps(value)
+
+
+def _describe(value: JsonValue) -> str:
+    """One-line human rendering of a context value (``k=v, k=v`` for mappings)."""
+    if isinstance(value, dict):
+        return ", ".join(f"{key}={item}" for key, item in value.items())
+    return str(value)
+
+
 @dataclass(frozen=True, slots=True)
 class Output:
     """Renders command results and errors in the mode selected by the global ``--json`` flag.
@@ -69,9 +81,11 @@ class Output:
         if self.json_mode:
             self._emit_json(self.console, records)
             return
-        table = Table(*columns, title=title)
+        table = Table(title=title)
+        for column in columns:
+            table.add_column(column, overflow="fold")
         for row in rows:
-            table.add_row(*(Text(str(value)) for value in row))
+            table.add_row(*(Text(_cell(value)) for value in row))
         self.console.print(table)
 
     def error(self, exc: RoboProbeError) -> None:
@@ -85,6 +99,11 @@ class Output:
             return
         line = Text.assemble(("error", "bold red"), f" [{exc.code}] ", exc.message)
         self.err_console.print(line)
+        for key, value in exc.context.items():
+            self.err_console.print(Text(f"  {key}:"))
+            items = value if isinstance(value, list) else [value]
+            for item in items:
+                self.err_console.print(Text(f"    - {_describe(item)}"))
 
     @staticmethod
     def _emit_json(console: Console, payload: JsonValue) -> None:

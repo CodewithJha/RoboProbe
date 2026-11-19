@@ -19,7 +19,7 @@ Service settings provide *defaults* for domain configuration (`defaults.oracles.
 1. CLI flags (`--budget`, `--workers`, …)
 2. Environment variables: prefix `ROBOPROBE_`, nested delimiter `__` (e.g. `ROBOPROBE_RUNNER__TICK_INTERVAL_S=0.5`)
 3. `.env` file in the working directory (git-ignored; template `.env.example`)
-4. TOML file: path in `ROBOPROBE_CONFIG_FILE`, else `./roboprobe.toml` (template `roboprobe.example.toml`)
+4. TOML file: path from the CLI `--config` flag, else `ROBOPROBE_CONFIG_FILE`, else `./roboprobe.toml` (template `roboprobe.example.toml`)
 5. Secret files: `ROBOPROBE_SECRETS_DIR` (default `/run/secrets`) — e.g. file `db_password`
 6. Defaults in the settings classes
 `roboprobe config show [--sources]` prints the resolved tree and which source set each value; secrets are masked.
