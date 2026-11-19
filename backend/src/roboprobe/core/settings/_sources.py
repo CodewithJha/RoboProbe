@@ -1,7 +1,8 @@
 """Configuration sources and precedence (docs/27 §2).
 
 Layer: Kernel (L1). This package is the only place allowed to read ``os.environ``
-(docs/27 §6 rule 2).
+(docs/27 §6 rule 2). ``ROBOPROBE_CONFIG_FILE`` and ``ROBOPROBE_SECRETS_DIR`` locate the other
+sources, so they are read from the process environment only (not from ``.env`` or TOML).
 """
 
 from __future__ import annotations

@@ -13,6 +13,8 @@ from roboprobe.core.settings._base import SettingsSection
 
 __all__ = ["DatabaseSettings"]
 
+_SCHEME = "postgresql"
+
 
 class DatabaseSettings(SettingsSection):
     """PostgreSQL connection settings.
@@ -60,8 +62,9 @@ class DatabaseSettings(SettingsSection):
 
     @model_validator(mode="after")
     def _check_scheme(self) -> Self:
-        if not urlsplit(self.url.get_secret_value()).scheme.startswith("postgresql"):
-            msg = "database.url must be a postgresql DSN"
+        scheme = urlsplit(self.url.get_secret_value()).scheme
+        if scheme != _SCHEME and not scheme.startswith(f"{_SCHEME}+"):
+            msg = "database.url must be a postgresql:// or postgresql+<driver>:// DSN"
             raise ValueError(msg)
         return self
 

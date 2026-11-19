@@ -104,6 +104,7 @@ def test_is_loopback_host(host: str, loopback: bool) -> None:
         ({"risk": {"thresholds": {"safe": 0.9, "failure": 0.5}}}, "risk.thresholds"),
         ({"worker": {"heartbeat_interval_s": 30}}, ""),
         ({"database": {"url": "mysql://u@h/db"}}, "database"),
+        ({"database": {"url": "postgresqlx://u@h/db"}}, "database"),
         ({"database": {"notify_channel": "Bad-Channel"}}, "database.notify_channel"),
         ({"api": {"base_path": "api/v1/"}}, "api.base_path"),
         (
@@ -136,3 +137,15 @@ def test_direct_construction_ignores_environment(
 def test_api_section_validates_standalone() -> None:
     with pytest.raises(ValidationError):
         ApiSettings(host="192.0.2.10")
+
+
+@pytest.mark.parametrize(
+    "url", ["postgresql://u@h/db", "postgresql+psycopg://u@h/db", "postgresql+asyncpg://u@h/db"]
+)
+def test_postgres_dsn_variants_accepted(settings_env: Path, url: str) -> None:
+    assert load_settings({"database.url": url}).database.url.get_secret_value() == url
+
+
+def test_meta_variables_in_dotenv_are_ignored(settings_env: Path) -> None:
+    (settings_env / ".env").write_text(f"ROBOPROBE_CONFIG_FILE={settings_env / 'missing.toml'}\n")
+    assert load_settings().env == "local"
