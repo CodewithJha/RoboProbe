@@ -71,10 +71,19 @@ TRACE_SCHEMA: pa.Schema = pa.schema(
 
 
 def write_trace(trace: Trace, path: Path) -> None:
-    """Write ``trace`` to ``path`` as zstd-compressed Parquet (parent directories must exist)."""
+    """Write ``trace`` to ``path`` as zstd-compressed Parquet (parent directories must exist).
+
+    Raises:
+        roboprobe.core.errors.ValidationError: If ``trace.meta`` is not JSON-serialisable
+            (for example it holds NaN).
+    """
+    try:
+        file_metadata = _file_metadata(trace)
+    except (TypeError, ValueError) as exc:
+        raise _invalid(path, [f"meta is not JSON-serialisable: {exc}"]) from exc
     arrays: dict[str, Any] = {name: getattr(trace, name) for name, _, _ in _COLUMNS[:-1]}
     arrays["rtf"] = trace.rtf if trace.rtf is not None else pa.nulls(trace.n_samples, pa.float32())
-    table = pa.table(arrays, schema=TRACE_SCHEMA.with_metadata(_file_metadata(trace)))
+    table = pa.table(arrays, schema=TRACE_SCHEMA.with_metadata(file_metadata))
     pq.write_table(table, path, compression=_COMPRESSION)
 
 

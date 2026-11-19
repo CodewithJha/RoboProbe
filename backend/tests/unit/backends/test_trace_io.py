@@ -192,7 +192,7 @@ def test_non_parquet_file_is_invalid(tmp_path: Path) -> None:
 
 def test_meta_must_be_json_serialisable_without_nan(tmp_path: Path) -> None:
     trace = make_trace(n=3, meta={"bad": float("nan")})
-    with pytest.raises(ValueError, match="JSON"):
+    with pytest.raises(errors.ValidationError, match="not JSON-serialisable"):
         trace_io.write_trace(trace, tmp_path / "trace.parquet")
 
 
