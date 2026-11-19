@@ -38,7 +38,50 @@ flowchart LR
 
 ## 3. Branch protection (`main`)
 
-Required checks (exact GitHub check names): `lint`, `test-backend (ubuntu-latest)`, `test-integration`, `test-web`, `build-web`, `openapi-check` (once T-084b adds it), `docs-check` (from `docs.yml`; only runs when Markdown changes). `test-backend (macos-latest)` runs on every PR but is advisory. Linear history, squash merge, no force pushes, conversation resolution required.
+Policy: every change reaches `main` through a squash-merged PR whose required checks are green. History stays
+linear, force pushes and branch deletion are blocked, and review conversations must be resolved before merge.
+
+### 3.1 As built (T-132)
+
+Repository ruleset **`main`** (Settings → Rules → Rulesets) targets the default branch. It is `active` with
+**no bypass actors**, so it applies to administrators too.
+
+| Rule | Setting |
+|------|---------|
+| Restrict deletions | on |
+| Block force pushes | on (`non_fast_forward`) |
+| Require linear history | on |
+| Require a pull request before merging | 0 required approvals (single-maintainer project; self-review is recorded on the PR, doc 32 §5); conversation resolution required; allowed merge method: squash |
+| Require status checks to pass | `lint`, `test-backend (ubuntu-latest)`, `test-integration`, `test-web`, `build-web` (GitHub Actions app); branch need **not** be up to date before merging, so parallel PRs don't force rebase-and-rerun loops |
+
+Advisory checks (not required) and why:
+
+| Check | Why it isn't required |
+|-------|----------------------|
+| `test-backend (macos-latest)` | portability signal only |
+| `config-docs-check`, `security`, `license-check` | run on every PR and block via review |
+| `docs-check` | `docs.yml` runs only when Markdown changes, so a required check would never report on code-only PRs |
+| `openapi-check` | to be added to the ruleset when T-084b creates it |
+
+Repository merge settings: squash merge only (merge commits and rebase merges disabled), squash commit title is the PR
+title and the body is the PR body (it carries `Closes #N`), head branches are deleted automatically, and auto-merge
+is allowed (`gh pr merge --squash --auto`).
+
+Backlog board: GitHub Project [RoboProbe backlog](https://github.com/users/CodewithJha/projects/2), linked to the
+repository, with a `Status` field of `Backlog → Ready → In progress → In review → Done` that mirrors doc 32 §1.
+Every `task` issue is on the board.
+
+To re-apply (owner token with `repo` and `project` scopes):
+
+```bash
+gh api -X PATCH repos/CodewithJha/RoboProbe -F allow_squash_merge=true -F allow_merge_commit=false \
+  -F allow_rebase_merge=false -F delete_branch_on_merge=true -F allow_auto_merge=true \
+  -f squash_merge_commit_title=PR_TITLE -f squash_merge_commit_message=PR_BODY
+gh api -X POST repos/CodewithJha/RoboProbe/rulesets --input ruleset.json   # JSON in the T-132 PR description
+```
+
+Owner UI step (no public API): in the project's **Workflows**, enable *Auto-add to project* for
+`repo:CodewithJha/RoboProbe label:task` so new task issues appear on the board automatically.
 
 ## 4. Caching & speed
 

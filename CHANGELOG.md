@@ -14,6 +14,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Materialisation helpers (T-028): `roboprobe.scenario.materialize.render_template` (sandboxed Jinja2,
   `StrictUndefined`, byte-identical output) and `place_obstacle` (arc-length placement with left normal and
   tangent-aligned yaw, docs/06 §3.2) shared by both backends.
+- Repository governance (T-132): `main` ruleset (PR-only, required CI checks, linear history, no force push, conversation
+  resolution), squash-only merges with auto-delete and auto-merge, and the "RoboProbe backlog" project board; documented in docs/20 §3.1.
 - Backend container image (T-005a): `docker/backend.Dockerfile` — multi-stage uv build (`api`, `worker`, `ml` extras,
   CPU-only torch), digest-pinned `python:3.12-slim` runtime, non-root uid 10001, `ENTRYPOINT ["roboprobe"]`, OCI labels
   from build args, `/data/artifacts` volume; allow-list `.dockerignore`.
