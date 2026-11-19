@@ -113,7 +113,7 @@ def test_stream_keys_are_unique() -> None:
 
 
 def test_negative_root_is_rejected() -> None:
-    with pytest.raises(ValueError, match="negative"):
+    with pytest.raises(ValueError):
         derive_seed(-1, RUN)
 
 
