@@ -21,7 +21,7 @@ from pydantic import Field, PrivateAttr, model_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 from roboprobe.core.errors import ConfigError
-from roboprobe.core.settings._sources import collect_layers, deep_merge, flatten
+from roboprobe.core.settings._sources import ENV_ALIASES, collect_layers, deep_merge, flatten
 from roboprobe.core.settings.analysis import AnalysisSettings, RiskSettings
 from roboprobe.core.settings.api import ApiSettings
 from roboprobe.core.settings.backends import BackendsSettings
@@ -37,6 +37,7 @@ from roboprobe.core.types import JsonValue
 
 __all__ = [
     "DEFAULT_SOURCE",
+    "ENV_ALIASES",
     "AnalysisSettings",
     "ApiSettings",
     "BackendsSettings",

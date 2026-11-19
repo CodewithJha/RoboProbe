@@ -31,8 +31,7 @@ from pydantic import BaseModel, SecretStr
 from pydantic.fields import FieldInfo
 from pydantic_core import PydanticUndefined
 
-from roboprobe.core.settings import RoboProbeSettings
-from roboprobe.core.settings._sources import ENV_ALIASES
+from roboprobe.core.settings import ENV_ALIASES, RoboProbeSettings
 
 __all__ = [
     "BEGIN_MARKER",
