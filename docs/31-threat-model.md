@@ -4,6 +4,7 @@
 > Related: [21 §1 controls](21-security-reproducibility-observability.md#1-security-controls-summary-analysis-in-31)
 
 ## 1. Assets
+
 | Asset | Why it matters |
 |-------|---------------|
 | A1 Experiment data (runs, verdicts, modes) | research integrity; tampering would falsify results |
@@ -69,7 +70,9 @@ flowchart LR
 | TM-15 | Shared artefacts | Info disclosure | Host names/paths leak in shared manifests | 2 | 1 | 2 | hashed hostnames, relative paths | low |
 
 ## 4. Security requirements derived
+
 NFR-SEC-001 (network/auth), NFR-SEC-002 (secrets & dependencies), NFR-SEC-003 (input handling: safe YAML, AST evaluator, path confinement, safe tar). Security tests listed in 18 §6.
 
 ## 5. Review cadence
+
 Re-run this analysis when: a new trust boundary appears (e.g. cloud workers, multi-user auth), a new input format is accepted, or before each major release.

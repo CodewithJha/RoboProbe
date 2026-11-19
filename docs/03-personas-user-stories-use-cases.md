@@ -5,6 +5,7 @@
 ## 1. Personas
 
 ### P-A · Aarav — Robotics test engineer (primary)
+
 - **Context:** final-year student / junior engineer responsible for validating a warehouse AMR navigation stack before a demo.
 - **Goals:** find the conditions that break the robot *before* the supervisor does; produce evidence (plots, replays) for each failure.
 - **Frustrations:** hand-written test lists miss combined effects; Gazebo runs are slow, so wasting runs on boring cases hurts.
@@ -12,16 +13,19 @@
 - **Success for Aarav:** "In one night of simulation I get a ranked list of failure modes with a replay button."
 
 ### P-B · Meera — Robot software developer
+
 - **Context:** owns Nav2 parameter tuning and the controller plugin.
 - **Goals:** reproduce a failure deterministically, change a parameter, confirm the fix, prevent regressions.
 - **Needs:** exact scenario export, rosbag, the minimal reproducing scenario, before/after robustness comparison.
 
 ### P-C · Dr. Rao — Supervisor / evaluator
+
 - **Context:** grades the project; skeptical of "AI" claims.
 - **Goals:** see a fair comparison (same budget, many seeds, statistics) of intelligent vs random/predefined testing.
 - **Needs:** experiment report with discovery curves, p-values, effect sizes, threats to validity.
 
 ### P-D · Agent — AI coding agent
+
 - **Context:** implements RoboProbe from these docs in small tasks.
 - **Needs:** unambiguous interfaces, acceptance criteria, test fixtures, a strict definition of done (see `AGENTS.md`).
 
@@ -85,37 +89,47 @@ flowchart LR
 ## 4. Use-case specifications
 
 ### UC-01 Define scenario space
+
 - **Actor:** Test engineer · **Pre:** RoboProbe installed.
 - **Main flow:** 1) copy `configs/scenario_spaces/warehouse_v1.yaml`; 2) edit ranges/priors; 3) run `roboprobe space validate`; 4) `roboprobe space register` (or upload in dashboard *Spaces* screen); 5) system stores it with `space_version` = SHA-256 of canonical content.
 - **Alternate:** 3a validation fails → errors listed with JSON-pointer paths; user fixes and repeats.
 - **Post:** space visible in campaign wizard. Re-registering identical content is idempotent.
 
 ### UC-02 Run campaign
+
 - **Actor:** Test engineer / CI · **Pre:** registered space; ≥ 1 worker online for the chosen backend.
 - **Main flow:** 1) choose space, backend, strategy (default `S-PROBE`), budget (default 200 runs), repeats (default 1), parallel workers (default = online workers), seed; 2) start; 3) orchestrator asks strategy for `q` proposals; 4) runs enqueued; 5) workers execute; 6) oracles judge; 7) strategy updated; loop until budget exhausted or stop rule (e.g. "stop after 10 modes"); 8) analysis + risk map auto-run; 9) campaign `COMPLETED`.
 - **Exceptions:** worker lost → run re-queued (FR-RUN-002); > 20 % runs `INVALID` → campaign auto-paused with alert "infrastructure unhealthy".
 - **Post:** runs, verdicts, modes, risk map stored.
 
 ### UC-03 Monitor campaign live
+
 Dashboard subscribes to SSE; shows progress ring, discovery curve, latest runs, worker health; user may pause/resume/cancel.
 
 ### UC-04 Inspect failure modes
+
 User opens *Failure Modes*; each mode shows class, size, parameter ranges (box-and-whisker per parameter vs. whole space), rule, SHAP top features, medoid run; user can rename the mode, mark as "known/accepted", or trigger confirmatory runs (interaction test).
 
 ### UC-05 Explore risk map
+
 User picks parameter pair (x, y) and an anchor (nominal or a mode medoid); sees heatmap of `p_fail` and region classification, evaluated points overlaid (○ pass, ✕ fail); can click a cell → "Run this scenario now" (adds a manual run to campaign, tagged `manual`).
 
 ### UC-06 Replay run
+
 `Replay ×N` → N runs with the original scenario and **original** seed (exact replay) or **fresh** seeds (robustness check); result: k/N reproduced, ρ distribution.
 
 ### UC-07 Export regression scenario
+
 Produces YAML (06 §6) + optional pytest file template that asserts `verdict == PASS` once fixed.
 
 ### UC-08 Run strategy experiment
+
 Choose strategies, seeds (default 30), budget, backend → experiment runs campaigns (possibly sequentially) → metrics + statistics → comparison view.
 
 ### UC-09 Generate report
+
 From a campaign or experiment → HTML report (Jinja2 template) with figures as inline SVG; print stylesheet for PDF.
 
 ### UC-10 Compare robot configs
+
 Same space + strategy against two `sut_profile`s (e.g. Nav2 params A vs B) → robustness score delta, mode-by-mode comparison (fixed / persisting / new).

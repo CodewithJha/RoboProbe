@@ -11,9 +11,11 @@
 |------|-------|---------------|-------------|----------|
 | **Service settings** | per process / deployment | `roboprobe.core.settings` (`pydantic-settings`) | env vars, `.env`, `roboprobe.toml` | DB URL, ports, worker concurrency, timeouts, paths |
 | **Domain configuration** | per campaign / experiment | Pydantic models in domain packages (`OracleThresholds`, `ProbeParams`, …) | YAML files in `configs/`, API payloads; **snapshotted** into DB + manifest | oracle thresholds, strategy hyper-parameters, analysis weights |
+
 Service settings provide *defaults* for domain configuration (`defaults.oracles.*`); a campaign may override them; the resolved values are frozen into the campaign row (`oracle_config`, `strategy_params`).
 
 ## 2. Sources & precedence (highest first)
+
 1. CLI flags (`--budget`, `--workers`, …)
 2. Environment variables: prefix `ROBOPROBE_`, nested delimiter `__` (e.g. `ROBOPROBE_RUNNER__TICK_INTERVAL_S=0.5`)
 3. `.env` file in the working directory (git-ignored; template `.env.example`)
@@ -68,6 +70,7 @@ classDiagram
 ## 4. Reference tables (defaults; env var = `ROBOPROBE_` + path in upper case with `__`)
 
 ### 4.1 Core & database
+
 | Key | Type | Default | Env var | Notes |
 |-----|------|---------|---------|-------|
 | `env` | enum | `local` | `ROBOPROBE_ENV` | `local`, `ci`, `lab`, `prod` |
@@ -78,6 +81,7 @@ classDiagram
 | `database.notify_channel` | str | `roboprobe_events` | | |
 
 ### 4.2 Storage
+
 | Key | Type | Default | Notes |
 |-----|------|---------|-------|
 | `storage.artifact_root` | Path | `./data/artifacts` | `ROBOPROBE_STORAGE__ARTIFACT_ROOT` |
@@ -88,6 +92,7 @@ classDiagram
 | `storage.backend` | enum | `local` | plugin key in `roboprobe.stores` (`local`, future `s3`) |
 
 ### 4.3 API
+
 | Key | Type | Default | Notes |
 |-----|------|---------|-------|
 | `api.host` | str | `127.0.0.1` | non-loopback ⇒ token required |
@@ -101,6 +106,7 @@ classDiagram
 | `api.idempotency_ttl_s` | int | 86400 | |
 
 ### 4.4 Runner (orchestrator) & worker
+
 | Key | Type | Default | Notes |
 |-----|------|---------|-------|
 | `runner.tick_interval_s` | float | 1.0 | campaign loop tick |
@@ -128,6 +134,7 @@ classDiagram
 | `worker.health_port` | int | 9101 | internal `/healthz` + metrics |
 
 ### 4.5 Backends
+
 | Key | Type | Default | Notes |
 |-----|------|---------|-------|
 | `backends.kinematic2d.dt` | float | 0.05 | s |
@@ -152,6 +159,7 @@ classDiagram
 | `backends.gazebo_nav2.perception_model_file` | Path | `configs/perception/oakd_lowlight_v1.yaml` | 06 §3.3 constants |
 
 ### 4.6 Oracles (`oracles.*`, defaults for campaigns) — see 08 §4 for meaning
+
 `clear.d_norm=0.5`, `clear.d_safe=0.10`, `clear.r_contact_base=0.1`, `clear.v_ref=0.5`, `goal.r_min=0.01`,
 `prog.window_s=10`, `prog.delta_min=0.05`, `prog.delta_norm=0.5`, `loc.e_max=0.5`, `loc.hold_s=2.0`,
 `nav.r_abort=-0.5`, `stab.theta_max=0.35`, `stab.omega_max=3.0`, `osc.window_s=5`, `osc.omega_min=0.3`,
@@ -159,6 +167,7 @@ classDiagram
 Env example: `ROBOPROBE_ORACLES__LOC__E_MAX=0.4`.
 
 ### 4.7 Selection defaults (`selection.*`) — see 07 §6.3
+
 `probe.n0_fraction=0.1`, `probe.n0_min_factor=2` (× d), `probe.weights={mode_search:0.6, boundary:0.25, refine:0.15}`,
 `probe.epsilon=0.05`, `probe.lambda_div=1.0`, `probe.kappa_radius=0.5`, `probe.beta_straddle=1.96`,
 `probe.refine_bisect_steps=4`, `probe.refine_perturb_n=4`, `probe.refine_perturb_std=0.05`, `probe.adapt_window=20`,
@@ -167,6 +176,7 @@ Env example: `ROBOPROBE_ORACLES__LOC__E_MAX=0.4`.
 `mode_cache_refresh_every=10`, `propose_timeout_s=10` (then fallback).
 
 ### 4.8 Analysis & risk
+
 `analysis.feature_weights={param:1.0, class:0.75, traj:0.5}`, `analysis.hdbscan.min_cluster_fraction=0.03`,
 `analysis.hdbscan.min_cluster_size_floor=3`, `analysis.mode_match_jaccard=0.5`, `analysis.characteristic_coverage=0.5`,
 `analysis.gbm={max_depth:4, learning_rate:0.1, max_iter:200}`, `analysis.cv_folds=5`, `analysis.min_failures_confident=10`,
@@ -175,11 +185,13 @@ Env example: `ROBOPROBE_ORACLES__LOC__E_MAX=0.4`.
 `risk.volume_samples=8192`.
 
 ### 4.9 Experiments
+
 `experiments.default_seeds=30`, `experiments.max_concurrent_campaigns=2`, `experiments.bootstrap_resamples=10000`,
 `experiments.alpha=0.05`, `experiments.reference_set.n=20000`, `experiments.reference_set.seed=20261119`,
 `experiments.mode_match_radius=0.05`, `experiments.coverage_bins=5`.
 
 ### 4.10 Logging & observability
+
 | Key | Default | Notes |
 |-----|---------|-------|
 | `logging.level` | `INFO` | `ROBOPROBE_LOGGING__LEVEL` |
@@ -190,6 +202,7 @@ Env example: `ROBOPROBE_ORACLES__LOC__E_MAX=0.4`.
 | `observability.service_name` | derived (`roboprobe-api`, …) | |
 
 ### 4.11 Web (runtime `config.json`, served by nginx from env)
+
 | Key | Env | Default |
 |-----|-----|---------|
 | `apiBaseUrl` | `ROBOPROBE_WEB_API_BASE_URL` | `/api/v1` (proxied) |
@@ -205,9 +218,11 @@ Build/dev-time variables (Vite, `web/.env.example`; read in `web/vite.config.ts`
 | `VITE_API_PROXY_TARGET` | `http://127.0.0.1:8000` | `pnpm --dir web dev` only: origin that `/api/*` requests are proxied to |
 
 ### 4.12 Compose-level variables (`.env`)
+
 `ROBOPROBE_IMAGE_TAG` (dev), `ROBOPROBE_API_PORT` (8000), `ROBOPROBE_WEB_PORT` (8080), `ROBOPROBE_DB_NAME`/`ROBOPROBE_DB_USER` (roboprobe), `ROBOPROBE_K2D_REPLICAS` (2).
 
 ## 5. Example `roboprobe.toml`
+
 ```toml
 env = "local"
 
@@ -229,6 +244,7 @@ e_max = 0.5
 ```
 
 ## 6. Rules for contributors
+
 1. A new tunable ⇒ new settings/params field with type, default, unit in the description, validation (`Field(gt=0)` …), and doc regeneration.
 2. Never read `os.environ` outside `roboprobe.core.settings`.
 3. Never put secrets in TOML/YAML committed to git; use `SecretStr` + env/secret file.

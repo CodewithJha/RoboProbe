@@ -6,24 +6,29 @@
 ## 1. Introduction
 
 ### 1.1 Purpose
+
 This SRS specifies all functional and non-functional requirements of RoboProbe V1. It is written so that
 an AI coding agent can implement each requirement and verify it via its acceptance criterion (AC) without
 further clarification.
 
 ### 1.2 Scope
+
 RoboProbe generates, selects, executes, judges and analyses simulated test scenarios for an autonomous
 mobile robot. Product boundaries: RoboProbe owns everything from the scenario space definition to the
 report; the simulator (Gazebo/ROS 2/Nav2) and the robot software stack are **external systems**.
 
 ### 1.3 Definitions
+
 See [24 Glossary](24-glossary.md). Key terms: *scenario space*, *scenario*, *run* (one episode),
 *campaign* (budgeted search with one strategy), *experiment* (comparison of campaigns), *oracle*,
 *verdict*, *robustness ρ*, *failure mode*, *risk map*.
 
 ### 1.4 References
+
 IEEE 830-1998; RFC 2119; documents 04–21 of this set; [25 References](25-references-and-prior-art.md).
 
 ### 1.5 Relationship to the PRD and to configuration
+
 The PRD ([26](26-product-requirements-document.md)) defines product requirements `PR-01…PR-24` with MoSCoW
 priority; each maps to one or more SRS requirements below (26 §6, 28 §1). **Every numeric value in this
 SRS (timeouts, thresholds, limits, rates) is a documented default of a configuration key** in
@@ -31,12 +36,14 @@ SRS (timeouts, thresholds, limits, rates) is a documented default of a configura
 must read the key, never the literal.
 
 ### 1.6 Overview
+
 §2 overall description, §3 functional requirements, §4 external interfaces, §5 non-functional
 requirements, §6 constraints & assumptions, §7 traceability.
 
 ## 2. Overall description
 
 ### 2.1 Product perspective
+
 ```mermaid
 flowchart TB
     subgraph RP["RoboProbe (system under development)"]
@@ -59,6 +66,7 @@ flowchart TB
 ```
 
 ### 2.2 Product functions (summary)
+
 1. Define a scenario space (parameters, ranges, distributions, constraints).
 2. Create and run campaigns with a chosen selection strategy and budget.
 3. Execute runs on a backend (Gazebo or kinematic2d), headless, in parallel workers.
@@ -70,6 +78,7 @@ flowchart TB
 9. Replay any run deterministically from its manifest.
 
 ### 2.3 User classes
+
 | Class | Technical level | Uses |
 |-------|-----------------|------|
 | Test engineer (primary) | High | Dashboard, CLI, YAML configs |
@@ -78,17 +87,20 @@ flowchart TB
 | AI coding agent | n/a | This document + API/CLI for automated tests |
 
 ### 2.4 Operating environment
+
 - Host OS: Ubuntu 24.04 (native or WSL2 on Windows 11); macOS for core + kinematic2d only.
 - Docker Engine ≥ 24 with Compose v2.
 - Python 3.12; Node.js 24 LTS; PostgreSQL 17; ROS 2 Jazzy + Gazebo Harmonic inside a container.
 - Browser: latest Chrome/Firefox/Edge.
 
 ### 2.5 Design & implementation constraints
+
 - Free/open-source dependencies only (MIT/BSD/Apache/OFL/LGPL-compatible).
 - Single-node deployment by Docker Compose; no Kubernetes.
 - Local single-user tool; no authentication in V1 beyond a local API token (NFR-SEC-001).
 
 ### 2.6 Assumptions & dependencies
+
 - A1: Nav2 `tb4_simulation_launch.py` and `nav2_minimal_tb4_sim` warehouse world are available as Jazzy binaries.
 - A2: Gazebo can run headless at real-time factor ≥ 1.0 on the target laptop for one TurtleBot 4 (validated in T-090).
 - A3: Lidar and depth sensors in Gazebo are geometric and are not affected by scene lighting; therefore
@@ -100,6 +112,7 @@ flowchart TB
 Format: **ID [priority] — statement.** *AC:* acceptance criterion.
 
 ### 3.1 Scenario space & generation (M2) — `SCN`
+
 - **FR-SCN-001 [MVP]** — The system MUST load a scenario space from a YAML file validated against the JSON Schema in 06 §5.
   *AC:* `roboprobe space validate configs/scenario_spaces/warehouse_v1.yaml` exits 0; an invalid file exits 2 with a path-to-error message.
 - **FR-SCN-002 [MVP]** — Each parameter MUST declare id, name, type (`float`/`int`/`categorical`), unit, bounds or choices, nominal value and prior distribution.
@@ -118,6 +131,7 @@ Format: **ID [priority] — statement.** *AC:* acceptance criterion.
   *AC:* `roboprobe scenario export <run_id>` produces a file that `roboprobe run --scenario file.yaml` executes.
 
 ### 3.2 Test selection (M3) — `SEL`
+
 - **FR-SEL-001 [MVP]** — The system MUST provide strategies `S-RANDOM`, `S-LHS`, `S-SOBOL`, `S-OFAT`, `S-GRID`, all implementing the `Strategy` interface (05 §4).
   *AC:* each strategy passes the shared strategy contract test suite.
 - **FR-SEL-002 [MVP]** — The system MUST provide `S-BO`: Gaussian-process surrogate over robustness ρ with LogEI acquisition (minimisation of ρ).
@@ -134,6 +148,7 @@ Format: **ID [priority] — statement.** *AC:* acceptance criterion.
 - **FR-SEL-009 [FUT]** — `S-CEM` (cross-entropy) and `S-AST` (adaptive stress testing with RL) MAY be added via the plugin registry.
 
 ### 3.3 Simulation running (M4) & backends (M1) — `RUN`, `SIM`
+
 - **FR-RUN-001 [MVP]** — The orchestrator MUST enqueue runs in PostgreSQL and workers MUST claim them atomically (`SELECT … FOR UPDATE SKIP LOCKED`).
   *AC:* with 4 workers and 100 runs, every run executes exactly once (no duplicates, no losses) in an integration test.
 - **FR-RUN-002 [MVP]** — Workers MUST send heartbeats every `worker.heartbeat_interval_s` (default 5 s); a run whose worker misses heartbeats for `runner.heartbeat_timeout_s` (default 30 s) MUST be re-queued up to `runner.max_attempts` (default 3 attempts total) then marked `ERROR` with verdict `INVALID`.
@@ -150,6 +165,7 @@ Format: **ID [priority] — statement.** *AC:* acceptance criterion.
 - **FR-SIM-005 [V1]** — The Gazebo backend SHOULD record a rosbag2 (MCAP) per failing run and MAY record one for passing runs (config flag).
 
 ### 3.4 Failure detection (M5) — `ORC`
+
 - **FR-ORC-001 [MVP]** — The system MUST implement the oracles in 08 §3: `O-CLEAR` (collision/near-miss), `O-GOAL` (goal reached in time), `O-PROG` (stuck), `O-LOC` (localisation error), `O-NAV` (Nav2 abort), `O-STAB` (instability), `O-OSC` (oscillation).
 - **FR-ORC-002 [MVP]** — Each oracle MUST output a robustness value `r ∈ [-1, 1]` (negative ⇔ violated) plus first-violation time.
 - **FR-ORC-003 [MVP]** — The run verdict MUST be `FAIL` if any *failure* oracle is violated, `PASS` otherwise; `INVALID` if the run had an infrastructure error. Overall robustness `ρ = min_k r_k` over failure oracles.
@@ -159,6 +175,7 @@ Format: **ID [priority] — statement.** *AC:* acceptance criterion.
   *AC:* `roboprobe oracle reevaluate <run_id>` reproduces stored verdicts.
 
 ### 3.5 Failure analysis (M6) — `ANA`
+
 - **FR-ANA-001 [MVP]** — The system MUST cluster failing runs into failure modes with HDBSCAN on a feature vector of normalised parameters + failure class one-hot + trajectory features (09 §3).
 - **FR-ANA-002 [MVP]** — Each failure mode MUST have: id, label (auto-generated, editable), size, primary class, centroid scenario, medoid run, parameter ranges, and a "minimal reproducing scenario" (closest-to-nominal failing scenario).
 - **FR-ANA-003 [MVP]** — The system MUST compute per-parameter importance for failure via SHAP on a gradient-boosted classifier, plus pairwise interaction strength (SHAP interaction values).
@@ -167,6 +184,7 @@ Format: **ID [priority] — statement.** *AC:* acceptance criterion.
 - **FR-ANA-006 [MVP]** — Analysis MUST be re-runnable on demand and automatically after a campaign completes.
 
 ### 3.6 Risk mapping (M7) — `RSK`
+
 - **FR-RSK-001 [MVP]** — The system MUST estimate `p_fail(x)` over the space using the GP posterior on ρ: `p_fail = Φ(−μ(x)/σ(x))`.
 - **FR-RSK-002 [MVP]** — Regions MUST be classified: SAFE (`p_fail < 0.05`), FAILURE (`p_fail > 0.95`), UNCERTAIN otherwise; thresholds configurable.
 - **FR-RSK-003 [MVP]** — The system MUST produce 2-D slice maps for every parameter pair (others at nominal or at a chosen failure mode's medoid) on a 50×50 grid.
@@ -174,11 +192,13 @@ Format: **ID [priority] — statement.** *AC:* acceptance criterion.
 - **FR-RSK-005 [V1]** — The system MUST compute a robustness score per robot configuration (`1 − failure volume fraction`) to compare stack versions.
 
 ### 3.7 Experiments & metrics — `EXP`
+
 - **FR-EXP-001 [MVP]** — The system MUST run an experiment = set of strategies × N seeds × budget on one backend, and compute MET-01..MET-08 (19 §3).
 - **FR-EXP-002 [MVP]** — The system MUST compute statistical comparisons: Mann–Whitney U, Vargha–Delaney Â12, bootstrap 95 % CIs, Holm correction.
 - **FR-EXP-003 [V1]** — The system MUST plot discovery curves (cumulative unique modes vs. #sims) with CI bands.
 
 ### 3.8 Dashboard (M8) — `DSH`
+
 - **FR-DSH-001 [MVP]** — Campaign list and creation wizard (space, backend, strategy, budget, workers, seed).
 - **FR-DSH-002 [MVP]** — Live campaign view: progress, discovery curve, scenario stream, worker status (SSE, ≤ 2 s latency).
 - **FR-DSH-003 [MVP]** — Failure modes view: cards, parameter ranges, rules, importance chart, medoid replay.
@@ -189,26 +209,31 @@ Format: **ID [priority] — statement.** *AC:* acceptance criterion.
 - **FR-DSH-008 [V1]** — Accessible: keyboard navigable, WCAG 2.2 AA contrast, colour-blind-safe risk palette.
 
 ### 3.9 API & CLI — `API`, `CLI`
+
 - **FR-API-001 [MVP]** — REST API per 12, versioned under `/api/v1`, OpenAPI 3.1 auto-generated.
 - **FR-API-002 [MVP]** — SSE stream `/api/v1/events` for campaign/run events.
 - **FR-API-003 [MVP]** — Consistent error envelope (RFC 9457 problem+json).
 - **FR-CLI-001 [MVP]** — CLI `roboprobe` with commands in 05 §11; every dashboard action is also possible from the CLI.
 
 ### 3.10 Storage — `STO`
+
 - **FR-STO-001 [MVP]** — All entities in 11 persisted in PostgreSQL with Alembic migrations.
 - **FR-STO-002 [MVP]** — Artefacts stored under `ARTIFACT_ROOT` with content-addressed paths and SHA-256 recorded.
 - **FR-STO-003 [V1]** — Campaign export/import as a single `.tar.zst` bundle (DB rows as JSON Lines + artefacts).
 
 ### 3.11 Replay & reproducibility — `REP`
+
 - **FR-REP-001 [MVP]** — `roboprobe replay <run_id> [--repeats N]` re-executes a run from its manifest and reports verdict agreement.
 - **FR-REP-002 [MVP]** — Each run stores a provenance manifest (21 §4): code git SHA, package versions, backend image digest, seeds, scenario values, materialised file hashes.
 
 ## 4. External interface requirements
 
 ### 4.1 User interfaces
+
 Dashboard per [13](13-dashboard-ux-ui-spec.md); CLI per 05 §11; YAML configs per 06.
 
 ### 4.2 Software interfaces
+
 | Interface | Protocol | Spec |
 |-----------|----------|------|
 | Gazebo Harmonic | `gz sim` CLI, gz-transport services (`/world/<w>/set_physics`, entity create) via `ros_gz` | 10 §4 |
@@ -217,9 +242,11 @@ Dashboard per [13](13-dashboard-ux-ui-spec.md); CLI per 05 §11; YAML configs pe
 | Browser ↔ API | HTTPS/HTTP JSON + SSE | 12 |
 
 ### 4.3 Hardware interfaces
+
 None (fully virtual).
 
 ### 4.4 Communication interfaces
+
 Localhost HTTP (port 8000 API, 5173 dev web / 8080 prod web), PostgreSQL 5432 (internal network only),
 DDS within the Gazebo worker container only.
 
@@ -259,10 +286,12 @@ DDS within the Gazebo worker container only.
 | NFR-EXT-003 [V1] | Extensibility | Public plugin interfaces are versioned (`PLUGIN_API_VERSION`) and documented with pre/post-conditions | review |
 
 ### 5.1 Quality attribute priorities
+
 When attributes conflict, priority is: **correctness of verdicts & reproducibility > maintainability/modularity >
 sample efficiency > performance > UI polish.** Quality attribute scenarios are in 04 §9.
 
 ## 6. Other requirements, constraints, assumptions
+
 - Licence: MIT for RoboProbe code and docs.
 - Data retention: user controls deletion; `roboprobe gc` removes artefacts of deleted campaigns.
 - Internationalisation: English only in V1.
@@ -270,7 +299,6 @@ sample efficiency > performance > UI polish.** Quality attribute scenarios are i
 ## 7. Traceability matrix (requirements → modules → tasks → tests)
 
 Summary below; the complete PRD → SRS → design → tasks → tests matrix is in [28](28-traceability-matrix.md).
-
 
 | Requirement group | Module | Tasks (22) | Test suites (18) |
 |-------------------|--------|-----------|------------------|

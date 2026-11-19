@@ -3,6 +3,7 @@
 > Related: [04 Architecture](04-system-architecture.md) · [05 Module design](05-module-detailed-design.md) · [16 Standards](16-repository-structure-and-coding-standards.md) · [ADR-0015](adr/ADR-0015-typed-layered-configuration.md) · [ADR-0016](adr/ADR-0016-plugin-architecture-entry-points.md)
 
 ## 1. Quality goals that drive the design
+
 | Goal | Design response |
 |------|----------------|
 | **Maintainability** | layered hexagonal architecture, small modules, strict typing, documented interfaces, high test coverage, ADRs |
@@ -14,6 +15,7 @@
 | **Testability** | dependency injection, fakes for every port, deterministic backend |
 
 ## 2. SOLID in RoboProbe
+
 | Principle | Concrete application |
 |-----------|---------------------|
 | **S**ingle responsibility | `ScenarioSpace` knows parameters, not sampling policy; `VerdictEngine` combines oracles but computes no metric itself; `Worker` orchestrates execution but delegates simulation, judging and persistence |
@@ -23,6 +25,7 @@
 | **D**ependency inversion | domain depends on Protocols in `roboprobe.core`/module `base.py`; adapters depend on domain, never the reverse (import-linter) |
 
 ## 3. Dependency injection & composition roots
+
 - Constructor injection everywhere; no module-level singletons (except immutable constants and loggers).
 - One composition root per process in `roboprobe.bootstrap`: `build_api(settings)`, `build_orchestrator(settings)`, `build_worker(settings)`, `build_cli(settings)`. They read settings once, construct adapters (engine, UoW factory, artefact store, backend, registries) and inject them.
 - FastAPI dependencies (`Depends`) only adapt request scope to these factories (`get_uow`), never create infrastructure ad hoc.
@@ -41,6 +44,7 @@ def build_worker(settings: RoboProbeSettings) -> WorkerProcess:
 ```
 
 ## 4. Patterns used (and where)
+
 | Pattern | Where | Why |
 |---------|-------|-----|
 | Ports & Adapters | backends, store, queue | swap infrastructure |
@@ -60,6 +64,7 @@ def build_worker(settings: RoboProbeSettings) -> WorkerProcess:
 | Null Object | `NoopTracer`, `NullArtifactStore` (tests) | optional features without `if` chains |
 
 ## 5. Error handling conventions
+
 - Hierarchy (in `roboprobe.core.errors`):
   `RoboProbeError` → `ConfigError`, `ValidationError` (domain), `NotFoundError`, `ConflictError` (invalid state transition), `BackendError` (→ `EpisodeLaunchError`, `EpisodeTimeoutError`), `OracleError`, `StrategyError` (→ `ModelFitError`), `StoreError` (→ `QueueError`), `PluginError`.
 - Each error has a stable `code` (e.g. `CAMPAIGN_INVALID_TRANSITION`), human `message`, and structured `context` dict.
@@ -69,6 +74,7 @@ def build_worker(settings: RoboProbeSettings) -> WorkerProcess:
 - `assert` only for internal invariants in tests/dev, not for input validation.
 
 ## 6. Logging standards
+
 - Library: structlog; output JSON (prod/ci) or console (local) per `logging.format`.
 - Levels: `DEBUG` diagnostic detail (off by default), `INFO` lifecycle events, `WARNING` degraded but continuing (fallbacks, retries), `ERROR` operation failed (run INVALID, API 500), `CRITICAL` process cannot continue.
 - Every log line is an **event name** + key-values; no string interpolation of variables into the message.
@@ -94,14 +100,17 @@ def build_worker(settings: RoboProbeSettings) -> WorkerProcess:
 | `config.loaded` | INFO | sources (no values) |
 
 ## 7. Interface contracts
+
 - Every port has: a Protocol/ABC with docstrings stating pre/post-conditions, a contract test suite (18 §4.3), and at least one fake implementation in `tests/fakes/`.
 - Data crossing module boundaries uses immutable models from `roboprobe.core.types` (05 §1); no ORM objects, no DataFrames in public signatures (except analysis internals).
 - Units in names or docstrings (`_s`, `_ms`, `_m`); arrays document shapes.
 
 ## 8. Concurrency rules
+
 - Workers: one episode per slot; heartbeat in a separate thread; DB sessions never shared across threads.
 - Orchestrator: per-campaign advisory lock; ticks are idempotent (re-running a tick never double-enqueues — enforced by unique `(campaign_id, ordinal, repeat_index)`).
 - PyTorch threads limited by config; NumPy BLAS threads limited via `threadpoolctl` in workers to avoid oversubscription.
 
 ## 9. Performance conventions
+
 Vectorise trace computations; avoid per-sample Python loops in oracles; cache GP fits per tick; keyset pagination in queries; stream large downloads.

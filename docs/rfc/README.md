@@ -6,4 +6,4 @@ produce ADRs in [../adr](../adr/README.md) and tasks in [../22-roadmap-and-imple
 
 | RFC | Title | Status |
 |-----|-------|--------|
-| – | _none yet_ | – |
+| – | *none yet* | – |

@@ -37,6 +37,7 @@
 | P8 | `sensor.lidar_dropout` *(optional)* | sensor | float | probability | [0.00, 0.30] | 0.00 | uniform | linear | `sensor_perturber` sets random beams to `inf` / same |
 
 Notes:
+
 - MVP campaigns use P1–P6 (`d = 6`); "full" campaigns use P1–P8 (`d = 8`). Both are described by the same YAML with an `enabled` flag.
 - P1 upper bound exceeds the physical TB4 maximum (~0.31 m/s): intentional stress range; documented as such in reports.
 - Side of the obstacle (left/right of path) is derived deterministically: `side = +1` (fixed) in V1 to keep the space continuous.
@@ -45,30 +46,37 @@ Notes:
 ## 3. Physical models of each disturbance
 
 ### 3.1 Speed (P1)
+
 Directly limits commanded linear velocity. Stopping distance ≈ `v²/(2·a_max) + v·(t_perception + t_delay)`.
 
 ### 3.2 Obstacle geometry (P2, P7)
+
 Obstacle centre `c = path(s) + n(s) · (P2)` where `s = P7 · L_path`, `n(s)` the left unit normal. With
 `P2 < footprint_radius + 0.4 = 0.57 m` the pallet intrudes into the robot's swept corridor and must be avoided.
 
 ### 3.3 Illumination-dependent depth degradation (P3)
+
 Let `L` = illuminance, `L_ref = 300 lux`, `L_min = 5 lux`, `η = clip( log10(L_ref/L) / log10(L_ref/L_min), 0, 1 )`
 (η = 0 bright, 1 darkest). The `perception_degrader` applies to each depth point / k2d depth ray:
+
 - valid-return probability `p_valid = 1 − 0.85 · η²`
 - range noise `σ_d = 0.005 + 0.01·r² · (1 + 4·η)` (stereo error grows ∝ r²)
 - max effective range `r_max = 3.0 · (1 − 0.6·η)` m
 Constants live in `configs/perception/oakd_lowlight_v1.yaml` so they can be changed and are versioned in the manifest.
 
 ### 3.4 Lidar noise and dropout (P4, P8)
+
 `r' = r + N(0, P4²)` clipped to `[range_min, range_max]`; with probability P8 a beam becomes `+inf`
 (no return). Noise is drawn from the run's `sensor` RNG stream (21 §3) so replays are identical.
 
 ### 3.5 Floor friction (P5)
+
 Gazebo: ground-plane `mu`, `mu2` set to P5 (wheel surfaces keep defaults). kinematic2d: effective
 traction `τ = min(1, P5 / μ_req)` where `μ_req = |a|/g + 0.15`; realised velocity `v_real = v_cmd·τ` with
 yaw-rate slip `ω_real = ω_cmd · τ^1.5`; odometry still reports commanded wheel motion ⇒ odometry drift.
 
 ### 3.6 Command delay (P6)
+
 FIFO buffer on velocity commands: a command published at `t` is applied at `t + P6/1000`.
 Implemented as a ROS 2 relay node (`/cmd_vel_nav` → buffer → `/cmd_vel`) and as a deque in kinematic2d.
 
@@ -170,6 +178,7 @@ oracle_thresholds: default   # or inline overrides, see 08 §4
 Disabled parameters are held at `nominal`. `space_version = sha256(canonical_json(parsed_yaml_with_task_inlined))[:12]`.
 
 ### 4.1 Normalisation
+
 - linear: `u = (x − low)/(high − low)`
 - log: `u = (ln x − ln low)/(ln high − ln low)`
 - int: `u = (x − low + 0.5)/(high − low + 1)`; inverse `x = low + floor(u·(high − low + 1))` clipped

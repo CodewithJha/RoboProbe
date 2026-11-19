@@ -21,10 +21,12 @@
 | ROS package `roboprobe_ros` | `package.xml` version = product version | | with product |
 
 ## 2. Release cadence & process
+
 - Pre-1.0: a minor release at each milestone exit (M1 → `0.1.0`, …, M10 → `0.10.0`), `1.0.0` at M11.
 - Patch releases for bug fixes any time.
 
 Release checklist:
+
 1. `main` green including nightly e2e/sim of the release candidate commit.
 2. Move CHANGELOG `Unreleased` → `## [X.Y.Z] - YYYY-MM-DD`; verify categories.
 3. Bump versions (`uv version`, `package.json`, `package.xml`) in one `chore(release): vX.Y.Z` commit.
@@ -33,18 +35,22 @@ Release checklist:
 6. Update 00 doc version if docs changed materially.
 
 ## 3. CHANGELOG format
+
 `CHANGELOG.md` follows **Keep a Changelog 1.1.0**: sections `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security` under `[Unreleased]` and each version. Entries are user-facing, reference task/issue ids, and call out behaviour changes of oracles/strategies explicitly (they affect result comparability).
 
 ## 4. Deprecation policy
+
 - API fields/endpoints: mark `deprecated: true` in OpenAPI, send `Deprecation` and `Sunset` headers, keep for ≥ 2 minor releases.
 - Config keys: old key accepted with a warning for ≥ 2 minor releases (alias in settings), then removed in next MAJOR.
 - CLI flags: same as config keys.
 
 ## 5. Database migration policy (expand/contract)
+
 1. **Expand**: add new columns/tables (nullable or defaulted); code writes both old and new.
 2. **Migrate**: backfill in a separate, idempotent migration or job.
 3. **Contract**: remove old columns only in a later minor release once no released version reads them.
 Every migration has `downgrade()` for dev; production rollback = image rollback + compatible schema (no downgrade needed thanks to expand/contract).
 
 ## 6. Result comparability rule
+
 Experiment comparisons are valid only between campaigns sharing `space_version`, `oracle_set_version`, `sut_profile.config_hash`, backend version and `k2d_model_version`. The experiment runner enforces this and the report prints these versions.

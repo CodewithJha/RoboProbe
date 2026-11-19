@@ -24,6 +24,7 @@
 > milestone M1. Star/watch the repo to follow progress, and feedback on the design is very welcome.
 
 ## Table of contents
+
 - [Why RoboProbe?](#why-roboprobe)
 - [What it is](#what-it-is)
 - [Key features (planned)](#key-features-planned)
@@ -39,6 +40,7 @@
 - [Citation](#citation) · [Acknowledgements & prior art](#acknowledgements--prior-art) · [Author](#author)
 
 ## Why RoboProbe?
+
 Testing autonomous robots on real hardware is slow, expensive and sometimes unsafe, and rare failures are hard
 to reproduce. Simulators solve the "virtual robot" part — but **deciding which scenarios to simulate** is still
 done by hand or at random. Random testing spends most of its budget on ordinary, passing cases, and
@@ -46,6 +48,7 @@ one-factor-at-a-time test plans miss the most dangerous class of bugs: **interac
 robot handles high speed, sensor noise and low light *individually* but collides when they occur *together*.
 
 ## What it is
+
 RoboProbe is a **software-only, open-source testing layer on top of an established robotics simulator**
 (Gazebo Harmonic + ROS 2 Jazzy + Nav2). It is *not* a simulator and *not* a robot. It:
 
@@ -57,6 +60,7 @@ RoboProbe is a **software-only, open-source testing layer on top of an establish
 6. maps the safe, uncertain and failure-prone regions of the robot's operating envelope.
 
 ## Key features (planned)
+
 | | Feature | Spec |
 |---|---------|------|
 | 🎯 | **Intelligent test selection** — `S-PROBE`: Gaussian-process Bayesian optimisation on a continuous robustness score, diversity-seeking failure-mode search, level-set boundary learning | [07](docs/07-intelligent-test-selection-algorithms.md) |
@@ -72,6 +76,7 @@ RoboProbe is a **software-only, open-source testing layer on top of an establish
 | 💸 | **100 % free & open source** — runs on a student laptop, no paid services | [15](docs/15-tech-stack-and-adrs.md) |
 
 ## How it works
+
 ```mermaid
 flowchart LR
     SP["Scenario space<br/>speed, clearance, light,<br/>noise, friction, delay"] --> SEL["Intelligent selector<br/>GP surrogate + acquisition"]
@@ -84,11 +89,13 @@ flowchart LR
     ANA --> UI["Dashboard and report"]
     RISK --> UI
 ```
+
 Each finished run updates a surrogate model of *how close to failure* the robot is across the scenario space.
 The selector then picks scenarios that are likely to fail in a **new** way, sit on the uncertain pass/fail
 boundary, or refine a freshly found failure — so simulation time is concentrated where it is informative.
 
 ## Architecture overview
+
 ```mermaid
 flowchart TB
     WEB["Dashboard SPA<br/>React + TypeScript"] -->|"REST + SSE"| API["API<br/>FastAPI"]
@@ -100,10 +107,12 @@ flowchart TB
     W2 --> ART
     API --> ART
 ```
+
 Hexagonal core with ports for simulators, storage and plugins; stateless pull-based workers scale
 horizontally (more processes or more machines) with configuration only. Details: [04 Architecture](docs/04-system-architecture.md), [ADRs](docs/adr/README.md).
 
 ## Example: the warehouse robot
+
 A TurtleBot 4 must deliver a package across the Nav2 warehouse world while a dropped pallet lies near its path.
 RoboProbe varies **speed, obstacle clearance, illuminance, lidar noise, floor friction and command delay**
 (plus obstacle position and lidar dropout). The robot passes with *high speed alone*, *noise alone* and
@@ -114,6 +123,7 @@ reproducing scenario, a replay, and the region of the envelope where the risk li
 See [06](docs/06-scenario-parameter-space-and-schema.md) for the exact parameter space.
 
 ## Tech stack
+
 | Layer | Choice |
 |-------|--------|
 | Language | Python 3.12 (core), TypeScript (web) |
@@ -124,9 +134,11 @@ See [06](docs/06-scenario-parameter-space-and-schema.md) for the exact parameter
 | Frontend | React 19, Vite, TanStack Query, Radix UI, Plotly.js, CSS Modules with original design tokens |
 | Ops | Docker Compose, GitHub Actions, GHCR, structlog, Prometheus (optional) |
 | Quality | pytest, Hypothesis, Testcontainers, ruff, mypy, import-linter, Vitest, Playwright, axe-core |
+
 Rationale and alternatives for each choice: [15 Tech stack & ADRs](docs/15-tech-stack-and-adrs.md).
 
 ## Project status & roadmap
+
 | Milestone | Scope | Status |
 |-----------|-------|--------|
 | **M0** | Specification (this repo) | ✅ done |
@@ -136,9 +148,11 @@ Rationale and alternatives for each choice: [15 Tech stack & ADRs](docs/15-tech-
 | M7–M8 | REST/SSE API, Field Notebook dashboard | planned |
 | M9 | Gazebo + ROS 2 + Nav2 backend | planned |
 | M10–M11 | Evaluation experiments, v1.0 release | planned |
+
 Full plan with ~90 agent-sized tasks: [22 Roadmap](docs/22-roadmap-and-implementation-plan.md) · risks: [23](docs/23-risks-and-mitigations.md).
 
 ## Documentation map
+
 Start at [docs/00-index.md](docs/00-index.md) for reading paths and conventions.
 
 | # | Document | One-liner |
@@ -182,6 +196,7 @@ Start at [docs/00-index.md](docs/00-index.md) for reading paths and conventions.
 | — | [Templates](docs/templates/) · [RFCs](docs/rfc/README.md) · [Evidence](docs/evidence/README.md) | ADR/RFC/task/bug templates; proposals; results |
 
 ## Quick start (planned)
+
 > [!NOTE]
 > Not available yet — these commands describe the intended experience once milestone **M1** lands (see [17](docs/17-dev-environment-and-docker.md)).
 
@@ -195,6 +210,7 @@ make demo         # runs a small S-PROBE campaign
 ```
 
 ### Backend development (available now)
+
 Requires `git`, `make` and [`uv`](https://docs.astral.sh/uv/) (uv installs Python 3.12 itself).
 
 ```bash
@@ -208,8 +224,10 @@ make help         # list every target
 ```
 
 ## Repository structure
+
 Current (design phase):
-```
+
+```text
 RoboProbe/
 ├── docs/                 # 35 specification documents, adr/, templates/, rfc/, evidence/
 ├── .github/              # issue & PR templates, CODEOWNERS
@@ -217,25 +235,32 @@ RoboProbe/
 ├── README.md  CONTRIBUTING.md  CODE_OF_CONDUCT.md  SECURITY.md  SUPPORT.md  GOVERNANCE.md
 ├── CHANGELOG.md  CITATION.cff  LICENSE  .editorconfig  .gitignore
 ```
+
 Planned (from M1): `backend/` (Python package `roboprobe`), `ros_ws/` (ROS 2 package), `web/` (dashboard),
 `docker/`, `configs/`, `schemas/`, `tasks/`, `scripts/`, `.github/workflows/` — full tree in [16 §1](docs/16-repository-structure-and-coding-standards.md#1-target-repository-tree-created-progressively-by-tasks-in-22).
 
 ## Contributing
+
 Contributions are welcome — right now especially **design reviews** of the documents. Please read
 [CONTRIBUTING.md](CONTRIBUTING.md) (workflow, conventions, PR process, good first issues). AI coding agents: read [AGENTS.md](AGENTS.md).
 Questions: [SUPPORT.md](SUPPORT.md) · Governance: [GOVERNANCE.md](GOVERNANCE.md).
 
 ## Code of conduct
+
 This project follows the [Contributor Covenant 2.1](CODE_OF_CONDUCT.md). By participating, you agree to uphold it.
 
 ## Security
+
 Please report vulnerabilities privately — see [SECURITY.md](SECURITY.md).
 
 ## License
+
 [MIT](LICENSE) © 2026 Priyanshu Jha
 
 ## Citation
+
 If RoboProbe or its design helps your work, please cite it (metadata in [CITATION.cff](CITATION.cff)):
+
 ```bibtex
 @software{jha_roboprobe_2026,
   author  = {Jha, Priyanshu},
@@ -247,10 +272,12 @@ If RoboProbe or its design helps your work, please cite it (metadata in [CITATIO
 ```
 
 ## Acknowledgements & prior art
+
 RoboProbe builds on ideas from falsification and scenario-based testing (S-TaLiRo, Breach, Scenic & VerifAI),
 adaptive stress testing, search-based testing of autonomous systems, and Bayesian optimisation / active
 learning (BoTorch, LogEI, level-set estimation), and on the open-source robotics ecosystem — ROS 2, Nav2 and
 Gazebo. Full bibliography and positioning: [25 References & prior art](docs/25-references-and-prior-art.md).
 
 ## Author
+
 **Priyanshu Jha** — [@CodewithJha](https://github.com/CodewithJha)
