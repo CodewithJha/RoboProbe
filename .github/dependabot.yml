@@ -1,0 +1,47 @@
+# Dependency updates (doc 20 §7, doc 31 TM-10): weekly, minor/patch grouped per ecosystem,
+# majors as individual PRs so their changelogs get reviewed.
+version: 2
+
+updates:
+  - package-ecosystem: uv
+    directory: /backend
+    schedule: { interval: weekly, day: monday, time: "06:00", timezone: Asia/Kolkata }
+    open-pull-requests-limit: 10
+    labels: [type:chore, area:security]
+    commit-message: { prefix: "build(deps)" }
+    groups:
+      python-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /web
+    schedule: { interval: weekly, day: monday, time: "06:00", timezone: Asia/Kolkata }
+    open-pull-requests-limit: 10
+    labels: [type:chore, area:security]
+    commit-message: { prefix: "build(deps)" }
+    groups:
+      web-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directories: ["/", "/.github/actions/*"]
+    schedule: { interval: weekly, day: monday, time: "06:00", timezone: Asia/Kolkata }
+    labels: [type:chore, area:ci]
+    commit-message: { prefix: "ci(deps)" }
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]
+
+  # Container images in docker/*.Dockerfile (ROS/Gazebo bases are bumped manually, doc 20 §7).
+  - package-ecosystem: docker
+    directory: /docker
+    schedule: { interval: weekly, day: monday, time: "06:00", timezone: Asia/Kolkata }
+    labels: [type:chore, area:deploy]
+    commit-message: { prefix: "build(deps)" }
+    ignore:
+      # ROS 2 / Gazebo bases are pinned by digest and bumped by hand after nightly-sim passes.
+      - dependency-name: "ros"
+      - dependency-name: "osrf/*"
+    groups:
+      images-minor-patch:
+        update-types: [minor, patch]

@@ -38,6 +38,10 @@ By participating you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 3. For anything non-trivial, **open or comment on an issue first** so work isn't duplicated.
 4. Changes that add a module, alter a public interface/schema, add a notable dependency or change the evaluation methodology need an **RFC** ([template](docs/templates/rfc-template.md)) and usually an **ADR**.
 5. Only free and open-source dependencies are accepted — never a paid service or API.
+   CI enforces this: `license-check` fails on any dependency whose licence is not in
+   [`scripts/allowed_licenses.txt`](scripts/allowed_licenses.txt) (OSI, MIT-compatible; no GPL/AGPL/SSPL), and `security`
+   fails on high/critical advisories (`pip-audit`, `pnpm audit`) and on leaked secrets (gitleaks). An advisory that
+   genuinely does not apply goes in [`scripts/audit_ignore.txt`](scripts/audit_ignore.txt) with a written justification.
 
 ## 3. Development workflow
 

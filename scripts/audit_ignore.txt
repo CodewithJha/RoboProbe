@@ -1,0 +1,3 @@
+# Accepted dependency vulnerabilities for scripts/check_audit.py (doc 31 TM-10).
+# One per line: <advisory ID or alias (GHSA/CVE/PYSEC)>  # <why it is safe> (<reviewer>, <date>, <revisit by>)
+# Entries without a justification fail the check. Remove an entry as soon as a fix is available.
