@@ -5,7 +5,7 @@
  * Usage: `pnpm gen:tokens` writes the outputs; `pnpm gen:tokens --check` writes nothing and exits 1 if
  * any output is stale (CI idempotency gate). Runs on Node >= 24 with native type stripping.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 
@@ -15,24 +15,22 @@ const WEB_ROOT = resolve(import.meta.dirname, '..');
 const REPO_ROOT = resolve(WEB_ROOT, '..');
 const SOURCE = resolve(WEB_ROOT, 'src/styles/tokens.json');
 const CSS_OUTPUT = resolve(WEB_ROOT, 'src/styles/tokens.css');
-const REPORT_OUTPUT = resolve(REPO_ROOT, 'backend/src/roboprobe/reporting/assets/tokens.json');
+const REPORT_PACKAGE = resolve(REPO_ROOT, 'backend/src/roboprobe/reporting');
+const REPORT_OUTPUT = resolve(REPORT_PACKAGE, 'assets/tokens.json');
 const EXIT_STALE = 1;
 
 function readOrEmpty(path: string): string {
-  try {
-    return readFileSync(path, 'utf8');
-  } catch {
-    return '';
-  }
+  return existsSync(path) ? readFileSync(path, 'utf8') : '';
 }
 
 function main(): number {
   const { values } = parseArgs({ options: { check: { type: 'boolean', default: false } } });
   const source = readFileSync(SOURCE, 'utf8');
-  const outputs = new Map([
-    [CSS_OUTPUT, renderTokensCss(parseTokens(JSON.parse(source)))],
-    [REPORT_OUTPUT, source],
-  ]);
+  const outputs = new Map([[CSS_OUTPUT, renderTokensCss(parseTokens(JSON.parse(source)))]]);
+  // A web-only build context (e.g. a web image) has no backend tree; only the CSS is produced there.
+  if (existsSync(REPORT_PACKAGE)) {
+    outputs.set(REPORT_OUTPUT, source);
+  }
   const stale = [...outputs].filter(([path, content]) => readOrEmpty(path) !== content);
   for (const [path, content] of stale) {
     const shown = relative(REPO_ROOT, path);
