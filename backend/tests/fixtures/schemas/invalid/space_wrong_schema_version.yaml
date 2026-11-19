@@ -1,0 +1,10 @@
+schema: scenario_space
+pointer: /schema_version
+document:
+  schema_version: 2
+  id: bad_v1
+  name: Future version
+  task: tasks/t.yaml
+  parameters:
+    - {id: robot.max_speed, name: Speed, group: robot, type: float, unit: m/s,
+       low: 0.1, high: 0.5, nominal: 0.2, prior: {kind: uniform}}

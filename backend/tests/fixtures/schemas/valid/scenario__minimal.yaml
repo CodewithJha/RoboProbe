@@ -1,0 +1,4 @@
+schema_version: 1
+kind: scenario
+space: {id: warehouse_v1}
+values: {robot.max_speed: 0.3, env.layout: narrow}

@@ -1,0 +1,15 @@
+# Minimal space exercising int, categorical and log-scale parameters plus a constraint.
+schema_version: 1
+id: mixed_v1
+name: Mixed parameter types
+task: tasks/warehouse_delivery_v1.yaml
+parameters:
+  - {id: env.n_people, name: People, group: environment, type: int, unit: count,
+     low: 0, high: 5, nominal: 0, prior: {kind: discrete, weights: [0.5, 0.1, 0.1, 0.1, 0.1, 0.1]}}
+  - {id: env.layout, name: Layout, group: environment, type: categorical, unit: "-",
+     choices: [wide, narrow], nominal: wide, prior: {kind: uniform}}
+  - {id: env.illuminance, name: Illuminance, group: environment, type: float, unit: lux,
+     low: 5, high: 1000, nominal: 300, scale: log, prior: {kind: truncnormal, mean: 300, std: 100}}
+constraints:
+  - {expr: "env.n_people <= 3", note: "keep aisles passable"}
+oracle_thresholds: {clear: {d_near: 0.1}}

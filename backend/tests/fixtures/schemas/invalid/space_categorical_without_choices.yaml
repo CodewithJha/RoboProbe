@@ -1,0 +1,10 @@
+schema: scenario_space
+pointer: /parameters/0
+document:
+  schema_version: 1
+  id: bad_v1
+  name: Categorical without choices
+  task: tasks/t.yaml
+  parameters:
+    - {id: env.layout, name: Layout, group: environment, type: categorical, unit: "-",
+       nominal: wide, prior: {kind: uniform}}

@@ -1,0 +1,8 @@
+schema: scenario
+pointer: /expect/verdict
+document:
+  schema_version: 1
+  kind: scenario
+  space: {id: warehouse_v1, version: 3f9a1c2b7d10}
+  values: {robot.max_speed: 0.3}
+  expect: {verdict: OK}

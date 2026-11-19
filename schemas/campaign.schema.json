@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/CodewithJha/RoboProbe/schemas/campaign.schema.json",
+  "title": "RoboProbe campaign",
+  "description": "Campaign file / CampaignCreate body (docs/12 §3.1). `schema_version` is optional so the same schema validates API bodies; config-dependent limits (max budget, max batch size) are enforced in Python.",
+  "type": "object",
+  "required": [
+    "space",
+    "backend",
+    "strategy",
+    "budget"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "space": {
+      "$ref": "#/$defs/space_ref"
+    },
+    "sut_profile_id": {
+      "$ref": "#/$defs/profile_id"
+    },
+    "backend": {
+      "$ref": "#/$defs/backend_id"
+    },
+    "strategy": {
+      "$ref": "#/$defs/strategy"
+    },
+    "budget": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Upper bound is runner.max_budget (config), checked by the API."
+    },
+    "repeats": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "batch_size": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Upper bound is runner.max_batch_size (config), checked by the API."
+    },
+    "pins": {
+      "$ref": "#/$defs/pins"
+    },
+    "oracle_overrides": {
+      "$ref": "#/$defs/oracle_overrides"
+    },
+    "stop_rules": {
+      "$ref": "#/$defs/stop_rules"
+    },
+    "tags": {
+      "$ref": "#/$defs/tags"
+    },
+    "start": {
+      "type": "boolean"
+    }
+  },
+  "$defs": {
+    "space_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{2,40}$"
+    },
+    "space_ref": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/space_id"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{12}$",
+          "description": "space_version: first 12 hex chars of the canonical space hash (docs/06 §4)."
+        }
+      }
+    },
+    "param_id": {
+      "type": "string",
+      "pattern": "^[a-z]+\\.[a-z0-9_]+$",
+      "description": "Parameter id `<group>.<name>` (docs/06 §2)."
+    },
+    "param_value": {
+      "type": [
+        "number",
+        "string"
+      ]
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9223372036854775807,
+      "description": "63-bit seed (docs/21 §3)."
+    },
+    "strategy_id": {
+      "type": "string",
+      "pattern": "^S-[A-Z0-9]+(-[A-Z0-9]+)*$"
+    },
+    "backend_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "profile_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "strategy": {
+      "type": "object",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/strategy_id"
+        },
+        "seed": {
+          "$ref": "#/$defs/seed"
+        },
+        "params": {
+          "type": "object",
+          "description": "Validated by the strategy's own params model (docs/07 §10)."
+        }
+      }
+    },
+    "pins": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/param_id"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/param_value"
+      }
+    },
+    "oracle_overrides": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "type": [
+            "number",
+            "boolean"
+          ]
+        }
+      },
+      "description": "Per-oracle threshold overrides, e.g. {loc: {e_max: 0.4}} (docs/08 §4)."
+    },
+    "stop_rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "All optional (docs/14 §4).",
+      "properties": {
+        "max_modes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "max_wall_s": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0
+        },
+        "max_consecutive_invalid": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "invalid_ratio": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    }
+  }
+}
