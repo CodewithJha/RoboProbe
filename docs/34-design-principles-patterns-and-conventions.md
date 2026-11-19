@@ -98,6 +98,7 @@ def build_worker(settings: RoboProbeSettings) -> WorkerProcess:
 | `analysis.finished` | INFO | n_runs, n_modes, wall_s |
 | `api.request` | INFO | method, route, status, duration_ms |
 | `config.loaded` | INFO | sources (no values) |
+| `scenario.unit_clipped` | WARNING | count, min, max |
 
 ## 7. Interface contracts
 

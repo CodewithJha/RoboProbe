@@ -6,6 +6,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 ## [Unreleased]
 
 ### Added
+- Unit-hypercube normalisation (T-021): `roboprobe.scenario.normalize` and `ScenarioSpace.to_unit/from_unit`
+  (+ batch variants) for linear, log, int (bin centres) and categorical parameters per docs/06 §4.1, with
+  Hypothesis round-trip properties (10 000 examples each). New log event `scenario.unit_clipped`.
 
 - Perturbation models (T-031a): `roboprobe.perturbation.lidar` (`apply_lidar_noise` P4, `apply_dropout` P8; pure,
   seeded, NumPy-only) and `roboprobe.perturbation.delay.CommandDelayBuffer` (P6 time-indexed FIFO), shared with the ROS nodes.
