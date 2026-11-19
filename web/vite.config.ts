@@ -26,7 +26,8 @@ function envOrDefault(env: Record<string, string>, key: keyof typeof ENV_DEFAULT
 }
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), 'VITE_');
+  // Resolve .env files next to this config, independent of the caller's working directory.
+  const env = loadEnv(mode, import.meta.dirname, 'VITE_');
 
   return {
     plugins: [react()],
