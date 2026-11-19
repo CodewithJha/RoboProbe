@@ -205,7 +205,15 @@ parameters stay at their nominal value (`nominal_values()`). Loading goes throug
 `referenced_ids()`. `to_unit`/`from_unit` (plus `to_unit_batch`/`from_unit_batch` for `(n, d)` arrays)
 delegate to the pure functions in `roboprobe.scenario.normalize` (T-021, 06 §4.1). They cover the enabled
 parameters only. `from_unit` clips finite out-of-range coordinates, logging `scenario.unit_clipped`, and rejects
-non-finite ones. `make_scenario`/`nominal()` land with T-024.
+non-finite ones.
+
+Hashing (T-024, `roboprobe.scenario.hashing` — a module of its own rather than `materialize.py`, because space
+versions, SUT config hashes and scenario hashes all share it): `canonical_json` sorts keys, rounds floats to 12
+significant digits (`-0.0` → `0.0`, NaN/inf and unknown types rejected) and keeps ints as ints;
+`content_hash(obj, length=None)` is its SHA-256; `scenario_hash = content_hash({"space_version", "values"})[:16]`.
+`make_scenario(values)` fills nominals, rejects unknown ids and disabled parameters moved off nominal, checks types,
+bounds and constraints, normalises types (`int`/`float`/`str`) and returns the hashed `Scenario`; `nominal()` is
+`make_scenario({})`. Golden hashes live in `tests/unit/scenario/test_hashing.py`.
 
 Constraints (T-022, `roboprobe.scenario.constraints`): `compile_constraint(expr)` parses with
 `ast.parse(mode="eval")`, whitelists nodes (numeric literals, dotted parameter ids, `+ - * / **`, unary `+ -`,

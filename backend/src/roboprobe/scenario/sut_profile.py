@@ -19,8 +19,6 @@ Implements: UC-10, EXP-05 (docs/03, docs/19)
 
 from __future__ import annotations
 
-import hashlib
-import json
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Annotated, Any, cast
@@ -29,6 +27,7 @@ import pydantic
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, StringConstraints
 
 from roboprobe.core.types import SutProfile
+from roboprobe.scenario import hashing
 from roboprobe.scenario._documents import (
     document_error,
     json_pointer,
@@ -36,9 +35,6 @@ from roboprobe.scenario._documents import (
     read_document,
     validate_document,
 )
-
-# T-024 exposes the canonicaliser publicly as ``canonical_json``; switch to it then.
-from roboprobe.scenario.space import _canonical
 
 __all__ = [
     "PROFILE_CONFIGS",
@@ -83,14 +79,7 @@ PROFILE_CONFIGS: Mapping[str, type[_ProfileConfig]] = {
 
 def config_hash(backend: str, config: Mapping[str, JsonValue]) -> str:
     """Return the hex sha256 of the canonical JSON of ``backend`` and ``config``."""
-    payload = json.dumps(
-        _canonical({"backend": backend, "config": dict(config)}),
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-        allow_nan=False,
-    )
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    return hashing.content_hash({"backend": backend, "config": dict(config)})
 
 
 def load_sut_profile(path: Path, *, strict: bool = False) -> SutProfile:

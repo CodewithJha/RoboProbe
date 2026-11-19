@@ -11,8 +11,12 @@ every problem with a JSON pointer inside one ``ValidationError(code=SPACE_INVALI
 **Space version.** ``version = sha256(canonical_json(definition))[:12]``, where ``definition`` is
 the *parsed* space document with the task document inlined under ``task`` (plus the nominal-path
 points), so comment or whitespace edits never change it but any semantic edit to
-the space, task or path does. Canonical JSON = sorted keys, compact separators, UTF-8, floats
-rounded to 12 significant digits (the docs/05 §3 rule; T-024 exposes it as ``canonical_json``).
+the space, task or path does. Canonical JSON is :func:`roboprobe.scenario.hashing.canonical_json`
+(sorted keys, compact separators, UTF-8, floats rounded to 12 significant digits).
+
+**Scenarios.** :meth:`ScenarioSpace.make_scenario` validates a point (types, bounds, disabled
+parameters held at nominal, constraints), normalises value types and attaches its
+``scenario_hash``.
 
 Implements: FR-SCN-001, FR-SCN-002, PR-01
 """
@@ -20,19 +24,18 @@ Implements: FR-SCN-001, FR-SCN-002, PR-01
 from __future__ import annotations
 
 import ast
-import hashlib
-import json
+import functools
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal, Self, cast
 
 import numpy.typing as npt
 import pydantic
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
 from roboprobe.core import errors
-from roboprobe.core.types import ParamType, ParamValue, TaskSpec
-from roboprobe.scenario import normalize
+from roboprobe.core.types import ParamType, ParamValue, Scenario, TaskSpec
+from roboprobe.scenario import hashing, normalize
 from roboprobe.scenario import task as task_loader
 from roboprobe.scenario._documents import (
     document_error,
@@ -48,7 +51,6 @@ __all__ = ["Constraint", "ParameterSpec", "PriorSpec", "ScenarioSpace"]
 _SCHEMA = "scenario_space"
 _CODE = errors.ErrorCode.SPACE_INVALID
 _VERSION_HEX_CHARS = 12
-_FLOAT_SIGNIFICANT_DIGITS = 12
 _MIN_CHOICES = 2
 
 Issues = list[tuple[str, str]]
@@ -239,9 +241,15 @@ class ScenarioSpace(_Frozen):
         """Nominal value of every parameter; disabled parameters are always held here."""
         return {spec.id: spec.nominal for spec in self.parameters}
 
-    def constraint_set(self) -> ConstraintSet:
-        """Compiled constraints; compile once and reuse it for batch checks."""
+    @functools.cached_property
+    def _constraint_set(self) -> ConstraintSet:
+        # Safe on a frozen model: constraints never change, and cached_property writes to the
+        # instance __dict__ directly (pydantic ignores it for fields, equality and dumps).
         return ConstraintSet(tuple(c.compile() for c in self.constraints))
+
+    def constraint_set(self) -> ConstraintSet:
+        """Compiled constraints (compiled once per space, then cached)."""
+        return self._constraint_set
 
     def to_unit(self, values: Mapping[str, object]) -> normalize.FloatArray:
         """Encode ``values`` as a unit vector of shape ``(dim,)`` (docs/06 §4.1).
@@ -268,6 +276,45 @@ class ScenarioSpace(_Frozen):
     def from_unit_batch(self, u: npt.ArrayLike) -> list[dict[str, ParamValue]]:
         """Decode a ``(n, dim)`` unit matrix into ``n`` value mappings."""
         return normalize.from_unit_batch(self.params, u)
+
+    def make_scenario(self, values: Mapping[str, object]) -> Scenario:
+        """Validate ``values`` and build the frozen, hashed :class:`Scenario`.
+
+        Enabled parameters missing from ``values`` and every disabled parameter take their nominal
+        value. Values are normalised to their parameter type (``int``, ``float`` or ``str``) so
+        equal points always hash equally (e.g. ``2`` and ``2.0`` for a float parameter).
+
+        Raises:
+            roboprobe.core.errors.ValidationError: For unknown ids, a disabled parameter set away
+                from its nominal value, a wrong type or out-of-bounds value (every problem is
+                listed in ``context["errors"]``), or a violated constraint.
+        """
+        source = f"scenario in {self.id}"
+        merged: dict[str, object] = {**self.nominal_values(), **values}
+        known = {spec.id for spec in self.parameters}
+        issues = [(f"/{key}", "unknown parameter") for key in values if key not in known]
+        issues += [
+            (f"/{spec.id}", f"disabled parameter is held at its nominal value {spec.nominal!r}")
+            for spec in self.parameters
+            if not spec.enabled and spec.id in values and values[spec.id] != spec.nominal
+        ]
+        if issues:
+            raise document_error(source, issues)
+        normalize.to_unit(self.params, merged)  # type and bounds checks with JSON pointers
+        normalised = {spec.id: _as_param_type(spec, merged[spec.id]) for spec in self.parameters}
+        if not self.is_feasible(normalised):
+            violated = [c.expr for c in self.constraints if not c.compile().evaluate(normalised)]
+            raise document_error(source, [("", f"violates constraint {e!r}") for e in violated])
+        return Scenario(
+            space_id=self.id,
+            space_version=self.version,
+            values=normalised,
+            scenario_hash=hashing.scenario_hash(self.version, normalised),
+        )
+
+    def nominal(self) -> Scenario:
+        """The nominal scenario (every parameter at its nominal value)."""
+        return self.make_scenario({})
 
     def is_feasible(self, values: Mapping[str, ParamValue]) -> bool:
         """Whether ``values`` (parameter units, keyed by id) satisfy every constraint.
@@ -339,6 +386,14 @@ class ScenarioSpace(_Frozen):
             constraints=constraints,
             oracle_thresholds=document.get("oracle_thresholds", "default"),
         )
+
+
+def _as_param_type(spec: ParameterSpec, value: object) -> ParamValue:
+    """Normalise a validated value to its parameter's Python type."""
+    if spec.type is ParamType.CATEGORICAL:
+        return str(value)
+    number = float(cast("float", value))  # validated as a real number by normalize.to_unit
+    return int(number) if spec.type is ParamType.INT else number
 
 
 def _build_parameters(raw: list[dict[str, JsonValue]], source: str) -> tuple[ParameterSpec, ...]:
@@ -426,23 +481,5 @@ def _resolve_task_path(task_ref: str, base_dir: Path, source: str) -> Path:
     return path
 
 
-def _canonical(value: object) -> object:
-    if isinstance(value, float):
-        rounded = float(format(value, f".{_FLOAT_SIGNIFICANT_DIGITS}g"))
-        return 0.0 if rounded == 0 else rounded
-    if isinstance(value, dict):
-        return {str(k): _canonical(v) for k, v in value.items()}
-    if isinstance(value, list | tuple):
-        return [_canonical(v) for v in value]
-    return value
-
-
 def _space_version(definition: Mapping[str, object]) -> str:
-    payload = json.dumps(
-        _canonical(definition),
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-        allow_nan=False,
-    )
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:_VERSION_HEX_CHARS]
+    return hashing.content_hash(definition, length=_VERSION_HEX_CHARS)
