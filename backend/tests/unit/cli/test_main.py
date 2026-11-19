@@ -6,6 +6,7 @@ import json
 from collections.abc import Callable
 from importlib.metadata import version
 from pathlib import Path
+from typing import get_args
 
 import pytest
 import typer
@@ -22,6 +23,7 @@ from roboprobe.cli.main import (
     exit_code_for,
 )
 from roboprobe.core import errors
+from roboprobe.core.settings.observability import LogLevel as SettingsLogLevel
 
 pytestmark = pytest.mark.unit
 
@@ -179,5 +181,31 @@ def test_output_json_escapes_non_ascii(capsys: pytest.CaptureFixture[str]) -> No
     assert json.loads(out) == {"label": "Lagerhalle Süd"}
 
 
-def test_no_command_groups_registered_yet() -> None:
-    assert tuple(COMMAND_GROUPS) == ()
+def test_cli_log_levels_match_the_settings_vocabulary() -> None:
+    assert {level.value for level in LogLevel} == set(get_args(SettingsLogLevel))
+
+
+def test_registered_groups_have_unique_names_and_appear_in_help() -> None:
+    names = [group.info.name for group in COMMAND_GROUPS]
+    assert all(names)
+    assert len(set(names)) == len(names)
+    help_text = runner.invoke(app, ["--help"]).output
+    assert all(str(name) in help_text for name in names)
+
+
+def test_human_error_renders_scalar_and_list_context(capsys: pytest.CaptureFixture[str]) -> None:
+    exc = errors.ValidationError(
+        "bad", context={"field": "x", "errors": [{"loc": "a", "msg": "m"}]}
+    )
+    Output().error(exc)
+    err = capsys.readouterr().err
+    assert "  field:\n    - x" in err
+    assert "    - loc=a, msg=m" in err
+
+
+def test_table_renders_non_string_cells_as_json(capsys: pytest.CaptureFixture[str]) -> None:
+    Output().table(["k", "v"], [["none", None], ["flag", True], ["list", ["a", 1]]])
+    out = capsys.readouterr().out
+    assert "null" in out
+    assert "true" in out
+    assert '["a", 1]' in out
