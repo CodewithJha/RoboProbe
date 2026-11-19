@@ -26,9 +26,10 @@ def test_system_clock_monotonic_non_decreasing() -> None:
     assert clock.monotonic() >= first
 
 
-def test_system_clock_rejects_negative_sleep() -> None:
-    with pytest.raises(ValueError, match="non-negative"):
-        SystemClock().sleep(-1)
+@pytest.mark.parametrize("seconds", [-1.0, float("nan"), float("inf")])
+def test_system_clock_rejects_invalid_sleep(seconds: float) -> None:
+    with pytest.raises(ValueError, match="finite and non-negative"):
+        SystemClock().sleep(seconds)
 
 
 def test_fake_clock_is_frozen_until_advanced() -> None:
@@ -64,9 +65,11 @@ def test_fake_clock_rejects_naive_start() -> None:
         FakeClock(datetime(2026, 11, 20))  # naive on purpose
 
 
+@pytest.mark.parametrize("seconds", [-0.1, float("nan"), float("inf")])
 @pytest.mark.parametrize("method", ["advance", "sleep"])
-def test_fake_clock_rejects_negative_durations(method: str) -> None:
+def test_fake_clock_rejects_invalid_durations(method: str, seconds: float) -> None:
     clock = FakeClock(START)
-    with pytest.raises(ValueError, match="non-negative"):
-        getattr(clock, method)(-0.1)
+    with pytest.raises(ValueError, match="finite and non-negative"):
+        getattr(clock, method)(seconds)
     assert clock.now() == START
+    assert clock.monotonic() == 0.0

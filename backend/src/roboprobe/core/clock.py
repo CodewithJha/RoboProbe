@@ -9,6 +9,7 @@ Implements: AGENTS.md §3 (determinism), FR-RUN-002 (fake-clock testable timing)
 
 from __future__ import annotations
 
+import math
 import time
 from datetime import UTC, datetime, timedelta
 from typing import Protocol, runtime_checkable
@@ -59,7 +60,7 @@ class SystemClock:
             seconds: Non-negative duration in seconds.
 
         Raises:
-            ValueError: If ``seconds`` is negative.
+            ValueError: If ``seconds`` is negative or not finite.
         """
         _check_non_negative(seconds)
         time.sleep(seconds)
@@ -70,6 +71,9 @@ class FakeClock:
 
     ``now`` and ``monotonic`` only move when :meth:`advance` or :meth:`sleep` is called, so
     timing logic (heartbeats, reaper, stop rules) can be tested without real waiting.
+
+    ``now`` has :class:`~datetime.datetime` (microsecond) resolution while ``monotonic`` is a
+    float, so sub-microsecond advances are visible only through ``monotonic``.
     """
 
     def __init__(self, start: datetime, monotonic_start: float = 0.0) -> None:
@@ -103,7 +107,7 @@ class FakeClock:
             seconds: Non-negative duration in seconds.
 
         Raises:
-            ValueError: If ``seconds`` is negative.
+            ValueError: If ``seconds`` is negative or not finite.
         """
         self.advance(seconds)
 
@@ -114,7 +118,7 @@ class FakeClock:
             seconds: Non-negative duration in seconds.
 
         Raises:
-            ValueError: If ``seconds`` is negative (time never runs backwards).
+            ValueError: If ``seconds`` is negative (time never runs backwards) or not finite.
         """
         _check_non_negative(seconds)
         self._now += timedelta(seconds=seconds)
@@ -122,6 +126,6 @@ class FakeClock:
 
 
 def _check_non_negative(seconds: float) -> None:
-    if seconds < 0:
-        msg = f"duration must be non-negative, got {seconds!r}"
+    if not math.isfinite(seconds) or seconds < 0:
+        msg = f"duration must be finite and non-negative, got {seconds!r}"
         raise ValueError(msg)
