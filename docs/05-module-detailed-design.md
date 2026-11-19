@@ -201,7 +201,10 @@ parameters stay at their nominal value (`nominal_values()`). Loading goes throug
 `from_yaml(path, *, base_dir, max_bytes, strict_task)` / `from_text(...)` and reports every problem as
 `ValidationError(SPACE_INVALID)` with JSON-pointer paths. `ParameterSpec` also carries `enabled: bool = True`,
 `PriorSpec` the prior arguments (`mean`, `std`, `a`, `b`, `weights`), and `Constraint(expr, note)` exposes
-`referenced_ids()`. `to_unit`/`from_unit` land with T-021 and `make_scenario`/`nominal()` with T-024.
+`referenced_ids()`. `to_unit`/`from_unit` (plus `to_unit_batch`/`from_unit_batch` for `(n, d)` arrays)
+delegate to the pure functions in `roboprobe.scenario.normalize` (T-021, 06 §4.1). They cover the enabled
+parameters only. `from_unit` clips finite out-of-range coordinates, logging `scenario.unit_clipped`, and rejects
+non-finite ones. `make_scenario`/`nominal()` land with T-024.
 
 Constraints (T-022, `roboprobe.scenario.constraints`): `compile_constraint(expr)` parses with
 `ast.parse(mode="eval")`, whitelists nodes (numeric literals, dotted parameter ids, `+ - * / **`, unary `+ -`,
