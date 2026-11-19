@@ -1,0 +1,31 @@
+{
+  "$comment": "Foreground/background token pairs checked in every theme by tokens.test.ts (WCAG 2.2 SC 1.4.3 / 1.4.11). 'text' needs 4.5:1 and 'ui' needs 3:1. 'redundant' pairs are risk graphics whose meaning is also carried by a shape and a label (doc 13 §1.1, SC 1.4.1), so they only have to stay distinguishable from paper.",
+  "minimumRatio": {
+    "text": 4.5,
+    "ui": 3,
+    "redundant": 2
+  },
+  "text": [
+    ["--ink", "--paper"],
+    ["--ink", "--paper-raised"],
+    ["--ink-muted", "--paper"],
+    ["--ink-muted", "--paper-raised"],
+    ["--accent", "--paper"],
+    ["--accent", "--paper-raised"]
+  ],
+  "ui": [
+    ["--margin-line", "--paper"],
+    ["--margin-line", "--paper-raised"],
+    ["--accent", "--paper"],
+    ["--risk-safe", "--paper"],
+    ["--risk-safe", "--paper-raised"],
+    ["--risk-failure", "--paper"],
+    ["--risk-failure", "--paper-raised"]
+  ],
+  "redundant": [
+    ["--risk-uncertain", "--paper"],
+    ["--risk-uncertain", "--paper-raised"],
+    ["--invalid", "--paper"],
+    ["--invalid", "--paper-raised"]
+  ]
+}
