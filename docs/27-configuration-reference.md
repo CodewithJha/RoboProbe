@@ -25,6 +25,7 @@ Service settings provide *defaults* for domain configuration (`defaults.oracles.
 `roboprobe config show [--sources]` prints the resolved tree and which source set each value; secrets are masked.
 
 Implementation notes (`roboprobe.core.settings`, T-003a):
+
 - `ROBOPROBE_CONFIG_FILE` and `ROBOPROBE_SECRETS_DIR` locate the other sources and are therefore read from the
   process environment only (not from `.env` or the TOML file).
 - Recognised secret files: `db_password` (sets `database.password_file`) and `api_token` (sets `api.token`).
