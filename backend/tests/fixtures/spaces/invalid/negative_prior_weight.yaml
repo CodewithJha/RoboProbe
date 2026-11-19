@@ -1,0 +1,7 @@
+# expect-path: /parameters/0/prior/weights/0
+schema_version: 1
+id: bad_v1
+name: Bad
+task: tasks/corridor.yaml
+parameters:
+  - {id: env.people, name: People, group: environment, type: int, unit: count, low: 0, high: 1, nominal: 0, prior: {kind: discrete, weights: [-1, 2]}}

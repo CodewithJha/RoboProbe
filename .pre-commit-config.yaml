@@ -11,6 +11,8 @@ repos:
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
       - id: check-yaml
+        # Deliberately malformed/unsafe YAML used by loader tests.
+        exclude: ^backend/tests/fixtures/spaces/invalid/
       - id: check-toml
       - id: check-merge-conflict
       - id: check-added-large-files

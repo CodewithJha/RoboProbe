@@ -195,6 +195,15 @@ def canonical_json(obj: Any) -> bytes: ...          # sorted keys, floats repr w
 def scenario_hash(space_version: str, values: Mapping[str, Any]) -> str: ...
 ```
 
+Implementation notes (T-020b): `ScenarioSpace` is a frozen model. `parameters` holds every parameter in file
+order, and `params` is the enabled subset that spans the search space (`dim = len(params)`); disabled
+parameters stay at their nominal value (`nominal_values()`). Loading goes through
+`from_yaml(path, *, base_dir, max_bytes, strict_task)` / `from_text(...)` and reports every problem as
+`ValidationError(SPACE_INVALID)` with JSON-pointer paths. `ParameterSpec` also carries `enabled: bool = True`,
+`PriorSpec` the prior arguments (`mean`, `std`, `a`, `b`, `weights`), and `Constraint(expr, note)` exposes
+`referenced_ids()`. `to_unit`/`from_unit` land with T-021, `make_scenario`/`nominal()` with T-024 and
+`is_feasible` with T-022 (it returns `True` until then).
+
 Materialisation is the backend's job (`SimulatorBackend.materialize`) but uses shared helpers in
 `roboprobe.scenario.materialize`: `render_template(template: str, ctx: dict) -> str` (Jinja2,
 `StrictUndefined`) and `place_obstacle(path: Polyline, along: float, clearance: float, side: Literal[-1,1]) -> Pose2D`.
