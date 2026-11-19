@@ -273,6 +273,13 @@ def test_task_spec_rejects_invalid_values(override: dict[str, Any]) -> None:
         make_task(**override)
 
 
+def test_scenario_and_proposal_are_hashable() -> None:
+    assert hash(make_scenario()) == hash(make_scenario())
+    assert len({make_scenario(), make_scenario(), make_scenario(scenario_hash="other")}) == 2
+    proposal = Proposal(scenario=make_scenario(), strategy="S-RAND", phase="baseline")
+    assert proposal in {proposal}
+
+
 def test_value_objects_compare_by_value_and_pickle() -> None:
     assert make_scenario() == make_scenario()
     assert pickle.loads(pickle.dumps(make_task())) == make_task()  # noqa: S301

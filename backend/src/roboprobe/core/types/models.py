@@ -94,6 +94,10 @@ class Scenario(_Frozen):
     values: dict[str, ParamValue]
     scenario_hash: NonEmptyStr
 
+    def __hash__(self) -> int:
+        """Hash on identity fields; ``values`` is a dict and therefore unhashable."""
+        return hash((self.space_id, self.space_version, self.scenario_hash))
+
 
 class Proposal(_Frozen):
     """A scenario proposed by a selection strategy, with its rationale (docs/07)."""
