@@ -290,6 +290,14 @@ injected_obstacles:
 time_limit: {factor: 2.5, offset_s: 10, cap_s: 120}
 ```
 
+Loading (`roboprobe.scenario.task.load_task(path, *, strict)`, T-027): `TBD_Tnnn` placeholders can never
+be loaded, and the error names the JSON pointer and the backlog task that fills the value. Values that are
+usable but not yet verified (for example a goal picked before the Gazebo map check) are listed under an
+optional `provisional: [goal, …]` key. They load normally and are rejected only with `strict=True`
+(release builds, Gazebo runs). `scripts/check_no_tbd.py [--strict]` applies the same guard to
+`tasks/` and `configs/` in CI. The nominal path is a CSV (`x,y` header) resolved relative to the task file.
+`time_limit_s(task, max_speed_mps, path_length_m)` implements the `T_max` formula of §1.
+
 ## 8. Scenario lifecycle
 
 ```mermaid

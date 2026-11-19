@@ -26,6 +26,7 @@ __all__ = [
     "Scenario",
     "Severity",
     "SutProfile",
+    "TaskField",
     "TaskSpec",
     "TimeLimitSpec",
 ]
@@ -45,6 +46,18 @@ Phase = Literal[
     "replay",
 ]
 """Selection phase that produced a proposal (docs/11 ``runs.phase``)."""
+
+TaskField = Literal[
+    "world",
+    "map",
+    "start",
+    "goal",
+    "goal_tolerance",
+    "nominal_path",
+    "injected_obstacles",
+    "time_limit",
+]
+"""Names of :class:`TaskSpec` fields that may be marked provisional."""
 
 Severity = Literal["failure", "warning"]
 """Oracle severity: ``failure`` decides the verdict, ``warning`` is informational (docs/08)."""
@@ -212,6 +225,8 @@ class TaskSpec(_Frozen):
     Attributes:
         schema_version: Task file schema version.
         id: Task identifier, e.g. ``"warehouse_delivery_v1"``.
+        name: Optional human-readable title.
+        description: Optional free text.
         world: World file per backend name (e.g. ``{"kinematic2d": "worlds/..."}``).
         map: Occupancy map reference.
         start: Start pose.
@@ -220,10 +235,14 @@ class TaskSpec(_Frozen):
         nominal_path: Reference to the stored nominal path polyline.
         injected_obstacles: Obstacles placed relative to the nominal path.
         time_limit: Time-limit formula parameters.
+        provisional: Fields holding provisional values awaiting verification (e.g. a goal
+            picked on the kinematic2d world before the Gazebo map check, T-092).
     """
 
     schema_version: Annotated[int, Field(ge=1)]
     id: NonEmptyStr
+    name: str | None = None
+    description: str | None = None
     world: dict[str, NonEmptyStr]
     map: NonEmptyStr
     start: Pose2D
@@ -232,6 +251,7 @@ class TaskSpec(_Frozen):
     nominal_path: NonEmptyStr
     injected_obstacles: tuple[InjectedObstacle, ...] = ()
     time_limit: TimeLimitSpec
+    provisional: tuple[TaskField, ...] = ()
 
 
 class SutProfile(_Frozen):
