@@ -35,6 +35,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Typed layered settings (T-003a): `roboprobe.core.settings` package with the full docs/27 §4.1–4.10 tree,
   `load_settings()` (CLI > env > `.env` > TOML > secret files > defaults, fail-fast `ConfigError` listing every
   problem) and `explain_sources()`.
+- Structured logging (T-004a): `roboprobe.core.logging` with `configure_logging()` (JSON/console, `ts`, `level`,
+  `logger`, `service`, `version`), `bind_context()` for correlation ids, secret redaction and the `EVENTS`
+  catalogue enforced by an AST test.
 - Open-source community files: `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), `SUPPORT.md`, `GOVERNANCE.md`,
   `CITATION.cff`, `.editorconfig`, `.github/CODEOWNERS`, issue forms (bug, feature, docs) and `config.yml`.
 ### Changed
