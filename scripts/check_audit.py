@@ -99,8 +99,12 @@ def read_pip_audit(path: Path) -> list[Finding]:
 def read_pnpm_audit(path: Path) -> list[Finding]:
     """Parse ``pnpm audit --json`` output (npm v6 advisory format)."""
     report = json.loads(path.read_text(encoding="utf-8"))
+    if "advisories" not in report or "metadata" not in report:
+        # pnpm prints {"error": ...} on registry/network failures; never treat that as clean.
+        msg = f"{path}: not a pnpm audit report: {str(report)[:200]}"
+        raise ValueError(msg)
     findings: list[Finding] = []
-    for key, advisory in report.get("advisories", {}).items():
+    for key, advisory in report["advisories"].items():
         ghsa = advisory.get("github_advisory_id")
         aliases = frozenset(filter(None, [*advisory.get("cves", []), ghsa, str(key)]))
         versions = sorted({str(f.get("version")) for f in advisory.get("findings", [])})

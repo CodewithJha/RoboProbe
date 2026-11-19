@@ -115,10 +115,16 @@ class CheckAuditTest(unittest.TestCase):
                 "findings": [{"version": "1.2.3"}],
             },
         }
-        code, err = self._run("--pnpm-audit", {"advisories": advisories})
+        code, err = self._run("--pnpm-audit", {"advisories": advisories, "metadata": {}})
         self.assertEqual(code, check_audit.EXIT_BLOCKING)
         self.assertIn("node b 1.2.3: GHSA-b (critical)", err)
         self.assertNotIn("node a", err)
+
+    def test_pnpm_error_output_is_usage_error(self) -> None:
+        """A registry error object must not pass as a clean report."""
+        code, err = self._run("--pnpm-audit", {"error": {"code": "ERR_PNPM_AUDIT_BAD_RESPONSE"}})
+        self.assertEqual(code, check_audit.EXIT_USAGE)
+        self.assertIn("not a pnpm audit report", err)
 
 
 if __name__ == "__main__":
