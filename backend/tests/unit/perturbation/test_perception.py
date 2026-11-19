@@ -200,3 +200,10 @@ def test_invalid_files(tmp_path: Path, mutate: Any, match: str) -> None:
 def test_non_mapping_file(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="schema_version"):
         PerceptionModel.from_yaml(write_model(tmp_path, [1, 2]))
+
+
+def test_malformed_yaml(tmp_path: Path) -> None:
+    path = tmp_path / "model.yaml"
+    path.write_text("constants: [unclosed\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid YAML"):
+        PerceptionModel.from_yaml(path)

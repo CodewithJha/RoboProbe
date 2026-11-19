@@ -90,10 +90,14 @@ class PerceptionModel:
 
         Raises:
             FileNotFoundError: If ``path`` does not exist.
-            ValueError: On a wrong schema version, missing/unknown/non-numeric constants or
-                invalid values.
+            ValueError: On invalid YAML, a wrong schema version, missing/unknown/non-numeric
+                constants or invalid values.
         """
-        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        try:
+            document = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except yaml.YAMLError as exc:
+            msg = f"{path}: invalid YAML: {exc}"
+            raise ValueError(msg) from exc
         if not isinstance(document, dict) or document.get("schema_version") != _SCHEMA_VERSION:
             msg = f"{path}: expected a mapping with schema_version: {_SCHEMA_VERSION}"
             raise ValueError(msg)
