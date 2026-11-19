@@ -71,7 +71,9 @@ LABEL org.opencontainers.image.title="roboprobe-backend" \
 RUN groupadd --system --gid "${APP_GID}" roboprobe \
  && useradd --system --uid "${APP_UID}" --gid roboprobe --home-dir /app --no-create-home \
       --shell /usr/sbin/nologin roboprobe \
- && install -d -o roboprobe -g roboprobe /data/artifacts
+ && install -d -o roboprobe -g roboprobe /data/artifacts \
+ && install -d /app \
+ && ln -s /data /app/data
 
 # Code and data are root-owned and read-only for the runtime user; only /data/artifacts is writable.
 COPY --from=builder /app/.venv /app/.venv
@@ -81,10 +83,11 @@ COPY tasks /app/tasks
 ENV PATH=/app/.venv/bin:${PATH} \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    MPLCONFIGDIR=/tmp/matplotlib \
-    ROBOPROBE_STORAGE__ARTIFACT_ROOT=/data/artifacts
+    MPLCONFIGDIR=/tmp/matplotlib
 
-# Relative defaults such as configs/backends/... resolve against /app (docs/27 §4.5).
+# Relative defaults resolve against /app (docs/27 §4.2, §4.5): configs/... is baked in and
+# data/artifacts reaches the volume through the /app/data -> /data symlink. No ROBOPROBE_* env is
+# set here, so .env / TOML / secret layers keep their normal precedence.
 WORKDIR /app
 VOLUME ["/data/artifacts"]
 USER ${APP_UID}:${APP_GID}

@@ -128,7 +128,9 @@ All images run as non-root, read-only root FS where possible, with OCI labels (`
 
 `roboprobe-backend` (`docker/backend.Dockerfile`, T-005a) has `ENTRYPOINT ["roboprobe"]`, so compose `command:` lists only the
 subcommand. It runs as `roboprobe` (uid/gid 10001) with code under `/app` (read-only for that user) and `/data/artifacts` as
-the only writable volume (`ROBOPROBE_STORAGE__ARTIFACT_ROOT` points there); it works with `read_only: true` plus a `/tmp` tmpfs.
+the only writable volume (`/app/data` links to `/data`, so the default `storage.artifact_root` lands there without any
+env override); it works with `read_only: true` plus a `/tmp` tmpfs. A bind-mounted host directory must be writable by uid
+10001 (`sudo chown 10001:10001 data/artifacts`); named volumes inherit the right owner from the image.
 Build locally with
 `docker build -f docker/backend.Dockerfile --build-arg VERSION=$(git describe --tags --always) --build-arg REVISION=$(git rev-parse HEAD) -t roboprobe-backend:dev .`;
 `.dockerignore` allow-lists the build context, so `.env`, `secrets/` and `data/` never reach a layer.
