@@ -32,7 +32,7 @@ updates:
       actions-minor-patch:
         update-types: [minor, patch]
 
-  # Container images (T-005a adds docker/*.Dockerfile; ROS/Gazebo bases are bumped manually, doc 20 §7).
+  # Container images in docker/*.Dockerfile (ROS/Gazebo bases are bumped manually, doc 20 §7).
   - package-ecosystem: docker
     directory: /docker
     schedule: { interval: weekly, day: monday, time: "06:00", timezone: Asia/Kolkata }
