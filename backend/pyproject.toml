@@ -133,6 +133,8 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
+# Lets tests import shared helpers as ``tests.factories`` / ``tests.fakes`` (docs/18 §5).
+pythonpath = ["."]
 addopts = [
     "-ra",
     "--strict-markers",
