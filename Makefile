@@ -46,7 +46,7 @@ setup: $(DB_PASSWORD_FILE) ## Install backend + web deps and git hooks; create t
 lock: ## Regenerate backend/uv.lock after changing dependencies (never hand-edit it)
 	$(UV) lock --directory $(BACKEND_DIR)
 
-lint: ## Ruff + import-linter contracts (backend); ESLint (0 warnings) + Prettier check (web)
+lint: ## Ruff + import-linter contracts (backend); ESLint (0 warnings) + Prettier + Stylelint + token freshness (web)
 	$(UV_RUN) ruff check . $(SCRIPTS_DIR)
 	$(UV_RUN) ruff format --check . $(SCRIPTS_DIR)
 	$(UV_RUN) lint-imports

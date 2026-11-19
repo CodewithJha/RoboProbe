@@ -1,0 +1,104 @@
+/* Base layer: modern reset, Field Notebook paper and typography, focus ring, reduced motion (doc 13 §1). */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+html {
+  text-size-adjust: none;
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height);
+  color: var(--ink);
+  background-color: var(--paper);
+
+  /* Faint engineering grid on the paper surface. */
+  background-image:
+    linear-gradient(var(--grid-line) var(--border-width), transparent var(--border-width)),
+    linear-gradient(90deg, var(--grid-line) var(--border-width), transparent var(--border-width));
+  background-size: var(--grid-size) var(--grid-size);
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+picture,
+svg,
+canvas,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+input,
+button,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+p {
+  overflow-wrap: break-word;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: var(--font-weight-strong);
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: var(--font-size-xl);
+}
+
+h2 {
+  font-size: var(--font-size-lg);
+}
+
+code,
+kbd,
+samp,
+pre,
+.mono {
+  font-family: var(--font-mono);
+}
+
+table,
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  color: var(--accent);
+}
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--margin-line);
+  outline-offset: var(--focus-ring-width);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}
