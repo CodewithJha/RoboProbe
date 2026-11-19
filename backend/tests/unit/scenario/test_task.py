@@ -94,7 +94,7 @@ def test_placeholders_rejected_in_both_modes_with_pointer(tmp_path: Path) -> Non
         with pytest.raises(errors.ValidationError, match="TBD_T092") as exc:
             load_task(path, strict=strict)
         assert issue_paths(exc) == ["/goal/x", "/goal/y"]
-        assert "backlog task T092" in str(exc.value)
+        assert "backlog task T-092" in str(exc.value)
 
 
 def test_doc_06_example_is_rejected_because_of_placeholders(tmp_path: Path) -> None:
@@ -155,6 +155,7 @@ def test_json_pointer_escapes_rfc_6901() -> None:
 def test_find_placeholders_walks_nested_documents() -> None:
     document = {"a": ["TBD_T091", {"b": "TBD_T092"}], "c": "TBD", "d": 1}
     assert find_placeholders(document) == [("/a/0", "TBD_T091"), ("/a/1/b", "TBD_T092")]
+    assert find_placeholders({"x/y": "TBD_T091"}) == [("/x~1y", "TBD_T091")]
 
 
 # --------------------------------------------------------------------------- nominal path
@@ -173,7 +174,10 @@ def test_load_nominal_path(tmp_path: Path) -> None:
     ("csv", "match"),
     [
         ("x,y\n0.0,0.0\n", ">= 2 rows"),
-        ("x,y,z\n0,0,0\n10,0,0\n", ">= 2 rows"),
+        ("x,y\n", ">= 2 rows"),
+        ("0.0,0.0\n10.0,0.0\n", "header 'x,y'"),
+        ("", "header 'x,y'"),
+        ("x,y\n0,0,0\n10,0,0\n", ">= 2 rows"),
         ("x,y\n0.0,0.0\nfoo,1\n", "numeric"),
         ("x,y\n0.0,0.0\nnan,0\n10,0\n", "finite"),
         ("x,y\n1.0,0.0\n10.0,0.0\n", "from the start"),

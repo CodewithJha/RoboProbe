@@ -37,28 +37,36 @@ __all__ = [
     "time_limit_s",
 ]
 
-PLACEHOLDER_PATTERN = re.compile(r"^TBD_T\d{3}$")
+_PLACEHOLDER_PREFIX = "TBD_T"
+PLACEHOLDER_PATTERN = re.compile(rf"^{_PLACEHOLDER_PREFIX}\d{{3}}$")
 """A value to be fixed by the named backlog task, e.g. ``TBD_T092``."""
 
 _TASK_SCHEMA = "task"
 _PATH_DIM = 2
 _MIN_PATH_POINTS = 2
+_PATH_HEADER = "x,y"
 
 
 def find_placeholders(document: object, pointer: str = "") -> list[tuple[str, str]]:
     """Return ``(json_pointer, placeholder)`` for every ``TBD_Tnnn`` value in ``document``."""
     if isinstance(document, str):
         return [(pointer, document)] if PLACEHOLDER_PATTERN.match(document) else []
+    children: list[tuple[str | int, object]]
     if isinstance(document, dict):
-        items = document.items()
+        children = list(document.items())
     elif isinstance(document, list):
-        items = enumerate(document)  # type: ignore[assignment]
+        children = list(enumerate(document))
     else:
         return []
     found: list[tuple[str, str]] = []
-    for key, value in items:
-        found.extend(find_placeholders(value, f"{pointer}/{key}"))
+    for key, value in children:
+        found.extend(find_placeholders(value, pointer + json_pointer([key])))
     return found
+
+
+def _backlog_task(placeholder: str) -> str:
+    """``"TBD_T092"`` -> ``"T-092"`` (backlog task id, docs/22)."""
+    return f"T-{placeholder.removeprefix(_PLACEHOLDER_PREFIX)}"
 
 
 def load_task(path: Path, *, strict: bool) -> TaskSpec:
@@ -84,7 +92,7 @@ def load_task(path: Path, *, strict: bool) -> TaskSpec:
         raise document_error(
             source,
             [
-                (p, f"unresolved placeholder {v}; it is filled by backlog task {v[4:]}")
+                (p, f"unresolved placeholder {v}; it is filled by backlog task {_backlog_task(v)}")
                 for p, v in placeholders
             ],
         )
@@ -125,9 +133,14 @@ def load_nominal_path(task_file: Path, task: TaskSpec) -> npt.NDArray[np.float64
         raise document_error(
             str(task_file), [("/nominal_path", "must stay inside the task directory")]
         )
-    text = read_document(csv_path).decode("utf-8")
+    lines = read_document(csv_path).decode("utf-8").splitlines()
+    if not lines or lines[0].strip() != _PATH_HEADER:
+        raise document_error(source, [("", f"first line must be the header {_PATH_HEADER!r}")])
+    rows = [line for line in lines[1:] if line.strip()]
+    if len(rows) < _MIN_PATH_POINTS:
+        raise document_error(source, [("", f"expected >= {_MIN_PATH_POINTS} rows of x,y")])
     try:
-        points = np.loadtxt(text.splitlines(), delimiter=",", skiprows=1, ndmin=2, dtype=np.float64)
+        points = np.loadtxt(rows, delimiter=",", ndmin=2, dtype=np.float64)
     except ValueError as exc:
         raise document_error(source, [("", f"not a numeric x,y CSV: {exc}")]) from exc
     if points.shape[1] != _PATH_DIM or points.shape[0] < _MIN_PATH_POINTS:
