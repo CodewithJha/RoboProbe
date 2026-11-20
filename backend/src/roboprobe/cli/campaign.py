@@ -313,7 +313,8 @@ def run_inline(  # noqa: PLR0912,PLR0915 - inline supervisor wires loop, workers
                 break
             if threads and all(not thread.is_alive() for thread in threads):
                 campaigns.fail(campaign_id, reason="all_workers_dead")
-                break
+                msg = "all inline worker threads died"
+                raise RuntimeError(msg)
             loop.step()
             orch.reaper.reap()
             time.sleep(settings.runner.tick_interval_s)
