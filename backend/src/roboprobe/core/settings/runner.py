@@ -94,3 +94,8 @@ class RunnerSettings(SettingsSection):
     max_concurrent_campaigns: int = Field(
         default=4, gt=0, description="Campaigns driven concurrently per orchestrator."
     )
+    confirm_priority: int = Field(
+        default=10,
+        ge=0,
+        description="Queue priority for confirmatory interaction runs (lower runs sooner).",
+    )

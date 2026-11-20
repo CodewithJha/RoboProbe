@@ -109,8 +109,17 @@ class RunRepo(Protocol):
         self, campaign_id: UUID, *, limit: int | None = None, cursor: str | None = None
     ) -> Page[RunRecord]: ...
 
-    def history(self, campaign_id: UUID) -> list[Observation]:
-        """Finished non-INVALID runs ordered by ordinal (single query)."""
+    def history(
+        self,
+        campaign_id: UUID,
+        *,
+        exclude_phases: frozenset[str] | None = None,
+    ) -> list[Observation]:
+        r"""Finished non-INVALID runs ordered by ordinal (single query).
+
+        ``exclude_phases`` defaults to ``{\"confirm\", \"manual\"}`` so strategy
+        history and MET metrics ignore confirmatory / ad-hoc runs (docs/09 §6).
+        """
         ...
 
     def cancel_pending(self, campaign_id: UUID) -> int:

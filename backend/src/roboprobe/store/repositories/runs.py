@@ -116,7 +116,13 @@ class SqlRunRepo:
         nxt = None if extra is None else str(items[-1].id)
         return Page(items=items, next_cursor=nxt)
 
-    def history(self, campaign_id: UUID) -> list[Observation]:
+    def history(
+        self,
+        campaign_id: UUID,
+        *,
+        exclude_phases: frozenset[str] | None = None,
+    ) -> list[Observation]:
+        skipped = frozenset({"confirm", "manual"}) if exclude_phases is None else exclude_phases
         rows = self._s.scalars(
             select(RunRow)
             .where(
@@ -129,6 +135,8 @@ class SqlRunRepo:
         ).all()
         out: list[Observation] = []
         for row in rows:
+            if row.phase in skipped:
+                continue
             failure = None
             if row.primary_failure:
                 try:

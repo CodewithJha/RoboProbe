@@ -224,7 +224,13 @@ class _Runs:
         nxt = None if extra is None else str(items[-1].id)
         return Page(items=items, next_cursor=nxt)
 
-    def history(self, campaign_id: UUID) -> list[Observation]:
+    def history(
+        self,
+        campaign_id: UUID,
+        *,
+        exclude_phases: frozenset[str] | None = None,
+    ) -> list[Observation]:
+        skipped = frozenset({"confirm", "manual"}) if exclude_phases is None else exclude_phases
         rows = sorted(
             (
                 r
@@ -233,6 +239,7 @@ class _Runs:
                 and r.status is RunStatus.DONE
                 and r.verdict is not None
                 and r.verdict is not Verdict.INVALID
+                and r.phase not in skipped
             ),
             key=lambda r: (r.ordinal, r.repeat_index),
         )

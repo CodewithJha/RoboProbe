@@ -141,6 +141,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `runner.retry.base_delay_s` | float | `0.5` | `ROBOPROBE_RUNNER__RETRY__BASE_DELAY_S` | First backoff delay [s]. |
 | `runner.retry.max_delay_s` | float | `10.0` | `ROBOPROBE_RUNNER__RETRY__MAX_DELAY_S` | Backoff delay cap [s]. |
 | `runner.max_concurrent_campaigns` | int | `4` | `ROBOPROBE_RUNNER__MAX_CONCURRENT_CAMPAIGNS` | Campaigns driven concurrently per orchestrator. |
+| `runner.confirm_priority` | int | `10` | `ROBOPROBE_RUNNER__CONFIRM_PRIORITY` | Queue priority for confirmatory interaction runs (lower runs sooner). |
 | `worker.backend` | str? | – | `ROBOPROBE_WORKER__BACKEND` | Simulator backend key (`kinematic2d`, `gazebo_nav2`); required to start a worker. |
 | `worker.id_prefix` | str | `<hostname>` | `ROBOPROBE_WORKER__ID_PREFIX` | Worker id prefix; id = `<prefix>:<pid>:<slot>` (default: host name). |
 | `worker.concurrency` | int | `1` | `ROBOPROBE_WORKER__CONCURRENCY` | Simulation slots per process. |
@@ -270,6 +271,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `analysis.rules.min_precision` | float | `0.6` | `ROBOPROBE_ANALYSIS__RULES__MIN_PRECISION` | Minimum precision of a reported rule. |
 | `analysis.interaction.repeats` | int | `3` | `ROBOPROBE_ANALYSIS__INTERACTION__REPEATS` | Confirmation repeats per candidate. |
 | `analysis.interaction.success_ratio` | float | `0.67` | `ROBOPROBE_ANALYSIS__INTERACTION__SUCCESS_RATIO` | Share of repeats that must reproduce the failure. |
+| `analysis.interaction.auto_confirm_top_n` | int | `0` | `ROBOPROBE_ANALYSIS__INTERACTION__AUTO_CONFIRM_TOP_N` | Auto-enqueue confirmation for the top-N modes after final analysis (`0` = off). |
 | `risk.thresholds.safe` | float | `0.05` | `ROBOPROBE_RISK__THRESHOLDS__SAFE` | Upper bound of the safe region. |
 | `risk.thresholds.failure` | float | `0.95` | `ROBOPROBE_RISK__THRESHOLDS__FAILURE` | Lower bound of the failure-prone region. |
 | `risk.slice_resolution` | int | `50` | `ROBOPROBE_RISK__SLICE_RESOLUTION` | Grid points per axis of a 2-D slice. |

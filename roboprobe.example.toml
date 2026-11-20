@@ -91,6 +91,8 @@
 # count_invalid_in_budget = false
 # Campaigns driven concurrently per orchestrator.
 # max_concurrent_campaigns = 4
+# Queue priority for confirmatory interaction runs (lower runs sooner).
+# confirm_priority = 10
 
 [runner.auto_pause]
 # INVALID share that pauses a campaign [0-1].
@@ -391,6 +393,8 @@
 # repeats = 3
 # Share of repeats that must reproduce the failure.
 # success_ratio = 0.67
+# Auto-enqueue confirmation for the top-N modes after final analysis (0 = off).
+# auto_confirm_top_n = 0
 
 [risk.thresholds]
 # Upper bound of the safe region.

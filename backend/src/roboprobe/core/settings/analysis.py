@@ -71,6 +71,11 @@ class InteractionSettings(SettingsSection):
     success_ratio: float = Field(
         default=0.67, gt=0, le=1, description="Share of repeats that must reproduce the failure."
     )
+    auto_confirm_top_n: int = Field(
+        default=0,
+        ge=0,
+        description="Auto-enqueue confirmation for the top-N modes after final analysis (0=off).",
+    )
 
 
 class AnalysisSettings(SettingsSection):
