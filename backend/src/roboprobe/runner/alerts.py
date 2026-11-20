@@ -32,6 +32,7 @@ ALERT_DISK_LOW: Final = "DISK_LOW"
 ALERT_GP_FALLBACK_REPEATED: Final = "GP_FALLBACK_REPEATED"
 
 TOPIC_ALERT: Final = "alert"
+BYTES_PER_GIB: Final = 1024**3
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,4 +128,4 @@ class AlertEvaluator:
 def _disk_free_gb(path: Path) -> float:
     path.mkdir(parents=True, exist_ok=True)
     usage = shutil.disk_usage(path)
-    return usage.free / (1024**3)
+    return usage.free / BYTES_PER_GIB

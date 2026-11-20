@@ -101,6 +101,7 @@ def test_heartbeat_interval_and_busy_status(tmp_path: Path) -> None:
         clock=clock,
         settings=settings.worker,
         retry=settings.runner.retry,
+        heartbeat_timeout_s=settings.runner.heartbeat_timeout_s,
         record_factory=lambda wid, backend, version, caps: WorkerRecord(
             id=wid, backend=backend, status="IDLE", capabilities=caps, version=version
         ),

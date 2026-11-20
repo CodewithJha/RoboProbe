@@ -60,8 +60,8 @@ class HeartbeatService:
         clock: Clock,
         settings: WorkerSettings,
         retry: RetrySettings,
+        heartbeat_timeout_s: float,
         metrics: Metrics | None = None,
-        health_host: str = "127.0.0.1",
         record_factory: Callable[[str, str, str, dict[str, JsonValue]], object] | None = None,
     ) -> None:
         """Wire worker, UoW factory, clock, settings and optional record factory."""
@@ -70,8 +70,8 @@ class HeartbeatService:
         self._clock = clock
         self._settings = settings
         self._retry = retry
+        self._heartbeat_timeout_s = heartbeat_timeout_s
         self._metrics = metrics if metrics is not None else create_metrics(enabled=False)
-        self._health_host = health_host
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self._health: HealthServer | None = None
@@ -114,7 +114,7 @@ class HeartbeatService:
         )
         self._thread.start()
         self._health = serve_health(
-            self._health_host,
+            self._settings.health_host,
             self._settings.health_port,
             [Check(name="heartbeat", probe=self._health_probe)],
             self._metrics,
@@ -124,7 +124,7 @@ class HeartbeatService:
         """Stop the heartbeat thread and health server."""
         self._stop.set()
         if self._thread is not None:
-            self._thread.join(timeout=self._settings.heartbeat_interval_s * 2)
+            self._thread.join(timeout=self._settings.heartbeat_join_timeout_s)
             self._thread = None
         if self._health is not None:
             self._health.stop()
@@ -168,7 +168,7 @@ class HeartbeatService:
             msg = "no heartbeat yet"
             raise RuntimeError(msg)
         age = (self._clock.now() - self._last_ok).total_seconds()
-        if age > self._settings.heartbeat_interval_s * 3:
+        if age > self._heartbeat_timeout_s:
             msg = f"heartbeat stale ({age:.1f}s)"
             raise RuntimeError(msg)
 

@@ -141,9 +141,11 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `worker.concurrency` | int | `1` | `ROBOPROBE_WORKER__CONCURRENCY` | Simulation slots per process. |
 | `worker.poll_interval_s` | float | `1.0` | `ROBOPROBE_WORKER__POLL_INTERVAL_S` | Queue poll interval [s]. |
 | `worker.heartbeat_interval_s` | float | `5.0` | `ROBOPROBE_WORKER__HEARTBEAT_INTERVAL_S` | Heartbeat interval [s]. |
+| `worker.heartbeat_join_timeout_s` | float | `10.0` | `ROBOPROBE_WORKER__HEARTBEAT_JOIN_TIMEOUT_S` | Max wait when joining the heartbeat thread on stop [s]. |
 | `worker.drain_timeout_s` | float | `600.0` | `ROBOPROBE_WORKER__DRAIN_TIMEOUT_S` | Grace period to finish runs on SIGTERM [s]. |
 | `worker.default_wall_timeout_s` | float | `300.0` | `ROBOPROBE_WORKER__DEFAULT_WALL_TIMEOUT_S` | Default wall-clock limit per run [s]. |
 | `worker.default_sim_time_budget_s` | float | `120.0` | `ROBOPROBE_WORKER__DEFAULT_SIM_TIME_BUDGET_S` | Default simulated-time budget per run [s]. |
+| `worker.health_host` | str | `127.0.0.1` | `ROBOPROBE_WORKER__HEALTH_HOST` | Bind address for the worker `/healthz` + metrics server. |
 | `worker.health_port` | int | `9101` | `ROBOPROBE_WORKER__HEALTH_PORT` | Internal `/healthz` + metrics port. |
 
 ### 4.5 Backends
