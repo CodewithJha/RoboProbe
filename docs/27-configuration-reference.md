@@ -218,6 +218,8 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `selection.probe.refine_perturb_n` | int | `4` | `ROBOPROBE_SELECTION__PROBE__REFINE_PERTURB_N` | Perturbations per refined point. |
 | `selection.probe.refine_perturb_std` | float | `0.05` | `ROBOPROBE_SELECTION__PROBE__REFINE_PERTURB_STD` | Perturbation std in the unit cube. |
 | `selection.probe.adapt_window` | int | `20` | `ROBOPROBE_SELECTION__PROBE__ADAPT_WINDOW` | Window for phase-weight adaptation. |
+| `selection.probe.adapt_shift` | float | `0.2` | `ROBOPROBE_SELECTION__PROBE__ADAPT_SHIFT` | Weight moved from ModeSearch to Boundary after an unproductive window. |
+| `selection.probe.mode_search_floor` | float | `0.2` | `ROBOPROBE_SELECTION__PROBE__MODE_SEARCH_FLOOR` | Lower bound on ModeSearch weight after adaptive shifts. |
 | `selection.gp.max_points` | int | `1500` | `ROBOPROBE_SELECTION__GP__MAX_POINTS` | Training points kept by the GP. |
 | `selection.gp.noise_lower_bound` | float | `0.0001` | `ROBOPROBE_SELECTION__GP__NOISE_LOWER_BOUND` | Likelihood noise floor. |
 | `selection.gp.torch_threads` | int | `4` | `ROBOPROBE_SELECTION__GP__TORCH_THREADS` | Torch intra-op threads. |

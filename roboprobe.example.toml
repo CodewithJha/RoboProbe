@@ -205,6 +205,10 @@
 # refine_perturb_std = 0.05
 # Window for phase-weight adaptation.
 # adapt_window = 20
+# Weight moved from ModeSearch to Boundary after an unproductive window.
+# adapt_shift = 0.2
+# Lower bound on ModeSearch weight after adaptive shifts.
+# mode_search_floor = 0.2
 
 [selection.probe.weights]
 # Mode-search share.

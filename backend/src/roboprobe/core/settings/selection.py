@@ -64,6 +64,18 @@ class ProbeDefaults(SettingsSection):
         default=0.05, gt=0, description="Perturbation std in the unit cube."
     )
     adapt_window: int = Field(default=20, gt=0, description="Window for phase-weight adaptation.")
+    adapt_shift: float = Field(
+        default=0.2,
+        gt=0,
+        le=1,
+        description="Weight moved from ModeSearch to Boundary after an unproductive window.",
+    )
+    mode_search_floor: float = Field(
+        default=0.2,
+        ge=0,
+        le=1,
+        description="Lower bound on ModeSearch weight after adaptive shifts.",
+    )
 
 
 class GpDefaults(SettingsSection):
