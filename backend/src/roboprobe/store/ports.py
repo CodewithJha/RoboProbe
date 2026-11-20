@@ -107,6 +107,10 @@ class RunRepo(Protocol):
         """Finished non-INVALID runs ordered by ordinal (single query)."""
         ...
 
+    def cancel_pending(self, campaign_id: UUID) -> int:
+        """Mark all ``PENDING`` runs for ``campaign_id`` as ``CANCELLED``; return count."""
+        ...
+
 
 class OracleResultRepo(Protocol):
     """Per-run oracle rows, replaced as a set when a verdict is persisted."""

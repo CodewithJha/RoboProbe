@@ -7,11 +7,11 @@ from __future__ import annotations
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from roboprobe.core.types import FailureClass, Observation, Verdict
+from roboprobe.core.types import FailureClass, Observation, RunStatus, Verdict
 from roboprobe.store.flush import execute
 from roboprobe.store.ids import new_uuid
 from roboprobe.store.mapping import run_record
@@ -106,3 +106,15 @@ class SqlRunRepo:
                 )
             )
         return out
+
+    def cancel_pending(self, campaign_id: UUID) -> int:
+        result = execute(
+            self._s,
+            update(RunRow)
+            .where(
+                RunRow.campaign_id == campaign_id,
+                RunRow.status == RunStatus.PENDING.value,
+            )
+            .values(status=RunStatus.CANCELLED.value),
+        )
+        return int(getattr(result, "rowcount", 0) or 0)
