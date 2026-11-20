@@ -30,6 +30,7 @@ from roboprobe.core.settings.database import DatabaseSettings
 from roboprobe.core.settings.experiments import ExperimentSettings
 from roboprobe.core.settings.observability import LoggingSettings, ObservabilitySettings
 from roboprobe.core.settings.oracles import OracleThresholds
+from roboprobe.core.settings.reporting import ReportingSettings
 from roboprobe.core.settings.runner import RunnerSettings
 from roboprobe.core.settings.scenario import ScenarioSettings
 from roboprobe.core.settings.selection import SelectionDefaults
@@ -51,6 +52,7 @@ __all__ = [
     "OracleThresholds",
     "RiskSettings",
     "RoboProbeSettings",
+    "ReportingSettings",
     "RunnerSettings",
     "ScenarioSettings",
     "SelectionDefaults",
@@ -100,6 +102,7 @@ class RoboProbeSettings(BaseSettings):
     analysis: AnalysisSettings = Field(default_factory=AnalysisSettings)
     risk: RiskSettings = Field(default_factory=RiskSettings)
     experiments: ExperimentSettings = Field(default_factory=ExperimentSettings)
+    reporting: ReportingSettings = Field(default_factory=ReportingSettings)
     observability: ObservabilitySettings = Field(default_factory=ObservabilitySettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
 
