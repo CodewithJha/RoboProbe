@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 from uuid import UUID
 
 import pytest
 from tests.fakes.store import InMemoryUnitOfWork
 
+from roboprobe.core.errors import NotFoundError
 from roboprobe.core.settings.analysis import InteractionSettings
 from roboprobe.core.types import CampaignStatus, FailureClass, RunStatus, Verdict
 from roboprobe.runner.confirmations import CONFIRM_PHASE, ConfirmationService
@@ -20,6 +22,8 @@ from roboprobe.store.records import (
     SpaceRecord,
     SutProfileRecord,
 )
+
+pytestmark = pytest.mark.unit
 
 REPO = Path(__file__).resolve().parents[4]
 WAREHOUSE = REPO / "configs" / "scenario_spaces" / "warehouse_v1.yaml"
@@ -209,3 +213,42 @@ def test_on_run_finished_persists_interaction(space: ScenarioSpace) -> None:
         topics = [e.topic for e in uow.events.since(0)]
         assert "mode.discovered" in topics
         assert "campaign.updated" in topics
+
+
+def test_guards_and_auto_confirm_top(space: ScenarioSpace) -> None:
+    shared = InMemoryUnitOfWork()
+
+    def factory() -> InMemoryUnitOfWork:
+        return shared
+
+    with shared as uow:
+        cid, mid = _seed_mode(uow, space)
+        uow.commit()
+
+    def make(top_n: int) -> ConfirmationService:
+        return ConfirmationService(
+            factory,
+            interaction=InteractionSettings(
+                repeats=1, success_ratio=0.67, auto_confirm_top_n=top_n
+            ),
+            confirm_priority=10,
+            load_space=lambda _i, _v: space,
+        )
+
+    assert make(0).auto_confirm_top(cid) == []
+    svc = make(1)
+    with pytest.raises(NotFoundError):
+        svc.request(new_uuid(), mid)
+    with pytest.raises(NotFoundError):
+        svc.request(cid, new_uuid())
+    ids = svc.auto_confirm_top(cid)
+    assert ids
+    assert svc.request(cid, mid) == ids
+    other = SimpleNamespace(phase="select", proposal={}, campaign_id=cid)
+    svc.on_run_finished(other)  # type: ignore[arg-type]
+    no_mode = SimpleNamespace(phase=CONFIRM_PHASE, proposal={}, campaign_id=cid)
+    svc.on_run_finished(no_mode)  # type: ignore[arg-type]
+    gone = SimpleNamespace(
+        phase=CONFIRM_PHASE, proposal={"confirm_mode_id": str(new_uuid())}, campaign_id=cid
+    )
+    svc.on_run_finished(gone)  # type: ignore[arg-type]

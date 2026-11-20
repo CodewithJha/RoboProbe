@@ -18,6 +18,8 @@ from roboprobe.risk.volume import RegionVolumes, VolumeEstimator, robustness_sco
 from roboprobe.scenario.space import ScenarioSpace
 from roboprobe.selection.benchmarks import multi_mode_6d
 
+pytestmark = pytest.mark.unit
+
 REPO = Path(__file__).resolve().parents[4]
 MULTI = REPO / "configs" / "scenario_spaces" / "multi_mode_6d.yaml"
 BRANIN = REPO / "configs" / "scenario_spaces" / "branin_2d.yaml"

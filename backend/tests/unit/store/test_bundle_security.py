@@ -26,6 +26,8 @@ from roboprobe.store.records import (
     SutProfileRecord,
 )
 
+pytestmark = pytest.mark.unit
+
 
 def _pack(members: dict[str, bytes], dest: Path) -> Path:
     buf = io.BytesIO()

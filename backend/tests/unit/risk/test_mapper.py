@@ -20,6 +20,8 @@ from roboprobe.risk.mapper import (
 )
 from roboprobe.scenario.space import ScenarioSpace
 
+pytestmark = pytest.mark.unit
+
 REPO = Path(__file__).resolve().parents[4]
 BRANIN = REPO / "configs" / "scenario_spaces" / "branin_2d.yaml"
 MULTI = REPO / "configs" / "scenario_spaces" / "multi_mode_6d.yaml"
