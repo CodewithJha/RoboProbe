@@ -9,7 +9,7 @@ import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol, cast
+from typing import cast
 from uuid import UUID
 
 import numpy as np
@@ -31,6 +31,7 @@ from roboprobe.metrics.statistics import effect_label
 from roboprobe.reporting import figures
 from roboprobe.reporting._env import template_env
 from roboprobe.reporting.campaign import _css_block
+from roboprobe.reporting.ports import ReportArtifactStore, ReportUnitOfWork
 
 __all__ = ["ExperimentReportContext", "render_experiment_report"]
 
@@ -40,16 +41,6 @@ _THREATS = (
     "Statistical conclusion: few seeds limit power — report effect sizes.",
     "External validity: simulator backends may not reflect deployment hardware.",
 )
-
-
-class _UowPort(Protocol):
-    experiments: Any
-    campaigns: Any
-    runs: Any
-
-
-class _ArtifactPort(Protocol):
-    def put(self, src: Path, kind: str, *, campaign_id: UUID | None = None) -> object: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,18 +61,19 @@ class ExperimentReportContext:
     css: str
 
 
-def _campaign_runs(uow: _UowPort, campaign_id: UUID, budget: int) -> list[CampaignRun]:
+def _campaign_runs(uow: ReportUnitOfWork, campaign_id: UUID, budget: int) -> list[CampaignRun]:
     page = uow.runs.list_for_campaign(campaign_id, limit=None)
     rows = sorted(page.items, key=lambda r: (r.ordinal, r.repeat_index))
     out: list[CampaignRun] = []
     for row in rows:
         if row.verdict is None:
             continue
-        verdict = Verdict(row.verdict) if not isinstance(row.verdict, Verdict) else row.verdict
+        verdict = row.verdict if isinstance(row.verdict, Verdict) else Verdict(str(row.verdict))
+        duration = (row.metrics or {}).get("duration_s", 0.0)
         out.append(
             CampaignRun(
                 verdict=verdict,
-                wall_time_s=float((row.metrics or {}).get("duration_s", 0.0)),
+                wall_time_s=float(cast(float | int | str, duration)),
                 x_unit=tuple(float(x) for x in (row.x_unit or ())),
                 phase=str(row.phase or ""),
                 tags=tuple(str(t) for t in (row.tags or ())),
@@ -102,7 +94,7 @@ def _variant_label(raw: object) -> str:
 
 def build_experiment_context(  # noqa: PLR0912, PLR0915
     experiment_id: UUID,
-    uow: _UowPort,
+    uow: ReportUnitOfWork,
     *,
     settings: ReportingSettings | None = None,
     experiment_settings: ExperimentSettings | None = None,
@@ -222,8 +214,8 @@ def build_experiment_context(  # noqa: PLR0912, PLR0915
 
 def render_experiment_report(  # noqa: PLR0913
     experiment_id: UUID,
-    uow: _UowPort,
-    store: _ArtifactPort,
+    uow: ReportUnitOfWork,
+    store: ReportArtifactStore,
     *,
     out: Path | None = None,
     settings: ReportingSettings | None = None,

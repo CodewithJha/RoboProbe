@@ -530,6 +530,21 @@ class InMemoryUnitOfWork:
         db = self._require()
         db.notify.append((channel, payload))
 
+    def try_advisory_lock(self, key: str) -> bool:
+        locks = getattr(self, "_advisory_keys", None)
+        if locks is None:
+            locks = set()
+            self._advisory_keys = locks
+        if key in locks:
+            return True
+        locks.add(key)
+        return True
+
+    def advisory_unlock(self, key: str) -> None:
+        locks = getattr(self, "_advisory_keys", None)
+        if locks is not None:
+            locks.discard(key)
+
     def _require(self) -> _Db:
         if self._tx is None:
             raise RuntimeError("UnitOfWork used outside a with-block")

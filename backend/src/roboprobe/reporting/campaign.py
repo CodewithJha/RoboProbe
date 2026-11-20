@@ -12,7 +12,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Protocol, cast
+from typing import Any, cast
 from uuid import UUID
 
 import numpy as np
@@ -25,26 +25,12 @@ from roboprobe.metrics.discovery_metrics import discovery_curve
 from roboprobe.reporting import figures
 from roboprobe.reporting._env import template_env
 from roboprobe.reporting.figures import _ImportanceLike
+from roboprobe.reporting.ports import ReportArtifactStore, ReportUnitOfWork
 from roboprobe.reporting.theme import load_theme, tokens_path
 from roboprobe.risk.mapper import RiskSlice, load_slices
 from roboprobe.risk.volume import RegionVolumes, robustness_score
 
 __all__ = ["CampaignReportContext", "render_campaign_report"]
-
-
-class _UowPort(Protocol):
-    campaigns: Any
-    runs: Any
-    modes: Any
-    analyses: Any
-    risk_maps: Any
-    artifacts: Any
-
-
-class _ArtifactPort(Protocol):
-    def put(self, src: Path, kind: str, *, campaign_id: UUID | None = None) -> object: ...
-
-    def path(self, ref: object) -> Path: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,18 +76,19 @@ def _css_block(settings: ReportingSettings) -> str:
     return "\n".join(lines) + "\n" + css_path.read_text(encoding="utf-8")
 
 
-def _runs_from_uow(uow: _UowPort, campaign_id: UUID) -> list[CampaignRun]:
+def _runs_from_uow(uow: ReportUnitOfWork, campaign_id: UUID) -> list[CampaignRun]:
     page = uow.runs.list_for_campaign(campaign_id, limit=None)
     rows = sorted(page.items, key=lambda r: (r.ordinal, r.repeat_index))
     out: list[CampaignRun] = []
     for row in rows:
         if row.verdict is None:
             continue
-        verdict = Verdict(row.verdict) if not isinstance(row.verdict, Verdict) else row.verdict
+        verdict = row.verdict if isinstance(row.verdict, Verdict) else Verdict(str(row.verdict))
+        duration = (row.metrics or {}).get("duration_s", 0.0)
         out.append(
             CampaignRun(
                 verdict=verdict,
-                wall_time_s=float((row.metrics or {}).get("duration_s", 0.0)),
+                wall_time_s=float(cast(float | int | str, duration)),
                 x_unit=tuple(float(x) for x in (row.x_unit or ())),
                 phase=str(row.phase or ""),
                 tags=tuple(str(t) for t in (row.tags or ())),
@@ -149,7 +136,7 @@ def _volumes_from_summary(summary: Mapping[str, Any]) -> RegionVolumes | None:
 
 
 def _load_slices_from_store(
-    store: _ArtifactPort, uow: _UowPort, campaign_id: UUID
+    store: ReportArtifactStore, uow: ReportUnitOfWork, campaign_id: UUID
 ) -> list[RiskSlice]:
     latest = uow.risk_maps.latest(campaign_id)
     if latest is None or latest.slices_artifact is None:
@@ -169,8 +156,8 @@ def _load_slices_from_store(
 
 def build_campaign_context(  # noqa: PLR0915
     campaign_id: UUID,
-    uow: _UowPort,
-    store: _ArtifactPort,
+    uow: ReportUnitOfWork,
+    store: ReportArtifactStore,
     *,
     settings: ReportingSettings | None = None,
 ) -> CampaignReportContext:
@@ -312,8 +299,8 @@ def build_campaign_context(  # noqa: PLR0915
 
 def render_campaign_report(
     campaign_id: UUID,
-    uow: _UowPort,
-    store: _ArtifactPort,
+    uow: ReportUnitOfWork,
+    store: ReportArtifactStore,
     *,
     out: Path | None = None,
     settings: ReportingSettings | None = None,

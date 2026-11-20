@@ -32,6 +32,11 @@ from roboprobe.analysis.features import FailureFeatureBuilder
 from roboprobe.analysis.importance import ImportanceExplainer
 from roboprobe.analysis.mode_matching import match_modes
 from roboprobe.analysis.modes import ModeSummarizer
+from roboprobe.analysis.ports import (
+    AnalysisArtifactStore,
+    AnalysisRunRow,
+    AnalysisUnitOfWork,
+)
 from roboprobe.analysis.rules import RuleExtractor
 from roboprobe.analysis.settings import (
     ClustererSettings,
@@ -42,6 +47,7 @@ from roboprobe.analysis.settings import (
 from roboprobe.analysis.types import (
     AnalysisRun,
     FailureModeSummary,
+    ImportanceReport,
     ParamRange,
     StoredMode,
 )
@@ -76,8 +82,8 @@ _SKIP_PHASES = frozenset({"confirm"})
 
 def analyze_campaign(  # noqa: PLR0913
     campaign_id: UUID,
-    uow: Any,  # noqa: ANN401
-    artifact_store: Any,  # noqa: ANN401
+    uow: AnalysisUnitOfWork,
+    artifact_store: AnalysisArtifactStore,
     *,
     kind: AnalysisKind = AnalysisKind.FULL,
     settings: AnalysisSettings,
@@ -378,7 +384,7 @@ def _run_step(
 
 
 def _load_runs(
-    uow: Any,  # noqa: ANN401
+    uow: AnalysisUnitOfWork,
     campaign_id: UUID,
 ) -> tuple[list[AnalysisRun], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     out: list[AnalysisRun] = []
@@ -401,7 +407,7 @@ def _load_runs(
     return out, gp_x, gp_y
 
 
-def _to_analysis_run(row: Any) -> AnalysisRun:  # noqa: ANN401
+def _to_analysis_run(row: AnalysisRunRow) -> AnalysisRun:
     verdict = row.verdict if isinstance(row.verdict, Verdict) else Verdict(str(row.verdict))
     phase: Phase = cast(Phase, row.phase if row.phase in _PHASE_VALUES else "falsify")
     primary = None
@@ -413,7 +419,7 @@ def _to_analysis_run(row: Any) -> AnalysisRun:  # noqa: ANN401
     metrics_f: dict[str, float] = {}
     for key, value in (row.metrics or {}).items():
         try:
-            metrics_f[str(key)] = float(value)
+            metrics_f[str(key)] = float(cast(float | int | str, value))
         except (TypeError, ValueError):
             continue
     values = {str(k): cast(ParamValue, v) for k, v in dict(row.scenario_values or {}).items()}
@@ -443,7 +449,7 @@ _PHASE_VALUES = frozenset(
 )
 
 
-def _stored_modes(uow: Any, campaign_id: UUID) -> list[StoredMode]:  # noqa: ANN401
+def _stored_modes(uow: AnalysisUnitOfWork, campaign_id: UUID) -> list[StoredMode]:
     records = uow.modes.list_for_campaign(campaign_id)
     members = _member_map(uow, campaign_id)
     return [
@@ -459,7 +465,7 @@ def _stored_modes(uow: Any, campaign_id: UUID) -> list[StoredMode]:  # noqa: ANN
     ]
 
 
-def _member_map(uow: Any, campaign_id: UUID) -> dict[UUID, frozenset[UUID]]:  # noqa: ANN401
+def _member_map(uow: AnalysisUnitOfWork, campaign_id: UUID) -> dict[UUID, frozenset[UUID]]:
     fn = getattr(uow.modes, "list_members_for_campaign", None)
     if not callable(fn):
         return {}
@@ -531,7 +537,7 @@ def _write_artefacts(  # noqa: PLR0913
     ctx: AnalysisContext,
     report: AnalysisReport,
     campaign_id: UUID,
-    artifact_store: Any,  # noqa: ANN401
+    artifact_store: AnalysisArtifactStore,
     *,
     kind: AnalysisKind,
     include_slices: bool,
@@ -586,7 +592,7 @@ def _report_document(report: AnalysisReport) -> dict[str, object]:
 
 
 def _put_artifact(
-    store: Any,  # noqa: ANN401
+    store: AnalysisArtifactStore,
     path: Path,
     kind: str,
     *,
@@ -613,7 +619,7 @@ def _write_modes_parquet(path: Path, modes: Sequence[FailureModeSummary]) -> Non
     pq.write_table(table, path)
 
 
-def _write_shap(path: Path, importance: Any) -> None:  # noqa: ANN401
+def _write_shap(path: Path, importance: ImportanceReport) -> None:
     np.savez_compressed(
         path,
         names=np.asarray(importance.names, dtype=object),

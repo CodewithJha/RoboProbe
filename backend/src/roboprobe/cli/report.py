@@ -6,7 +6,7 @@ Implements: T-078b, T-079, FR-DSH-007, FR-EXP-003
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated, Any, cast
+from typing import Annotated, cast
 from uuid import UUID
 
 import typer
@@ -16,6 +16,7 @@ from roboprobe.cli._context import get_state
 from roboprobe.core.errors import NotFoundError
 from roboprobe.reporting.campaign import render_campaign_report
 from roboprobe.reporting.experiment import render_experiment_report
+from roboprobe.reporting.ports import ReportArtifactStore, ReportUnitOfWork
 
 __all__ = ["app"]
 
@@ -32,8 +33,8 @@ def report_cmd(
     state = get_state(ctx)
     settings = state.bootstrap()
     services = build_cli_services(settings)
-    uow = services.make_uow()
-    store = cast(Any, services.infra.artifact_store)
+    uow = cast(ReportUnitOfWork, services.make_uow())
+    store = cast(ReportArtifactStore, services.infra.artifact_store)
     try:
         with uow:
             if uow.campaigns.get(report_id) is not None:

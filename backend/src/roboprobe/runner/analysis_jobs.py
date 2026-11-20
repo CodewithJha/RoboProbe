@@ -11,20 +11,20 @@ from collections.abc import Callable
 from concurrent.futures import Executor, Future
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final, cast
+from typing import Final, Protocol, cast
 from uuid import UUID
 
 import structlog
-from sqlalchemy import text
 
 from roboprobe.analysis.base import AnalysisKind, AnalysisReport
 from roboprobe.analysis.pipeline import analyze_campaign
+from roboprobe.analysis.ports import AnalysisArtifactStore, AnalysisUnitOfWork
 from roboprobe.core.clock import Clock
 from roboprobe.core.errors import ConflictError, ErrorCode
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import CampaignStatus
 from roboprobe.runner.lifecycle import CampaignService
-from roboprobe.runner.ports import CampaignView, UowFactory
+from roboprobe.runner.ports import CampaignView, UnitOfWorkPort, UowFactory
 from roboprobe.scenario.space import ScenarioSpace
 
 __all__ = ["AnalysisJobRunner"]
@@ -36,10 +36,32 @@ _ALERT_ANALYSIS_FAILED: Final = "ANALYSIS_FAILED"
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
+class _Releasable(Protocol):
+    def release(self) -> None: ...
+
+
+class _AdvisoryBusyError(Exception):
+    """Advisory lock held elsewhere."""
+
+
 @dataclass(slots=True)
 class _LockSession:
     thread_lock: threading.Lock
-    advisory: object | None
+    advisory: _Releasable | None
+
+
+@dataclass(slots=True)
+class _UowAdvisory:
+    """Holds a UoW open for the lifetime of a port-level advisory lock."""
+
+    uow: UnitOfWorkPort
+    key: str
+
+    def release(self) -> None:
+        try:
+            self.uow.advisory_unlock(self.key)
+        finally:
+            self.uow.__exit__(None, None, None)
 
 
 class AnalysisJobRunner:
@@ -48,7 +70,7 @@ class AnalysisJobRunner:
     def __init__(  # noqa: PLR0913
         self,
         uow_factory: UowFactory,
-        artifact_store: object,
+        artifact_store: AnalysisArtifactStore | object,
         settings: RoboProbeSettings,
         executor: Executor,
         clock: Clock,
@@ -79,8 +101,7 @@ class AnalysisJobRunner:
         """When a campaign enters ``ANALYZING``, schedule a FULL analysis → ``COMPLETED``."""
         if campaign.status is not CampaignStatus.ANALYZING:
             return
-        campaign_id = campaign.id
-        self.schedule(campaign_id, AnalysisKind.FULL, complete_campaign=True)
+        self.schedule(campaign.id, AnalysisKind.FULL, complete_campaign=True)
 
     def on_run_finished(self, campaign_id: UUID, n_completed: int) -> None:
         """Fire incremental analysis every ``runner.analysis.incremental_every_n`` finished runs."""
@@ -148,8 +169,8 @@ class AnalysisJobRunner:
             with self._uow_factory() as uow:
                 report = self._analyze(
                     campaign_id,
-                    uow,
-                    self._artifact_store,
+                    cast(AnalysisUnitOfWork, uow),
+                    cast(AnalysisArtifactStore, self._artifact_store),
                     kind=kind,
                     settings=self._settings.analysis,
                     risk=self._settings.risk,
@@ -201,17 +222,16 @@ class AnalysisJobRunner:
         thread_lock = self._thread_lock_for(campaign_id)
         if not thread_lock.acquire(blocking=False):
             return None
-        advisory = self._try_pg_advisory(campaign_id)
-        if advisory is False:
+        try:
+            advisory = self._try_pg_advisory(campaign_id)
+        except _AdvisoryBusyError:
             thread_lock.release()
             return None
         return _LockSession(thread_lock=thread_lock, advisory=advisory)
 
     def _release(self, session: _LockSession) -> None:
         if session.advisory is not None:
-            release_fn = getattr(session.advisory, "release", None)
-            if callable(release_fn):
-                release_fn()
+            session.advisory.release()
         session.thread_lock.release()
 
     def _thread_lock_for(self, campaign_id: UUID) -> threading.Lock:
@@ -222,37 +242,22 @@ class AnalysisJobRunner:
                 self._thread_locks[campaign_id] = lock
             return lock
 
-    def _try_pg_advisory(self, campaign_id: UUID) -> object | bool | None:
+    def _try_pg_advisory(self, campaign_id: UUID) -> _Releasable | None:
+        key = f"analysis:{campaign_id}"
         if self._engine is not None:
             locks = importlib.import_module("roboprobe.store.locks")
-            key = f"analysis:{campaign_id}"
-            lock_obj = locks.AdvisoryLock(self._engine, key)
-            if not lock_obj.acquire():
-                return False
-            return cast(object, lock_obj)
-        with self._uow_factory() as uow:
-            session = getattr(uow, "_session", None)
-            if session is None:
-                return None
-            key = f"analysis:{campaign_id}"
-            row = session.execute(
-                text("SELECT pg_try_advisory_lock(hashtext(:key))"), {"key": key}
-            ).scalar_one()
-            if not bool(row):
-                return False
-            return _SessionAdvisory(session, key)
+            raw = locks.AdvisoryLock(self._engine, key)
+            acquire = getattr(raw, "acquire", None)
+            if not callable(acquire) or not bool(acquire()):
+                raise _AdvisoryBusyError
+            return cast(_Releasable, raw)
+        uow = self._uow_factory()
+        entered = uow.__enter__()
+        if not entered.try_advisory_lock(key):
+            entered.__exit__(None, None, None)
+            raise _AdvisoryBusyError
+        return _UowAdvisory(entered, key)
 
     def _default_load_space(self, space_id: str, version: str) -> ScenarioSpace:
         path = self._space_root / "configs" / "scenario_spaces" / f"{space_id}.yaml"
         return ScenarioSpace.from_yaml(path, base_dir=self._space_root)
-
-
-@dataclass(slots=True)
-class _SessionAdvisory:
-    session: object
-    key: str
-
-    def release(self) -> None:
-        self.session.execute(  # type: ignore[attr-defined]
-            text("SELECT pg_advisory_unlock(hashtext(:key))"), {"key": self.key}
-        )

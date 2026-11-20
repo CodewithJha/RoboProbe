@@ -3,13 +3,11 @@
 Implements: T-074b, FR-ANA-005
 """
 
-# ruff: noqa: ANN401
-
 from __future__ import annotations
 
 import importlib
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any, cast
+from typing import cast
 from uuid import UUID
 
 from roboprobe.analysis.interaction import InteractionTester
@@ -22,7 +20,7 @@ from roboprobe.analysis.types import (
 from roboprobe.core.errors import NotFoundError, ValidationError
 from roboprobe.core.settings.analysis import InteractionSettings
 from roboprobe.core.types import FailureClass, JsonValue, ParamValue, Phase, RunStatus, Verdict
-from roboprobe.runner.ports import UowFactory
+from roboprobe.runner.ports import FailureModeView, RunView, UnitOfWorkPort, UowFactory
 from roboprobe.scenario.space import ScenarioSpace
 
 __all__ = ["CONFIRM_PHASE", "CONFIRM_TAG", "ConfirmationService"]
@@ -56,8 +54,7 @@ class ConfirmationService:
     def request(self, campaign_id: UUID, mode_id: UUID) -> list[UUID]:
         """Enqueue confirmatory runs for ``mode_id`` (idempotent while pending)."""
         records = importlib.import_module("roboprobe.store.records")
-        with self._uow_factory() as uow_ctx:
-            uow: Any = uow_ctx
+        with self._uow_factory() as uow:
             campaign = uow.campaigns.get(campaign_id)
             if campaign is None:
                 msg = "campaign not found"
@@ -108,19 +105,17 @@ class ConfirmationService:
             uow.commit()
         return ids
 
-    def on_run_finished(self, run: object) -> None:  # noqa: PLR0911
+    def on_run_finished(self, run: RunView) -> None:  # noqa: PLR0911
         """Conclude a mode when every confirm run for it is terminal."""
-        phase = getattr(run, "phase", None)
-        if phase != CONFIRM_PHASE:
+        if run.phase != CONFIRM_PHASE:
             return
-        proposal = getattr(run, "proposal", None) or {}
-        raw_mode = proposal.get(_PROPOSAL_MODE) if isinstance(proposal, Mapping) else None
+        proposal = run.proposal or {}
+        raw_mode = proposal.get(_PROPOSAL_MODE)
         if raw_mode is None:
             return
         mode_id = UUID(str(raw_mode))
-        campaign_id = run.campaign_id  # type: ignore[attr-defined]
-        with self._uow_factory() as uow_ctx:
-            uow: Any = uow_ctx
+        campaign_id = run.campaign_id
+        with self._uow_factory() as uow:
             mode = uow.modes.get(mode_id)
             if mode is None:
                 return
@@ -168,8 +163,7 @@ class ConfirmationService:
         n = self._interaction.auto_confirm_top_n
         if n <= 0:
             return []
-        with self._uow_factory() as uow_ctx:
-            uow: Any = uow_ctx
+        with self._uow_factory() as uow:
             modes = sorted(
                 uow.modes.list_for_campaign(campaign_id),
                 key=lambda m: (-m.size, m.code),
@@ -186,7 +180,7 @@ _TERMINAL = frozenset(
 )
 
 
-def _pending_confirm_ids(uow: Any, campaign_id: UUID, mode_id: UUID) -> tuple[UUID, ...]:
+def _pending_confirm_ids(uow: UnitOfWorkPort, campaign_id: UUID, mode_id: UUID) -> tuple[UUID, ...]:
     ids: list[UUID] = []
     for run in _confirm_records_for_mode(uow, campaign_id, mode_id):
         status = run.status if isinstance(run.status, RunStatus) else RunStatus(str(run.status))
@@ -195,12 +189,16 @@ def _pending_confirm_ids(uow: Any, campaign_id: UUID, mode_id: UUID) -> tuple[UU
     return tuple(ids)
 
 
-def _confirm_ids_for_mode(uow: Any, campaign_id: UUID, mode_id: UUID) -> tuple[UUID, ...]:
+def _confirm_ids_for_mode(
+    uow: UnitOfWorkPort, campaign_id: UUID, mode_id: UUID
+) -> tuple[UUID, ...]:
     return tuple(r.id for r in _confirm_records_for_mode(uow, campaign_id, mode_id))
 
 
-def _confirm_records_for_mode(uow: Any, campaign_id: UUID, mode_id: UUID) -> list[Any]:
-    out: list[Any] = []
+def _confirm_records_for_mode(
+    uow: UnitOfWorkPort, campaign_id: UUID, mode_id: UUID
+) -> list[RunView]:
+    out: list[RunView] = []
     cursor: str | None = None
     needle = str(mode_id)
     while True:
@@ -217,7 +215,7 @@ def _confirm_records_for_mode(uow: Any, campaign_id: UUID, mode_id: UUID) -> lis
     return out
 
 
-def _max_ordinal(uow: Any, campaign_id: UUID) -> int:
+def _max_ordinal(uow: UnitOfWorkPort, campaign_id: UUID) -> int:
     max_ord = -1
     cursor: str | None = None
     while True:
@@ -230,7 +228,7 @@ def _max_ordinal(uow: Any, campaign_id: UUID) -> int:
     return max_ord
 
 
-def _summary_from_record(uow: Any, mode: Any) -> FailureModeSummary:
+def _summary_from_record(uow: UnitOfWorkPort, mode: FailureModeView) -> FailureModeSummary:
     minimal = uow.runs.get(mode.minimal_run_id) if mode.minimal_run_id else None
     if minimal is None:
         msg = "mode minimal run missing"
@@ -246,14 +244,14 @@ def _summary_from_record(uow: Any, mode: Any) -> FailureModeSummary:
                 space_coverage=float(raw.get("space_coverage", 0.0)),
             )
     try:
-        primary = FailureClass(mode.primary_class)
+        primary = FailureClass(str(mode.primary_class))
     except ValueError:
         primary = FailureClass.COL
     class_mix: dict[FailureClass, float] = {}
     for key, value in (mode.class_mix or {}).items():
         try:
-            class_mix[FailureClass(str(key))] = float(value)
-        except ValueError:
+            class_mix[FailureClass(str(key))] = float(cast(float | int | str, value))
+        except (TypeError, ValueError):
             continue
     return FailureModeSummary(
         code=mode.code,
@@ -271,7 +269,7 @@ def _summary_from_record(uow: Any, mode: Any) -> FailureModeSummary:
     )
 
 
-def _to_analysis_run(run: Any) -> AnalysisRun:
+def _to_analysis_run(run: RunView) -> AnalysisRun:
     proposal = run.proposal or {}
     raw_subset = proposal.get(_PROPOSAL_SUBSET)
     subset: frozenset[str] | None
@@ -286,7 +284,7 @@ def _to_analysis_run(run: Any) -> AnalysisRun:
             primary = FailureClass(str(run.primary_failure))
         except ValueError:
             primary = None
-    phase: Phase = run.phase if run.phase in _PHASES else CONFIRM_PHASE
+    phase: Phase = cast(Phase, run.phase if run.phase in _PHASES else CONFIRM_PHASE)
     return AnalysisRun(
         id=run.id,
         verdict=verdict,
@@ -313,7 +311,9 @@ _PHASES = frozenset(
 )
 
 
-def _persist_verdict(uow: Any, mode: Any, verdict: InteractionVerdict) -> None:
+def _persist_verdict(
+    uow: UnitOfWorkPort, mode: FailureModeView, verdict: InteractionVerdict
+) -> None:
     payload: dict[str, JsonValue] = {
         "status": verdict.status,
         "order": verdict.order,

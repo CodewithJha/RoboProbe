@@ -10,7 +10,7 @@ from __future__ import annotations
 import importlib
 from pathlib import Path
 from types import ModuleType
-from typing import Annotated
+from typing import Annotated, cast
 from uuid import UUID, uuid4
 
 import typer
@@ -27,6 +27,8 @@ from roboprobe.experiments.planner import CampaignSpec, ComparabilityKey, load_d
 from roboprobe.experiments.runner import ExperimentRunner
 from roboprobe.metrics.campaign_metrics import CampaignRun
 from roboprobe.oracles import __version__ as oracle_set_version
+from roboprobe.reporting.ports import ReportArtifactStore, ReportUnitOfWork
+from roboprobe.runner.ports import UowFactory
 from roboprobe.scenario.space import ScenarioSpace
 from roboprobe.scenario.sut_profile import load_sut_profile
 
@@ -44,13 +46,13 @@ def _records() -> ModuleType:
 class _UowWriter:
     """ExperimentWriter backed by a live UnitOfWork factory."""
 
-    def __init__(self, make_uow: object, clock: SystemClock) -> None:
+    def __init__(self, make_uow: UowFactory, clock: SystemClock) -> None:
         self._make_uow = make_uow
         self._clock = clock
 
     def add_experiment(self, *, name: str, design: dict[str, JsonValue], status: str) -> UUID:
         eid = uuid4()
-        with self._make_uow() as uow:  # type: ignore[operator]
+        with self._make_uow() as uow:
             uow.experiments.add(
                 _records().ExperimentRecord(id=eid, name=name, design=design, status=status)
             )
@@ -60,7 +62,7 @@ class _UowWriter:
     def add_campaign(self, spec: CampaignSpec, experiment_id: UUID) -> UUID:
         cid = uuid4()
         sut = spec.sut_profile_id or "k2d_default"
-        with self._make_uow() as uow:  # type: ignore[operator]
+        with self._make_uow() as uow:
             uow.campaigns.add(
                 _records().CampaignRecord(
                     id=cid,
@@ -88,7 +90,7 @@ class _UowWriter:
         return cid
 
     def get_experiment(self, experiment_id: UUID) -> object | None:
-        with self._make_uow() as uow:  # type: ignore[operator]
+        with self._make_uow() as uow:
             found: object | None = uow.experiments.get(experiment_id)
             return found
 
@@ -96,33 +98,33 @@ class _UowWriter:
         self, experiment_id: UUID, status: str, *, finished: bool = False
     ) -> None:
         del finished  # finished_at stamped by DB triggers / future set_finished helper
-        with self._make_uow() as uow:  # type: ignore[operator]
+        with self._make_uow() as uow:
             uow.experiments.set_status(experiment_id, status)
             uow.commit()
 
     def set_experiment_results(self, experiment_id: UUID, results: dict[str, JsonValue]) -> None:
-        with self._make_uow() as uow:  # type: ignore[operator]
+        with self._make_uow() as uow:
             uow.experiments.set_results(experiment_id, results)
             uow.commit()
 
     def list_campaigns(self, experiment_id: UUID) -> list[object]:
-        with self._make_uow() as uow:  # type: ignore[operator]
+        with self._make_uow() as uow:
             return list(uow.campaigns.list_for_experiment(experiment_id))
 
     def campaign_runs(self, campaign_id: UUID) -> list[CampaignRun]:
-        with self._make_uow() as uow:  # type: ignore[operator]
+        with self._make_uow() as uow:
             page = uow.runs.list_for_campaign(campaign_id, limit=None)
             rows = sorted(page.items, key=lambda r: (r.ordinal, r.repeat_index))
         out: list[CampaignRun] = []
         for row in rows:
             if row.verdict is None:
                 continue
+            verdict = row.verdict if isinstance(row.verdict, Verdict) else Verdict(str(row.verdict))
+            duration = (row.metrics or {}).get("duration_s", 0.0)
             out.append(
                 CampaignRun(
-                    verdict=Verdict(row.verdict)
-                    if not isinstance(row.verdict, Verdict)
-                    else row.verdict,
-                    wall_time_s=float((row.metrics or {}).get("duration_s", 0.0)),
+                    verdict=verdict,
+                    wall_time_s=float(cast(float | int | str, duration)),
                     x_unit=tuple(float(x) for x in row.x_unit),
                     phase=str(row.phase or ""),
                     tags=tuple(str(t) for t in row.tags),
@@ -173,7 +175,7 @@ def experiment_run(
     key = _resolve_key(space, profile.config_hash, design.backend)
     services = build_cli_services(settings)
     clock = SystemClock()
-    writer = _UowWriter(services.make_uow, clock)
+    writer = _UowWriter(cast(UowFactory, services.make_uow), clock)
 
     def drive(campaign_id: UUID) -> CampaignStatus:
         services.campaigns.start(campaign_id)
@@ -209,13 +211,14 @@ def experiment_report(
     clock = SystemClock()
     if html_out is not None:
         render = importlib.import_module("roboprobe.reporting.experiment").render_experiment_report
-        uow = services.make_uow()
+        uow = cast(ReportUnitOfWork, services.make_uow())
+        store = cast(ReportArtifactStore, services.infra.artifact_store)
         try:
             with uow:
                 path = render(
                     experiment_id,
                     uow,
-                    services.infra.artifact_store,
+                    store,
                     out=html_out,
                     settings=settings.reporting,
                     experiment_settings=settings.experiments,
@@ -224,7 +227,7 @@ def experiment_report(
             services.close()
         state.output.data({"path": str(path)})
         return
-    writer = _UowWriter(services.make_uow, clock)
+    writer = _UowWriter(cast(UowFactory, services.make_uow), clock)
     runner = ExperimentRunner(
         writer,
         settings.experiments,

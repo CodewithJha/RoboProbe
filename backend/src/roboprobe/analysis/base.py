@@ -11,6 +11,7 @@ from enum import StrEnum
 from typing import Any, Protocol
 from uuid import UUID
 
+from roboprobe.analysis.ports import AnalysisArtifactStore, AnalysisUnitOfWork
 from roboprobe.analysis.types import (
     AnalysisRun,
     ClusteringResult,
@@ -65,8 +66,8 @@ class AnalysisContext:
     settings: AnalysisSettings
     risk: RiskSettings
     clock: Clock
-    uow: Any
-    artifact_store: Any
+    uow: AnalysisUnitOfWork
+    artifact_store: AnalysisArtifactStore
     space: ScenarioSpace | None = None
     campaign_seed: int = 0
     backend: str = "kinematic2d"
