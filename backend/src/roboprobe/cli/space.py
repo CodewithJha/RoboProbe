@@ -1,8 +1,5 @@
 """``roboprobe space``: validate, register, list and upgrade scenario spaces.
 
-Store adapters are loaded via ``importlib`` so this module stays import-linter clean
-(bootstrap wiring, T-046).
-
 Layer: Interface (L4).
 
 Implements: T-045a, FR-CLI-001, FR-SCN-001
@@ -11,15 +8,13 @@ Implements: T-045a, FR-CLI-001, FR-SCN-001
 from __future__ import annotations
 
 import importlib
-from collections.abc import Callable, Iterator
-from contextlib import contextmanager
 from pathlib import Path
-from types import ModuleType
 from typing import Annotated, Protocol, cast
 
 import typer
 import yaml
 
+from roboprobe.bootstrap import build_cli_services
 from roboprobe.cli._context import get_state
 from roboprobe.core.errors import NotFoundError, ValidationError
 from roboprobe.core.settings import RoboProbeSettings
@@ -27,36 +22,7 @@ from roboprobe.core.types import JsonValue
 from roboprobe.scenario._documents import load_yaml_document, read_document
 from roboprobe.scenario.space import ScenarioSpace
 
-__all__ = ["app", "register_space", "uow_factory_from_settings"]
-
-
-class _SpaceRow(Protocol):
-    id: str
-    version: str
-    name: str
-
-
-class _SpacePage(Protocol):
-    items: list[_SpaceRow]
-
-
-class _SpaceRepo(Protocol):
-    def get(self, space_id: str, version: str) -> _SpaceRow | None: ...
-
-    def add(self, record: object) -> None: ...
-
-    def list(self, *, limit: int | None = None, cursor: str | None = None) -> _SpacePage: ...
-
-
-class _Uow(Protocol):
-    spaces: _SpaceRepo
-
-    def __enter__(self) -> _Uow: ...
-
-    def __exit__(self, *args: object) -> None: ...
-
-    def commit(self) -> None: ...
-
+__all__ = ["app", "register_space"]
 
 app = typer.Typer(
     name="space",
@@ -68,34 +34,10 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 """Repository root (``cli/space.py`` → … → ``backend`` → repo)."""
 
 
-def _engine_mod() -> ModuleType:
-    return importlib.import_module("roboprobe.store.engine")
-
-
-def _uow_mod() -> ModuleType:
-    return importlib.import_module("roboprobe.store.uow")
-
-
-def _records_mod() -> ModuleType:
-    return importlib.import_module("roboprobe.store.records")
-
-
-@contextmanager
-def uow_factory_from_settings(settings: RoboProbeSettings) -> Iterator[Callable[[], _Uow]]:
-    """Yield a UoW factory; dispose the engine when the context exits."""
-    engine_mod = _engine_mod()
-    engine = engine_mod.create_engine_from_settings(settings.database)
-    factory = engine_mod.session_factory(engine)
-    uow_cls = _uow_mod().SqlAlchemyUnitOfWork
-    channel = settings.database.notify_channel
-
-    def _factory() -> _Uow:
-        return cast("_Uow", uow_cls(factory, notify_channel=channel))
-
-    try:
-        yield _factory
-    finally:
-        engine.dispose()
+class _SpaceRow(Protocol):
+    id: str
+    version: str
+    name: str
 
 
 def register_space(
@@ -112,18 +54,23 @@ def register_space(
         msg = "space document must be a mapping"
         raise ValidationError(msg, context={"path": str(path)})
     definition = {str(key): _as_json(value) for key, value in document.items()}
-    record = _records_mod().SpaceRecord(
+    records = importlib.import_module("roboprobe.store.records")
+    record = records.SpaceRecord(
         id=space.id,
         version=space.version,
         name=space.name,
         definition=definition,
         schema_version=int(document.get("schema_version", 1)),
     )
-    with uow_factory_from_settings(settings) as make_uow, make_uow() as uow:
-        existing = uow.spaces.get(record.id, record.version)
-        if existing is None:
-            uow.spaces.add(record)
-        uow.commit()
+    services = build_cli_services(settings)
+    try:
+        with services.make_uow() as uow:
+            existing = uow.spaces.get(record.id, record.version)
+            if existing is None:
+                uow.spaces.add(record)
+            uow.commit()
+    finally:
+        services.close()
     return cast("_SpaceRow", record)
 
 
@@ -172,9 +119,13 @@ def list_cmd(ctx: typer.Context) -> None:
     """List registered scenario spaces."""
     state = get_state(ctx)
     settings = state.bootstrap()
-    with uow_factory_from_settings(settings) as make_uow, make_uow() as uow:
-        page = uow.spaces.list()
-        rows = [[item.id, item.version, item.name] for item in page.items]
+    services = build_cli_services(settings)
+    try:
+        with services.make_uow() as uow:
+            page = uow.spaces.list()
+            rows = [[item.id, item.version, item.name] for item in page.items]
+    finally:
+        services.close()
     state.output.table(["id", "version", "name"], rows, title="Scenario spaces")
 
 
@@ -203,7 +154,6 @@ def upgrade_cmd(
             "only schema_version=1 is supported (no rewrite needed)"
         )
         raise NotFoundError(msg, context={"path": str(yaml_path), "schema_version": version})
-    # schema_version 1 is current: write-through (identity) so the command is usable in scripts.
     yaml_path.write_text(
         yaml.safe_dump(document, sort_keys=False, allow_unicode=True),
         encoding="utf-8",
