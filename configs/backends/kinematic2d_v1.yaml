@@ -1,0 +1,43 @@
+# kinematic2d v1 model constants (docs/10 §7.1). Copy to a new id instead of editing
+# values in place: `id` is recorded as k2d_model_version in run manifests (docs/33 §6).
+schema_version: 1
+id: kinematic2d_v1
+robot:
+  footprint_radius_m: 0.17      # TB4 disc [m]
+  a_max_mps2: 0.5               # linear accel limit [m/s²]
+  alpha_max_radps2: 2.0         # yaw accel limit [rad/s²]
+lidar:
+  r_min_m: 0.15
+  r_max_m: 12.0
+  fov_rad: 6.283185307179586    # 2π, 360°
+depth:
+  r_min_m: 0.15
+  fov_rad: 1.2217304763960306   # 70°
+localization:
+  k0: 1.0                       # scan-match gain at P4=0, P8=0
+  lidar_noise_ref_m: 0.1        # P4 at which gain reaches 0 [m]
+costmap:
+  inflation_m: 0.35
+  size_m: 6.0
+  resolution_m: 0.05
+planner:
+  replan_hz: 1.0
+controller:
+  lookahead_m: 0.6
+  proximity_m: 1.0
+  curvature_gain_m: 0.5
+world:
+  resolution_m: 0.05
+  origin_x_m: 0.0
+  origin_y_m: -24.0
+  width_m: 8.0
+  height_m: 18.0
+  wall_thickness_m: 0.20
+  aisle_x_m: 2.12
+  aisle_half_width_m: 1.40
+  shelf_y0_m: -22.5
+  shelf_y1_m: -7.5
+  start_x_m: 2.12
+  start_y_m: -21.3
+  goal_x_m: 2.12
+  goal_y_m: -8.3

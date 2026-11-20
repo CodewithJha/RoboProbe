@@ -73,6 +73,10 @@ dev = [
 [project.scripts]
 roboprobe = "roboprobe.cli.main:app"
 
+[project.entry-points."roboprobe.backends"]
+kinematic2d = "roboprobe.backends.kinematic2d.backend:Kinematic2DBackend"
+replay = "roboprobe.backends.replay.backend:ReplayBackend"
+
 [project.urls]
 Homepage = "https://github.com/CodewithJha/RoboProbe"
 Documentation = "https://github.com/CodewithJha/RoboProbe/tree/main/docs"
