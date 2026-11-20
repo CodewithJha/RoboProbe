@@ -20,8 +20,9 @@ By participating you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 5. [Pull request process](#5-pull-request-process)
 6. [Documentation contributions](#6-documentation-contributions)
 7. [Coding standards (summary)](#7-coding-standards-summary)
-8. [Good first issues](#8-good-first-issues)
-9. [Licensing](#9-licensing)
+8. [Adding a plugin package](#8-adding-a-plugin-package)
+9. [Good first issues](#9-good-first-issues)
+10. [Licensing](#10-licensing)
 
 ## 1. Ways to contribute
 
