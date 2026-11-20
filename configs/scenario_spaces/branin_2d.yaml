@@ -1,0 +1,30 @@
+# Analytic Branin falsification space (docs/07 §9). Unit-cube parameters for branin_falsify.
+schema_version: 1
+id: branin_2d
+name: Branin falsification (2-D analytic)
+description: >
+  Unit-cube Branin benchmark for S-BO / selector gates. Backend: benchmark with
+  function branin_falsify.
+task: tasks/warehouse_delivery_v1.yaml
+parameters:
+  - id: robot.u1
+    name: Branin u1
+    group: robot
+    type: float
+    unit: "-"
+    low: 0.0
+    high: 1.0
+    nominal: 0.5
+    prior: {kind: uniform}
+    enabled: true
+  - id: robot.u2
+    name: Branin u2
+    group: robot
+    type: float
+    unit: "-"
+    low: 0.0
+    high: 1.0
+    nominal: 0.5
+    prior: {kind: uniform}
+    enabled: true
+oracle_thresholds: default

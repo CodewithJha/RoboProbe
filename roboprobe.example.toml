@@ -240,6 +240,26 @@
 # Minimum levels per axis.
 # min_levels = 2
 
+[selection.benchmarks]
+# Analytic robustness function evaluated by the benchmark backend.
+# function = "multi_mode_6d"
+# Observation noise std for multi_mode_6d (ignored by branin_falsify).
+# noise = 0.02
+# Typical wall time of one analytic episode [s].
+# typical_episode_wall_s = 0.001
+# Analytic episodes allowed in parallel on one host.
+# max_parallel_per_host = 32
+# Synthetic trace length written for each episode.
+# trace_samples = 2
+# Synthetic trace sample period [s].
+# trace_dt_s = 0.05
+# Expected failure volume fraction of multi_mode_6d under Sobol QMC.
+# failure_volume_target = 0.007
+# Absolute tolerance on the QMC failure-volume estimate.
+# failure_volume_atol = 0.002
+# Sobol sample count is 2**volume_qmc_power for the volume gate.
+# volume_qmc_power = 16
+
 [selection]
 # Refresh the failure-mode cache every N observations.
 # mode_cache_refresh_every = 10

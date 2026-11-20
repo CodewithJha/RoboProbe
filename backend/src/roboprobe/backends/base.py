@@ -43,6 +43,8 @@ class BackendCapabilities(_Frozen):
     deterministic: bool
     typical_episode_wall_s: float
     max_parallel_per_host: int
+    direct_rho: bool = False
+    """When true, ``EpisodeResult.backend_meta['rho']`` is the episode robustness."""
 
 
 class EpisodeRequest(_Frozen):

@@ -230,12 +230,13 @@ These let the selector be unit-tested in milliseconds, with *known* failure mode
 
 - `branin_falsify(u)`: `ρ = clip((branin(15u₁−5, 15u₂) − 1.5)/50, −1, 1)` on `d = 2`; failures near the 3 Branin minima.
 - `multi_mode_6d(u, noise=0.02)` — mirror of the kinematic2d ground truth (10 §7). With `s(z) = 1/(1+e^{−z/0.03})`:
-  - Mode A (3-way interaction, "dark-fast-noisy"): `a = s(u₁−0.70)·s(0.25−u₃)·s(u₄−0.55)`
-  - Mode B (2-way, "slippery-laggy"): `b = s(0.20−u₅)·s(u₆−0.60)`
-  - Mode C (2-way, "blocked aisle"): `c = s(0.08−u₂)·s(u₁−0.55)`
-  - Mode D (single factor, control): `e = s(u₄−0.95)`
+  - Mode A (3-way interaction, "dark-fast-noisy"): `a = s(u₁−0.86)·s(0.07−u₃)·s(u₄−0.81)`
+  - Mode B (2-way, "slippery-laggy"): `b = s(0.045−u₅)·s(u₆−0.93)`
+  - Mode C (2-way, "blocked aisle"): `c = s(0.018−u₂)·s(u₁−0.86)`
+  - Mode D (single factor, control): `e = s(u₄−0.996)`
   - `ρ = min(0.3 − 0.6a, 0.3 − 0.6b, 0.3 − 0.6c, 0.3 − 0.6e) + N(0, noise²)`
-  - Failure volume ≈ 0.7 % of the cube (rare), mostly interactions — exactly the concept report's premise.
+  - Failure volume ≈ 0.7 % of the cube (rare; gated by `selection.benchmarks.failure_volume_*`), mostly interactions — exactly the concept report's premise.
+  - `label_mode(u) → {'A','B','C','D', None}` returns the argmin soft term when noise-free ρ < 0.
 
 Acceptance tests (18 §4.4): over 20 seeds, budget 150, `S-PROBE` finds ≥ 3 of 4 modes in ≥ 80 % of
 seeds and median first failure ≤ 40; `S-RANDOM` is expected to find ≤ 2 modes.

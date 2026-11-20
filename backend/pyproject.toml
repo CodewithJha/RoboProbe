@@ -76,6 +76,7 @@ roboprobe = "roboprobe.cli.main:app"
 [project.entry-points."roboprobe.backends"]
 kinematic2d = "roboprobe.backends.kinematic2d.backend:Kinematic2DBackend"
 replay = "roboprobe.backends.replay.backend:ReplayBackend"
+benchmark = "roboprobe.backends.benchmark.backend:BenchmarkBackend"
 
 [project.urls]
 Homepage = "https://github.com/CodewithJha/RoboProbe"

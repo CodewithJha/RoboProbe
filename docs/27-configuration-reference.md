@@ -227,6 +227,15 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `selection.acq.dedupe_tol` | float | `0.001` | `ROBOPROBE_SELECTION__ACQ__DEDUPE_TOL` | Distance under which candidates are duplicates. |
 | `selection.ofat.levels` | list[float] | `[0.0, 0.25, 0.5, 0.75, 1.0]` | `ROBOPROBE_SELECTION__OFAT__LEVELS` | Levels in the unit interval, strictly increasing. |
 | `selection.grid.min_levels` | int | `2` | `ROBOPROBE_SELECTION__GRID__MIN_LEVELS` | Minimum levels per axis. |
+| `selection.benchmarks.function` | enum: `branin_falsify` / `multi_mode_6d` | `multi_mode_6d` | `ROBOPROBE_SELECTION__BENCHMARKS__FUNCTION` | Analytic robustness function evaluated by the benchmark backend. |
+| `selection.benchmarks.noise` | float | `0.02` | `ROBOPROBE_SELECTION__BENCHMARKS__NOISE` | Observation noise std for multi_mode_6d (ignored by branin_falsify). |
+| `selection.benchmarks.typical_episode_wall_s` | float | `0.001` | `ROBOPROBE_SELECTION__BENCHMARKS__TYPICAL_EPISODE_WALL_S` | Typical wall time of one analytic episode [s]. |
+| `selection.benchmarks.max_parallel_per_host` | int | `32` | `ROBOPROBE_SELECTION__BENCHMARKS__MAX_PARALLEL_PER_HOST` | Analytic episodes allowed in parallel on one host. |
+| `selection.benchmarks.trace_samples` | int | `2` | `ROBOPROBE_SELECTION__BENCHMARKS__TRACE_SAMPLES` | Synthetic trace length written for each episode. |
+| `selection.benchmarks.trace_dt_s` | float | `0.05` | `ROBOPROBE_SELECTION__BENCHMARKS__TRACE_DT_S` | Synthetic trace sample period [s]. |
+| `selection.benchmarks.failure_volume_target` | float | `0.007` | `ROBOPROBE_SELECTION__BENCHMARKS__FAILURE_VOLUME_TARGET` | Expected failure volume fraction of multi_mode_6d under Sobol QMC. |
+| `selection.benchmarks.failure_volume_atol` | float | `0.002` | `ROBOPROBE_SELECTION__BENCHMARKS__FAILURE_VOLUME_ATOL` | Absolute tolerance on the QMC failure-volume estimate. |
+| `selection.benchmarks.volume_qmc_power` | int | `16` | `ROBOPROBE_SELECTION__BENCHMARKS__VOLUME_QMC_POWER` | Sobol sample count is 2**volume_qmc_power for the volume gate. |
 | `selection.mode_cache_refresh_every` | int | `10` | `ROBOPROBE_SELECTION__MODE_CACHE_REFRESH_EVERY` | Refresh the failure-mode cache every N observations. |
 | `selection.propose_timeout_s` | float | `10.0` | `ROBOPROBE_SELECTION__PROPOSE_TIMEOUT_S` | Time limit for `propose` before falling back [s]. |
 
