@@ -123,11 +123,7 @@ def test_xss_escaped_mode_label(tmp_path: Path) -> None:
     uow.modes = type(
         "M",
         (),
-        {
-            "list_for_campaign": lambda _s, _id: [
-                _Mode("M-01", "<script>alert(1)</script>", 1)
-            ]
-        },
+        {"list_for_campaign": lambda _s, _id: [_Mode("M-01", "<script>alert(1)</script>", 1)]},
     )()
     render_campaign_report(CID, uow, _FakeStore(), out=tmp_path / "x.html")
     text = (tmp_path / "x.html").read_text(encoding="utf-8")

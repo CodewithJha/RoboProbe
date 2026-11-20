@@ -22,8 +22,8 @@ from roboprobe.core.types import JsonValue, Verdict
 from roboprobe.experiments.runner import _as_campaign_row, build_comparison
 from roboprobe.metrics.campaign_metrics import (
     CampaignRun,
-    comparison_runs,
     FirstFailure,
+    comparison_runs,
     failure_discovery_rate,
     first_failure,
 )
@@ -128,7 +128,9 @@ def build_experiment_context(  # noqa: PLR0912, PLR0915
         )
     strat_raw = results.get("strategies")
     strategies = (
-        sorted(str(s) for s in cast(dict[str, object], strat_raw)) if isinstance(strat_raw, dict) else []
+        sorted(str(s) for s in cast(dict[str, object], strat_raw))
+        if isinstance(strat_raw, dict)
+        else []
     )
     if not strategies:
         strategies = sorted({_variant_label(c) for c in campaigns})
@@ -140,9 +142,7 @@ def build_experiment_context(  # noqa: PLR0912, PLR0915
                 continue
             a12_val = row.get("a12")
             effect = (
-                str(effect_label(float(a12_val)))
-                if isinstance(a12_val, (int, float))
-                else "n/a"
+                str(effect_label(float(a12_val))) if isinstance(a12_val, (int, float)) else "n/a"
             )
             stats_rows.append(
                 {

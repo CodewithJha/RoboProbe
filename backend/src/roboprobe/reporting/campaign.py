@@ -23,8 +23,8 @@ from roboprobe.core.types import Verdict
 from roboprobe.metrics.campaign_metrics import CampaignRun, comparison_runs, first_failure
 from roboprobe.metrics.discovery_metrics import discovery_curve
 from roboprobe.reporting import figures
-from roboprobe.reporting.figures import _ImportanceLike
 from roboprobe.reporting._env import template_env
+from roboprobe.reporting.figures import _ImportanceLike
 from roboprobe.reporting.theme import load_theme, tokens_path
 from roboprobe.risk.mapper import RiskSlice, load_slices
 from roboprobe.risk.volume import RegionVolumes, robustness_score
@@ -122,9 +122,7 @@ def _importance_from_summary(summary: Mapping[str, Any]) -> object | None:
     if not isinstance(imp, dict):
         return None
     try:
-        types = __import__(
-            "roboprobe.analysis.types", fromlist=["ImportanceReport"]
-        )
+        types = __import__("roboprobe.analysis.types", fromlist=["ImportanceReport"])
         validated = types.ImportanceReport.model_validate(imp)
         return cast(_ImportanceLike, validated)
     except Exception:
@@ -215,10 +213,14 @@ def build_campaign_context(  # noqa: PLR0915
         labels = [None if x is None else str(x) for x in mode_labels_raw]
     elif mode_rows:
         labels = [None] * len(cmp_runs)
-    discovery = _discovery_series(labels) if labels else [
-        float(sum(1 for r in cmp_runs[: i + 1] if r.verdict is Verdict.FAIL))
-        for i in range(len(cmp_runs))
-    ]
+    discovery = (
+        _discovery_series(labels)
+        if labels
+        else [
+            float(sum(1 for r in cmp_runs[: i + 1] if r.verdict is Verdict.FAIL))
+            for i in range(len(cmp_runs))
+        ]
+    )
     x_idx, y_idx = 0, 1 if any(len(r.x_unit) > 1 for r in runs) else 0
     importance = _importance_from_summary(summary)
     interaction_names = list(getattr(importance, "names", ())) if importance else []

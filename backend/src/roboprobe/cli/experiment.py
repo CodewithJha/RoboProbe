@@ -208,12 +208,11 @@ def experiment_report(
     services = build_cli_services(settings)
     clock = SystemClock()
     if html_out is not None:
-        from roboprobe.reporting.experiment import render_experiment_report
-
+        render = importlib.import_module("roboprobe.reporting.experiment").render_experiment_report
         uow = services.make_uow()
         try:
             with uow:
-                path = render_experiment_report(
+                path = render(
                     experiment_id,
                     uow,
                     services.infra.artifact_store,

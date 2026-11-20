@@ -163,7 +163,7 @@ class AnalysisJobRunner:
                 self._emit_analysis_failed(campaign_id, reason)
         except Exception as exc:
             reason = f"analysis failed: {type(exc).__name__}"
-            log.info(
+            log.warning(
                 "analysis.failed",
                 campaign_id=str(campaign_id),
                 kind=kind.value,

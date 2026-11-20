@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://roboprobe.dev/schemas/analysis_report.schema.json",
+  "$id": "https://github.com/CodewithJha/RoboProbe/schemas/analysis_report.schema.json",
   "title": "RoboProbe analysis report",
   "type": "object",
   "additionalProperties": false,
@@ -18,7 +18,7 @@
     "duration_s"
   ],
   "properties": {
-    "analysis_schema_version": { "type": "integer", "const": 1 },
+    "analysis_schema_version": { "const": 1 },
     "analysis_id": { "type": "string", "format": "uuid" },
     "campaign_id": { "type": "string", "format": "uuid" },
     "kind": { "type": "string", "enum": ["full", "incremental"] },

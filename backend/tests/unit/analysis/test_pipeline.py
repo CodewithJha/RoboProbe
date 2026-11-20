@@ -118,9 +118,7 @@ def _synthetic_fail_runs(space: ScenarioSpace) -> list[dict[str, object]]:
     return payloads
 
 
-def test_analyze_campaign_full(
-    tmp_path: Path, space: ScenarioSpace, clock: FakeClock
-) -> None:
+def test_analyze_campaign_full(tmp_path: Path, space: ScenarioSpace, clock: FakeClock) -> None:
     uow = InMemoryUnitOfWork()
     cid = _seed_campaign(uow, space)
     arts = importlib.import_module("roboprobe.store.artifacts")
@@ -223,9 +221,7 @@ def test_optional_analyzer_failure_is_partial(
     assert any("boom" in w for w in report.warnings)
 
 
-def test_tiny_plugin_analyzer_runs(
-    space: ScenarioSpace, tmp_path: Path, clock: FakeClock
-) -> None:
+def test_tiny_plugin_analyzer_runs(space: ScenarioSpace, tmp_path: Path, clock: FakeClock) -> None:
     seen: dict[str, bool] = {}
 
     class _Plugin:

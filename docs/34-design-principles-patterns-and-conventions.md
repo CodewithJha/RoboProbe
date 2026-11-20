@@ -96,6 +96,9 @@ def build_worker(settings: RoboProbeSettings) -> WorkerProcess:
 | `episode.launch_failed` | ERROR | stage, exit_code |
 | `episode.teardown_orphans` | ERROR | pids |
 | `analysis.finished` | INFO | n_runs, n_modes, wall_s |
+| `analysis.skipped` | INFO | campaign_id, kind, reason |
+| `analysis.failed` | WARNING | campaign_id, kind, error |
+| `analysis.artefact_write_failed` | WARNING | (exc_info) |
 | `api.request` | INFO | method, route, status, duration_ms |
 | `config.loaded` | INFO | sources (no values) |
 | `scenario.unit_clipped` | WARNING | count, min, max |

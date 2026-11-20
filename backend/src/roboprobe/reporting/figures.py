@@ -24,6 +24,7 @@ from roboprobe.risk.volume import RegionVolumes
 if TYPE_CHECKING:
     import matplotlib.figure
 
+
 class _ImportanceLike(Protocol):
     names: Sequence[str]
     mean_abs_shap: Sequence[float]
@@ -426,9 +427,7 @@ def kaplan_meier_svg(
     for index, (label, entries) in enumerate(failures.items()):
         if not entries:
             continue
-        times = sorted(
-            int(e.n1 if not e.censored else budget) for e in entries
-        )
+        times = sorted(int(e.n1 if not e.censored else budget) for e in entries)
         colour = colours[index % len(colours)]
         xs = [0]
         ys = [1.0]

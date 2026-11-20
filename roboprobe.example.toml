@@ -111,7 +111,7 @@
 [runner.analysis]
 # Re-run incremental failure analysis every N finished runs.
 # incremental_every_n = 25
-# Concurrent analysis jobs per orchestrator process.
+# Concurrent analysis jobs per orchestrator process (ThreadPoolExecutor).
 # max_workers = 1
 
 [runner.retry]
@@ -395,7 +395,7 @@
 # repeats = 3
 # Share of repeats that must reproduce the failure.
 # success_ratio = 0.67
-# Auto-enqueue confirmation for the top-N modes after final analysis (0 = off).
+# Auto-enqueue confirmation for the top-N modes after final analysis (0=off).
 # auto_confirm_top_n = 0
 
 [risk.thresholds]
@@ -407,7 +407,7 @@
 [risk]
 # Grid points per axis of a 2-D slice.
 # slice_resolution = 50
-# Monte-Carlo samples for region volume estimates.
+# Sobol QMC sample count for region volume estimates (power of two).
 # volume_samples = 8192
 
 [experiments]
@@ -429,6 +429,18 @@
 # n = 20000
 # Seed of the reference sample.
 # seed = 20261119
+
+[reporting]
+# Colour theme token set (Field Notebook).
+# theme = "light"
+
+[reporting.figures]
+# Figure width in inches.
+# width_in = 6.0
+# Figure height in inches.
+# height_in = 4.0
+# Rasterisation DPI (SVG metadata only).
+# dpi = 100
 
 [observability]
 # Expose Prometheus metrics.

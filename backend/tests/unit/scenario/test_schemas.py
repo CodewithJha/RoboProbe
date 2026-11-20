@@ -32,6 +32,7 @@ SCHEMA_NAMES = (
     "experiment",
     "sut_profile",
     "manifest",
+    "analysis_report",
 )
 SCHEMA_BASE_URI = "https://github.com/CodewithJha/RoboProbe/schemas/"
 
@@ -98,7 +99,10 @@ def test_schema_is_valid_draft_2020_12(name: str) -> None:
     assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
     assert schema["$id"] == f"{SCHEMA_BASE_URI}{name}.schema.json"
     assert schema["additionalProperties"] is False
-    version_key = "manifest_schema_version" if name == "manifest" else "schema_version"
+    version_key = {
+        "manifest": "manifest_schema_version",
+        "analysis_report": "analysis_schema_version",
+    }.get(name, "schema_version")
     assert schema["properties"][version_key] == {"const": 1}
 
 

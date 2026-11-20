@@ -160,7 +160,7 @@ def analyze_campaign(  # noqa: PLR0913
             include_slices=kind is AnalysisKind.FULL,
         )
     except Exception as exc:
-        _LOGGER.warning("artefact write failed", exc_info=exc)
+        _LOGGER.warning("analysis.artefact_write_failed", exc_info=exc)
         ctx.warnings.append(f"artefacts: {exc}")
         report = replace(
             report,
@@ -711,9 +711,7 @@ def _mode_records(
         )
         for run_id in summary.member_run_ids:
             membership = float(probabilities.get(run_id, 1.0))
-            members.append(
-                member_record(mode_id=mode_id, run_id=run_id, membership=membership)
-            )
+            members.append(member_record(mode_id=mode_id, run_id=run_id, membership=membership))
     return modes, members
 
 
