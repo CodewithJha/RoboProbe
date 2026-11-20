@@ -1,0 +1,70 @@
+# Analytic multi-mode space (docs/07 §9). Unit-cube mirror of warehouse P1–P6.
+schema_version: 1
+id: multi_mode_6d
+name: Multi-mode 6-D analytic
+description: >
+  Soft-threshold multi-mode robustness (modes A–D) for S-PROBE gates. Backend:
+  benchmark with function multi_mode_6d. Parameter ids match warehouse_v1 order.
+task: tasks/warehouse_delivery_v1.yaml
+parameters:
+  - id: robot.max_speed
+    name: Max linear speed (unit)
+    group: robot
+    type: float
+    unit: "-"
+    low: 0.0
+    high: 1.0
+    nominal: 0.5
+    prior: {kind: uniform}
+    enabled: true
+  - id: obstacle.clearance
+    name: Obstacle lateral clearance (unit)
+    group: task
+    type: float
+    unit: "-"
+    low: 0.0
+    high: 1.0
+    nominal: 0.5
+    prior: {kind: uniform}
+    enabled: true
+  - id: env.illuminance
+    name: Ambient illuminance (unit)
+    group: environment
+    type: float
+    unit: "-"
+    low: 0.0
+    high: 1.0
+    nominal: 0.5
+    prior: {kind: uniform}
+    enabled: true
+  - id: sensor.lidar_noise_std
+    name: Lidar range noise (unit)
+    group: sensor
+    type: float
+    unit: "-"
+    low: 0.0
+    high: 1.0
+    nominal: 0.5
+    prior: {kind: uniform}
+    enabled: true
+  - id: env.floor_friction
+    name: Floor friction (unit)
+    group: environment
+    type: float
+    unit: "-"
+    low: 0.0
+    high: 1.0
+    nominal: 0.5
+    prior: {kind: uniform}
+    enabled: true
+  - id: comms.cmd_delay_ms
+    name: Command delay (unit)
+    group: comms
+    type: float
+    unit: "-"
+    low: 0.0
+    high: 1.0
+    nominal: 0.5
+    prior: {kind: uniform}
+    enabled: true
+oracle_thresholds: default

@@ -115,11 +115,12 @@ dtypes, equal column lengths and a finite, strictly increasing `t`, and exposes 
 
 ```python
 class BackendCapabilities(BaseModel, frozen=True):
-    name: str                           # "kinematic2d" | "gazebo_nav2"
+    name: str                           # "kinematic2d" | "gazebo_nav2" | "benchmark" | "replay"
     supported_params: frozenset[str]
     deterministic: bool                 # bitwise reproducible given seed
     typical_episode_wall_s: float
     max_parallel_per_host: int
+    direct_rho: bool = False            # when true, backend_meta["rho"] is episode robustness
 
 class EpisodeRequest(BaseModel, frozen=True):
     run_id: UUID
@@ -155,6 +156,7 @@ class SimulatorBackend(Protocol):
 | `Kinematic2DBackend` | `roboprobe.backends.kinematic2d` | in-process; see 10 §7 |
 | `GazeboNav2Backend` | `roboprobe.backends.gazebo_nav2` | runs *inside* the ROS image; spawns `ros2 launch roboprobe_ros episode.launch.py` subprocess, talks via rclpy; see 10 §3–6 |
 | `ReplayBackend` | `roboprobe.backends.replay` | returns a stored trace (for oracle re-evaluation and tests) |
+| `BenchmarkBackend` | `roboprobe.backends.benchmark` | analytic `branin_falsify` / `multi_mode_6d` (07 §9); `capabilities.direct_rho=True` |
 
 Registry: `roboprobe.backends.registry.get_backend(name: str, settings: BackendSettings) -> SimulatorBackend`
 using `importlib.metadata.entry_points(group="roboprobe.backends")`.

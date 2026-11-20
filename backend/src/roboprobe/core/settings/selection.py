@@ -5,14 +5,17 @@ Layer: Kernel (L1). Campaigns may override these; resolved values are snapshotte
 
 import itertools
 import math
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import Field, field_validator, model_validator
 
 from roboprobe.core.settings._base import SettingsSection
 
+BenchmarkFunction = Literal["branin_falsify", "multi_mode_6d"]
+
 __all__ = [
     "AcquisitionDefaults",
+    "AnalyticBenchmarkDefaults",
     "GpDefaults",
     "GridDefaults",
     "OfatDefaults",
@@ -109,6 +112,47 @@ class GridDefaults(SettingsSection):
     min_levels: int = Field(default=2, ge=_MIN_LEVELS, description="Minimum levels per axis.")
 
 
+class AnalyticBenchmarkDefaults(SettingsSection):
+    """Analytic benchmark functions + BenchmarkBackend knobs (docs/07 §9)."""
+
+    function: BenchmarkFunction = Field(
+        default="multi_mode_6d",
+        description="Analytic robustness function evaluated by the benchmark backend.",
+    )
+    noise: float = Field(
+        default=0.02,
+        ge=0,
+        description="Observation noise std for multi_mode_6d (ignored by branin_falsify).",
+    )
+    typical_episode_wall_s: float = Field(
+        default=0.001, gt=0, description="Typical wall time of one analytic episode [s]."
+    )
+    max_parallel_per_host: int = Field(
+        default=32, gt=0, description="Analytic episodes allowed in parallel on one host."
+    )
+    trace_samples: int = Field(
+        default=2, ge=2, description="Synthetic trace length written for each episode."
+    )
+    trace_dt_s: float = Field(default=0.05, gt=0, description="Synthetic trace sample period [s].")
+    failure_volume_target: float = Field(
+        default=0.007,
+        gt=0,
+        lt=1,
+        description="Expected failure volume fraction of multi_mode_6d under Sobol QMC.",
+    )
+    failure_volume_atol: float = Field(
+        default=0.002,
+        gt=0,
+        description="Absolute tolerance on the QMC failure-volume estimate.",
+    )
+    volume_qmc_power: int = Field(
+        default=16,
+        ge=8,
+        le=24,
+        description="Sobol sample count is 2**volume_qmc_power for the volume gate.",
+    )
+
+
 class SelectionDefaults(SettingsSection):
     """Defaults for every selection strategy."""
 
@@ -117,6 +161,7 @@ class SelectionDefaults(SettingsSection):
     acq: AcquisitionDefaults = Field(default_factory=AcquisitionDefaults)
     ofat: OfatDefaults = Field(default_factory=OfatDefaults)
     grid: GridDefaults = Field(default_factory=GridDefaults)
+    benchmarks: AnalyticBenchmarkDefaults = Field(default_factory=AnalyticBenchmarkDefaults)
     mode_cache_refresh_every: int = Field(
         default=10, gt=0, description="Refresh the failure-mode cache every N observations."
     )
