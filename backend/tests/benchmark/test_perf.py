@@ -45,8 +45,9 @@ def _pin_threads() -> None:
 
 
 def _space(dim: int) -> ScenarioSpace:
+    name = "branin_2d.yaml" if dim <= 2 else "multi_mode_6d.yaml"
     space = ScenarioSpace.from_yaml(
-        REPO_ROOT / "configs" / "scenario_spaces" / "warehouse_v1.yaml",
+        REPO_ROOT / "configs" / "scenario_spaces" / name,
         base_dir=REPO_ROOT,
     )
     if dim < space.dim:

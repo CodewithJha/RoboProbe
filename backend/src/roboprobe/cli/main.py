@@ -29,12 +29,16 @@ import typer
 from typer.core import TyperGroup
 
 from roboprobe.cli import (
+    analyze,
     artifacts,
+    bundle,
     campaign,
     config,
     db,
+    experiment,
     oracle,
     replay,
+    report,
     run,
     runs,
     scenario,
@@ -64,9 +68,12 @@ COMMAND_GROUPS: Sequence[typer.Typer] = (
     db.app,
     space.app,
     campaign.app,
+    experiment.app,
     runs.app,
     runs.queue_app,
     replay.app,
+    analyze.app,
+    report.app,
     oracle.app,
     scenario.app,
     run.app,
@@ -75,6 +82,8 @@ COMMAND_GROUPS: Sequence[typer.Typer] = (
     services.api_app,
     artifacts.app,
     artifacts.gc_app,
+    bundle.export_app,
+    bundle.import_app,
 )
 """Registered command groups, in ``--help`` order (append-only; see module docstring)."""
 

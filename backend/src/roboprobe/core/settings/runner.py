@@ -53,6 +53,11 @@ class RunnerAnalysisSettings(SettingsSection):
     incremental_every_n: int = Field(
         default=25, gt=0, description="Re-run incremental failure analysis every N finished runs."
     )
+    max_workers: int = Field(
+        default=1,
+        gt=0,
+        description="Concurrent analysis jobs per orchestrator process (ThreadPoolExecutor).",
+    )
 
 
 class RetrySettings(SettingsSection):
@@ -93,4 +98,9 @@ class RunnerSettings(SettingsSection):
     retry: RetrySettings = Field(default_factory=RetrySettings)
     max_concurrent_campaigns: int = Field(
         default=4, gt=0, description="Campaigns driven concurrently per orchestrator."
+    )
+    confirm_priority: int = Field(
+        default=10,
+        ge=0,
+        description="Queue priority for confirmatory interaction runs (lower runs sooner).",
     )

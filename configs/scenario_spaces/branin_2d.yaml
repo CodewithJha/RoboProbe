@@ -27,4 +27,26 @@ parameters:
     nominal: 0.5
     prior: {kind: uniform}
     enabled: true
+  # Present (disabled) so warehouse_delivery_v1 task placement refs resolve.
+  - id: obstacle.clearance
+    name: Obstacle lateral clearance (unused)
+    group: task
+    type: float
+    unit: "-"
+    low: 0.0
+    high: 1.0
+    nominal: 0.5
+    prior: {kind: uniform}
+    enabled: false
+  - id: obstacle.along_path
+    name: Obstacle along path (unused)
+    group: task
+    type: float
+    unit: "-"
+    low: 0.0
+    high: 1.0
+    nominal: 0.5
+    prior: {kind: uniform}
+    enabled: false
+constraints: []
 oracle_thresholds: default

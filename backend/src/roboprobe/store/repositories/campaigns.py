@@ -77,3 +77,11 @@ class SqlCampaignRepo:
         items, extra = extra_item([campaign_record(r) for r in rows], size)
         nxt = None if extra is None else str(items[-1].id)
         return Page(items=items, next_cursor=nxt)
+
+    def list_for_experiment(self, experiment_id: UUID) -> tuple[CampaignRecord, ...]:
+        rows = self._s.scalars(
+            select(CampaignRow)
+            .where(CampaignRow.experiment_id == experiment_id)
+            .order_by(CampaignRow.id)
+        ).all()
+        return tuple(campaign_record(row) for row in rows)

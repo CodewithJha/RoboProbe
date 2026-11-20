@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>RoboProbe campaign report — {{ context.title }}</title>
+  <style>{{ context.css }}</style>
+</head>
+<body>
+  <header>
+    <h1>Campaign report</h1>
+    <p class="muted">{{ context.campaign_id }}</p>
+  </header>
+
+  <section id="summary">
+    <h2>Summary</h2>
+    <table class="data">
+      {% for key, value in context.config_rows %}
+      <tr><th>{{ key }}</th><td>{{ value }}</td></tr>
+      {% endfor %}
+    </table>
+    <p>
+      Runs: {{ context.counts.total }}
+      · PASS {{ context.counts.pass }}
+      · FAIL {{ context.counts.fail }}
+      · INVALID {{ context.counts.invalid }}
+      {% if context.robustness is not none %}
+      · Robustness {{ "%.3f"|format(context.robustness) }}
+      {% endif %}
+    </p>
+    {% if context.warnings %}
+    <ul class="muted">
+      {% for w in context.warnings %}<li>{{ w }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+    <div class="figure">{{ context.discovery_svg | safe }}</div>
+  </section>
+
+  <section id="modes">
+    <h2>Failure modes</h2>
+    <div class="figure">{{ context.modes_svg | safe }}</div>
+    <div class="figure">{{ context.verdict_svg | safe }}</div>
+    {% for mode in context.modes %}
+    <article class="case-card">
+      <h3>{{ mode.code }} — {{ mode.label }}</h3>
+      <p>Size {{ mode.size }} · {{ mode.primary_class }}</p>
+      {% if mode.rule %}<p class="muted">{{ mode.rule }}</p>{% endif %}
+      {% if mode.interaction_status %}
+      <span class="badge">Interaction: {{ mode.interaction_status }}</span>
+      {% endif %}
+      {% if mode.medoid_run_id %}
+      <p class="muted">Medoid <code>{{ mode.medoid_run_id }}</code> · replay: <code>roboprobe replay {{ mode.medoid_run_id }}</code></p>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </section>
+
+  <section id="atlas">
+    <h2>Risk atlas</h2>
+    <div class="figure">{{ context.volume_svg | safe }}</div>
+    {% for svg in context.slice_svgs %}
+    <div class="figure">{{ svg | safe }}</div>
+    {% endfor %}
+  </section>
+
+  <section id="importance">
+    <h2>Importance</h2>
+    {% if context.importance_low_confidence %}
+    <p class="badge">Low confidence — interpret with care</p>
+    {% endif %}
+    <div class="figure">{{ context.importance_svg | safe }}</div>
+    <div class="figure">{{ context.interaction_svg | safe }}</div>
+  </section>
+
+  <section id="appendix">
+    <h2>Run appendix</h2>
+    <table class="data">
+      <tr><th>Run</th><th>Ordinal</th><th>Verdict</th><th>Manifest SHA-256</th></tr>
+      {% for row in context.appendix_runs %}
+      <tr>
+        <td><code>{{ row.run_id }}</code></td>
+        <td>{{ row.ordinal }}</td>
+        <td>{{ row.verdict }}</td>
+        <td class="muted">{{ row.manifest_sha256 }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </section>
+
+  <footer class="footer">
+    RoboProbe · Field Notebook report · offline HTML
+  </footer>
+</body>
+</html>

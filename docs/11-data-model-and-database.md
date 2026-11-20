@@ -419,6 +419,28 @@ missing or mistyped columns, nulls and invariant violations with one `Validation
 `validate_trace(trace, *, min_hz, max_gap_s)` returns the FR-RUN-004 sampling problems (rate, gaps); the caller
 supplies the thresholds from settings.
 
+### 6.3 Campaign bundle (`.tar.zst`, T-014 / FR-STO-003)
+
+Portable campaign archive produced by `roboprobe export <campaign_id> -o bundle.tar.zst` and
+restored with `roboprobe import <bundle>` (`roboprobe.store.bundle`).
+
+```text
+bundle.tar.zst
+  bundle.json                 # format_version, campaign_id, row_counts, files→sha256
+  rows/<table>.jsonl          # one JSON object per row; each line carries schema_version
+  blobs/<sha256>              # raw artefact bytes (content-addressed)
+```
+
+Tables exported: `spaces`, `sut_profiles`, `campaigns`, `runs`, `oracle_results`, `artifacts`,
+`strategy_states`, `analyses`, `risk_maps`. Each JSONL line is a repository record dump plus
+`schema_version` (currently `1`). `bundle.json.files` lists the sha256 of every member except
+itself; import verifies every listed hash **before** any database write.
+
+Safe extraction (TM-14): reject absolute paths, `..`, symlinks/hardlinks and non-regular members;
+enforce `storage.bundle.max_member_bytes` and `storage.bundle.max_uncompressed_bytes`. Hostnames
+inside run manifests are replaced with `hostname_hash` on export (TM-15). `--on-conflict skip|fail`
+controls behaviour when the campaign id already exists (`fail` is the default).
+
 ## 7. Retention & size estimates
 
 | Item | Size | 1 000-run campaign |

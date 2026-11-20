@@ -48,6 +48,17 @@ class SqlExperimentRepo:
             msg = "experiment not found"
             raise NotFoundError(msg, context={"experiment_id": str(experiment_id)})
 
+    def set_results(self, experiment_id: UUID, results: dict[str, object]) -> None:
+        result = execute(
+            self._s,
+            update(ExperimentRow)
+            .where(ExperimentRow.id == experiment_id)
+            .values(results=dict(results)),
+        )
+        if int(getattr(result, "rowcount", 0) or 0) != 1:
+            msg = "experiment not found"
+            raise NotFoundError(msg, context={"experiment_id": str(experiment_id)})
+
     def list(
         self, *, limit: int | None = None, cursor: str | None = None
     ) -> Page[ExperimentRecord]:

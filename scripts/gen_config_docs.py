@@ -3,7 +3,7 @@
 
 Renders, from ``roboprobe.core.settings.RoboProbeSettings``:
 
-* the docs/27 §4.1-§4.10 tables between ``<!-- BEGIN GENERATED: config-tables -->`` and
+* the docs/27 §4.1-§4.11 tables between ``<!-- BEGIN GENERATED: config-tables -->`` and
   ``<!-- END GENERATED -->`` (hand-written prose outside the markers is preserved);
 * ``.env.example`` (every variable commented out with its default);
 * ``roboprobe.example.toml`` (every key commented out under its table header).
@@ -77,12 +77,13 @@ SECTIONS: Sequence[tuple[str, Sequence[str]]] = (
         ("scenario", "selection"),
     ),
     ("4.8 Analysis & risk", ("analysis", "risk")),
-    ("4.9 Experiments", ("experiments",)),
-    ("4.10 Logging & observability", ("logging", "observability")),
+    ("4.9 Reporting", ("reporting",)),
+    ("4.10 Experiments", ("experiments",)),
+    ("4.11 Logging & observability", ("logging", "observability")),
 )
 """docs/27 §4 headings and the root fields each one documents (every root field exactly once)."""
 
-# Compose-level variables (docs/27 §4.12) are read by docker/compose.yaml, not by the settings
+# Compose-level variables (docs/27 §4.13) are read by docker/compose.yaml, not by the settings
 # models, so they are appended to .env.example verbatim.
 COMPOSE_VARIABLES: Sequence[tuple[str, str, str]] = (
     ("ROBOPROBE_IMAGE_TAG", "dev", "Image tag of the RoboProbe containers."),
@@ -279,7 +280,7 @@ def render_env(root: type[BaseModel] = RoboProbeSettings) -> str:
             lines += ["", f"# --- {current} ---"]
         value = "" if field.secret or field.default is None else _env_value(field.default)
         lines += [*_comment(field.description), f"# {field.env_var}={value}"]
-    lines += ["", "# --- Docker Compose (docs/27 §4.12) ---"]
+    lines += ["", "# --- Docker Compose (docs/27 §4.13) ---"]
     for name, default, description in COMPOSE_VARIABLES:
         lines += [*_comment(description), f"# {name}={default}"]
     return "\n".join(lines) + "\n"

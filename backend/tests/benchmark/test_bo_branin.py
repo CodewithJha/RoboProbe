@@ -23,10 +23,9 @@ pytestmark = [
 ]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SPACE = REPO_ROOT / "configs" / "scenario_spaces" / "warehouse_v1.yaml"
+SPACE = REPO_ROOT / "configs" / "scenario_spaces" / "branin_2d.yaml"
 THRESHOLDS = Path(__file__).resolve().parent / "thresholds.yaml"
 SEEDS = tuple(range(int(os.environ.get("ROBOPROBE_BENCH_SEEDS", "20"))))
-BRANIN_DIM = 2
 
 
 def _thresholds() -> dict[str, float]:
@@ -34,10 +33,7 @@ def _thresholds() -> dict[str, float]:
 
 
 def _space() -> ScenarioSpace:
-    space = ScenarioSpace.from_yaml(SPACE, base_dir=REPO_ROOT)
-    values = space.nominal_values()
-    pins = {p.id: values[p.id] for p in space.params[BRANIN_DIM:]}
-    return space.with_pins(pins)
+    return ScenarioSpace.from_yaml(SPACE, base_dir=REPO_ROOT)
 
 
 def _first_fail(seed: int, budget: int) -> int | None:

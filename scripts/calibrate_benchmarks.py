@@ -41,28 +41,24 @@ def _obs(unit: np.ndarray, rho: float, verdict: Verdict) -> Observation:
 
 
 REPO = Path(__file__).resolve().parents[1]
-SPACE = REPO / "configs" / "scenario_spaces" / "warehouse_v1.yaml"
+BRANIN_SPACE = REPO / "configs" / "scenario_spaces" / "branin_2d.yaml"
+MULTI_SPACE = REPO / "configs" / "scenario_spaces" / "multi_mode_6d.yaml"
 DEFAULT_SEEDS = tuple(range(20))
 
 
-def _space(dim: int) -> ScenarioSpace:
-    space = ScenarioSpace.from_yaml(SPACE, base_dir=REPO)
-    if dim < space.dim:
-        values = space.nominal_values()
-        pins = {p.id: values[p.id] for p in space.params[dim:]}
-        space = space.with_pins(pins)
-    return space
+def _space(*, fn: str) -> ScenarioSpace:
+    path = BRANIN_SPACE if fn == "branin" else MULTI_SPACE
+    return ScenarioSpace.from_yaml(path, base_dir=REPO)
 
 
 def _campaign(
     strategy_id: str,
     seed: int,
     budget: int,
-    dim: int,
     *,
     fn: str,
 ) -> dict[str, object]:
-    space = _space(dim)
+    space = _space(fn=fn)
     strat = create(
         strategy_id,
         StrategyContext(space=space, budget=budget, seed=seed, batch_size=4, params={}),
@@ -112,15 +108,15 @@ def main() -> int:
         "budget": args.budget,
         "results": results,
     }
-    for strategy_id, dim, fn in (
-        ("S-BO", 2, "branin"),
-        ("S-PROBE", 6, "multi"),
-        ("S-RANDOM", 6, "multi"),
-        ("S-LSE", 6, "multi"),
+    for strategy_id, fn in (
+        ("S-BO", "branin"),
+        ("S-PROBE", "multi"),
+        ("S-RANDOM", "multi"),
+        ("S-LSE", "multi"),
     ):
         key = f"{strategy_id}:{fn}"
         print(f"calibrating {key} …", flush=True)
-        runs = [_campaign(strategy_id, seed, args.budget, dim, fn=fn) for seed in seeds]
+        runs = [_campaign(strategy_id, seed, args.budget, fn=fn) for seed in seeds]
         first: list[int] = []
         mode_counts: list[int] = []
         for run in runs:

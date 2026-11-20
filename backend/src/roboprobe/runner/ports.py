@@ -36,6 +36,9 @@ __all__ = [
     "EpisodeRequestView",
     "EpisodeResultView",
     "EventRepoPort",
+    "ExperimentRepoPort",
+    "FailureModeRepoPort",
+    "FailureModeView",
     "MaterializedScenarioView",
     "NewRunView",
     "RunQueuePort",
@@ -94,6 +97,10 @@ class RunView(Protocol):
     backend: str
     attempt: int
     worker_id: str | None
+    metrics: Mapping[str, object] | None
+    tags: Sequence[object]
+    primary_failure: object
+    robustness: float | None
 
 
 class ClaimedRunView(Protocol):
@@ -163,11 +170,20 @@ class ArtifactRefView(Protocol):
 class CampaignRepoPort(Protocol):
     def get(self, campaign_id: UUID) -> CampaignView | None: ...
 
+    def add(self, record: object) -> None: ...
+
     def set_status(
         self, campaign_id: UUID, status: CampaignStatus, *, reason: str | None = None
     ) -> None: ...
 
     def list(self, *, limit: int | None = None, cursor: str | None = None) -> object: ...
+
+    def list_for_experiment(self, experiment_id: UUID) -> Sequence[object]: ...
+
+
+class _RunPage(Protocol):
+    items: Sequence[RunView]
+    next_cursor: str | None
 
 
 class RunRepoPort(Protocol):
@@ -177,7 +193,7 @@ class RunRepoPort(Protocol):
 
     def list_for_campaign(
         self, campaign_id: UUID, *, limit: int | None = None, cursor: str | None = None
-    ) -> object: ...
+    ) -> _RunPage: ...
 
     def history(self, campaign_id: UUID) -> list[Observation]: ...
 
@@ -220,6 +236,48 @@ class ArtifactRepoPort(Protocol):
     def add(self, record: object) -> None: ...
 
 
+class ExperimentRepoPort(Protocol):
+    def get(self, experiment_id: UUID) -> object | None: ...
+
+    def add(self, record: object) -> None: ...
+
+    def set_status(self, experiment_id: UUID, status: str) -> None: ...
+
+    def set_results(self, experiment_id: UUID, results: dict[str, JsonValue]) -> None: ...
+
+
+class FailureModeView(Protocol):
+    """Failure-mode fields confirmation and analysis orchestration read."""
+
+    id: UUID
+    campaign_id: UUID
+    code: str
+    size: int
+    label: str
+    primary_class: object
+    class_mix: Mapping[str, object] | None
+    characteristic: Sequence[object]
+    param_ranges: Mapping[str, object] | None
+    interaction: Mapping[str, JsonValue] | None
+    medoid_run_id: UUID | None
+    minimal_run_id: UUID | None
+
+    def model_copy(self, *, update: Mapping[str, object]) -> FailureModeView: ...
+
+
+class FailureModeRepoPort(Protocol):
+    def get(self, mode_id: UUID) -> FailureModeView | None: ...
+
+    def list_for_campaign(self, campaign_id: UUID) -> Sequence[FailureModeView]: ...
+
+    def upsert_modes(
+        self,
+        campaign_id: UUID,
+        modes: Sequence[FailureModeView],
+        members: Sequence[object],
+    ) -> None: ...
+
+
 class UnitOfWorkPort(Protocol):
     """One session / one transaction."""
 
@@ -231,7 +289,10 @@ class UnitOfWorkPort(Protocol):
     sut_profiles: SutProfileRepoPort
     artifacts: ArtifactRepoPort
     oracle_results: object
-    modes: object
+    modes: FailureModeRepoPort
+    experiments: ExperimentRepoPort
+    analyses: object
+    risk_maps: object
 
     def __enter__(self) -> UnitOfWorkPort: ...
 
@@ -245,6 +306,10 @@ class UnitOfWorkPort(Protocol):
     def commit(self) -> None: ...
 
     def rollback(self) -> None: ...
+
+    def try_advisory_lock(self, key: str) -> bool: ...
+
+    def advisory_unlock(self, key: str) -> None: ...
 
 
 UowFactory = Callable[[], UnitOfWorkPort]

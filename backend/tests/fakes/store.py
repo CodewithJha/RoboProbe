@@ -153,6 +153,13 @@ class _Campaigns:
         nxt = None if extra is None else str(items[-1].id)
         return Page(items=items, next_cursor=nxt)
 
+    def list_for_experiment(self, experiment_id: UUID) -> tuple[CampaignRecord, ...]:
+        rows = sorted(
+            (c for c in self._db.campaigns.values() if c.experiment_id == experiment_id),
+            key=lambda c: c.id,
+        )
+        return tuple(rows)
+
 
 class _Runs:
     def __init__(self, db: _Db) -> None:
@@ -199,6 +206,10 @@ class _Runs:
             )
         return tuple(ids)
 
+    def import_many(self, runs: Sequence[RunRecord]) -> None:
+        for item in runs:
+            self._db.runs[item.id] = item
+
     def list_for_campaign(
         self, campaign_id: UUID, *, limit: int | None = None, cursor: str | None = None
     ) -> Page[RunRecord]:
@@ -213,7 +224,13 @@ class _Runs:
         nxt = None if extra is None else str(items[-1].id)
         return Page(items=items, next_cursor=nxt)
 
-    def history(self, campaign_id: UUID) -> list[Observation]:
+    def history(
+        self,
+        campaign_id: UUID,
+        *,
+        exclude_phases: frozenset[str] | None = None,
+    ) -> list[Observation]:
+        skipped = frozenset({"confirm", "manual"}) if exclude_phases is None else exclude_phases
         rows = sorted(
             (
                 r
@@ -222,6 +239,7 @@ class _Runs:
                 and r.status is RunStatus.DONE
                 and r.verdict is not None
                 and r.verdict is not Verdict.INVALID
+                and r.phase not in skipped
             ),
             key=lambda r: (r.ordinal, r.repeat_index),
         )
@@ -290,6 +308,10 @@ class _Modes:
                 key=lambda m: m.code,
             )
         )
+
+    def list_members_for_campaign(self, campaign_id: UUID) -> tuple[FailureModeMemberRecord, ...]:
+        mode_ids = {m.id for m in self.list_for_campaign(campaign_id)}
+        return tuple(m for m in self._db.members if m.mode_id in mode_ids)
 
     def upsert_modes(
         self,
@@ -360,6 +382,14 @@ class _Experiments:
                 "experiment not found", context={"experiment_id": str(experiment_id)}
             )
         self._db.experiments[experiment_id] = rec.model_copy(update={"status": status})
+
+    def set_results(self, experiment_id: UUID, results: dict[str, object]) -> None:
+        rec = self._db.experiments.get(experiment_id)
+        if rec is None:
+            raise NotFoundError(
+                "experiment not found", context={"experiment_id": str(experiment_id)}
+            )
+        self._db.experiments[experiment_id] = rec.model_copy(update={"results": dict(results)})
 
     def list(
         self, *, limit: int | None = None, cursor: str | None = None
@@ -499,6 +529,21 @@ class InMemoryUnitOfWork:
     def notify(self, channel: str, payload: str) -> None:
         db = self._require()
         db.notify.append((channel, payload))
+
+    def try_advisory_lock(self, key: str) -> bool:
+        locks = getattr(self, "_advisory_keys", None)
+        if locks is None:
+            locks = set()
+            self._advisory_keys = locks
+        if key in locks:
+            return True
+        locks.add(key)
+        return True
+
+    def advisory_unlock(self, key: str) -> None:
+        locks = getattr(self, "_advisory_keys", None)
+        if locks is not None:
+            locks.discard(key)
 
     def _require(self) -> _Db:
         if self._tx is None:

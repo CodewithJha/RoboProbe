@@ -32,7 +32,7 @@ Implementation notes (`roboprobe.core.settings`, T-003a):
 - Env aliases `ROBOPROBE_DATABASE_URL` / `ROBOPROBE_API_TOKEN` are read from the process environment; the
   canonical `ROBOPROBE_DATABASE__URL` / `ROBOPROBE_API__TOKEN` wins when both are set. Empty values count as unset.
 - Unknown keys fail validation inside every section and at the top level of the TOML file and CLI overrides;
-  unknown top-level `ROBOPROBE_*` variables are ignored because `.env` also carries compose variables (§4.12).
+  unknown top-level `ROBOPROBE_*` variables are ignored because `.env` also carries compose variables (§4.13).
 - A password already present in `database.url` takes precedence over `database.password_file`.
 - `worker.backend` is optional at load time and enforced by the worker entry point, so non-worker
   processes (API, CLI) can load the same configuration.
@@ -58,6 +58,7 @@ classDiagram
       oracles: OracleThresholds
       analysis: AnalysisSettings
       risk: RiskSettings
+      reporting: ReportingSettings
       experiments: ExperimentSettings
       observability: ObservabilitySettings
       logging: LoggingSettings
@@ -71,7 +72,7 @@ classDiagram
 
 ## 4. Reference tables (defaults; env var = `ROBOPROBE_` + path in upper case with `__`)
 
-§4.1–§4.10 are generated from the settings models by `make config-docs` (`scripts/gen_config_docs.py`);
+§4.1–§4.11 are generated from the settings models by `make config-docs` (`scripts/gen_config_docs.py`);
 edit the field descriptions in `backend/src/roboprobe/core/settings/`, never the tables. `make config-docs-check`
 fails on drift. `.env.example` and `roboprobe.example.toml` are generated the same way.
 
@@ -97,6 +98,11 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `storage.min_free_gb` | float | `5.0` | `ROBOPROBE_STORAGE__MIN_FREE_GB` | Free-space floor that raises `DISK_LOW` [GB]. |
 | `storage.retention.bags_days` | int | `30` | `ROBOPROBE_STORAGE__RETENTION__BAGS_DAYS` | Days to keep rosbag artefacts [d]. |
 | `storage.retention.keep_failure_bags` | bool | `true` | `ROBOPROBE_STORAGE__RETENTION__KEEP_FAILURE_BAGS` | Keep bags of failing runs regardless of `bags_days`. |
+| `storage.bundle.format_version` | int | `1` | `ROBOPROBE_STORAGE__BUNDLE__FORMAT_VERSION` | Campaign bundle format version written on export. |
+| `storage.bundle.max_uncompressed_bytes` | int | `2147483648` | `ROBOPROBE_STORAGE__BUNDLE__MAX_UNCOMPRESSED_BYTES` | Maximum total uncompressed payload accepted on import [bytes]. |
+| `storage.bundle.max_member_bytes` | int | `536870912` | `ROBOPROBE_STORAGE__BUNDLE__MAX_MEMBER_BYTES` | Maximum size of any single tar member on import [bytes]. |
+| `storage.bundle.read_chunk_bytes` | int | `1048576` | `ROBOPROBE_STORAGE__BUNDLE__READ_CHUNK_BYTES` | I/O chunk size when hashing or copying bundle members [bytes]. |
+| `storage.bundle.hostname_hash_hex` | int | `16` | `ROBOPROBE_STORAGE__BUNDLE__HOSTNAME_HASH_HEX` | Hex length of hostname hashes written into exported manifests (TM-15). |
 | `storage.backend` | str | `local` | `ROBOPROBE_STORAGE__BACKEND` | Artifact store plugin key in the `roboprobe.stores` entry-point group. |
 
 ### 4.3 API
@@ -131,11 +137,13 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `runner.alerts.no_workers_after_s` | float | `60.0` | `ROBOPROBE_RUNNER__ALERTS__NO_WORKERS_AFTER_S` | Emit NO_WORKERS when a RUNNING campaign has no worker this long [s]. |
 | `runner.alerts.gp_fallback_repeat` | int | `3` | `ROBOPROBE_RUNNER__ALERTS__GP_FALLBACK_REPEAT` | Emit GP_FALLBACK_REPEATED after this many consecutive selector fallbacks. |
 | `runner.analysis.incremental_every_n` | int | `25` | `ROBOPROBE_RUNNER__ANALYSIS__INCREMENTAL_EVERY_N` | Re-run incremental failure analysis every N finished runs. |
+| `runner.analysis.max_workers` | int | `1` | `ROBOPROBE_RUNNER__ANALYSIS__MAX_WORKERS` | Concurrent analysis jobs per orchestrator process (ThreadPoolExecutor). |
 | `runner.count_invalid_in_budget` | bool | `false` | `ROBOPROBE_RUNNER__COUNT_INVALID_IN_BUDGET` | Whether INVALID runs consume campaign budget. |
 | `runner.retry.max_attempts` | int | `3` | `ROBOPROBE_RUNNER__RETRY__MAX_ATTEMPTS` | Attempts including the first. |
 | `runner.retry.base_delay_s` | float | `0.5` | `ROBOPROBE_RUNNER__RETRY__BASE_DELAY_S` | First backoff delay [s]. |
 | `runner.retry.max_delay_s` | float | `10.0` | `ROBOPROBE_RUNNER__RETRY__MAX_DELAY_S` | Backoff delay cap [s]. |
 | `runner.max_concurrent_campaigns` | int | `4` | `ROBOPROBE_RUNNER__MAX_CONCURRENT_CAMPAIGNS` | Campaigns driven concurrently per orchestrator. |
+| `runner.confirm_priority` | int | `10` | `ROBOPROBE_RUNNER__CONFIRM_PRIORITY` | Queue priority for confirmatory interaction runs (lower runs sooner). |
 | `worker.backend` | str? | – | `ROBOPROBE_WORKER__BACKEND` | Simulator backend key (`kinematic2d`, `gazebo_nav2`); required to start a worker. |
 | `worker.id_prefix` | str | `<hostname>` | `ROBOPROBE_WORKER__ID_PREFIX` | Worker id prefix; id = `<prefix>:<pid>:<slot>` (default: host name). |
 | `worker.concurrency` | int | `1` | `ROBOPROBE_WORKER__CONCURRENCY` | Simulation slots per process. |
@@ -265,12 +273,22 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `analysis.rules.min_precision` | float | `0.6` | `ROBOPROBE_ANALYSIS__RULES__MIN_PRECISION` | Minimum precision of a reported rule. |
 | `analysis.interaction.repeats` | int | `3` | `ROBOPROBE_ANALYSIS__INTERACTION__REPEATS` | Confirmation repeats per candidate. |
 | `analysis.interaction.success_ratio` | float | `0.67` | `ROBOPROBE_ANALYSIS__INTERACTION__SUCCESS_RATIO` | Share of repeats that must reproduce the failure. |
+| `analysis.interaction.auto_confirm_top_n` | int | `0` | `ROBOPROBE_ANALYSIS__INTERACTION__AUTO_CONFIRM_TOP_N` | Auto-enqueue confirmation for the top-N modes after final analysis (0=off). |
 | `risk.thresholds.safe` | float | `0.05` | `ROBOPROBE_RISK__THRESHOLDS__SAFE` | Upper bound of the safe region. |
 | `risk.thresholds.failure` | float | `0.95` | `ROBOPROBE_RISK__THRESHOLDS__FAILURE` | Lower bound of the failure-prone region. |
 | `risk.slice_resolution` | int | `50` | `ROBOPROBE_RISK__SLICE_RESOLUTION` | Grid points per axis of a 2-D slice. |
-| `risk.volume_samples` | int | `8192` | `ROBOPROBE_RISK__VOLUME_SAMPLES` | Monte-Carlo samples for region volume estimates. |
+| `risk.volume_samples` | int | `8192` | `ROBOPROBE_RISK__VOLUME_SAMPLES` | Sobol QMC sample count for region volume estimates (power of two). |
 
-### 4.9 Experiments
+### 4.9 Reporting
+
+| Key | Type | Default | Env var | Description |
+|-----|------|---------|---------|-------------|
+| `reporting.theme` | enum: `light` / `dark` | `light` | `ROBOPROBE_REPORTING__THEME` | Colour theme token set (Field Notebook). |
+| `reporting.figures.width_in` | float | `6.0` | `ROBOPROBE_REPORTING__FIGURES__WIDTH_IN` | Figure width in inches. |
+| `reporting.figures.height_in` | float | `4.0` | `ROBOPROBE_REPORTING__FIGURES__HEIGHT_IN` | Figure height in inches. |
+| `reporting.figures.dpi` | int | `100` | `ROBOPROBE_REPORTING__FIGURES__DPI` | Rasterisation DPI (SVG metadata only). |
+
+### 4.10 Experiments
 
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
@@ -283,7 +301,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `experiments.mode_match_radius` | float | `0.05` | `ROBOPROBE_EXPERIMENTS__MODE_MATCH_RADIUS` | Unit-cube radius matching a found mode to a true one. |
 | `experiments.coverage_bins` | int | `5` | `ROBOPROBE_EXPERIMENTS__COVERAGE_BINS` | Bins per axis for coverage metrics. |
 
-### 4.10 Logging & observability
+### 4.11 Logging & observability
 
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
@@ -296,7 +314,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 
 <!-- END GENERATED -->
 
-### 4.11 Web (runtime `config.json`, served by nginx from env)
+### 4.12 Web (runtime `config.json`, served by nginx from env)
 
 | Key | Env | Default |
 |-----|-----|---------|
@@ -312,7 +330,7 @@ Build/dev-time variables (Vite, `web/.env.example`; read in `web/vite.config.ts`
 | `VITE_API_BASE_URL` | `/api/v1` | baked into the bundle; overridden at runtime by `config.json` `apiBaseUrl` |
 | `VITE_API_PROXY_TARGET` | `http://127.0.0.1:8000` | `pnpm --dir web dev` only: origin that `/api/*` requests are proxied to |
 
-### 4.12 Compose-level variables (`.env`)
+### 4.13 Compose-level variables (`.env`)
 
 `ROBOPROBE_IMAGE_TAG` (dev), `ROBOPROBE_API_PORT` (8000), `ROBOPROBE_WEB_PORT` (8080), `ROBOPROBE_DB_NAME`/`ROBOPROBE_DB_USER` (roboprobe), `ROBOPROBE_DB_PORT` (5432; published on `127.0.0.1` only with the `dev` profile), `ROBOPROBE_K2D_REPLICAS` (2).
 The database password is never a variable: `make setup` writes `secrets/db_password` (git-ignored) and Compose mounts it as the `db_password` secret.

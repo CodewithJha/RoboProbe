@@ -23,10 +23,9 @@ pytestmark = [
 ]
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SPACE = REPO_ROOT / "configs" / "scenario_spaces" / "warehouse_v1.yaml"
+SPACE = REPO_ROOT / "configs" / "scenario_spaces" / "multi_mode_6d.yaml"
 THRESHOLDS = Path(__file__).resolve().parent / "thresholds.yaml"
 SEEDS = tuple(range(int(os.environ.get("ROBOPROBE_BENCH_SEEDS", "20"))))
-MULTI_DIM = 6
 
 
 def _thresholds() -> dict[str, float]:
@@ -35,12 +34,7 @@ def _thresholds() -> dict[str, float]:
 
 
 def _space() -> ScenarioSpace:
-    space = ScenarioSpace.from_yaml(SPACE, base_dir=REPO_ROOT)
-    if space.dim > MULTI_DIM:
-        values = space.nominal_values()
-        pins = {p.id: values[p.id] for p in space.params[MULTI_DIM:]}
-        space = space.with_pins(pins)
-    return space
+    return ScenarioSpace.from_yaml(SPACE, base_dir=REPO_ROOT)
 
 
 def _run_seed(strategy_id: str, seed: int, budget: int) -> tuple[int | None, set[str]]:

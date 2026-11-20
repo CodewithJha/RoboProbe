@@ -18,6 +18,8 @@ pytestmark = pytest.mark.unit
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 WAREHOUSE = REPO_ROOT / "configs" / "scenario_spaces" / "warehouse_v1.yaml"
+BRANIN = REPO_ROOT / "configs" / "scenario_spaces" / "branin_2d.yaml"
+MULTI_MODE = REPO_ROOT / "configs" / "scenario_spaces" / "multi_mode_6d.yaml"
 FIXTURES = Path(__file__).resolve().parents[2] / "fixtures" / "spaces"
 INVALID = sorted((FIXTURES / "invalid").glob("*.yaml"))
 EXPECT_PREFIX = "# expect-path:"
@@ -50,6 +52,24 @@ def test_warehouse_space_loads_with_six_enabled_parameters() -> None:
     assert space.oracle_thresholds == "default"
     assert len(space.version) == 12
     assert space.param("env.illuminance").scale == "log"
+
+
+def test_analytic_benchmark_spaces_load() -> None:
+    branin = ScenarioSpace.from_yaml(BRANIN, base_dir=REPO_ROOT)
+    multi = ScenarioSpace.from_yaml(MULTI_MODE, base_dir=REPO_ROOT)
+    assert branin.id == "branin_2d"
+    assert branin.dim == 2
+    assert [p.id for p in branin.params] == ["robot.u1", "robot.u2"]
+    assert multi.id == "multi_mode_6d"
+    assert multi.dim == 6
+    assert [p.id for p in multi.params] == [
+        "robot.max_speed",
+        "obstacle.clearance",
+        "env.illuminance",
+        "sensor.lidar_noise_std",
+        "env.floor_friction",
+        "comms.cmd_delay_ms",
+    ]
 
 
 def test_enabling_p7_p8_gives_dim_eight() -> None:

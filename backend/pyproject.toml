@@ -31,6 +31,8 @@ dependencies = [
     "rich>=13.7",
     "uuid-utils>=0.9",
     "matplotlib>=3.9",
+    "jinja2>=3.1",
+    "zstandard>=0.25.0",
 ]
 
 [project.optional-dependencies]
@@ -72,6 +74,9 @@ dev = [
 
 [project.scripts]
 roboprobe = "roboprobe.cli.main:app"
+
+# Optional plugins; built-in analyzers are wired in roboprobe.analysis.pipeline.
+[project.entry-points."roboprobe.analyzers"]
 
 [project.entry-points."roboprobe.backends"]
 kinematic2d = "roboprobe.backends.kinematic2d.backend:Kinematic2DBackend"

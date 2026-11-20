@@ -1,0 +1,90 @@
+/* Field Notebook print stylesheet (docs/13). Tokens inlined by renderer. */
+@page {
+  size: A4;
+  margin: 18mm 14mm;
+}
+
+body {
+  margin: 0;
+  padding: 24px;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height);
+  color: var(--ink);
+  background: var(--paper);
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  color: var(--ink);
+  border-bottom: 1px solid var(--grid-line);
+  padding-bottom: 4px;
+}
+
+h1 {
+  font-size: var(--font-size-xl);
+  border-left: 3px solid var(--margin-line);
+  padding-left: 12px;
+}
+
+section {
+  margin-bottom: var(--section-gap);
+  break-inside: avoid-page;
+}
+
+.case-card {
+  background: var(--paper-raised);
+  border: var(--border-width) solid var(--grid-line);
+  border-radius: var(--radius-card);
+  padding: var(--card-padding);
+  margin-bottom: var(--space-4);
+  page-break-inside: avoid;
+}
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-xs);
+}
+
+table.data th,
+table.data td {
+  border: 1px solid var(--grid-line);
+  padding: 6px 8px;
+  text-align: left;
+}
+
+table.data th {
+  background: var(--paper-raised);
+  color: var(--ink-muted);
+}
+
+.figure {
+  margin: var(--space-3) 0;
+  max-width: 100%;
+}
+
+.figure svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.muted {
+  color: var(--ink-muted);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: var(--radius-tag);
+  border: 1px solid var(--grid-line);
+  font-size: var(--font-size-xs);
+}
+
+.footer {
+  margin-top: var(--space-6);
+  font-size: var(--font-size-xs);
+  color: var(--ink-muted);
+}

@@ -20,7 +20,7 @@ language borrows from engineering paper and instrument panels:
 Source of truth: `web/src/styles/tokens.json`. `pnpm --dir web gen:tokens` renders it to `tokens.css` and copies it to
 `backend/src/roboprobe/reporting/assets/tokens.json` for the report theme; `pnpm lint` fails if either output is stale.
 Light is the default. The OS dark preference applies unless `data-theme` on `<html>` pins a theme (runtime
-`defaultTheme`, doc 27 §4.11). Stylelint rejects raw hex colours and px font sizes outside `tokens.css`. The pairs that
+`defaultTheme`, doc 27 §4.12). Stylelint rejects raw hex colours and px font sizes outside `tokens.css`. The pairs that
 are contrast-checked are listed in `tokens.pairs.json`.
 
 | Token | Light ("Paper") | Dark ("Night Shift") | Use |

@@ -1,0 +1,11 @@
+{
+  "note": "Weekly EXP-02 analytic baseline (T-064). Update after intentional threshold changes.",
+  "seeds": 10,
+  "budget": 150,
+  "results": {
+    "S-BO:branin": {"median_first_fail": 18.0, "mean_modes": null},
+    "S-PROBE:multi": {"median_first_fail": 40.0, "mean_modes": 3.2},
+    "S-RANDOM:multi": {"median_first_fail": 90.0, "mean_modes": 2.0},
+    "S-LSE:multi": {"median_first_fail": 55.0, "mean_modes": 2.5}
+  }
+}

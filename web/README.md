@@ -17,5 +17,5 @@ pnpm build                      # production bundle in web/dist
 From the repository root, `make setup lint typecheck test` runs these together with the backend checks.
 
 Environment variables are documented in [`.env.example`](.env.example) and
-[doc 27 §4.11](../docs/27-configuration-reference.md#411-web-runtime-configjson-served-by-nginx-from-env).
+[doc 27 §4.12](../docs/27-configuration-reference.md#412-web-runtime-configjson-served-by-nginx-from-env).
 Source layout follows [doc 13 §5](../docs/13-dashboard-ux-ui-spec.md#5-frontend-architecture).

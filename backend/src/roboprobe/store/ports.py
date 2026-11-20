@@ -91,6 +91,8 @@ class CampaignRepo(Protocol):
         self, *, limit: int | None = None, cursor: str | None = None
     ) -> Page[CampaignRecord]: ...
 
+    def list_for_experiment(self, experiment_id: UUID) -> tuple[CampaignRecord, ...]: ...
+
 
 class RunRepo(Protocol):
     """Runs. ``insert_batch`` is idempotent on ``(campaign_id, ordinal, repeat_index)``."""
@@ -99,12 +101,25 @@ class RunRepo(Protocol):
 
     def insert_batch(self, runs: Sequence[NewRun]) -> tuple[UUID, ...]: ...
 
+    def import_many(self, runs: Sequence[RunRecord]) -> None:
+        """Insert full run rows (bundle import). Pre: ids and campaign exist; no collisions."""
+        ...
+
     def list_for_campaign(
         self, campaign_id: UUID, *, limit: int | None = None, cursor: str | None = None
     ) -> Page[RunRecord]: ...
 
-    def history(self, campaign_id: UUID) -> list[Observation]:
-        """Finished non-INVALID runs ordered by ordinal (single query)."""
+    def history(
+        self,
+        campaign_id: UUID,
+        *,
+        exclude_phases: frozenset[str] | None = None,
+    ) -> list[Observation]:
+        r"""Finished non-INVALID runs ordered by ordinal (single query).
+
+        ``exclude_phases`` defaults to ``{\"confirm\", \"manual\"}`` so strategy
+        history and MET metrics ignore confirmatory / ad-hoc runs (docs/09 §6).
+        """
         ...
 
     def cancel_pending(self, campaign_id: UUID) -> int:
@@ -169,6 +184,8 @@ class ExperimentRepo(Protocol):
     def add(self, record: ExperimentRecord) -> None: ...
 
     def set_status(self, experiment_id: UUID, status: str) -> None: ...
+
+    def set_results(self, experiment_id: UUID, results: dict[str, JsonValue]) -> None: ...
 
     def list(
         self, *, limit: int | None = None, cursor: str | None = None
@@ -274,3 +291,11 @@ class UnitOfWork(Protocol):
     def rollback(self) -> None: ...
 
     def notify(self, channel: str, payload: str) -> None: ...
+
+    def try_advisory_lock(self, key: str) -> bool:
+        """Acquire a session-scoped advisory lock for ``key`` (non-blocking)."""
+        ...
+
+    def advisory_unlock(self, key: str) -> None:
+        """Release a previously acquired advisory lock for ``key``."""
+        ...
