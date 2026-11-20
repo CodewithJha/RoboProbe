@@ -8,7 +8,8 @@ from __future__ import annotations
 from importlib.metadata import entry_points
 from typing import Any, Final, Literal
 
-from pydantic import BaseModel, ConfigDict, ValidationError as PydanticValidationError
+from pydantic import BaseModel, ConfigDict
+from pydantic import ValidationError as PydanticValidationError
 
 from roboprobe.core import errors
 from roboprobe.selection.base import PLUGIN_API_VERSION, Strategy, StrategyContext
@@ -153,9 +154,7 @@ def describe() -> list[StrategyInfo]:
             StrategyInfo(
                 id=strategy_id,
                 family=_FAMILIES.get(strategy_id, "plugin"),
-                description=_DESCRIPTIONS.get(
-                    strategy_id, f"Plugin strategy {strategy_id}."
-                ),
+                description=_DESCRIPTIONS.get(strategy_id, f"Plugin strategy {strategy_id}."),
                 params_schema=params_model.model_json_schema(),
             )
         )
