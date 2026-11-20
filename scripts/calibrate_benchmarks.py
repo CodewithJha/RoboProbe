@@ -17,6 +17,7 @@ import json
 import platform
 import sys
 from pathlib import Path
+from typing import Any
 from uuid import uuid4
 
 import numpy as np
@@ -66,7 +67,7 @@ def _campaign(
         strategy_id,
         StrategyContext(space=space, budget=budget, seed=seed, batch_size=4, params={}),
     )
-    history = []
+    history: list[Observation] = []
     first_fail: int | None = None
     modes: set[str] = set()
     while len(history) < budget:
@@ -102,13 +103,14 @@ def main() -> int:
     )
     args = parser.parse_args()
     seeds = tuple(range(args.seeds))
-    rows: dict[str, object] = {
+    results: dict[str, Any] = {}
+    rows: dict[str, Any] = {
         "python": sys.version,
         "platform": platform.platform(),
         "roboprobe": __version__,
         "seeds": list(seeds),
         "budget": args.budget,
-        "results": {},
+        "results": results,
     }
     for strategy_id, dim, fn in (
         ("S-BO", 2, "branin"),
@@ -119,9 +121,16 @@ def main() -> int:
         key = f"{strategy_id}:{fn}"
         print(f"calibrating {key} …", flush=True)
         runs = [_campaign(strategy_id, seed, args.budget, dim, fn=fn) for seed in seeds]
-        first = [int(r["first_fail"]) for r in runs if r["first_fail"] is not None]
-        mode_counts = [len(r["modes"]) for r in runs]  # type: ignore[arg-type]
-        rows["results"][key] = {  # type: ignore[index]
+        first: list[int] = []
+        mode_counts: list[int] = []
+        for run in runs:
+            ff = run["first_fail"]
+            if isinstance(ff, int):
+                first.append(ff)
+            modes_raw = run["modes"]
+            if isinstance(modes_raw, list):
+                mode_counts.append(len(modes_raw))
+        results[key] = {
             "runs": runs,
             "median_first_fail": float(np.median(first)) if first else None,
             "mean_modes": float(np.mean(mode_counts)) if mode_counts else None,
