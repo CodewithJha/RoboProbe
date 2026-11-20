@@ -10,6 +10,7 @@ from pydantic import Field, model_validator
 from roboprobe.core.settings._base import SettingsSection
 
 __all__ = [
+    "AlertSettings",
     "AutoPauseSettings",
     "RetrySettings",
     "RunnerAnalysisSettings",
@@ -28,6 +29,21 @@ class AutoPauseSettings(SettingsSection):
     )
     max_consecutive_invalid: int = Field(
         default=10, gt=0, description="Consecutive INVALID runs that pause a campaign."
+    )
+
+
+class AlertSettings(SettingsSection):
+    """In-app alert thresholds (docs/21 §5.5)."""
+
+    no_workers_after_s: float = Field(
+        default=60.0,
+        gt=0,
+        description="Emit NO_WORKERS when a RUNNING campaign has no worker this long [s].",
+    )
+    gp_fallback_repeat: int = Field(
+        default=3,
+        ge=1,
+        description="Emit GP_FALLBACK_REPEATED after this many consecutive selector fallbacks.",
     )
 
 
@@ -69,6 +85,7 @@ class RunnerSettings(SettingsSection):
     max_budget: int = Field(default=20000, gt=0, description="Maximum runs per campaign.")
     max_batch_size: int = Field(default=32, gt=0, description="Maximum proposals per batch.")
     auto_pause: AutoPauseSettings = Field(default_factory=AutoPauseSettings)
+    alerts: AlertSettings = Field(default_factory=AlertSettings)
     analysis: RunnerAnalysisSettings = Field(default_factory=RunnerAnalysisSettings)
     count_invalid_in_budget: bool = Field(
         default=False, description="Whether INVALID runs consume campaign budget."

@@ -88,6 +88,12 @@
 # Consecutive INVALID runs that pause a campaign.
 # max_consecutive_invalid = 10
 
+[runner.alerts]
+# Emit NO_WORKERS when a RUNNING campaign has no worker this long [s].
+# no_workers_after_s = 60.0
+# Emit GP_FALLBACK_REPEATED after this many consecutive selector fallbacks.
+# gp_fallback_repeat = 3
+
 [runner.analysis]
 # Re-run incremental failure analysis every N finished runs.
 # incremental_every_n = 25
