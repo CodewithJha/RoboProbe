@@ -229,6 +229,10 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `selection.acq.dedupe_tol` | float | `0.001` | `ROBOPROBE_SELECTION__ACQ__DEDUPE_TOL` | Distance under which candidates are duplicates. |
 | `selection.ofat.levels` | list[float] | `[0.0, 0.25, 0.5, 0.75, 1.0]` | `ROBOPROBE_SELECTION__OFAT__LEVELS` | Levels in the unit interval, strictly increasing. |
 | `selection.grid.min_levels` | int | `2` | `ROBOPROBE_SELECTION__GRID__MIN_LEVELS` | Minimum levels per axis. |
+| `selection.cem.round_size` | int | `20` | `ROBOPROBE_SELECTION__CEM__ROUND_SIZE` | Samples drawn per CEM update round. |
+| `selection.cem.elite_fraction` | float | `0.2` | `ROBOPROBE_SELECTION__CEM__ELITE_FRACTION` | Fraction of lowest-rho samples kept as elite. |
+| `selection.cem.n_components` | int | `1` | `ROBOPROBE_SELECTION__CEM__N_COMPONENTS` | Number of truncated-Gaussian mixture components. |
+| `selection.cem.min_std` | float | `0.05` | `ROBOPROBE_SELECTION__CEM__MIN_STD` | Floor on per-dimension proposal std in the unit cube. |
 | `selection.benchmarks.function` | enum: `branin_falsify` / `multi_mode_6d` | `multi_mode_6d` | `ROBOPROBE_SELECTION__BENCHMARKS__FUNCTION` | Analytic robustness function evaluated by the benchmark backend. |
 | `selection.benchmarks.noise` | float | `0.02` | `ROBOPROBE_SELECTION__BENCHMARKS__NOISE` | Observation noise std for multi_mode_6d (ignored by branin_falsify). |
 | `selection.benchmarks.typical_episode_wall_s` | float | `0.001` | `ROBOPROBE_SELECTION__BENCHMARKS__TYPICAL_EPISODE_WALL_S` | Typical wall time of one analytic episode [s]. |

@@ -244,6 +244,16 @@
 # Minimum levels per axis.
 # min_levels = 2
 
+[selection.cem]
+# Samples drawn per CEM update round.
+# round_size = 20
+# Fraction of lowest-rho samples kept as elite.
+# elite_fraction = 0.2
+# Number of truncated-Gaussian mixture components.
+# n_components = 1
+# Floor on per-dimension proposal std in the unit cube.
+# min_std = 0.05
+
 [selection.benchmarks]
 # Analytic robustness function evaluated by the benchmark backend.
 # function = "multi_mode_6d"

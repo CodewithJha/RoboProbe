@@ -1571,6 +1571,7 @@ worker = [
 [package.dev-dependencies]
 dev = [
     { name = "pytest-timeout" },
+    { name = "roboprobe-strategy-cem" },
 ]
 
 [package.metadata]
@@ -1621,7 +1622,27 @@ requires-dist = [
 provides-extras = ["ml", "worker", "api", "dev"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest-timeout", specifier = ">=2.4.0" }]
+dev = [
+    { name = "pytest-timeout", specifier = ">=2.4.0" },
+    { name = "roboprobe-strategy-cem", editable = "../plugins/roboprobe_strategy_cem" },
+]
+
+[[package]]
+name = "roboprobe-strategy-cem"
+version = "0.0.1"
+source = { editable = "../plugins/roboprobe_strategy_cem" }
+dependencies = [
+    { name = "numpy" },
+    { name = "pydantic" },
+    { name = "roboprobe" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "numpy", specifier = ">=2.0" },
+    { name = "pydantic", specifier = ">=2.8" },
+    { name = "roboprobe", editable = "." },
+]
 
 [[package]]
 name = "rpds-py"
