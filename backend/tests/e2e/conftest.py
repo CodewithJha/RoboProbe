@@ -1,4 +1,1 @@
-"""End-to-end tests across the composed stack.
-
-Fixtures specific to this test layer go here (docs/18 §2).
-"""
+"""E2E layer: uses shared PostgreSQL fixtures from ``tests/conftest.py``."""

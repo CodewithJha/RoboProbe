@@ -24,7 +24,15 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 SCHEMAS_DIR = REPO_ROOT / "schemas"
 DOCS_DIR = REPO_ROOT / "docs"
 FIXTURES_DIR = Path(__file__).resolve().parents[2] / "fixtures" / "schemas"
-SCHEMA_NAMES = ("scenario_space", "scenario", "task", "campaign", "experiment", "sut_profile")
+SCHEMA_NAMES = (
+    "scenario_space",
+    "scenario",
+    "task",
+    "campaign",
+    "experiment",
+    "sut_profile",
+    "manifest",
+)
 SCHEMA_BASE_URI = "https://github.com/CodewithJha/RoboProbe/schemas/"
 
 
@@ -90,7 +98,8 @@ def test_schema_is_valid_draft_2020_12(name: str) -> None:
     assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
     assert schema["$id"] == f"{SCHEMA_BASE_URI}{name}.schema.json"
     assert schema["additionalProperties"] is False
-    assert schema["properties"]["schema_version"] == {"const": 1}
+    version_key = "manifest_schema_version" if name == "manifest" else "schema_version"
+    assert schema["properties"][version_key] == {"const": 1}
 
 
 def test_every_schema_file_is_covered() -> None:

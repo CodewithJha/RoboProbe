@@ -87,7 +87,7 @@ class CampaignLoop:
             campaign = uow.campaigns.get(self._campaign_id)
             if campaign is None or campaign.status is not CampaignStatus.RUNNING:
                 return 0
-            runs = _all_runs(uow.runs.list_for_campaign(self._campaign_id))
+            runs = _load_all_runs(uow, self._campaign_id)
             inflight = [r for r in runs if _status(r) in _INFLIGHT]
             workers = uow.workers.online(campaign.backend)
             target = self._scheduler.target_inflight(len(workers), campaign.batch_size)
@@ -243,10 +243,18 @@ def _status(run: RunView) -> RunStatus:
     return raw if isinstance(raw, RunStatus) else RunStatus(str(raw))
 
 
-def _all_runs(page: object) -> list[RunView]:
-    items = list(getattr(page, "items", ()))
-    # Unit tests use small campaigns; one page is enough for the fake default limit.
-    return cast(list[RunView], items)
+def _load_all_runs(uow: object, campaign_id: UUID) -> list[RunView]:
+    """Paginate ``runs.list_for_campaign`` until the cursor is exhausted."""
+    runs_repo = cast(Any, uow).runs
+    collected: list[RunView] = []
+    cursor: str | None = None
+    while True:
+        page = runs_repo.list_for_campaign(campaign_id, limit=None, cursor=cursor)
+        collected.extend(cast(list[RunView], list(page.items)))
+        cursor = page.next_cursor
+        if cursor is None:
+            break
+    return collected
 
 
 def _jsonable(state: dict[str, Any]) -> dict[str, JsonValue]:

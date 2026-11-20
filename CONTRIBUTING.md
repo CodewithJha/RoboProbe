@@ -20,8 +20,9 @@ By participating you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 5. [Pull request process](#5-pull-request-process)
 6. [Documentation contributions](#6-documentation-contributions)
 7. [Coding standards (summary)](#7-coding-standards-summary)
-8. [Good first issues](#8-good-first-issues)
-9. [Licensing](#9-licensing)
+8. [Adding a plugin package](#8-adding-a-plugin-package)
+9. [Good first issues](#9-good-first-issues)
+10. [Licensing](#10-licensing)
 
 ## 1. Ways to contribute
 
@@ -124,7 +125,31 @@ Read it as *importer → imported (line)*. Fix the design rather than the contra
 Changing a contract needs an ADR. To check a contract locally, temporarily add the forbidden import
 (e.g. `import sqlalchemy` in `roboprobe/selection/__init__.py`), run `make lint`, and revert.
 
-## 8. Good first issues
+## 8. Adding a plugin package
+
+RoboProbe discovers simulators, strategies, oracles, analyzers and stores through Python
+[entry points](https://packaging.python.org/en/latest/specifications/entry-points/) (ADR-0016).
+Composition roots in `roboprobe.bootstrap` are the only place that constructs concrete adapters.
+
+1. Implement the port (`SimulatorBackend`, `Strategy`, `Oracle`, …) with
+   `PLUGIN_API_VERSION = 1` matching the base class.
+2. Ship a package that declares an entry point under the matching group, for example:
+
+   ```toml
+   [project.entry-points."roboprobe.backends"]
+   my_sim = "mypkg.backend:MyBackend"
+   ```
+
+   Groups: `roboprobe.backends`, `roboprobe.strategies`, `roboprobe.oracles`,
+   `roboprobe.analyzers`, `roboprobe.stores`.
+3. Install the package into the same environment as RoboProbe. Selecting the plugin is then a
+   settings change only (e.g. `worker.backend = "my_sim"`) — no core code change.
+4. Contract tests for the port (docs/18) must pass; unknown ids fail at startup with the list of
+   available plugins.
+
+See also docs/10 §10 (backend plugins) and docs/34 §3 (composition roots).
+
+## 9. Good first issues
 
 Look for the `good first issue` label. Good starting points that need little context:
 
@@ -133,7 +158,7 @@ Look for the `good first issue` label. Good starting points that need little con
 - Analytic benchmark functions (`docs/07` §9, task T-052).
 - Small UI components with clear specs (`ConditionStrip`, `RobustnessBar` — `docs/13` §6).
 
-## 9. Licensing
+## 10. Licensing
 
 RoboProbe is [MIT-licensed](LICENSE). By submitting a contribution you agree that it is licensed under the
 MIT License and that you have the right to submit it.

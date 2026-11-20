@@ -1,0 +1,14 @@
+# M3 exit campaign: 100 S-RANDOM kinematic2d runs (docs/22 §1, T-049).
+schema_version: 1
+name: k2d_random_100
+space:
+  id: warehouse_v1
+sut_profile_id: k2d_default
+backend: kinematic2d
+strategy:
+  id: S-RANDOM
+  seed: 42
+budget: 100
+repeats: 1
+batch_size: 8
+start: true

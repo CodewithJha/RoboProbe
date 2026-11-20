@@ -1,0 +1,14 @@
+# Smoke campaign for S-PROBE wiring (small budget).
+schema_version: 1
+name: k2d_probe_smoke
+space:
+  id: warehouse_v1
+sut_profile_id: k2d_default
+backend: kinematic2d
+strategy:
+  id: S-RANDOM
+  seed: 7
+budget: 8
+repeats: 1
+batch_size: 4
+start: true

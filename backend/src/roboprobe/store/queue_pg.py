@@ -123,7 +123,9 @@ class PostgresRunQueue:
     def mark_evaluating(self, run_id: UUID) -> None:
         self._transition(run_id, RunStatus.RUNNING, RunStatus.EVALUATING)
 
-    def complete(self, run_id: UUID, outcome: RunOutcome) -> None:
+    def complete(
+        self, run_id: UUID, outcome: RunOutcome, *, manifest: dict[str, object] | None = None
+    ) -> None:
         session = self._factory()
         try:
             run = self._require(session, run_id)
@@ -135,6 +137,8 @@ class PostgresRunQueue:
                 None if outcome.primary_failure is None else outcome.primary_failure.value
             )
             run.metrics = dict(outcome.metrics)
+            if manifest is not None:
+                run.manifest = dict(manifest)
             run.finished_at = execute(session, text("SELECT now()")).scalar_one()
             SqlOracleResultRepo(session).replace_for_run(
                 run_id,

@@ -8,6 +8,8 @@ from roboprobe.runner.checkpoint import CheckpointStore
 from roboprobe.runner.heartbeat import HeartbeatService
 from roboprobe.runner.lifecycle import CampaignCommand, CampaignService, transition
 from roboprobe.runner.loop import CampaignLoop
+from roboprobe.runner.manifest import ManifestBuilder
+from roboprobe.runner.orchestrator import Orchestrator
 from roboprobe.runner.reaper import Reaper
 from roboprobe.runner.scheduler import Scheduler
 from roboprobe.runner.stop_rules import StopDecision, evaluate_stop_rules
@@ -21,6 +23,8 @@ __all__ = [
     "CampaignService",
     "CheckpointStore",
     "HeartbeatService",
+    "ManifestBuilder",
+    "Orchestrator",
     "Reaper",
     "Scheduler",
     "StopDecision",

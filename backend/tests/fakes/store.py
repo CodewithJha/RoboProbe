@@ -584,21 +584,24 @@ class InMemoryRunQueue:
     def mark_evaluating(self, run_id: UUID) -> None:
         self._set(run_id, RunStatus.RUNNING, RunStatus.EVALUATING)
 
-    def complete(self, run_id: UUID, outcome: RunOutcome) -> None:
+    def complete(
+        self, run_id: UUID, outcome: RunOutcome, *, manifest: dict[str, object] | None = None
+    ) -> None:
         with self._lock, self._uow as uow:
             run = self._need(uow, run_id)
             _check(run.status, RunStatus.DONE)
-            uow.runs._db.runs[run_id] = run.model_copy(
-                update={
-                    "status": RunStatus.DONE,
-                    "verdict": outcome.verdict,
-                    "robustness": outcome.robustness,
-                    "primary_failure": None
-                    if outcome.primary_failure is None
-                    else outcome.primary_failure.value,
-                    "metrics": dict(outcome.metrics),
-                }
-            )
+            updates: dict[str, object] = {
+                "status": RunStatus.DONE,
+                "verdict": outcome.verdict,
+                "robustness": outcome.robustness,
+                "primary_failure": None
+                if outcome.primary_failure is None
+                else outcome.primary_failure.value,
+                "metrics": dict(outcome.metrics),
+            }
+            if manifest is not None:
+                updates["manifest"] = dict(manifest)
+            uow.runs._db.runs[run_id] = run.model_copy(update=updates)
             uow.oracle_results.replace_for_run(
                 run_id,
                 tuple(
