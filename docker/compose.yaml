@@ -55,8 +55,7 @@ services:
   migrate:
     <<: *backend
     profiles: [core]
-    # Placeholder until migrations exist: switched to ["db", "upgrade"] by T-045a.
-    command: ["--version"]
+    command: ["db", "upgrade"]
     restart: "no"
     depends_on: {postgres: {condition: service_healthy}}
 
