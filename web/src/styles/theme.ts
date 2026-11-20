@@ -1,5 +1,5 @@
 /**
- * Theme selection (doc 27 §4.11 `defaultTheme`): `light`, `dark`, or `system` (follow the OS).
+ * Theme selection (doc 27 §4.12 `defaultTheme`): `light`, `dark`, or `system` (follow the OS).
  */
 import { THEMES, type ThemeName } from './tokens';
 

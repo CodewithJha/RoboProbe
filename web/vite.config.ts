@@ -2,7 +2,7 @@
  * Vite + Vitest configuration for the RoboProbe dashboard.
  *
  * Application code never hard-codes URLs: the API base path and the dev-server proxy target are
- * read from the environment (`web/.env.example` documents every key; doc 27 §4.11).
+ * read from the environment (`web/.env.example` documents every key; doc 27 §4.12).
  */
 import react from '@vitejs/plugin-react';
 import { loadEnv } from 'vite';
