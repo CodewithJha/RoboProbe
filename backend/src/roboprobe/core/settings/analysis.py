@@ -117,5 +117,15 @@ class RiskSettings(SettingsSection):
         default=50, ge=_MIN_SLICE_RESOLUTION, description="Grid points per axis of a 2-D slice."
     )
     volume_samples: int = Field(
-        default=8192, ge=1, description="Monte-Carlo samples for region volume estimates."
+        default=8192,
+        ge=1,
+        description="Sobol QMC sample count for region volume estimates (power of two).",
     )
+
+    @model_validator(mode="after")
+    def _volume_power_of_two(self) -> Self:
+        samples = self.volume_samples
+        if samples & (samples - 1) != 0:
+            msg = "risk.volume_samples must be a power of two"
+            raise ValueError(msg)
+        return self

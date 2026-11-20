@@ -85,6 +85,16 @@ class RiskMapper:
             msg = "RiskMapper requires a space with at least two free parameters"
             raise ValidationError(msg, context={"dim": space.dim})
 
+    @property
+    def space(self) -> ScenarioSpace:
+        """Scenario space the mapper was constructed with."""
+        return self._space
+
+    @property
+    def thresholds(self) -> RiskThresholds:
+        """Region cut-offs used by :meth:`classify`."""
+        return self._thresholds
+
     def slice(
         self,
         x_param: str,

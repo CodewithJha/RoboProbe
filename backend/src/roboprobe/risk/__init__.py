@@ -12,13 +12,17 @@ from roboprobe.risk.mapper import (
     load_slices,
     save_slices,
 )
+from roboprobe.risk.volume import RegionVolumes, VolumeEstimator, robustness_score
 
 __all__ = [
     "REGION_FAILURE",
     "REGION_SAFE",
     "REGION_UNCERTAIN",
+    "RegionVolumes",
     "RiskMapper",
     "RiskSlice",
+    "VolumeEstimator",
     "load_slices",
+    "robustness_score",
     "save_slices",
 ]
