@@ -38,6 +38,7 @@ def _obs(unit: np.ndarray, rho: float, verdict: Verdict) -> Observation:
         run_id=uuid4(),
     )
 
+
 REPO = Path(__file__).resolve().parents[1]
 SPACE = REPO / "configs" / "scenario_spaces" / "warehouse_v1.yaml"
 DEFAULT_SEEDS = tuple(range(20))
