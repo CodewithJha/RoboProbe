@@ -93,6 +93,10 @@ class RefinePlan:
         """Current estimate of the failing point closest to nominal (``t = hi``)."""
         return _lerp(self.nominal, self.medoid, self._hi)
 
+    def ingest(self, observations: Sequence[Observation]) -> None:
+        """Apply verdicts for the awaiting bisection proposal, if any."""
+        self._ingest(observations)
+
     def next_point(self, observations: Sequence[Observation]) -> FloatArray | None:
         """Return the next refine point, ingesting verdicts for this plan only.
 
@@ -102,7 +106,7 @@ class RefinePlan:
         Returns:
             Next unit-cube point, or ``None`` when the plan is exhausted.
         """
-        self._ingest(observations)
+        self.ingest(observations)
         if self._awaiting is not None:
             return None
         if self._bisect_done < self.bisect_steps:
@@ -239,12 +243,18 @@ class RefineScheduler:
         self._plans.append(plan)
         return plan
 
+    def ingest(self, observations: Sequence[Observation]) -> None:
+        """Ingest verdicts into every plan without emitting new points."""
+        for plan in self._plans:
+            plan.ingest(observations)
+
     def next_point(self, observations: Sequence[Observation]) -> FloatArray | None:
         """Next refine point from the oldest unfinished plan."""
+        self.ingest(observations)
         for plan in self._plans:
             if plan.done:
                 continue
-            point = plan.next_point(observations)
+            point = plan.next_point([])
             if point is not None:
                 return point
             if plan.awaiting:

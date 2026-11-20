@@ -4,3 +4,20 @@
 raycast:
   # NFR-PERF-001 budget for the kinematic2d lidar (T-030b): median time of one 180-beam cast.
   lidar_180_beams_median_s: 0.0005
+
+# S-PROBE multi_mode_6d scientific gate (docs/18 §4.4). Calibrated in T-061.
+probe_multimode:
+  budget: 150
+  min_modes: 3
+  success_fraction: 0.8
+  first_fail_ratio_vs_random: 0.5
+
+# S-BO branin_falsify gate (docs/18 §4.4). Calibrated in T-061.
+bo_branin:
+  budget: 60
+  median_first_fail_max: 25
+
+# S-LSE boundary accuracy vs S-RANDOM (docs/18 §4.4). Calibrated in T-061.
+lse_boundary:
+  budget: 80
+  min_accuracy_gain: 0.05
