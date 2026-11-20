@@ -88,6 +88,12 @@
 # Consecutive INVALID runs that pause a campaign.
 # max_consecutive_invalid = 10
 
+[runner.alerts]
+# Emit NO_WORKERS when a RUNNING campaign has no worker this long [s].
+# no_workers_after_s = 60.0
+# Emit GP_FALLBACK_REPEATED after this many consecutive selector fallbacks.
+# gp_fallback_repeat = 3
+
 [runner.analysis]
 # Re-run incremental failure analysis every N finished runs.
 # incremental_every_n = 25
@@ -111,12 +117,16 @@
 # poll_interval_s = 1.0
 # Heartbeat interval [s].
 # heartbeat_interval_s = 5.0
+# Max wait when joining the heartbeat thread on stop [s].
+# heartbeat_join_timeout_s = 10.0
 # Grace period to finish runs on SIGTERM [s].
 # drain_timeout_s = 600.0
 # Default wall-clock limit per run [s].
 # default_wall_timeout_s = 300.0
 # Default simulated-time budget per run [s].
 # default_sim_time_budget_s = 120.0
+# Bind address for the worker `/healthz` + metrics server.
+# health_host = "127.0.0.1"
 # Internal `/healthz` + metrics port.
 # health_port = 9101
 

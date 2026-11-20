@@ -244,6 +244,15 @@ class _Runs:
             )
         return out
 
+    def cancel_pending(self, campaign_id: UUID) -> int:
+        n = 0
+        for run_id, run in list(self._db.runs.items()):
+            if run.campaign_id != campaign_id or run.status is not RunStatus.PENDING:
+                continue
+            self._db.runs[run_id] = run.model_copy(update={"status": RunStatus.CANCELLED})
+            n += 1
+        return n
+
 
 class _Oracles:
     def __init__(self, db: _Db) -> None:
@@ -396,6 +405,15 @@ class _Workers:
             for w in self._db.workers.values()
             if w.backend == backend and w.status in {"IDLE", "BUSY", "DRAINING"}
         )
+
+    def stale(self, *, older_than: datetime) -> tuple[WorkerRecord, ...]:
+        out: list[WorkerRecord] = []
+        for worker in self._db.workers.values():
+            if worker.status == "OFFLINE":
+                continue
+            if worker.last_heartbeat is None or worker.last_heartbeat < older_than:
+                out.append(worker)
+        return tuple(out)
 
 
 class _Artifacts:

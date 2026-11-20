@@ -80,3 +80,13 @@ class SqlWorkerRepo:
             .order_by(WorkerRow.id)
         ).all()
         return tuple(worker_record(r) for r in rows)
+
+    def stale(self, *, older_than: datetime) -> tuple[WorkerRecord, ...]:
+        rows = self._s.scalars(select(WorkerRow).order_by(WorkerRow.id)).all()
+        out: list[WorkerRecord] = []
+        for row in rows:
+            if row.status == "OFFLINE":
+                continue
+            if row.last_heartbeat < older_than:
+                out.append(worker_record(row))
+        return tuple(out)

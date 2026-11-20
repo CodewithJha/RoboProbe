@@ -31,6 +31,11 @@ class WorkerSettings(SettingsSection):
     concurrency: int = Field(default=1, gt=0, description="Simulation slots per process.")
     poll_interval_s: float = Field(default=1.0, gt=0, description="Queue poll interval [s].")
     heartbeat_interval_s: float = Field(default=5.0, gt=0, description="Heartbeat interval [s].")
+    heartbeat_join_timeout_s: float = Field(
+        default=10.0,
+        gt=0,
+        description="Max wait when joining the heartbeat thread on stop [s].",
+    )
     drain_timeout_s: float = Field(
         default=600.0, gt=0, description="Grace period to finish runs on SIGTERM [s]."
     )
@@ -39,6 +44,11 @@ class WorkerSettings(SettingsSection):
     )
     default_sim_time_budget_s: float = Field(
         default=120.0, gt=0, description="Default simulated-time budget per run [s]."
+    )
+    health_host: str = Field(
+        default="127.0.0.1",
+        min_length=1,
+        description="Bind address for the worker `/healthz` + metrics server.",
     )
     health_port: int = Field(
         default=9101, ge=1, le=PORT_MAX, description="Internal `/healthz` + metrics port."

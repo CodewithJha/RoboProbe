@@ -128,6 +128,8 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `runner.auto_pause.invalid_ratio` | float | `0.2` | `ROBOPROBE_RUNNER__AUTO_PAUSE__INVALID_RATIO` | INVALID share that pauses a campaign [0-1]. |
 | `runner.auto_pause.min_runs` | int | `20` | `ROBOPROBE_RUNNER__AUTO_PAUSE__MIN_RUNS` | Finished runs before `invalid_ratio` is evaluated. |
 | `runner.auto_pause.max_consecutive_invalid` | int | `10` | `ROBOPROBE_RUNNER__AUTO_PAUSE__MAX_CONSECUTIVE_INVALID` | Consecutive INVALID runs that pause a campaign. |
+| `runner.alerts.no_workers_after_s` | float | `60.0` | `ROBOPROBE_RUNNER__ALERTS__NO_WORKERS_AFTER_S` | Emit NO_WORKERS when a RUNNING campaign has no worker this long [s]. |
+| `runner.alerts.gp_fallback_repeat` | int | `3` | `ROBOPROBE_RUNNER__ALERTS__GP_FALLBACK_REPEAT` | Emit GP_FALLBACK_REPEATED after this many consecutive selector fallbacks. |
 | `runner.analysis.incremental_every_n` | int | `25` | `ROBOPROBE_RUNNER__ANALYSIS__INCREMENTAL_EVERY_N` | Re-run incremental failure analysis every N finished runs. |
 | `runner.count_invalid_in_budget` | bool | `false` | `ROBOPROBE_RUNNER__COUNT_INVALID_IN_BUDGET` | Whether INVALID runs consume campaign budget. |
 | `runner.retry.max_attempts` | int | `3` | `ROBOPROBE_RUNNER__RETRY__MAX_ATTEMPTS` | Attempts including the first. |
@@ -139,9 +141,11 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `worker.concurrency` | int | `1` | `ROBOPROBE_WORKER__CONCURRENCY` | Simulation slots per process. |
 | `worker.poll_interval_s` | float | `1.0` | `ROBOPROBE_WORKER__POLL_INTERVAL_S` | Queue poll interval [s]. |
 | `worker.heartbeat_interval_s` | float | `5.0` | `ROBOPROBE_WORKER__HEARTBEAT_INTERVAL_S` | Heartbeat interval [s]. |
+| `worker.heartbeat_join_timeout_s` | float | `10.0` | `ROBOPROBE_WORKER__HEARTBEAT_JOIN_TIMEOUT_S` | Max wait when joining the heartbeat thread on stop [s]. |
 | `worker.drain_timeout_s` | float | `600.0` | `ROBOPROBE_WORKER__DRAIN_TIMEOUT_S` | Grace period to finish runs on SIGTERM [s]. |
 | `worker.default_wall_timeout_s` | float | `300.0` | `ROBOPROBE_WORKER__DEFAULT_WALL_TIMEOUT_S` | Default wall-clock limit per run [s]. |
 | `worker.default_sim_time_budget_s` | float | `120.0` | `ROBOPROBE_WORKER__DEFAULT_SIM_TIME_BUDGET_S` | Default simulated-time budget per run [s]. |
+| `worker.health_host` | str | `127.0.0.1` | `ROBOPROBE_WORKER__HEALTH_HOST` | Bind address for the worker `/healthz` + metrics server. |
 | `worker.health_port` | int | `9101` | `ROBOPROBE_WORKER__HEALTH_PORT` | Internal `/healthz` + metrics port. |
 
 ### 4.5 Backends
