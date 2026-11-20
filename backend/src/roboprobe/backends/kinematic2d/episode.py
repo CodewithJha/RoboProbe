@@ -12,7 +12,7 @@ from typing import Any
 
 import numpy as np
 
-from roboprobe.backends.kinematic2d.controller import pure_pursuit
+from roboprobe.backends.kinematic2d.controller import path_arclength, pure_pursuit
 from roboprobe.backends.kinematic2d.costmap import inflate
 from roboprobe.backends.kinematic2d.localization import Localizer, scan_match_gain
 from roboprobe.backends.kinematic2d.model import Kinematic2DModel
@@ -22,13 +22,7 @@ from roboprobe.backends.kinematic2d.sensors import DepthCamera, Lidar
 from roboprobe.core.seeding import LOCALIZATION, PERCEPTION, SENSOR, make_rng
 from roboprobe.core.settings.backends import Kinematic2DSettings
 from roboprobe.core.types import NavStatus, ParamValue, TaskSpec, Trace
-from roboprobe.geometry import (
-    CircleFootprint,
-    GridRayCaster,
-    OccupancyGrid,
-    Rect,
-    min_obstacle_distance,
-)
+from roboprobe.geometry import GridRayCaster, OccupancyGrid, Rect, point_rect_distance
 from roboprobe.perturbation.delay import CommandDelayBuffer
 from roboprobe.perturbation.perception import PerceptionModel
 from roboprobe.scenario.materialize import place_obstacle, side_sign
@@ -86,6 +80,25 @@ def _at_goal(x: float, y: float, yaw: float, task: TaskSpec) -> bool:
 def _global_inflated(world: OccupancyGrid, radius_m: float) -> OccupancyGrid:
     cells = math.ceil(radius_m / world.resolution)
     return OccupancyGrid(inflate(world.occupied, cells), world.resolution, world.origin)
+
+
+def _circle_clearance(
+    world: OccupancyGrid, radius: float, x: float, y: float, pallet: Rect | None
+) -> float:
+    """Footprint clearance using the precomputed EDT plus an optional pallet rectangle."""
+    ox, oy = world.origin
+    res = world.resolution
+    col = math.floor((x - ox) / res)
+    row = math.floor((y - oy) / res)
+    rows, cols = world.shape
+    if row < 0 or row >= rows or col < 0 or col >= cols:
+        dist = 0.0
+    else:
+        dist = max(float(world.distance_field[row, col]) - radius, 0.0)
+    if pallet is not None:
+        gap = float(point_rect_distance((x, y), pallet)) - radius
+        dist = min(dist, max(gap, 0.0))
+    return dist
 
 
 def run_k2d_episode(  # noqa: PLR0913,PLR0917
@@ -165,9 +178,8 @@ def _run(  # noqa: PLR0913,PLR0917,PLR0915
     lidar = Lidar.from_config(caster, model, settings)
     depth = DepthCamera.from_config(caster, model, settings, perception)
     pallet = _pallet(task, path, scenario_values)
-    rects = [pallet] if pallet is not None else []
-    footprint = CircleFootprint(model.robot.footprint_radius_m)
-    inflate_r = model.robot.footprint_radius_m + model.costmap.inflation_m
+    radius = model.robot.footprint_radius_m
+    inflate_r = radius + model.costmap.inflation_m
     inflated_static = _global_inflated(world, inflate_r)
     delay_s = _f(scenario_values, PARAM_DELAY_MS, 20.0) / _MS_PER_S
     delay: CommandDelayBuffer[tuple[float, float]] = CommandDelayBuffer(delay_s)
@@ -195,6 +207,7 @@ def _run(  # noqa: PLR0913,PLR0917,PLR0915
         ),
     )
     planned: np.ndarray | None = path
+    planned_s = path_arclength(path)
     last_plan_t = -math.inf
     replan_period = 1.0 / model.planner.replan_hz
     cmd = (0.0, 0.0)
@@ -212,28 +225,21 @@ def _run(  # noqa: PLR0913,PLR0917,PLR0915
             break
         t = step_i * dt
         pose = (state.x, state.y, state.yaw)
-        _lidar = lidar.scan(pose, rng_sensor, noise, dropout, pallet)
-        _depth = depth.scan(pose, pallet, illuminance, rng_perc)
-        del _lidar, _depth
         if t - last_plan_t >= replan_period:
+            lidar.scan(pose, rng_sensor, noise, dropout, pallet)
+            depth.scan(pose, pallet, illuminance, rng_perc)
             planned = plan_path(
                 inflated_static, (localizer.x, localizer.y), (task.goal.x, task.goal.y)
             )
+            planned_s = path_arclength(planned) if planned is not None else planned_s
             last_plan_t = t
             if planned is None:
                 status = NavStatus.ABORTED
                 cmd = (0.0, 0.0)
-        dist = float(
-            min_obstacle_distance(
-                footprint,
-                np.array([[state.x, state.y, state.yaw]], dtype=np.float64),
-                world,
-                rects,
-            )[0]
-        )
+        dist = _circle_clearance(world, radius, state.x, state.y, pallet)
         if planned is not None and status is NavStatus.ACTIVE:
             pose_est = (localizer.x, localizer.y, localizer.yaw)
-            cmd = pure_pursuit(pose_est, planned, v_max, dist, model)
+            cmd = pure_pursuit(pose_est, planned, v_max, dist, model, planned_s)
         state = step(state, cmd, dt, model, friction, delay, t)
         odom_delta = (
             state.odom_x - last_odom[0],

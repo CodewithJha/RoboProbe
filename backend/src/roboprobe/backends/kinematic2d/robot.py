@@ -60,21 +60,16 @@ def step(  # noqa: PLR0913,PLR0917
     accel = abs(v_limited - state.v) / dt if dt > 0.0 else 0.0
     tau = traction(friction, accel)
     v_real, w_real = apply_slip(v_limited, w_limited, tau)
-    yaw = state.yaw + w_real * dt
-    x = state.x + v_real * dt * math.cos(state.yaw)
-    y = state.y + v_real * dt * math.sin(state.yaw)
-    odom_yaw = state.odom_yaw + w_limited * dt
-    odom_x = state.odom_x + v_limited * dt * math.cos(state.odom_yaw)
-    odom_y = state.odom_y + v_limited * dt * math.sin(state.odom_yaw)
-    return RobotState(
-        x=x,
-        y=y,
-        yaw=yaw,
-        v=v_limited,
-        w=w_limited,
-        odom_x=odom_x,
-        odom_y=odom_y,
-        odom_yaw=odom_yaw,
-        meas_v=v_real,
-        meas_w=w_real,
-    )
+    cos_yaw, sin_yaw = math.cos(state.yaw), math.sin(state.yaw)
+    state.x += v_real * dt * cos_yaw
+    state.y += v_real * dt * sin_yaw
+    state.yaw += w_real * dt
+    cos_o, sin_o = math.cos(state.odom_yaw), math.sin(state.odom_yaw)
+    state.odom_x += v_limited * dt * cos_o
+    state.odom_y += v_limited * dt * sin_o
+    state.odom_yaw += w_limited * dt
+    state.v = v_limited
+    state.w = w_limited
+    state.meas_v = v_real
+    state.meas_w = w_real
+    return state
