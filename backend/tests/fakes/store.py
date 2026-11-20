@@ -309,6 +309,10 @@ class _Modes:
             )
         )
 
+    def list_members_for_campaign(self, campaign_id: UUID) -> tuple[FailureModeMemberRecord, ...]:
+        mode_ids = {m.id for m in self.list_for_campaign(campaign_id)}
+        return tuple(m for m in self._db.members if m.mode_id in mode_ids)
+
     def upsert_modes(
         self,
         campaign_id: UUID,
