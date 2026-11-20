@@ -205,6 +205,10 @@
 # refine_perturb_std = 0.05
 # Window for phase-weight adaptation.
 # adapt_window = 20
+# Weight moved from ModeSearch to Boundary after an unproductive window.
+# adapt_shift = 0.2
+# Lower bound on ModeSearch weight after adaptive shifts.
+# mode_search_floor = 0.2
 
 [selection.probe.weights]
 # Mode-search share.
@@ -239,6 +243,16 @@
 [selection.grid]
 # Minimum levels per axis.
 # min_levels = 2
+
+[selection.cem]
+# Samples drawn per CEM update round.
+# round_size = 20
+# Fraction of lowest-rho samples kept as elite.
+# elite_fraction = 0.2
+# Number of truncated-Gaussian mixture components.
+# n_components = 1
+# Floor on per-dimension proposal std in the unit cube.
+# min_std = 0.05
 
 [selection.benchmarks]
 # Analytic robustness function evaluated by the benchmark backend.

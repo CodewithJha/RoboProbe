@@ -16,6 +16,7 @@ BenchmarkFunction = Literal["branin_falsify", "multi_mode_6d"]
 __all__ = [
     "AcquisitionDefaults",
     "AnalyticBenchmarkDefaults",
+    "CemDefaults",
     "GpDefaults",
     "GridDefaults",
     "OfatDefaults",
@@ -64,6 +65,18 @@ class ProbeDefaults(SettingsSection):
         default=0.05, gt=0, description="Perturbation std in the unit cube."
     )
     adapt_window: int = Field(default=20, gt=0, description="Window for phase-weight adaptation.")
+    adapt_shift: float = Field(
+        default=0.2,
+        gt=0,
+        le=1,
+        description="Weight moved from ModeSearch to Boundary after an unproductive window.",
+    )
+    mode_search_floor: float = Field(
+        default=0.2,
+        ge=0,
+        le=1,
+        description="Lower bound on ModeSearch weight after adaptive shifts.",
+    )
 
 
 class GpDefaults(SettingsSection):
@@ -110,6 +123,24 @@ class GridDefaults(SettingsSection):
     """Grid baseline defaults."""
 
     min_levels: int = Field(default=2, ge=_MIN_LEVELS, description="Minimum levels per axis.")
+
+
+class CemDefaults(SettingsSection):
+    """S-CEM cross-entropy rare-event defaults (docs/07 §8)."""
+
+    round_size: int = Field(default=20, gt=0, description="Samples drawn per CEM update round.")
+    elite_fraction: float = Field(
+        default=0.2, gt=0, le=1, description="Fraction of lowest-rho samples kept as elite."
+    )
+    n_components: int = Field(
+        default=1, ge=1, description="Number of truncated-Gaussian mixture components."
+    )
+    min_std: float = Field(
+        default=0.05,
+        gt=0,
+        le=1,
+        description="Floor on per-dimension proposal std in the unit cube.",
+    )
 
 
 class AnalyticBenchmarkDefaults(SettingsSection):
@@ -161,6 +192,7 @@ class SelectionDefaults(SettingsSection):
     acq: AcquisitionDefaults = Field(default_factory=AcquisitionDefaults)
     ofat: OfatDefaults = Field(default_factory=OfatDefaults)
     grid: GridDefaults = Field(default_factory=GridDefaults)
+    cem: CemDefaults = Field(default_factory=CemDefaults)
     benchmarks: AnalyticBenchmarkDefaults = Field(default_factory=AnalyticBenchmarkDefaults)
     mode_cache_refresh_every: int = Field(
         default=10, gt=0, description="Refresh the failure-mode cache every N observations."

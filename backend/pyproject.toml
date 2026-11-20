@@ -104,6 +104,7 @@ explicit = true
 
 [tool.uv.sources]
 torch = [{ index = "pytorch-cpu" }]
+roboprobe-strategy-cem = { path = "../plugins/roboprobe_strategy_cem", editable = true }
 
 # --- ruff (doc 16 §3) ---
 [tool.ruff]
@@ -273,4 +274,5 @@ allow_indirect_imports = false
 [dependency-groups]
 dev = [
     "pytest-timeout>=2.4.0",
+    "roboprobe-strategy-cem",
 ]

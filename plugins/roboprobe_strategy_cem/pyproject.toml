@@ -1,0 +1,24 @@
+[project]
+name = "roboprobe-strategy-cem"
+version = "0.0.1"
+description = "S-CEM cross-entropy rare-event strategy plugin for RoboProbe"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "roboprobe",
+    "numpy>=2.0",
+    "pydantic>=2.8",
+]
+
+[project.entry-points."roboprobe.strategies"]
+S-CEM = "roboprobe_strategy_cem.cem:CEMStrategy"
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["roboprobe_strategy_cem"]
+
+[tool.uv.sources]
+roboprobe = { path = "../../backend", editable = true }

@@ -166,13 +166,18 @@ def kriging_believer_batch(  # noqa: PLR0913
     out: list[npt.NDArray[np.float64]] = []
     model_gp = gp
     known = [np.asarray(p, dtype=np.float64).reshape(-1) for p in existing]
-    for _ in range(q):
-        acq = acq_factory(model_gp)
+    root_seed = int(generator.initial_seed())
+    for slot in range(q):
+        # qLogNEI (and other MC acq) sample at construction; pin the global RNG per slot.
+        with torch.random.fork_rng():
+            torch.manual_seed(root_seed + slot)
+            acq = acq_factory(model_gp)
+        slot_gen = torch.Generator(device="cpu").manual_seed(root_seed + slot)
         x = optimize(
             acq,
             d=gp.d,
             settings=settings,
-            generator=generator,
+            generator=slot_gen,
             is_feasible=is_feasible,
             integer_dims=integer_dims,
             existing=known,
