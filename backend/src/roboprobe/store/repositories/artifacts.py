@@ -22,18 +22,19 @@ class SqlArtifactRepo:
         self._s = session
 
     def add(self, record: ArtifactRecord) -> None:
-        self._s.add(
-            ArtifactRow(
-                id=record.id,
-                run_id=record.run_id,
-                campaign_id=record.campaign_id,
-                kind=record.kind,
-                sha256=record.sha256,
-                size_bytes=record.size_bytes,
-                rel_path=record.rel_path,
-                media_type=record.media_type,
-            )
+        row = ArtifactRow(
+            id=record.id,
+            run_id=record.run_id,
+            campaign_id=record.campaign_id,
+            kind=record.kind,
+            sha256=record.sha256,
+            size_bytes=record.size_bytes,
+            rel_path=record.rel_path,
+            media_type=record.media_type,
         )
+        if record.created_at is not None:
+            row.created_at = record.created_at
+        self._s.add(row)
         self._s.flush()
 
     def get(self, artifact_id: UUID) -> ArtifactRecord | None:

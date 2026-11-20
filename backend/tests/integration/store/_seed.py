@@ -17,18 +17,20 @@ from roboprobe.store.records import (
 def seed_campaign(
     uow: UnitOfWork, *, status: CampaignStatus = CampaignStatus.RUNNING, n_runs: int = 0
 ):
+    sut_id = f"p-{new_uuid()}"
+    space_id = f"s-{new_uuid()}"
     uow.sut_profiles.add(
-        SutProfileRecord(id="p", backend="kinematic2d", config={}, config_hash="h")
+        SutProfileRecord(id=sut_id, backend="kinematic2d", config={}, config_hash="h")
     )
-    uow.spaces.add(SpaceRecord(id="s", version="v", name="n", definition={}))
+    uow.spaces.add(SpaceRecord(id=space_id, version="v", name="n", definition={}))
     cid = new_uuid()
     uow.campaigns.add(
         CampaignRecord(
             id=cid,
             name="c",
-            space_id="s",
+            space_id=space_id,
             space_version="v",
-            sut_profile_id="p",
+            sut_profile_id=sut_id,
             backend="kinematic2d",
             strategy_id="S-RANDOM",
             seed=1,

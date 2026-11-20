@@ -30,6 +30,7 @@ class SqlEventRepo:
     ) -> int:
         row = EventRow(topic=topic, campaign_id=campaign_id, payload=dict(payload))
         self._s.add(row)
+        self._s.flush()
         execute(
             self._s,
             text("SELECT pg_notify(:channel, :payload)"),

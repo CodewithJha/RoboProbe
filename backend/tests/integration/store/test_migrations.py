@@ -29,15 +29,18 @@ def _alembic_cfg() -> Config:
 def test_upgrade_downgrade_upgrade(pg_engine: Engine, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(
         "ROBOPROBE_DATABASE__URL",
-        str(pg_engine.url),
+        pg_engine.url.render_as_string(hide_password=False),
     )
     cfg = _alembic_cfg()
     with pg_engine.begin() as conn:
         Base.metadata.drop_all(conn)
         conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
-    command.upgrade(cfg, "head")
-    command.downgrade(cfg, "base")
-    command.upgrade(cfg, "head")
+    with pg_engine.connect() as conn:
+        cfg.attributes["connection"] = conn
+        command.upgrade(cfg, "head")
+        command.downgrade(cfg, "base")
+        command.upgrade(cfg, "head")
+        conn.commit()
     inspector = inspect(pg_engine)
     assert "runs" in inspector.get_table_names()
     script = ScriptDirectory.from_config(cfg)
@@ -45,13 +48,18 @@ def test_upgrade_downgrade_upgrade(pg_engine: Engine, monkeypatch: pytest.Monkey
 
 
 def test_autogenerate_is_empty(pg_engine: Engine, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("ROBOPROBE_DATABASE__URL", str(pg_engine.url))
+    monkeypatch.setenv(
+        "ROBOPROBE_DATABASE__URL",
+        pg_engine.url.render_as_string(hide_password=False),
+    )
     cfg = _alembic_cfg()
     with pg_engine.begin() as conn:
         Base.metadata.drop_all(conn)
         conn.execute(text("DROP TABLE IF EXISTS alembic_version"))
-    command.upgrade(cfg, "head")
     with pg_engine.connect() as conn:
+        cfg.attributes["connection"] = conn
+        command.upgrade(cfg, "head")
+        conn.commit()
         context = MigrationContext.configure(
             conn, opts={"compare_type": True, "target_metadata": Base.metadata}
         )
