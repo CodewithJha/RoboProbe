@@ -1,0 +1,28 @@
+[
+  {
+    "characteristic": [
+      "comms.cmd_delay_ms",
+      "env.floor_friction",
+      "env.illuminance",
+      "obstacle.clearance",
+      "robot.max_speed",
+      "sensor.lidar_noise_std"
+    ],
+    "label": "F-COL | cmd_delay_ms low \u00b7 floor_friction low \u00b7 clearance low",
+    "primary": "F-COL",
+    "size": 8
+  },
+  {
+    "characteristic": [
+      "comms.cmd_delay_ms",
+      "env.floor_friction",
+      "env.illuminance",
+      "obstacle.clearance",
+      "robot.max_speed",
+      "sensor.lidar_noise_std"
+    ],
+    "label": "F-COL | cmd_delay_ms low \u00b7 floor_friction low \u00b7 clearance low",
+    "primary": "F-COL",
+    "size": 8
+  }
+]
