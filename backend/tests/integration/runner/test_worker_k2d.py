@@ -18,7 +18,13 @@ from roboprobe.scenario.task import load_task
 from roboprobe.store.artifacts import LocalArtifactStore
 from roboprobe.store.ids import new_uuid
 from roboprobe.store.queue_pg import PostgresRunQueue
-from roboprobe.store.records import CampaignRecord, NewRun, SpaceRecord, SutProfileRecord
+from roboprobe.store.records import (
+    CampaignRecord,
+    NewRun,
+    SpaceRecord,
+    SutProfileRecord,
+    WorkerRecord,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -101,6 +107,17 @@ def test_worker_completes_twenty_k2d_runs(uow_factory, session_factory, tmp_path
         storage_settings=settings.storage,
         task=task,
     )
+    with uow_factory() as uow:
+        uow.workers.register(
+            WorkerRecord(
+                id=worker.worker_id,
+                backend="kinematic2d",
+                status="IDLE",
+                capabilities={},
+                version="0.0.1",
+            )
+        )
+        uow.commit()
     done = 0
     for _ in range(20):
         claimed = worker.claim()
