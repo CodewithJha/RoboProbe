@@ -29,6 +29,7 @@ from roboprobe.core.errors import NotFoundError, ValidationError
 from roboprobe.core.seeding import random_campaign_seed
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import CampaignStatus, JsonValue, RunStatus, Verdict
+from roboprobe.runner.heartbeat import HeartbeatService
 from roboprobe.runner.lifecycle import CampaignService
 from roboprobe.runner.loop import CampaignLoop
 from roboprobe.runner.scheduler import Scheduler
@@ -204,7 +205,7 @@ def _status_value(value: object) -> str:
     return value.value if isinstance(value, RunStatus | Verdict | CampaignStatus) else str(value)
 
 
-def run_inline(  # noqa: PLR0915 - inline supervisor wires loop, workers and stop rules
+def run_inline(  # noqa: PLR0912,PLR0915 - inline supervisor wires loop, workers and stop rules
     campaign_id: UUID,
     settings: RoboProbeSettings,
     *,
@@ -214,6 +215,7 @@ def run_inline(  # noqa: PLR0915 - inline supervisor wires loop, workers and sto
     orch = build_orchestrator(settings)
     cli = build_cli_services(settings)
     stop = threading.Event()
+    heartbeats: list[HeartbeatService] = []
     try:
         with cli.make_uow() as uow:
             campaign = uow.campaigns.get(campaign_id)
@@ -248,7 +250,26 @@ def run_inline(  # noqa: PLR0915 - inline supervisor wires loop, workers and sto
         )
         threads: list[threading.Thread] = []
         for slot in range(workers):
-            worker = build_worker(worker_settings, task=space.task, slot=slot, infra=orch.infra)
+            slot_settings = worker_settings.model_copy(
+                update={
+                    "worker": worker_settings.worker.model_copy(
+                        update={"health_port": worker_settings.worker.health_port + slot}
+                    )
+                }
+            )
+            worker = build_worker(slot_settings, task=space.task, slot=slot, infra=orch.infra)
+            hb = HeartbeatService(
+                worker=worker,
+                uow_factory=orch.uow_factory,
+                clock=SystemClock(),
+                settings=slot_settings.worker,
+                retry=settings.runner.retry,
+                heartbeat_timeout_s=settings.runner.heartbeat_timeout_s,
+                metrics=orch.metrics,
+            )
+            hb.register()
+            hb.start()
+            heartbeats.append(hb)
             threads.append(
                 threading.Thread(
                     target=worker.serve_forever,
@@ -290,6 +311,9 @@ def run_inline(  # noqa: PLR0915 - inline supervisor wires loop, workers and sto
             if decision.action == "pause":
                 campaigns.pause(campaign_id, reason=decision.reason)
                 break
+            if threads and all(not thread.is_alive() for thread in threads):
+                campaigns.fail(campaign_id, reason="all_workers_dead")
+                break
             loop.step()
             orch.reaper.reap()
             time.sleep(settings.runner.tick_interval_s)
@@ -301,6 +325,8 @@ def run_inline(  # noqa: PLR0915 - inline supervisor wires loop, workers and sto
             return final.status if final is not None else CampaignStatus.FAILED
     finally:
         stop.set()
+        for hb in heartbeats:
+            hb.stop()
         cli.close()
         orch.close()
 

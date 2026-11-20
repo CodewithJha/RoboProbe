@@ -23,6 +23,7 @@ import structlog
 
 from roboprobe import __version__
 from roboprobe.core.clock import Clock
+from roboprobe.core.errors import ConflictError
 from roboprobe.core.metrics_registry import Metrics, create_metrics
 from roboprobe.core.settings.storage import StorageSettings
 from roboprobe.core.settings.worker import WorkerSettings
@@ -187,7 +188,14 @@ class WorkerProcess:
             if claimed is None:
                 self._clock.sleep(self._worker.poll_interval_s)
                 continue
-            self.execute(claimed)
+            try:
+                self.execute(claimed)
+            except Exception:
+                log.exception(
+                    "run.execute_error",
+                    run_id=str(claimed.run_id),
+                    worker_id=self.worker_id,
+                )
         self.state = WorkerState.DRAINING if self._drain.is_set() else WorkerState.IDLE
 
     def claim(self) -> ClaimedRunView | None:
@@ -288,8 +296,15 @@ class WorkerProcess:
                 verdict=outcome.verdict.value,
                 worker_id=self.worker_id,
             )
+        except ConflictError:
+            log.info("run.lost", run_id=str(run.run_id), worker_id=self.worker_id)
+            return
         except Exception as exc:
-            self._queue.fail(run.run_id, f"infra_error:{type(exc).__name__}")
+            try:
+                self._queue.fail(run.run_id, f"infra_error:{type(exc).__name__}")
+            except ConflictError:
+                log.info("run.lost", run_id=str(run.run_id), worker_id=self.worker_id)
+                return
             elapsed = self._clock.monotonic() - started
             self._observe_finished(run.backend, "INVALID", "F-INFRA", elapsed)
             log.info(
