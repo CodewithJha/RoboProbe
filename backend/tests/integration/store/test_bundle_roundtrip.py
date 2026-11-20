@@ -73,13 +73,23 @@ def test_bundle_roundtrip(uow_factory, tmp_path: Path) -> None:  # noqa: PLR0915
         export_campaign(cid, uow, src_store, out, settings=settings)
 
     with uow_factory() as uow:
+        camp = uow.campaigns.get(cid)
+        assert camp is not None
+        space_id, space_version = camp.space_id, camp.space_version
+        sut_id = camp.sut_profile_id
         session = uow._require()
         session.execute(delete(OracleResultRow).where(OracleResultRow.run_id == rid))
         session.execute(delete(ArtifactRow).where(ArtifactRow.campaign_id == cid))
         session.execute(delete(RunRow).where(RunRow.campaign_id == cid))
         session.execute(delete(CampaignRow).where(CampaignRow.id == cid))
-        session.execute(delete(ScenarioSpaceRow))
-        session.execute(delete(SutProfileRow))
+        # Only this campaign's space/SUT — other integration tests may still hold warehouse_v1.
+        session.execute(
+            delete(ScenarioSpaceRow).where(
+                ScenarioSpaceRow.id == space_id,
+                ScenarioSpaceRow.version == space_version,
+            )
+        )
+        session.execute(delete(SutProfileRow).where(SutProfileRow.id == sut_id))
         session.flush()
 
         imported = import_bundle(out, uow, dst_store, on_conflict="fail", settings=settings)
