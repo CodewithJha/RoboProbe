@@ -15,6 +15,7 @@ from roboprobe.selection.baselines.lhs import LHSStrategy
 from roboprobe.selection.baselines.ofat import OFATStrategy
 from roboprobe.selection.baselines.random import RandomStrategy
 from roboprobe.selection.baselines.sobol import SobolStrategy
+from roboprobe.selection.bo import BOStrategy
 from roboprobe.selection.probe import ProbeStrategy
 
 __all__ = ["ENTRY_POINT_GROUP", "available", "create", "get", "register"]
@@ -30,6 +31,7 @@ _BUILTINS: tuple[type[Strategy], ...] = (
     GridStrategy,
     OFATStrategy,
     ProbeStrategy,
+    BOStrategy,
 )
 
 
