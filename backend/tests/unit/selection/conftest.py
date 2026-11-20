@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 
 import pytest
 
 from roboprobe.scenario.space import ScenarioSpace
 from roboprobe.selection.base import StrategyContext
+
+# Silence Torch JIT deprecation from BoTorch/GPyTorch under warnings=error.
+warnings.filterwarnings("ignore", message=r".*torch\.jit\.script.*", category=FutureWarning)
 
 pytestmark = pytest.mark.unit
 
