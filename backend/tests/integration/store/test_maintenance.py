@@ -25,7 +25,7 @@ pytestmark = pytest.mark.integration
 def test_gc_dry_run_and_verify(pg_engine, tmp_path: Path) -> None:
     Base.metadata.drop_all(pg_engine)
     Base.metadata.create_all(pg_engine)
-    factory = sessionmaker(bind=pg_engine, autoflush=False, expire_on_commit=False)
+    factory = sessionmaker(bind=pg_engine, expire_on_commit=False)
     store = LocalArtifactStore(tmp_path / "art")
     blob = tmp_path / "a.log"
     blob.write_bytes(b"hello")
@@ -52,7 +52,7 @@ def test_gc_dry_run_and_verify(pg_engine, tmp_path: Path) -> None:
 def test_retention_keeps_failure_bags(pg_engine, tmp_path: Path) -> None:
     Base.metadata.drop_all(pg_engine)
     Base.metadata.create_all(pg_engine)
-    factory = sessionmaker(bind=pg_engine, autoflush=False, expire_on_commit=False)
+    factory = sessionmaker(bind=pg_engine, expire_on_commit=False)
     store = LocalArtifactStore(tmp_path / "art")
     old = datetime.now(UTC) - timedelta(days=40)
     with SqlAlchemyUnitOfWork(factory, notify_channel="roboprobe_events") as uow:

@@ -29,4 +29,4 @@ def create_engine_from_settings(settings: DatabaseSettings) -> Engine:
 
 def session_factory(engine: Engine) -> sessionmaker[Session]:
     """Return a sessionmaker bound to ``engine`` (one session per Unit of Work)."""
-    return sessionmaker(bind=engine, autoflush=False, expire_on_commit=False, class_=Session)
+    return sessionmaker(bind=engine, expire_on_commit=False, class_=Session)

@@ -56,6 +56,7 @@ class SqlRunRepo:
                     "priority": item.priority,
                 }
             )
+        self._s.flush()
         stmt = (
             insert(RunRow)
             .values(payload)

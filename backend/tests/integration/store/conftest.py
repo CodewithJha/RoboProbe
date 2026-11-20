@@ -18,7 +18,6 @@ def store_session(pg_connection) -> Iterator[Session]:
     Base.metadata.create_all(pg_connection)
     factory = sessionmaker(
         bind=pg_connection,
-        autoflush=False,
         expire_on_commit=False,
         join_transaction_mode="create_savepoint",
     )
@@ -34,7 +33,6 @@ def uow_factory(pg_connection) -> Iterator:
     Base.metadata.create_all(pg_connection)
     factory = sessionmaker(
         bind=pg_connection,
-        autoflush=False,
         expire_on_commit=False,
         join_transaction_mode="create_savepoint",
     )
@@ -50,7 +48,6 @@ def session_factory(pg_connection):
     Base.metadata.create_all(pg_connection)
     return sessionmaker(
         bind=pg_connection,
-        autoflush=False,
         expire_on_commit=False,
         join_transaction_mode="create_savepoint",
     )

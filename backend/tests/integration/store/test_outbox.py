@@ -35,7 +35,7 @@ def test_since_orders_by_id(uow_factory: Callable[[], SqlAlchemyUnitOfWork]) -> 
 
 def test_notify_after_commit(pg_engine: Engine) -> None:
     Base.metadata.create_all(pg_engine)
-    factory = sessionmaker(bind=pg_engine, autoflush=False, expire_on_commit=False)
+    factory = sessionmaker(bind=pg_engine, expire_on_commit=False)
     url = pg_engine.url.render_as_string(hide_password=False).replace(
         "postgresql+psycopg", "postgresql"
     )

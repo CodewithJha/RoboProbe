@@ -19,7 +19,7 @@ pytestmark = pytest.mark.integration
 def test_reap_stale_worker(pg_engine) -> None:
     Base.metadata.drop_all(pg_engine)
     Base.metadata.create_all(pg_engine)
-    factory = sessionmaker(bind=pg_engine, autoflush=False, expire_on_commit=False)
+    factory = sessionmaker(bind=pg_engine, expire_on_commit=False)
     queue = PostgresRunQueue(
         factory, notify_channel="roboprobe_events", wall_timeout_s=300.0, sim_time_budget_s=120.0
     )
@@ -43,7 +43,7 @@ def test_reap_stale_worker(pg_engine) -> None:
 def test_reap_exhausts_attempts(pg_engine) -> None:
     Base.metadata.drop_all(pg_engine)
     Base.metadata.create_all(pg_engine)
-    factory = sessionmaker(bind=pg_engine, autoflush=False, expire_on_commit=False)
+    factory = sessionmaker(bind=pg_engine, expire_on_commit=False)
     queue = PostgresRunQueue(
         factory, notify_channel="roboprobe_events", wall_timeout_s=300.0, sim_time_budget_s=120.0
     )

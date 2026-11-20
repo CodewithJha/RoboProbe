@@ -23,7 +23,7 @@ SIM = 120.0
 def test_four_claimers_hundred_runs(pg_engine) -> None:
     Base.metadata.drop_all(pg_engine)
     Base.metadata.create_all(pg_engine)
-    factory = sessionmaker(bind=pg_engine, autoflush=False, expire_on_commit=False)
+    factory = sessionmaker(bind=pg_engine, expire_on_commit=False)
     with SqlAlchemyUnitOfWork(factory, notify_channel="roboprobe_events") as uow:
         _cid, ids = seed_campaign(uow, n_runs=RUNS)
         seed_worker(uow)
