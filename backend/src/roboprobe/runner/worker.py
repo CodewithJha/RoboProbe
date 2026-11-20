@@ -19,12 +19,14 @@ from uuid import UUID
 
 import structlog
 
+from roboprobe import __version__
 from roboprobe.core.clock import Clock
 from roboprobe.core.metrics_registry import Metrics, create_metrics
 from roboprobe.core.settings.storage import StorageSettings
 from roboprobe.core.settings.worker import WorkerSettings
 from roboprobe.core.types import (
     CampaignStatus,
+    JsonValue,
     Scenario,
     SutProfile,
     TaskSpec,
@@ -115,6 +117,7 @@ class WorkerProcess:
         self.worker_id = f"{worker_settings.id_prefix}:{os.getpid()}:{slot}"
         self.state = WorkerState.IDLE
         self.current_run_id: UUID | None = None
+        self._registered = False
         self._drain = threading.Event()
         self._stop = threading.Event()
         self._cancel_episode = threading.Event()
@@ -150,10 +153,29 @@ class WorkerProcess:
 
         signal.signal(signal.SIGTERM, _handle)
 
+    def ensure_registered(self) -> None:
+        """Upsert this worker row so ``runs.worker_id`` FK claims succeed."""
+        if self._registered:
+            return
+        caps = _capabilities(self._backend)
+        mod = importlib.import_module("roboprobe.store.records")
+        record = mod.WorkerRecord(
+            id=self.worker_id,
+            backend=self._backend_name,
+            status=WORKER_IDLE,
+            capabilities=caps,
+            version=__version__,
+        )
+        with self._uow_factory() as uow:
+            uow.workers.register(record)
+            uow.commit()
+        self._registered = True
+
     def serve_forever(self, stop: threading.Event | None = None) -> None:
         """Poll/claim/execute until ``stop`` or drain completes."""
         external = stop if stop is not None else threading.Event()
         self._backend.prepare()
+        self.ensure_registered()
         while not external.is_set() and not self._stop.is_set():
             if self._drain.is_set() and self.current_run_id is None:
                 self.state = WorkerState.DRAINING
@@ -169,6 +191,7 @@ class WorkerProcess:
         """Claim the next ``PENDING`` run for this backend, or ``None``."""
         if self._drain.is_set():
             return None
+        self.ensure_registered()
         self.state = WorkerState.CLAIMING
         claimed = self._queue.claim(self.worker_id, self._backend_name)
         if claimed is None:
@@ -336,6 +359,14 @@ class WorkerProcess:
             backend=backend, verdict=verdict, primary_failure=primary_failure
         ).inc()
         self._metrics.run_duration_seconds.labels(backend=backend, phase="total").observe(elapsed_s)
+
+
+def _capabilities(backend: object) -> dict[str, JsonValue]:
+    caps = getattr(backend, "capabilities", None)
+    if caps is None:
+        return {}
+    name = getattr(caps, "name", "")
+    return {"name": str(name), "deterministic": bool(getattr(caps, "deterministic", False))}
 
 
 def _artifact_record(ref: ArtifactRefView, run_id: UUID, campaign_id: UUID) -> object:
