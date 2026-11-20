@@ -101,6 +101,10 @@ class RunRepo(Protocol):
 
     def insert_batch(self, runs: Sequence[NewRun]) -> tuple[UUID, ...]: ...
 
+    def import_many(self, runs: Sequence[RunRecord]) -> None:
+        """Insert full run rows (bundle import). Pre: ids and campaign exist; no collisions."""
+        ...
+
     def list_for_campaign(
         self, campaign_id: UUID, *, limit: int | None = None, cursor: str | None = None
     ) -> Page[RunRecord]: ...

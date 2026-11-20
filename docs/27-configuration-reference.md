@@ -97,6 +97,11 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `storage.min_free_gb` | float | `5.0` | `ROBOPROBE_STORAGE__MIN_FREE_GB` | Free-space floor that raises `DISK_LOW` [GB]. |
 | `storage.retention.bags_days` | int | `30` | `ROBOPROBE_STORAGE__RETENTION__BAGS_DAYS` | Days to keep rosbag artefacts [d]. |
 | `storage.retention.keep_failure_bags` | bool | `true` | `ROBOPROBE_STORAGE__RETENTION__KEEP_FAILURE_BAGS` | Keep bags of failing runs regardless of `bags_days`. |
+| `storage.bundle.format_version` | int | `1` | `ROBOPROBE_STORAGE__BUNDLE__FORMAT_VERSION` | Campaign bundle format version written on export. |
+| `storage.bundle.max_uncompressed_bytes` | int | `2147483648` | `ROBOPROBE_STORAGE__BUNDLE__MAX_UNCOMPRESSED_BYTES` | Maximum total uncompressed payload accepted on import [bytes]. |
+| `storage.bundle.max_member_bytes` | int | `536870912` | `ROBOPROBE_STORAGE__BUNDLE__MAX_MEMBER_BYTES` | Maximum size of any single tar member on import [bytes]. |
+| `storage.bundle.read_chunk_bytes` | int | `1048576` | `ROBOPROBE_STORAGE__BUNDLE__READ_CHUNK_BYTES` | I/O chunk size when hashing or copying bundle members [bytes]. |
+| `storage.bundle.hostname_hash_hex` | int | `16` | `ROBOPROBE_STORAGE__BUNDLE__HOSTNAME_HASH_HEX` | Hex length of hostname hashes written into exported manifests (TM-15). |
 | `storage.backend` | str | `local` | `ROBOPROBE_STORAGE__BACKEND` | Artifact store plugin key in the `roboprobe.stores` entry-point group. |
 
 ### 4.3 API

@@ -36,6 +36,18 @@
 # Keep bags of failing runs regardless of `bags_days`.
 # keep_failure_bags = true
 
+[storage.bundle]
+# Campaign bundle format version written on export.
+# format_version = 1
+# Maximum total uncompressed payload accepted on import [bytes].
+# max_uncompressed_bytes = 2147483648
+# Maximum size of any single tar member on import [bytes].
+# max_member_bytes = 536870912
+# I/O chunk size when hashing or copying bundle members [bytes].
+# read_chunk_bytes = 1048576
+# Hex length of hostname hashes written into exported manifests (TM-15).
+# hostname_hash_hex = 16
+
 [api]
 # Bind address; any non-loopback address requires `api.token`.
 # host = "127.0.0.1"

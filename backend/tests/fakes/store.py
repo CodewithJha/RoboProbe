@@ -206,6 +206,10 @@ class _Runs:
             )
         return tuple(ids)
 
+    def import_many(self, runs: Sequence[RunRecord]) -> None:
+        for item in runs:
+            self._db.runs[item.id] = item
+
     def list_for_campaign(
         self, campaign_id: UUID, *, limit: int | None = None, cursor: str | None = None
     ) -> Page[RunRecord]:

@@ -65,6 +65,45 @@ class SqlRunRepo:
         execute(self._s, stmt)
         return tuple(ids)
 
+    def import_many(self, runs: Sequence[RunRecord]) -> None:
+        if not runs:
+            return
+        for item in runs:
+            values: dict[str, object] = {
+                "id": item.id,
+                "campaign_id": item.campaign_id,
+                "ordinal": item.ordinal,
+                "repeat_index": item.repeat_index,
+                "backend": item.backend,
+                "scenario_hash": item.scenario_hash,
+                "scenario_values": dict(item.scenario_values),
+                "x_unit": list(item.x_unit),
+                "seed": item.seed,
+                "phase": item.phase,
+                "proposal": dict(item.proposal),
+                "tags": list(item.tags),
+                "replay_of": item.replay_of,
+                "status": item.status.value,
+                "priority": item.priority,
+                "attempt": item.attempt,
+                # Workers are host-local; drop FK on import.
+                "worker_id": None,
+                "verdict": None if item.verdict is None else item.verdict.value,
+                "robustness": item.robustness,
+                "primary_failure": item.primary_failure,
+                "warnings": list(item.warnings),
+                "metrics": dict(item.metrics),
+                "infra_error": item.infra_error,
+                "manifest": None if item.manifest is None else dict(item.manifest),
+                "claimed_at": item.claimed_at,
+                "started_at": item.started_at,
+                "finished_at": item.finished_at,
+            }
+            if item.enqueued_at is not None:
+                values["enqueued_at"] = item.enqueued_at
+            self._s.add(RunRow(**values))
+        self._s.flush()
+
     def list_for_campaign(
         self, campaign_id: UUID, *, limit: int | None = None, cursor: str | None = None
     ) -> Page[RunRecord]:
