@@ -10,6 +10,7 @@ from tests.contract.test_backend_contract import FakeBackend
 from tests.fakes.store import InMemoryRunQueue, InMemoryUnitOfWork
 
 from roboprobe.core.clock import FakeClock
+from roboprobe.core.errors import ConflictError
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.settings.oracles import OracleThresholds
 from roboprobe.core.types import CampaignStatus, RunStatus, TaskSpec, Verdict
@@ -150,3 +151,81 @@ def test_backend_exception_maps_to_invalid(tmp_path: Path, task: TaskSpec) -> No
         assert run.infra_error is not None and "infra_error" in run.infra_error
     # Worker continues: second claim returns None (queue empty).
     assert worker.claim() is None
+
+
+def test_execute_conflict_logs_run_lost_and_returns(
+    tmp_path: Path, task: TaskSpec, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ConflictError on a status transition means the run was taken over — do not raise."""
+    settings = _settings(tmp_path)
+    uow = InMemoryUnitOfWork()
+    _seed(uow, settings)
+    queue = InMemoryRunQueue(
+        uow,
+        wall_timeout_s=settings.worker.default_wall_timeout_s,
+        sim_time_budget_s=settings.worker.default_sim_time_budget_s,
+    )
+    worker = WorkerProcess(
+        backend=FakeBackend(settings),
+        uow_factory=lambda: uow,
+        queue=queue,
+        artifact_store=LocalArtifactStore(settings.storage.artifact_root),
+        verdict_engine=VerdictEngine([GoalOracle(OracleThresholds())]),
+        clock=FakeClock(
+            start=__import__("datetime").datetime(2020, 1, 1, tzinfo=__import__("datetime").UTC)
+        ),
+        worker_settings=settings.worker,
+        storage_settings=settings.storage,
+        task=task,
+    )
+    claimed = worker.claim()
+    assert claimed is not None
+
+    def _conflict(_run_id: object) -> None:
+        raise ConflictError("taken", context={})
+
+    monkeypatch.setattr(queue, "mark_running", _conflict)
+    worker.execute(claimed)  # must not raise
+    assert worker.current_run_id is None
+    assert worker.claim() is None
+
+
+def test_execute_fail_conflict_logs_run_lost(
+    tmp_path: Path, task: TaskSpec, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """ConflictError from queue.fail after another error also returns without re-raising."""
+    settings = _settings(tmp_path)
+    uow = InMemoryUnitOfWork()
+    _seed(uow, settings)
+    queue = InMemoryRunQueue(
+        uow,
+        wall_timeout_s=settings.worker.default_wall_timeout_s,
+        sim_time_budget_s=settings.worker.default_sim_time_budget_s,
+    )
+
+    class Boom(FakeBackend):
+        def run_episode(self, req, materialized, on_progress=None):
+            raise RuntimeError("boom")
+
+    worker = WorkerProcess(
+        backend=Boom(settings),
+        uow_factory=lambda: uow,
+        queue=queue,
+        artifact_store=LocalArtifactStore(settings.storage.artifact_root),
+        verdict_engine=VerdictEngine([GoalOracle(OracleThresholds())]),
+        clock=FakeClock(
+            start=__import__("datetime").datetime(2020, 1, 1, tzinfo=__import__("datetime").UTC)
+        ),
+        worker_settings=settings.worker,
+        storage_settings=settings.storage,
+        task=task,
+    )
+    claimed = worker.claim()
+    assert claimed is not None
+
+    def _fail_conflict(_run_id: object, _infra: str) -> None:
+        raise ConflictError("taken", context={})
+
+    monkeypatch.setattr(queue, "fail", _fail_conflict)
+    worker.execute(claimed)  # must not raise
+    assert worker.current_run_id is None
