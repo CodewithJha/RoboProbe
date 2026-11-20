@@ -198,12 +198,33 @@ def experiment_report(
     ctx: typer.Context,
     experiment_id: Annotated[UUID, typer.Argument()],
     as_table: Annotated[bool, typer.Option("--table", help="Print a summary table.")] = False,
+    html_out: Annotated[
+        Path | None, typer.Option("-o", "--output", help="Write offline HTML report.")
+    ] = None,
 ) -> None:
-    """Print stored experiment comparison JSON (or a short table)."""
+    """Print stored experiment comparison JSON, a table, or HTML report."""
     state = get_state(ctx)
     settings = state.bootstrap()
     services = build_cli_services(settings)
     clock = SystemClock()
+    if html_out is not None:
+        from roboprobe.reporting.experiment import render_experiment_report
+
+        uow = services.make_uow()
+        try:
+            with uow:
+                path = render_experiment_report(
+                    experiment_id,
+                    uow,
+                    services.infra.artifact_store,
+                    out=html_out,
+                    settings=settings.reporting,
+                    experiment_settings=settings.experiments,
+                )
+        finally:
+            services.close()
+        state.output.data({"path": str(path)})
+        return
     writer = _UowWriter(services.make_uow, clock)
     runner = ExperimentRunner(
         writer,
