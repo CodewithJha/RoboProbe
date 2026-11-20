@@ -5,12 +5,14 @@ Implements: T-040a, T-040c, FR-RUN-001, FR-RUN-003, FR-RUN-005, FR-RUN-006
 
 from __future__ import annotations
 
+import hashlib
 import importlib
+import json
 import os
 import shutil
 import signal
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -32,6 +34,7 @@ from roboprobe.core.types import (
     TaskSpec,
 )
 from roboprobe.oracles.verdict import VerdictEngine
+from roboprobe.runner.manifest import ManifestBuilder, hash_uv_lock
 from roboprobe.runner.ports import (
     ArtifactRefView,
     ArtifactStorePort,
@@ -210,7 +213,7 @@ class WorkerProcess:
             self._on_after_claim(claimed)
         return claimed
 
-    def execute(self, run: ClaimedRunView) -> None:
+    def execute(self, run: ClaimedRunView) -> None:  # noqa: PLR0915 - pipeline stages
         """Materialise → run episode → judge → upload → persist."""
         workdir = self._storage.workdir_root / str(run.run_id)
         workdir.mkdir(parents=True, exist_ok=True)
@@ -260,8 +263,23 @@ class WorkerProcess:
             self._queue.mark_evaluating(run.run_id)
             outcome = self._verdict.judge(result, self._task)
             self.state = WorkerState.UPLOADING
-            self._upload(run, result.artifacts, materialized.files)
-            self._queue.complete(run.run_id, outcome)
+            sim_s = float(result.backend_meta.get("sim_time_s", elapsed))
+            manifest = self._build_manifest(
+                run,
+                space_id=space_id,
+                space_version=space_version,
+                sut=sut,
+                materialized=materialized.files,
+                workdir=workdir,
+                wall_s=elapsed,
+                sim_s=sim_s,
+            )
+            manifest_path = workdir / "manifest.json"
+            manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+            artifacts = dict(result.artifacts)
+            artifacts["manifest"] = manifest_path
+            self._upload(run, artifacts, materialized.files)
+            self._queue.complete(run.run_id, outcome, manifest=manifest)
             primary = "none" if outcome.primary_failure is None else outcome.primary_failure.value
             self._observe_finished(run.backend, outcome.verdict.value, primary, elapsed)
             log.info(
@@ -322,6 +340,43 @@ class WorkerProcess:
         with self._uow_factory() as uow:
             campaign = uow.campaigns.get(campaign_id)
             return campaign is not None and campaign.status is CampaignStatus.CANCELLED
+
+    def _build_manifest(  # noqa: PLR0913 - provenance fields
+        self,
+        run: ClaimedRunView,
+        *,
+        space_id: str,
+        space_version: str,
+        sut: SutProfile,
+        materialized: Mapping[str, Path],
+        workdir: Path,
+        wall_s: float,
+        sim_s: float,
+    ) -> dict[str, JsonValue]:
+        """Assemble provenance manifest for ``run`` (T-043)."""
+        oracles = getattr(self._verdict, "_oracles", ())
+        thresholds: dict[str, JsonValue] = {}
+        if oracles:
+            thr = getattr(oracles[0], "thresholds", None)
+            if thr is not None and hasattr(thr, "model_dump"):
+                thresholds = cast("dict[str, JsonValue]", thr.model_dump())
+        task_digest = hashlib.sha256(self._task.id.encode("utf-8")).hexdigest()
+        return (
+            ManifestBuilder()
+            .with_ids(run_id=run.run_id, campaign_id=run.campaign_id)
+            .with_backend(run.backend)
+            .with_space(space_id, space_version)
+            .with_task(self._task.id, task_digest)
+            .with_sut_profile(sut.id, sut.config_hash)
+            .with_scenario(run.scenario_hash, dict(run.scenario_values))
+            .with_seeds(run.seed)
+            .with_materialized_files(dict(materialized), workdir=workdir)
+            .with_config_snapshot({"oracles": thresholds})
+            .with_host()
+            .with_timing(wall_s=wall_s, sim_s=sim_s)
+            .with_code(uv_lock_sha256=hash_uv_lock())
+            .build()
+        )
 
     def _upload(
         self,

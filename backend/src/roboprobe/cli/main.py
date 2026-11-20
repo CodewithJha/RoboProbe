@@ -28,7 +28,19 @@ from typing import Annotated, Any
 import typer
 from typer.core import TyperGroup
 
-from roboprobe.cli import artifacts, campaign, config, db, replay, runs, space
+from roboprobe.cli import (
+    artifacts,
+    campaign,
+    config,
+    db,
+    oracle,
+    replay,
+    run,
+    runs,
+    scenario,
+    services,
+    space,
+)
 from roboprobe.cli._context import DISTRIBUTION_NAME, CliState, LogLevel
 from roboprobe.cli._output import Output
 from roboprobe.core.errors import ConfigError, RoboProbeError, ValidationError
@@ -55,6 +67,12 @@ COMMAND_GROUPS: Sequence[typer.Typer] = (
     runs.app,
     runs.queue_app,
     replay.app,
+    oracle.app,
+    scenario.app,
+    run.app,
+    services.orchestrator_app,
+    services.worker_app,
+    services.api_app,
     artifacts.app,
     artifacts.gc_app,
 )

@@ -174,9 +174,7 @@ class ManifestBuilder:
         self._sut_config_hash = config_hash
         return self
 
-    def with_scenario(
-        self, scenario_hash: str, values: Mapping[str, JsonValue]
-    ) -> ManifestBuilder:
+    def with_scenario(self, scenario_hash: str, values: Mapping[str, JsonValue]) -> ManifestBuilder:
         """Record scenario hash and parameter values."""
         self._scenario_hash = scenario_hash
         self._scenario_values = dict(values)
@@ -280,9 +278,7 @@ class ManifestBuilder:
             git_sha = self._git_sha
         if self._dirty is not None:
             dirty = self._dirty
-        uv_lock = (
-            self._uv_lock_sha256 if self._uv_lock_sha256 is not None else hash_uv_lock()
-        )
+        uv_lock = self._uv_lock_sha256 if self._uv_lock_sha256 is not None else hash_uv_lock()
         hostname = self._hostname if self._hostname is not None else platform.node()
         seeds: dict[str, JsonValue] = {"run": int(self._run_seed)}  # type: ignore[arg-type]
         seeds.update({key: int(value) for key, value in self._derived_seeds.items()})
@@ -291,8 +287,8 @@ class ManifestBuilder:
             config["oracles"] = {}
         manifest: dict[str, JsonValue] = {
             "manifest_schema_version": MANIFEST_SCHEMA_VERSION,
-            "run_id": self._run_id,  # type: ignore[dict-item]
-            "campaign_id": self._campaign_id,  # type: ignore[dict-item]
+            "run_id": self._run_id,
+            "campaign_id": self._campaign_id,
             "experiment_id": self._experiment_id,
             "roboprobe": {
                 "version": self._version,

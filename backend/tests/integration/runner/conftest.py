@@ -2,15 +2,24 @@
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Iterator
 
 import pytest
 from sqlalchemy.orm import sessionmaker
 
+from roboprobe.core.logging import configure_logging
+from roboprobe.core.settings import LoggingSettings
 from roboprobe.store.orm import Base
 from roboprobe.store.uow import SqlAlchemyUnitOfWork
 
 NOTIFY_CHANNEL = "roboprobe_events"
+
+
+@pytest.fixture(autouse=True)
+def _reset_structlog_stream() -> None:
+    """Rebind structlog after CliRunner closes its capture stream."""
+    configure_logging(LoggingSettings(), "test-runner", "0.0.0", stream=sys.stderr)
 
 
 @pytest.fixture

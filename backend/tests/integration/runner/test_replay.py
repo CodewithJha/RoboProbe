@@ -7,7 +7,6 @@ from pathlib import Path
 import pytest
 
 from roboprobe.backends.kinematic2d.backend import Kinematic2DBackend
-from roboprobe.bootstrap import build_cli_services
 from roboprobe.core.clock import SystemClock
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import CampaignStatus
