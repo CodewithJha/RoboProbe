@@ -2,6 +2,7 @@
 name = "roboprobe-strategy-cem"
 version = "0.0.1"
 description = "S-CEM cross-entropy rare-event strategy plugin for RoboProbe"
+license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
     "roboprobe",

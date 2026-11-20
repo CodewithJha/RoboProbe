@@ -17,7 +17,6 @@ import json
 import platform
 import sys
 from pathlib import Path
-
 from uuid import uuid4
 
 import numpy as np
@@ -91,6 +90,7 @@ def _campaign(
 
 
 def main() -> int:
+    """Parse CLI flags, run calibration campaigns, write JSON results."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--seeds", type=int, default=len(DEFAULT_SEEDS))
     parser.add_argument("--budget", type=int, default=150)
