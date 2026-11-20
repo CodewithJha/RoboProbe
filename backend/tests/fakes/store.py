@@ -153,6 +153,13 @@ class _Campaigns:
         nxt = None if extra is None else str(items[-1].id)
         return Page(items=items, next_cursor=nxt)
 
+    def list_for_experiment(self, experiment_id: UUID) -> tuple[CampaignRecord, ...]:
+        rows = sorted(
+            (c for c in self._db.campaigns.values() if c.experiment_id == experiment_id),
+            key=lambda c: c.id,
+        )
+        return tuple(rows)
+
 
 class _Runs:
     def __init__(self, db: _Db) -> None:
@@ -360,6 +367,14 @@ class _Experiments:
                 "experiment not found", context={"experiment_id": str(experiment_id)}
             )
         self._db.experiments[experiment_id] = rec.model_copy(update={"status": status})
+
+    def set_results(self, experiment_id: UUID, results: dict[str, object]) -> None:
+        rec = self._db.experiments.get(experiment_id)
+        if rec is None:
+            raise NotFoundError(
+                "experiment not found", context={"experiment_id": str(experiment_id)}
+            )
+        self._db.experiments[experiment_id] = rec.model_copy(update={"results": dict(results)})
 
     def list(
         self, *, limit: int | None = None, cursor: str | None = None

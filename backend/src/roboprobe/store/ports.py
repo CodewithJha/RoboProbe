@@ -91,6 +91,8 @@ class CampaignRepo(Protocol):
         self, *, limit: int | None = None, cursor: str | None = None
     ) -> Page[CampaignRecord]: ...
 
+    def list_for_experiment(self, experiment_id: UUID) -> tuple[CampaignRecord, ...]: ...
+
 
 class RunRepo(Protocol):
     """Runs. ``insert_batch`` is idempotent on ``(campaign_id, ordinal, repeat_index)``."""
@@ -169,6 +171,8 @@ class ExperimentRepo(Protocol):
     def add(self, record: ExperimentRecord) -> None: ...
 
     def set_status(self, experiment_id: UUID, status: str) -> None: ...
+
+    def set_results(self, experiment_id: UUID, results: dict[str, JsonValue]) -> None: ...
 
     def list(
         self, *, limit: int | None = None, cursor: str | None = None

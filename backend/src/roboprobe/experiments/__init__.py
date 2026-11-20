@@ -12,13 +12,17 @@ from roboprobe.experiments.planner import (
     load_design,
     plan,
 )
+from roboprobe.experiments.runner import ExperimentRunner, build_comparison, export_raw_parquet
 
 __all__ = [
     "CampaignSpec",
     "ComparabilityKey",
     "ExperimentDesign",
+    "ExperimentRunner",
     "StrategyVariant",
+    "build_comparison",
     "check_comparable",
+    "export_raw_parquet",
     "load_design",
     "plan",
 ]
