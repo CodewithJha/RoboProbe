@@ -40,7 +40,8 @@ KEY = ComparabilityKey(
     backend_version="0.0.1",
     k2d_model_version="n/a",
 )
-SETTINGS = ExperimentSettings(default_seeds=3, max_concurrent_campaigns=2, bootstrap_resamples=64)
+# In-memory UoW is not thread-safe; keep concurrency at 1 for this harness.
+SETTINGS = ExperimentSettings(default_seeds=3, max_concurrent_campaigns=1, bootstrap_resamples=64)
 
 
 @dataclass
