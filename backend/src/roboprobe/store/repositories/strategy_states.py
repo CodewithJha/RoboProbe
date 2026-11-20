@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from roboprobe.store.flush import execute
 from roboprobe.store.mapping import strategy_record
 from roboprobe.store.orm import StrategyStateRow
 from roboprobe.store.records import StrategyStateRecord
@@ -34,4 +35,4 @@ class SqlStrategyStateRepo:
             index_elements=["campaign_id"],
             set_={"n_obs": stmt.excluded.n_obs, "state": stmt.excluded.state},
         )
-        self._s.execute(stmt)
+        execute(self._s, stmt)

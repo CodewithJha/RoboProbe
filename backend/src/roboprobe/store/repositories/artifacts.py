@@ -9,6 +9,7 @@ from uuid import UUID
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from roboprobe.store.flush import execute
 from roboprobe.store.mapping import artifact_record
 from roboprobe.store.orm import ArtifactRow
 from roboprobe.store.records import ArtifactRecord
@@ -33,6 +34,7 @@ class SqlArtifactRepo:
                 media_type=record.media_type,
             )
         )
+        self._s.flush()
 
     def get(self, artifact_id: UUID) -> ArtifactRecord | None:
         row = self._s.get(ArtifactRow, artifact_id)
@@ -49,7 +51,7 @@ class SqlArtifactRepo:
         return frozenset(rows)
 
     def delete(self, artifact_id: UUID) -> None:
-        self._s.execute(delete(ArtifactRow).where(ArtifactRow.id == artifact_id))
+        execute(self._s, delete(ArtifactRow).where(ArtifactRow.id == artifact_id))
 
     def bags_for_retention(self) -> tuple[ArtifactRecord, ...]:
         rows = self._s.scalars(select(ArtifactRow).where(ArtifactRow.kind == "bag")).all()

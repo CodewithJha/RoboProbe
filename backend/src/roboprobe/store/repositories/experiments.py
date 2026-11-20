@@ -10,6 +10,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from roboprobe.core.errors import NotFoundError
+from roboprobe.store.flush import execute
 from roboprobe.store.mapping import experiment_record
 from roboprobe.store.orm import ExperimentRow
 from roboprobe.store.pagination import Page, clamp_limit, extra_item
@@ -36,10 +37,12 @@ class SqlExperimentRepo:
                 results=None if record.results is None else dict(record.results),
             )
         )
+        self._s.flush()
 
     def set_status(self, experiment_id: UUID, status: str) -> None:
-        result = self._s.execute(
-            update(ExperimentRow).where(ExperimentRow.id == experiment_id).values(status=status)
+        result = execute(
+            self._s,
+            update(ExperimentRow).where(ExperimentRow.id == experiment_id).values(status=status),
         )
         if int(getattr(result, "rowcount", 0) or 0) != 1:
             msg = "experiment not found"

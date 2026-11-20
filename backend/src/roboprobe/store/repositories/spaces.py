@@ -33,6 +33,7 @@ class SqlSpaceRepo:
                 schema_version=record.schema_version,
             )
         )
+        self._s.flush()
 
     def list(self, *, limit: int | None = None, cursor: str | None = None) -> Page[SpaceRecord]:
         size = clamp_limit(limit)

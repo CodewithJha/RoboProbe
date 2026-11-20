@@ -33,6 +33,7 @@ class SqlRiskMapRepo:
                 slices_artifact=record.slices_artifact,
             )
         )
+        self._s.flush()
 
     def latest(self, campaign_id: UUID) -> RiskMapRecord | None:
         row = self._s.scalars(

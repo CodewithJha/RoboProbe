@@ -11,6 +11,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from roboprobe.core.types import JsonValue
+from roboprobe.store.flush import execute
 from roboprobe.store.mapping import event_record
 from roboprobe.store.orm import EventRow
 from roboprobe.store.pagination import clamp_limit
@@ -29,8 +30,8 @@ class SqlEventRepo:
     ) -> int:
         row = EventRow(topic=topic, campaign_id=campaign_id, payload=dict(payload))
         self._s.add(row)
-        self._s.flush()
-        self._s.execute(
+        execute(
+            self._s,
             text("SELECT pg_notify(:channel, :payload)"),
             {"channel": self._channel, "payload": str(row.id)},
         )

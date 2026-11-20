@@ -12,6 +12,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from roboprobe.core.errors import NotFoundError
+from roboprobe.store.flush import execute
 from roboprobe.store.mapping import worker_record
 from roboprobe.store.orm import WorkerRow
 from roboprobe.store.records import WorkerRecord
@@ -48,11 +49,12 @@ class SqlWorkerRepo:
                 "current_run_id": stmt.excluded.current_run_id,
             },
         )
-        self._s.execute(stmt)
+        execute(self._s, stmt)
 
     def heartbeat(self, worker_id: str, *, at: datetime) -> None:
-        result = self._s.execute(
-            update(WorkerRow).where(WorkerRow.id == worker_id).values(last_heartbeat=at)
+        result = execute(
+            self._s,
+            update(WorkerRow).where(WorkerRow.id == worker_id).values(last_heartbeat=at),
         )
         if int(getattr(result, "rowcount", 0) or 0) != 1:
             msg = "worker not found"
@@ -61,10 +63,11 @@ class SqlWorkerRepo:
     def set_status(
         self, worker_id: str, status: str, *, current_run_id: UUID | None = None
     ) -> None:
-        result = self._s.execute(
+        result = execute(
+            self._s,
             update(WorkerRow)
             .where(WorkerRow.id == worker_id)
-            .values(status=status, current_run_id=current_run_id)
+            .values(status=status, current_run_id=current_run_id),
         )
         if int(getattr(result, "rowcount", 0) or 0) != 1:
             msg = "worker not found"

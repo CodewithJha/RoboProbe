@@ -13,6 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from roboprobe.store.engine import SessionFactory
+from roboprobe.store.flush import execute
 from roboprobe.store.repositories.analyses import SqlAnalysisRepo
 from roboprobe.store.repositories.artifacts import SqlArtifactRepo
 from roboprobe.store.repositories.campaigns import SqlCampaignRepo
@@ -98,7 +99,8 @@ class SqlAlchemyUnitOfWork:
         self._closed = True
 
     def notify(self, channel: str, payload: str) -> None:
-        self._require().execute(
+        execute(
+            self._require(),
             text("SELECT pg_notify(:channel, :payload)"),
             {"channel": channel, "payload": payload},
         )

@@ -11,6 +11,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from roboprobe.store.flush import execute
 from roboprobe.store.mapping import mode_record
 from roboprobe.store.orm import FailureModeMemberRow, FailureModeRow
 from roboprobe.store.records import FailureModeMemberRecord, FailureModeRecord
@@ -93,8 +94,9 @@ class SqlFailureModeRepo:
             row.label = label
         self._s.flush()
         if kept_ids:
-            self._s.execute(
-                delete(FailureModeMemberRow).where(FailureModeMemberRow.mode_id.in_(kept_ids))
+            execute(
+                self._s,
+                delete(FailureModeMemberRow).where(FailureModeMemberRow.mode_id.in_(kept_ids)),
             )
         code_to_id = {
             row.code: row.id
@@ -109,4 +111,4 @@ class SqlFailureModeRepo:
             stmt = insert(FailureModeMemberRow).values(
                 mode_id=mode_id, run_id=member.run_id, membership=member.membership
             )
-            self._s.execute(stmt)
+            execute(self._s, stmt)

@@ -37,6 +37,7 @@ class SqlAnalysisRepo:
                 analysis_schema_version=record.analysis_schema_version,
             )
         )
+        self._s.flush()
 
     def list_for_campaign(self, campaign_id: UUID) -> tuple[AnalysisRecord, ...]:
         rows = self._s.scalars(

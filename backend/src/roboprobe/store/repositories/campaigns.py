@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from roboprobe.core.errors import NotFoundError
 from roboprobe.core.types import CampaignStatus
+from roboprobe.store.flush import execute
 from roboprobe.store.mapping import campaign_record
 from roboprobe.store.orm import CampaignRow
 from roboprobe.store.pagination import Page, clamp_limit, extra_item
@@ -52,14 +53,16 @@ class SqlCampaignRepo:
                 tags=list(record.tags),
             )
         )
+        self._s.flush()
 
     def set_status(
         self, campaign_id: UUID, status: CampaignStatus, *, reason: str | None = None
     ) -> None:
-        result = self._s.execute(
+        result = execute(
+            self._s,
             update(CampaignRow)
             .where(CampaignRow.id == campaign_id)
-            .values(status=status.value, status_reason=reason)
+            .values(status=status.value, status_reason=reason),
         )
         if int(getattr(result, "rowcount", 0) or 0) != 1:
             msg = "campaign not found"

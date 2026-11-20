@@ -10,6 +10,7 @@ from uuid import UUID
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from roboprobe.store.flush import execute
 from roboprobe.store.mapping import oracle_record
 from roboprobe.store.orm import OracleResultRow
 from roboprobe.store.records import OracleResultRecord
@@ -22,7 +23,7 @@ class SqlOracleResultRepo:
         self._s = session
 
     def replace_for_run(self, run_id: UUID, results: Sequence[OracleResultRecord]) -> None:
-        self._s.execute(delete(OracleResultRow).where(OracleResultRow.run_id == run_id))
+        execute(self._s, delete(OracleResultRow).where(OracleResultRow.run_id == run_id))
         for item in results:
             self._s.add(
                 OracleResultRow(

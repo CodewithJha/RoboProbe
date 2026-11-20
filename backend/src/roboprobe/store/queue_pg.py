@@ -18,6 +18,7 @@ from roboprobe.core.errors import ConflictError, NotFoundError
 from roboprobe.core.types import RunOutcome, RunStatus, Verdict
 from roboprobe.store.engine import SessionFactory
 from roboprobe.store.events import TOPIC_RUN_FINISHED, TOPIC_RUN_STARTED
+from roboprobe.store.flush import execute
 from roboprobe.store.orm import RunRow
 from roboprobe.store.records import ClaimedRun, OracleResultRecord
 from roboprobe.store.repositories.events import SqlEventRepo
@@ -78,7 +79,7 @@ class PostgresRunQueue:
         session = self._factory()
         try:
             row = (
-                session.execute(text(CLAIM_SQL), {"worker": worker_id, "backend": backend})
+                execute(session, text(CLAIM_SQL), {"worker": worker_id, "backend": backend})
                 .mappings()
                 .first()
             )
@@ -134,7 +135,7 @@ class PostgresRunQueue:
                 None if outcome.primary_failure is None else outcome.primary_failure.value
             )
             run.metrics = dict(outcome.metrics)
-            run.finished_at = session.execute(text("SELECT now()")).scalar_one()
+            run.finished_at = execute(session, text("SELECT now()")).scalar_one()
             SqlOracleResultRepo(session).replace_for_run(
                 run_id,
                 tuple(
@@ -179,7 +180,7 @@ class PostgresRunQueue:
             run.verdict = Verdict.INVALID.value
             run.infra_error = infra_error
             run.robustness = None
-            run.finished_at = session.execute(text("SELECT now()")).scalar_one()
+            run.finished_at = execute(session, text("SELECT now()")).scalar_one()
             SqlEventRepo(session, self._notify_channel).append(
                 TOPIC_RUN_FINISHED,
                 {
@@ -202,7 +203,8 @@ class PostgresRunQueue:
     def reap(self, now: datetime, heartbeat_timeout_s: float, max_attempts: int) -> int:
         session = self._factory()
         try:
-            result = session.execute(
+            result = execute(
+                session,
                 text(REAP_SQL),
                 {
                     "now": now,
@@ -221,7 +223,8 @@ class PostgresRunQueue:
     def depth(self, backend: str) -> int:
         session = self._factory()
         try:
-            count = session.execute(
+            count = execute(
+                session,
                 text(
                     "SELECT count(*) FROM runs r JOIN campaigns c ON c.id = r.campaign_id "
                     "WHERE r.status='PENDING' AND r.backend=:backend AND c.status='RUNNING'"
@@ -250,7 +253,7 @@ class PostgresRunQueue:
                 self._check(current, target)
             run.status = target.value
             if started:
-                run.started_at = session.execute(text("SELECT now()")).scalar_one()
+                run.started_at = execute(session, text("SELECT now()")).scalar_one()
             session.commit()
         except Exception:
             session.rollback()

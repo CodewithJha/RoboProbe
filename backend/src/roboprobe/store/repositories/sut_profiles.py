@@ -32,6 +32,7 @@ class SqlSutProfileRepo:
                 config_hash=record.config_hash,
             )
         )
+        self._s.flush()
 
     def list(
         self, *, limit: int | None = None, cursor: str | None = None

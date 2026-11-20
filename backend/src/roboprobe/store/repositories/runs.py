@@ -12,6 +12,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from roboprobe.core.types import FailureClass, Observation, Verdict
+from roboprobe.store.flush import execute
 from roboprobe.store.ids import new_uuid
 from roboprobe.store.mapping import run_record
 from roboprobe.store.orm import RunRow
@@ -56,13 +57,12 @@ class SqlRunRepo:
                     "priority": item.priority,
                 }
             )
-        self._s.flush()
         stmt = (
             insert(RunRow)
             .values(payload)
             .on_conflict_do_nothing(index_elements=["campaign_id", "ordinal", "repeat_index"])
         )
-        self._s.execute(stmt)
+        execute(self._s, stmt)
         return tuple(ids)
 
     def list_for_campaign(
