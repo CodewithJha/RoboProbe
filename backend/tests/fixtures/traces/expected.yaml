@@ -1,0 +1,143 @@
+# Hand-derived golden expectations (docs/08 §3, §7). Independent of oracle code.
+# Sampling: dt = 0.1 s (10 Hz). Task: start (0,0), goal (5,0), tol_xy=0.25, T_max=20 s
+# (time_limit.cap_s=20, factor large). Thresholds: docs/27 §4.6 defaults.
+#
+# clip(z) = max(-1, min(1, z))
+# O-CLEAR no contact: r = clip(min_d / 0.5)
+# O-CLEAR contact: r = -clip(0.1 + 0.9 * v_impact / 0.5)
+# O-GOAL reached: r = clip((20 - t_goal) / 20)
+# O-GOAL missed: r = -clip(max(0.01, d_remaining / 5))
+# O-PROG: r = clip((min_Δ - 0.05) / 0.5) over active ¬at_goal windows of 10 s
+# O-LOC: r = clip((0.5 - max e_s) / 0.5), e_s = min error on [t, t+2]
+# O-NAV: r = -0.5 if final ABORTED else +1
+# O-STAB: r = clip(min(1 - max|tilt|/0.35, 1 - max|ω|/3))
+# O-OSC: r = clip((6 - max_window_count) / 6)
+
+straight_pass:
+  # x = 0.5 t, t=0..10 s (101 samples). min_d=1.0, no contact, est=gt, ω=0, nav SUCCEEDED.
+  # t_goal first |x-5|≤0.25 → t=9.5 (x=4.75). Δ over 10 s = 5 m.
+  # O-CLEAR: 1.0/0.5 = 1.0 (clip)
+  # O-GOAL: (20-9.5)/20 = 0.525
+  # O-PROG: (5-0.05)/0.5 = 9.9 → clip 1.0
+  # O-LOC/NAV/STAB/OSC: +1
+  verdict: PASS
+  primary: null
+  rho: 0.525
+  r:
+    O-CLEAR: 1.0
+    O-GOAL: 0.525
+    O-PROG: 1.0
+    O-LOC: 1.0
+    O-NAV: 1.0
+    O-STAB: 1.0
+    O-OSC: 1.0
+
+head_on_collision:
+  # Drive +x at 0.5 m/s; contact at t=2.0 s (x=1.0), v_impact=0.5; then stopped.
+  # O-CLEAR: -(0.1 + 0.9*0.5/0.5) = -1.0
+  # O-GOAL: last x=1.0, d_rem=4.0, r=-clip(4/5)=-0.8
+  # O-PROG: after stop, 10 s window Δ=0 → (0-0.05)/0.5 = -0.1
+  verdict: FAIL
+  primary: F-COL
+  rho: -1.0
+  r:
+    O-CLEAR: -1.0
+    O-GOAL: -0.8
+    O-PROG: -0.1
+    O-LOC: 1.0
+    O-NAV: 1.0
+    O-STAB: 1.0
+    O-OSC: 1.0
+
+graze_near_miss:
+  # Same as straight_pass but min_d = 0.05 m, no contact.
+  # O-CLEAR: 0.05/0.5 = 0.1, class F-NEAR (warning)
+  # rho = min failure oracles = O-GOAL 0.525
+  verdict: PASS
+  primary: null
+  rho: 0.525
+  r:
+    O-CLEAR: 0.1
+    O-GOAL: 0.525
+    O-PROG: 1.0
+    O-LOC: 1.0
+    O-NAV: 1.0
+    O-STAB: 1.0
+    O-OSC: 1.0
+
+stuck_in_corner:
+  # Pose frozen at origin for 15 s, nav ACTIVE, never at goal.
+  # Δ(t≥10)=0 → r_prog=(0-0.05)/0.5=-0.1
+  # O-GOAL: d_rem=5, r=-1.0
+  # O-CLEAR: min_d=1 → 1.0
+  verdict: FAIL
+  primary: F-STUCK
+  rho: -1.0
+  r:
+    O-CLEAR: 1.0
+    O-GOAL: -1.0
+    O-PROG: -0.1
+    O-LOC: 1.0
+    O-NAV: 1.0
+    O-STAB: 1.0
+    O-OSC: 1.0
+
+amcl_jump:
+  # Straight pass kinematics; est_x = gt_x + 1.0 for all t (sustained 1 m error).
+  # e_s=1, r_loc=(0.5-1)/0.5=-1.0
+  verdict: FAIL
+  primary: F-LOC
+  rho: -1.0
+  r:
+    O-CLEAR: 1.0
+    O-GOAL: 0.525
+    O-PROG: 1.0
+    O-LOC: -1.0
+    O-NAV: 1.0
+    O-STAB: 1.0
+    O-OSC: 1.0
+
+nav_abort:
+  # Frozen at start; final nav_status=ABORTED. Duration 8 s so not stuck window.
+  # d_rem=5, r_goal=-1.0; r_nav=-0.5; r_prog=+1 (no 10 s window)
+  verdict: FAIL
+  primary: F-PLAN
+  rho: -1.0
+  r:
+    O-CLEAR: 1.0
+    O-GOAL: -1.0
+    O-PROG: 1.0
+    O-LOC: 1.0
+    O-NAV: -0.5
+    O-STAB: 1.0
+    O-OSC: 1.0
+
+spin_instability:
+  # Straight pass but meas_w = 4.0 rad/s. r_stab=clip(1-4/3)=clip(-1/3)=-1/3
+  verdict: FAIL
+  primary: F-INST
+  rho: -0.3333333333333333
+  r:
+    O-CLEAR: 1.0
+    O-GOAL: 0.525
+    O-PROG: 1.0
+    O-LOC: 1.0
+    O-NAV: 1.0
+    O-STAB: -0.3333333333333333
+    O-OSC: 1.0
+
+oscillation:
+  # cmd_w alternates ±0.5 every 0.2 s for 6 s (sign change every sample pair with |w|>0.3).
+  # Events at 0.2,0.4,...,6.0 → 30 events. In any 5 s window: 5/0.2=25 events.
+  # r_osc=(6-25)/6 = -19/6 → clip -1. Warning only; kinematics like straight_pass.
+  verdict: PASS
+  primary: null
+  rho: 0.525
+  r:
+    O-CLEAR: 1.0
+    O-GOAL: 0.525
+    O-PROG: 1.0
+    O-LOC: 1.0
+    O-NAV: 1.0
+    O-STAB: 1.0
+    O-OSC: -1.0
