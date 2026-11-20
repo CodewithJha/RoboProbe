@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import numpy as np
@@ -24,7 +25,7 @@ pytestmark = [
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SPACE = REPO_ROOT / "configs" / "scenario_spaces" / "warehouse_v1.yaml"
 THRESHOLDS = Path(__file__).resolve().parent / "thresholds.yaml"
-SEEDS = tuple(range(20))
+SEEDS = tuple(range(int(os.environ.get("ROBOPROBE_BENCH_SEEDS", "20"))))
 BRANIN_DIM = 2
 
 

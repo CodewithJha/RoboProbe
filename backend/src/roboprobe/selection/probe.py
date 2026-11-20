@@ -335,7 +335,8 @@ class ProbeStrategy(Strategy):
             existing=existing,
         )
         mean, std = gp.predict(point.reshape(1, -1))
-        value = float(acq.forward(torch.as_tensor(point, dtype=torch.float64).view(1, 1, -1))[0])
+        raw = acq.forward(torch.as_tensor(point, dtype=torch.float64).view(1, 1, -1))
+        value = float(raw.detach()[0])
         return point, _meta(phase, acq=value, mean=float(mean[0]), std=float(std[0]))
 
     def _sync_modes(self, history: Sequence[Observation]) -> None:

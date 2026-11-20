@@ -136,6 +136,33 @@ jobs:
           path: backend/test-results/
           if-no-files-found: ignore
 
+  # Performance + reduced algorithmic smoke (T-053; docs/18 §6, docs/20 §1).
+  benchmark-smoke:
+    name: benchmark-smoke
+    needs: [lint]
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      TORCH_NUM_THREADS: "1"
+      ROBOPROBE_BENCH_SEEDS: "2"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Perf baselines and raycast gate (pytest-benchmark)
+        working-directory: backend
+        run: >-
+          uv run pytest
+          tests/benchmark/test_perf.py
+          tests/benchmark/test_raycast_bench.py
+          -m benchmark
+          --benchmark-disable-gc
+          --benchmark-warmup=off
+          -q
+
   test-web:
     name: test-web
     runs-on: ubuntu-latest

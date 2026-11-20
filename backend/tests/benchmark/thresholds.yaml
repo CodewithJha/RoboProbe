@@ -21,3 +21,12 @@ bo_branin:
 lse_boundary:
   budget: 80
   min_accuracy_gain: 0.05
+
+# Performance regression vs committed baselines (T-053, docs/18 §6).
+perf:
+  regression_factor: 1.2
+  propose_n: 64
+  propose_dim: 6
+  propose_q: 4
+  propose_hard_cap_s: 2.0
+  k2d_hard_cap_s: 2.0
