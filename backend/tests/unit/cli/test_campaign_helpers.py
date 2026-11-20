@@ -40,16 +40,18 @@ def test_parse_id_and_list_runs() -> None:
             self.items = items
             self.next_cursor = next_cursor
 
+    class _RunsRepo:
+        @staticmethod
+        def list_for_campaign(
+            _cid: object, *, limit: int | None = None, cursor: str | None = None
+        ) -> _Page:
+            del limit
+            if cursor is None:
+                return _Page([1], next_cursor="c1")
+            return _Page([2], next_cursor=None)
+
     class _Uow:
-        class runs:
-            @staticmethod
-            def list_for_campaign(
-                _cid: object, *, limit: int | None = None, cursor: str | None = None
-            ) -> _Page:
-                del limit
-                if cursor is None:
-                    return _Page([1], next_cursor="c1")
-                return _Page([2], next_cursor=None)
+        runs = _RunsRepo()
 
     assert campaign_mod._list_runs(_Uow(), cid) == [1, 2]
 

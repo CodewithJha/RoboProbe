@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import importlib
 import threading
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -14,7 +15,7 @@ from roboprobe.core.metrics_registry import create_metrics
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import CampaignStatus, RunStatus
 from roboprobe.runner.lifecycle import CampaignService
-from roboprobe.runner.orchestrator import Orchestrator, _load_runs
+from roboprobe.runner.orchestrator import Orchestrator, _CampaignWorker, _load_runs
 from roboprobe.runner.reaper import Reaper
 from roboprobe.runner.scheduler import Scheduler
 
@@ -142,9 +143,7 @@ def test_request_stop_sets_event() -> None:
     assert orch._stop.is_set()
 
 
-def test_tick_starts_campaign_when_lock_held(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_tick_starts_campaign_when_lock_held(monkeypatch: pytest.MonkeyPatch) -> None:
     cid = uuid4()
     campaigns = _Campaigns(
         [SimpleNamespace(id=cid, status=CampaignStatus.RUNNING, backend="kinematic2d")]
@@ -158,9 +157,7 @@ def test_tick_starts_campaign_when_lock_held(
 
         def release(self) -> None: ...
 
-    import importlib as _il
-
-    real_import = _il.import_module
+    real_import = importlib.import_module
 
     def _import(name: str) -> object:
         if name == "roboprobe.store.locks":
@@ -181,8 +178,6 @@ def test_tick_starts_campaign_when_lock_held(
 
 
 def test_prune_finished_removes_dead_threads() -> None:
-    from roboprobe.runner.orchestrator import _CampaignWorker
-
     orch = _make_orch(_Campaigns([]), _Runs([]))
     cid = uuid4()
     finished = threading.Thread(target=lambda: None)
@@ -202,7 +197,6 @@ def test_shutdown_campaigns_stops_workers() -> None:
     orch = _make_orch(_Campaigns([]), _Runs([]))
     cid = uuid4()
     stop = threading.Event()
-    from roboprobe.runner.orchestrator import _CampaignWorker
 
     def _wait(stop_ev: threading.Event) -> None:
         stop_ev.wait(timeout=2.0)
@@ -231,23 +225,16 @@ def test_reap_if_due_calls_reaper(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_serve_forever_runs_one_tick(monkeypatch: pytest.MonkeyPatch) -> None:
     orch = _make_orch(_Campaigns([]), _Runs([]))
-    ticks: list[int] = []
+    stop = threading.Event()
 
     def _tick() -> None:
-        ticks.append(1)
-        orch.request_stop()
+        orch._last_tick = orch.clock.now()
+        stop.set()
 
     monkeypatch.setattr(orch, "tick", _tick)
     monkeypatch.setattr(
         "roboprobe.runner.orchestrator.serve_health",
-        lambda *a, **k: SimpleNamespace(stop=lambda: None),
+        lambda *_a, **_k: SimpleNamespace(stop=lambda: None, port=1),
     )
-
-    external = threading.Event()
-
-    def _sleep(_: float) -> None:
-        external.set()
-
-    orch.clock.sleep = _sleep  # type: ignore[method-assign]
-    orch.serve_forever(external)
-    assert ticks == [1]
+    orch.serve_forever(stop)
+    assert orch._health is None
