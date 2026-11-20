@@ -1,3 +1,5 @@
+# ruff: noqa: D101, D102, D105
+
 """Ports the runner depends on (injected; never import ``roboprobe.store`` / ``backends``).
 
 Layer: Application (L3). Structural Protocols match store/backends adapters.
@@ -26,6 +28,7 @@ from roboprobe.core.types import (
 
 __all__ = [
     "ArtifactRefView",
+    "ArtifactRepoPort",
     "ArtifactStorePort",
     "CampaignRepoPort",
     "CampaignView",
@@ -198,6 +201,8 @@ class WorkerRepoPort(Protocol):
 
     def online(self, backend: str) -> tuple[WorkerView, ...]: ...
 
+    def stale(self, *, older_than: datetime) -> tuple[WorkerView, ...]: ...
+
 
 class StrategyStateRepoPort(Protocol):
     def get(self, campaign_id: UUID) -> StrategyStateView | None: ...
@@ -209,6 +214,10 @@ class SutProfileRepoPort(Protocol):
     def get(self, profile_id: str) -> object | None: ...
 
 
+class ArtifactRepoPort(Protocol):
+    def add(self, record: object) -> None: ...
+
+
 class UnitOfWorkPort(Protocol):
     """One session / one transaction."""
 
@@ -218,7 +227,7 @@ class UnitOfWorkPort(Protocol):
     workers: WorkerRepoPort
     strategy_states: StrategyStateRepoPort
     sut_profiles: SutProfileRepoPort
-    artifacts: object
+    artifacts: ArtifactRepoPort
     oracle_results: object
     modes: object
 

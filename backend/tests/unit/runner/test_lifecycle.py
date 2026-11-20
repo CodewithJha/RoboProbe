@@ -5,6 +5,7 @@ from __future__ import annotations
 from uuid import uuid4
 
 import pytest
+from tests.fakes.store import InMemoryUnitOfWork
 
 from roboprobe.core.errors import ConflictError, ErrorCode, NotFoundError
 from roboprobe.core.types import CampaignStatus, RunStatus
@@ -16,7 +17,6 @@ from roboprobe.runner.lifecycle import (
     transition,
 )
 from roboprobe.store.records import CampaignRecord, NewRun, SpaceRecord, SutProfileRecord
-from tests.fakes.store import InMemoryUnitOfWork
 
 pytestmark = pytest.mark.unit
 
@@ -84,9 +84,7 @@ def test_idempotent_transitions(
         (CampaignStatus.PAUSED, CampaignCommand.FAIL),
     ],
 )
-def test_forbidden_transitions_raise(
-    current: CampaignStatus, command: CampaignCommand
-) -> None:
+def test_forbidden_transitions_raise(current: CampaignStatus, command: CampaignCommand) -> None:
     with pytest.raises(ConflictError) as info:
         transition(current, command)
     assert info.value.code is ErrorCode.CAMPAIGN_INVALID_TRANSITION

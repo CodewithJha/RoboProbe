@@ -190,6 +190,10 @@ class WorkerRepo(Protocol):
 
     def online(self, backend: str) -> tuple[WorkerRecord, ...]: ...
 
+    def stale(self, *, older_than: datetime) -> tuple[WorkerRecord, ...]:
+        """Workers whose ``last_heartbeat`` is strictly before ``older_than`` (or missing)."""
+        ...
+
 
 class ArtifactRepo(Protocol):
     """Artefact metadata rows."""

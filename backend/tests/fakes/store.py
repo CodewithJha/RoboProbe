@@ -406,6 +406,15 @@ class _Workers:
             if w.backend == backend and w.status in {"IDLE", "BUSY", "DRAINING"}
         )
 
+    def stale(self, *, older_than: datetime) -> tuple[WorkerRecord, ...]:
+        out: list[WorkerRecord] = []
+        for worker in self._db.workers.values():
+            if worker.status == "OFFLINE":
+                continue
+            if worker.last_heartbeat is None or worker.last_heartbeat < older_than:
+                out.append(worker)
+        return tuple(out)
+
 
 class _Artifacts:
     def __init__(self, db: _Db) -> None:

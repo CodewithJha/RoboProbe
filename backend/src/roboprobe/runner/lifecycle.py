@@ -12,22 +12,18 @@ from uuid import UUID
 import structlog
 
 from roboprobe.core.errors import ConflictError, ErrorCode, NotFoundError
-from roboprobe.core.logging import EVENTS
 from roboprobe.core.types import CampaignStatus, JsonValue
 from roboprobe.runner.ports import CampaignView, UnitOfWorkPort, UowFactory
 
 __all__ = [
     "ALLOWED",
+    "IDEMPOTENT",
     "CampaignCommand",
     "CampaignService",
-    "IDEMPOTENT",
     "transition",
 ]
 
 log = structlog.get_logger(__name__)
-
-_STATE_CHANGED: Final = "campaign.state_changed"
-assert _STATE_CHANGED in EVENTS
 
 TOPIC_CAMPAIGN_UPDATED: Final = "campaign.updated"
 
@@ -161,7 +157,7 @@ class CampaignService:
             uow.events.append(TOPIC_CAMPAIGN_UPDATED, payload, campaign_id=campaign_id)
             uow.commit()
         log.info(
-            _STATE_CHANGED,
+            "campaign.state_changed",
             campaign_id=str(campaign_id),
             from_status=previous.value,
             to_status=new_status.value,
@@ -174,5 +170,6 @@ class CampaignService:
 def _require(uow: UnitOfWorkPort, campaign_id: UUID) -> CampaignView:
     campaign = uow.campaigns.get(campaign_id)
     if campaign is None:
-        raise NotFoundError("campaign not found", context={"campaign_id": str(campaign_id)})
+        msg = "campaign not found"
+        raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
     return campaign
