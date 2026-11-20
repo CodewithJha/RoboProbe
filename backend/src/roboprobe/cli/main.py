@@ -29,6 +29,7 @@ import typer
 from typer.core import TyperGroup
 
 from roboprobe.cli import (
+    analyze,
     artifacts,
     bundle,
     campaign,
@@ -37,6 +38,7 @@ from roboprobe.cli import (
     experiment,
     oracle,
     replay,
+    report,
     run,
     runs,
     scenario,
@@ -70,6 +72,8 @@ COMMAND_GROUPS: Sequence[typer.Typer] = (
     runs.app,
     runs.queue_app,
     replay.app,
+    analyze.app,
+    report.app,
     oracle.app,
     scenario.app,
     run.app,

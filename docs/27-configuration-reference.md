@@ -136,6 +136,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `runner.alerts.no_workers_after_s` | float | `60.0` | `ROBOPROBE_RUNNER__ALERTS__NO_WORKERS_AFTER_S` | Emit NO_WORKERS when a RUNNING campaign has no worker this long [s]. |
 | `runner.alerts.gp_fallback_repeat` | int | `3` | `ROBOPROBE_RUNNER__ALERTS__GP_FALLBACK_REPEAT` | Emit GP_FALLBACK_REPEATED after this many consecutive selector fallbacks. |
 | `runner.analysis.incremental_every_n` | int | `25` | `ROBOPROBE_RUNNER__ANALYSIS__INCREMENTAL_EVERY_N` | Re-run incremental failure analysis every N finished runs. |
+| `runner.analysis.max_workers` | int | `1` | `ROBOPROBE_RUNNER__ANALYSIS__MAX_WORKERS` | Concurrent analysis jobs per orchestrator process. |
 | `runner.count_invalid_in_budget` | bool | `false` | `ROBOPROBE_RUNNER__COUNT_INVALID_IN_BUDGET` | Whether INVALID runs consume campaign budget. |
 | `runner.retry.max_attempts` | int | `3` | `ROBOPROBE_RUNNER__RETRY__MAX_ATTEMPTS` | Attempts including the first. |
 | `runner.retry.base_delay_s` | float | `0.5` | `ROBOPROBE_RUNNER__RETRY__BASE_DELAY_S` | First backoff delay [s]. |

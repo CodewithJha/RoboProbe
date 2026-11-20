@@ -53,6 +53,11 @@ class RunnerAnalysisSettings(SettingsSection):
     incremental_every_n: int = Field(
         default=25, gt=0, description="Re-run incremental failure analysis every N finished runs."
     )
+    max_workers: int = Field(
+        default=1,
+        gt=0,
+        description="Concurrent analysis jobs per orchestrator process (ThreadPoolExecutor).",
+    )
 
 
 class RetrySettings(SettingsSection):

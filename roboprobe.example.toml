@@ -111,6 +111,8 @@
 [runner.analysis]
 # Re-run incremental failure analysis every N finished runs.
 # incremental_every_n = 25
+# Concurrent analysis jobs per orchestrator process.
+# max_workers = 1
 
 [runner.retry]
 # Attempts including the first.
