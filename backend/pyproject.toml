@@ -74,6 +74,9 @@ dev = [
 [project.scripts]
 roboprobe = "roboprobe.cli.main:app"
 
+# Optional plugins; built-in analyzers are wired in roboprobe.analysis.pipeline.
+[project.entry-points."roboprobe.analyzers"]
+
 [project.entry-points."roboprobe.backends"]
 kinematic2d = "roboprobe.backends.kinematic2d.backend:Kinematic2DBackend"
 replay = "roboprobe.backends.replay.backend:ReplayBackend"

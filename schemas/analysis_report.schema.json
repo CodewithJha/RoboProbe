@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://roboprobe.dev/schemas/analysis_report.schema.json",
+  "title": "RoboProbe analysis report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "analysis_schema_version",
+    "analysis_id",
+    "campaign_id",
+    "kind",
+    "status",
+    "n_runs",
+    "n_fail",
+    "mode_codes",
+    "warnings",
+    "summary",
+    "duration_s"
+  ],
+  "properties": {
+    "analysis_schema_version": { "type": "integer", "const": 1 },
+    "analysis_id": { "type": "string", "format": "uuid" },
+    "campaign_id": { "type": "string", "format": "uuid" },
+    "kind": { "type": "string", "enum": ["full", "incremental"] },
+    "status": { "type": "string", "enum": ["OK", "ERROR", "PARTIAL"] },
+    "n_runs": { "type": "integer", "minimum": 0 },
+    "n_fail": { "type": "integer", "minimum": 0 },
+    "mode_codes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "summary": { "type": "object" },
+    "duration_s": { "type": "number", "minimum": 0 },
+    "artefact_sha256": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 64, "maxLength": 64 }
+    }
+  }
+}

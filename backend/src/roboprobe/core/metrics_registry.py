@@ -25,6 +25,7 @@ from typing import Final
 from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram, generate_latest
 
 __all__ = [
+    "ANALYSIS_STEP_BUCKETS_S",
     "API_REQUEST_BUCKETS_S",
     "EPISODE_RTF_BUCKETS",
     "GP_FIT_BUCKETS_S",
@@ -38,6 +39,8 @@ RUN_DURATION_BUCKETS_S: Final = (1.0, 2.5, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 3
 """Run phase durations [s]: k2d episodes take seconds, Gazebo episodes minutes."""
 SELECTOR_PROPOSE_BUCKETS_S: Final = (0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0)
 """Strategy ``propose`` latency [s] (target <= 2 s, NFR-PERF-002)."""
+ANALYSIS_STEP_BUCKETS_S: Final = (0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 120.0)
+"""Analysis pipeline step latency [s]."""
 GP_FIT_BUCKETS_S: Final = (0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0)
 """Surrogate (GP) fit time [s]; grows roughly cubically with observations."""
 EPISODE_RTF_BUCKETS: Final = (0.1, 0.25, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0, 100.0)
@@ -57,6 +60,7 @@ class Metrics:
         queue_depth: Pending runs. Labels: backend.
         workers: Worker processes. Labels: backend, status.
         selector_propose_seconds: Strategy ``propose`` latency [s]. Labels: strategy.
+        analysis_step_seconds: Analysis pipeline step latency [s]. Labels: step.
         gp_fit_seconds: Surrogate fit time [s]. No labels.
         episode_rtf: Episode real-time factor. Labels: backend.
         infra_errors_total: Infrastructure errors. Labels: backend, reason.
@@ -69,6 +73,7 @@ class Metrics:
     queue_depth: Gauge
     workers: Gauge
     selector_propose_seconds: Histogram
+    analysis_step_seconds: Histogram
     gp_fit_seconds: Histogram
     episode_rtf: Histogram
     infra_errors_total: Counter
@@ -124,6 +129,13 @@ def create_metrics(*, enabled: bool) -> Metrics:
             ("strategy",),
             registry=reg,
             buckets=SELECTOR_PROPOSE_BUCKETS_S,
+        ),
+        analysis_step_seconds=Histogram(
+            "roboprobe_analysis_step_seconds",
+            "Analysis pipeline step latency in seconds.",
+            ("step",),
+            registry=reg,
+            buckets=ANALYSIS_STEP_BUCKETS_S,
         ),
         gp_fit_seconds=Histogram(
             "roboprobe_gp_fit_seconds",
