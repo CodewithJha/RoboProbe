@@ -32,7 +32,10 @@ UP_FLAGS    ?= --build
 
 .DEFAULT_GOAL := help
 .PHONY: help setup lock lint format typecheck test test-fast test-cov pre-commit docs-check clean \
-	config-docs config-docs-check up down db-up logs ps
+	config-docs config-docs-check up down db-up logs ps backup restore
+
+BACKUP_DIR ?= backups
+BACKUP_RETENTION ?= 7
 
 help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
@@ -111,3 +114,10 @@ logs: ## Follow logs of all running services
 
 ps: ## List stack containers
 	$(COMPOSE) --profile '*' ps -a
+
+backup: ## pg_dump custom format plus artefact archive (doc 29 §7)
+	BACKUP_DIR="$(BACKUP_DIR)" BACKUP_RETENTION="$(BACKUP_RETENTION)" \
+		scripts/backup.sh --out "$(BACKUP_DIR)"
+
+restore: ## Restore BACKUP=path (set FORCE=1 to overwrite a non-empty database)
+	scripts/restore.sh $(if $(FORCE),--force,) "$(BACKUP)"

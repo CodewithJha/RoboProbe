@@ -70,9 +70,9 @@ Action: if same manifest, this is genuine non-determinism ⇒ record reproducibi
 
 | Frequency | Task |
 |-----------|------|
-| Before long experiments | `make db-backup`; check disk; `make demo` smoke test |
+| Before long experiments | `make backup`; check disk; `make demo` smoke test |
 | Weekly | review Dependabot PRs; `roboprobe gc --dry-run` |
-| Monthly | update pinned ROS/Gazebo digest after nightly sim passes; restore-test a backup |
+| Monthly | update pinned ROS/Gazebo digest after nightly sim passes; `make restore` a backup onto a scratch database |
 | Per release | follow 33 release checklist |
 
 ## 4. Escalation
