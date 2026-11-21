@@ -80,9 +80,16 @@ Because workers are stateless and pull from the queue, horizontal scaling needs 
 
 ## 7. Backup & restore
 
-- DB: `make db-backup` → `pg_dump -Fc` to `backups/roboprobe-YYYYMMDD.dump`; restore `pg_restore -c`.
-- Artefacts: content-addressed ⇒ incremental `rsync`/`restic` of `data/artifacts`.
-- Per-campaign portable bundle: `roboprobe export <id>` / `import`.
+`make backup` (or `scripts/backup.sh [--out DIR]`) writes `backups/backup-YYYYmmddTHHMMSS/`:
+
+- `db.dump` — `pg_dump -Fc` of the compose Postgres service (`postgres`; set `DATABASE_URL` to dump a URL instead)
+- `artifacts.tar.zst` — zstd tar of `ARTIFACT_ROOT` (default `data/artifacts`) with a `SHA256SUMS` manifest
+
+`BACKUP_RETENTION` (default 7) is how many timestamped directories to keep. `BACKUP_DIR` (default `backups`) is the destination root.
+
+`make restore BACKUP=backups/backup-…` (or `scripts/restore.sh [--force] BACKUP_DIR`) checks the manifest, refuses a database that already has rows unless `--force` / `FORCE=1`, runs `pg_restore --clean --if-exists --no-owner`, extracts artefacts, then `roboprobe db upgrade` and `roboprobe artifacts verify`.
+
+Per-campaign portable bundle: `roboprobe export <id>` / `import`.
 
 ## 8. Rollback
 
