@@ -24,6 +24,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   or whose changelog section is missing. `.github/workflows/images.yml` builds the backend image
   (web and Gazebo when their Dockerfiles exist), scans it with Trivy, and attaches an SBOM.
   `.github/workflows/release.yml` runs that check, publishes images, and opens the GitHub Release.
+- Weekly mutation testing (T-131): `mutmut` on `selection/` and `oracles/` via
+  `.github/workflows/mutation.yml` (schedule + manual, not a pull-request check). Kill rate is
+  written to the job summary and an HTML artifact.
 - Experiment configs EXP-01…EXP-07 (T-104): `configs/experiments/` plus the d=8 and
   doubled-lidar-noise warehouse spaces. Each file records the frozen S-PROBE pre-registration hash.
 - API foundation (T-080a–d): FastAPI `create_app` with CORS/GZip, `/health/live|ready`, `/api/v1/meta`,
