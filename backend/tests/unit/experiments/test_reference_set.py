@@ -48,7 +48,9 @@ def test_generate_label_and_hash(tmp_path: Path) -> None:
         workdir=tmp_path / "runs",
     )
     assert len(rows) == 8
-    assert {row["verdict"] for row in rows} <= {Verdict.PASS.value, Verdict.FAIL.value, Verdict.INVALID.value}
+    verdicts = {row["verdict"] for row in rows}
+    allowed = {Verdict.PASS.value, Verdict.FAIL.value, Verdict.INVALID.value}
+    assert verdicts <= allowed
     calibration = load_calibration(REPO / "configs/reference/k2d_gt_canonical.yaml")
     label_rows(rows, calibration, radius=0.05)
     path = tmp_path / "ref.parquet"

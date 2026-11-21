@@ -10,7 +10,7 @@ import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 import numpy as np
@@ -24,7 +24,7 @@ from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import Scenario, SutProfile, Verdict
 from roboprobe.metrics.discovery_metrics import NOVEL_LABEL, label_failures
 from roboprobe.oracles.registry import create_all
-from roboprobe.oracles.verdict import VerdictEngine
+from roboprobe.oracles.verdict import EpisodeView, VerdictEngine
 from roboprobe.scenario.hashing import scenario_hash
 from roboprobe.scenario.samplers import SobolSampler
 from roboprobe.scenario.space import ScenarioSpace
@@ -89,7 +89,7 @@ def generate_rows(  # noqa: PLR0913
     rng = np.random.default_rng(seed)
     sampler = SobolSampler(space.dim)
     unit = sampler.sample(n, rng)
-    task = load_task(repo_root / space.task_ref, strict=False, base_dir=repo_root)
+    task = load_task(repo_root / space.task_ref, strict=False)
     backend = Kinematic2DBackend(settings)
     engine = VerdictEngine(create_all(settings.oracles))
     sim, wall = episode_timeouts(settings.worker)
@@ -111,7 +111,7 @@ def generate_rows(  # noqa: PLR0913
             wall_timeout_s=wall,
         )
         result = backend.run_episode(req, backend.materialize(req))
-        outcome = engine.judge(result, task)
+        outcome = engine.judge(cast(EpisodeView, result), task)
         rows.append(
             {
                 "ordinal": index,

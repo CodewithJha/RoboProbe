@@ -6,6 +6,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from tests.factories import make_scenario
 
 from roboprobe.backends.base import EpisodeRequest, episode_timeouts
 from roboprobe.backends.kinematic2d.backend import Kinematic2DBackend
@@ -16,7 +17,6 @@ from roboprobe.oracles.registry import create_all
 from roboprobe.oracles.verdict import VerdictEngine
 from roboprobe.scenario.space import ScenarioSpace
 from roboprobe.scenario.task import load_task
-from tests.factories import make_scenario
 
 pytestmark = pytest.mark.unit
 

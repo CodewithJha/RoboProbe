@@ -57,7 +57,7 @@ class K2DGtCalibration(BaseModel):
         missing = [label for label in order if label not in self.modes]
         if missing:
             msg = f"calibration missing modes: {', '.join(missing)}"
-            raise errors.ValidationError(msg, context={"missing": missing})
+            raise errors.ValidationError(msg, context={"missing": ",".join(missing)})
         return tuple((label, self.modes[label]) for label in order)
 
 
