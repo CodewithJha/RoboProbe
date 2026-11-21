@@ -359,3 +359,20 @@ export function useCreateReport() {
       requireData(await api.POST('/api/v1/reports', { body })),
   });
 }
+
+export function useRunTrace(id: string, hz?: number, columns?: string) {
+  return useQuery({
+    queryKey: ['runs', id, 'trace', { hz, columns }],
+    enabled: Boolean(id),
+    queryFn: async ({ signal }) =>
+      requireData(
+        await api.GET('/api/v1/runs/{run_id}/trace', {
+          signal,
+          params: {
+            path: { run_id: id },
+            query: { ...(hz === undefined ? {} : { hz }), ...(columns ? { columns } : {}) },
+          },
+        }),
+      ),
+  });
+}
