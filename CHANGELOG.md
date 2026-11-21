@@ -14,6 +14,11 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   (anonymous Viewer, admin password from a secret file) and an OTLP collector + Jaeger.
   Optional tracing (`roboprobe[otel]`) exports spans only when `observability.otlp_endpoint` is set.
   Compose ports: `ROBOPROBE_GRAFANA_PORT`, `ROBOPROBE_PROMETHEUS_PORT`, `ROBOPROBE_JAEGER_PORT`.
+- Security suite (T-109): `backend/tests/security/` maps each doc 31 threat to a test, and
+  `scripts/check_security_map.py` fails CI when a `TM-xx` row is missing from
+  `docs/evidence/security-tests.md`. Constraint literal exponents above
+  `scenario.constraint_max_literal_exponent` and YAML alias bombs above `scenario.yaml_max_aliases`
+  are rejected.
 - Experiment configs EXP-01…EXP-07 (T-104): `configs/experiments/` plus the d=8 and
   doubled-lidar-noise warehouse spaces. Each file records the frozen S-PROBE pre-registration hash.
 - API foundation (T-080a–d): FastAPI `create_app` with CORS/GZip, `/health/live|ready`, `/api/v1/meta`,

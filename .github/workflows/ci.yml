@@ -24,7 +24,7 @@ env:
   # Tier selection mirrors `make test-fast` (Makefile FAST_MARKERS).
   FAST_MARKERS: unit or property or contract
   # Every collected test must carry one of these tier markers (backend/pyproject.toml).
-  TIER_MARKERS: unit or property or contract or integration or benchmark or sim or slow
+  TIER_MARKERS: unit or property or contract or integration or benchmark or sim or slow or security
 
 jobs:
   lint:
@@ -123,6 +123,11 @@ jobs:
       - name: Integration tests (PostgreSQL 17 service)
         working-directory: backend
         run: uv run pytest -m integration --junitxml=test-results/junit-integration.xml
+      - name: Security tests (doc 31)
+        working-directory: backend
+        run: uv run pytest -m security --junitxml=test-results/junit-security.xml
+      - name: Security threat map
+        run: uv run --directory backend python ../scripts/check_security_map.py
       - name: Test summary
         if: ${{ !cancelled() }}
         uses: test-summary/action@37b508cfee6d4d080eedd00b5bb240a6a784a6a5 # v2.6
