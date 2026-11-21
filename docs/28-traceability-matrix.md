@@ -29,7 +29,7 @@
 | PR-19 Plugin APIs | NFR-EXT-001…003 | 04 §8, 34 §3, ADR-0016 | T-035, T-046, T-050 | contract suites, import-linter |
 | PR-20 Bundles | FR-STO-003 | 11 | T-014 | round-trip |
 | PR-21 S-CEM | FR-SEL-009 | 07 §8 | T-062 | contract |
-| PR-22 Observability profile | NFR-OBS-001/002 | 21 §5 | T-004 | metrics endpoint test |
+| PR-22 Observability profile | NFR-OBS-001/002 | 21 §5 | T-004, T-125, T-126 | metrics registry cross-check; tracing no-import test |
 
 ## 2. Non-functional requirements → verification
 

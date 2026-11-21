@@ -28,6 +28,7 @@ from roboprobe.core.health import Check, HealthServer, serve_health
 from roboprobe.core.metrics_registry import Metrics
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import CampaignStatus, RunStatus
+from roboprobe.observability.tracing import span
 from roboprobe.runner.lifecycle import CampaignService
 from roboprobe.runner.loop import CampaignLoop
 from roboprobe.runner.ports import UowFactory
@@ -116,20 +117,21 @@ class Orchestrator:
 
     def tick(self) -> None:
         """One supervisor tick: discover campaigns, reap, refresh metrics."""
-        self._last_tick = self.clock.now()
-        self._reap_if_due()
-        self._refresh_queue_depth()
-        self._prune_finished()
-        running = self._list_running()
-        with self._guard:
-            capacity = self.settings.runner.max_concurrent_campaigns - len(self._active)
-            for campaign_id in running:
-                if capacity <= 0:
-                    break
-                if campaign_id in self._active:
-                    continue
-                if self._start_campaign(campaign_id):
-                    capacity -= 1
+        with span("campaign.tick"):
+            self._last_tick = self.clock.now()
+            self._reap_if_due()
+            self._refresh_queue_depth()
+            self._prune_finished()
+            running = self._list_running()
+            with self._guard:
+                capacity = self.settings.runner.max_concurrent_campaigns - len(self._active)
+                for campaign_id in running:
+                    if capacity <= 0:
+                        break
+                    if campaign_id in self._active:
+                        continue
+                    if self._start_campaign(campaign_id):
+                        capacity -= 1
 
     def _start_campaign(self, campaign_id: UUID) -> bool:
         locks = importlib.import_module("roboprobe.store.locks")

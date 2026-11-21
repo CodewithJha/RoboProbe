@@ -334,7 +334,7 @@ Build/dev-time variables (Vite, `web/.env.example`; read in `web/vite.config.ts`
 
 ### 4.13 Compose-level variables (`.env`)
 
-`ROBOPROBE_IMAGE_TAG` (dev), `ROBOPROBE_API_PORT` (8000), `ROBOPROBE_WEB_PORT` (8080), `ROBOPROBE_DB_NAME`/`ROBOPROBE_DB_USER` (roboprobe), `ROBOPROBE_DB_PORT` (5432; published on `127.0.0.1` only with the `dev` profile), `ROBOPROBE_K2D_REPLICAS` (2).
+`ROBOPROBE_IMAGE_TAG` (dev), `ROBOPROBE_API_PORT` (8000), `ROBOPROBE_WEB_PORT` (8080), `ROBOPROBE_DB_NAME`/`ROBOPROBE_DB_USER` (roboprobe), `ROBOPROBE_DB_PORT` (5432; published on `127.0.0.1` only with the `dev` profile), `ROBOPROBE_K2D_REPLICAS` (2), `ROBOPROBE_GRAFANA_PORT` (3000), `ROBOPROBE_PROMETHEUS_PORT` (9090), `ROBOPROBE_JAEGER_PORT` (16686). Grafana, Prometheus and Jaeger are published on `127.0.0.1` only with the `observability` profile.
 The database password is never a variable: `make setup` writes `secrets/db_password` (git-ignored) and Compose mounts it as the `db_password` secret.
 
 ## 5. Example `roboprobe.toml`

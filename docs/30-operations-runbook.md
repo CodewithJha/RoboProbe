@@ -14,6 +14,7 @@
 | Pause everything | `roboprobe campaign pause --all` |
 | Drain a worker | `docker compose stop worker-gazebo` (SIGTERM ⇒ finishes current run, `drain_timeout_s`) |
 | DB shell | `make db-shell` |
+| Metrics & traces | `make observability` — Prometheus (`127.0.0.1:9090`), Grafana (`127.0.0.1:3000`, anonymous Viewer; admin password in `docker/observability/dev-secrets/grafana_admin_password`), Jaeger (`127.0.0.1:16686`). Set `ROBOPROBE_OBSERVABILITY__OTLP_ENDPOINT=http://otel-collector:4318/v1/traces` on API, orchestrator and workers to export traces. Workers must bind health/metrics on `0.0.0.0` (`ROBOPROBE_WORKER__HEALTH_HOST`) so Prometheus can scrape them. |
 
 ## 2. Incidents & procedures
 

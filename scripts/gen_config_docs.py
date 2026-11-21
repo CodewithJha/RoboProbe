@@ -93,6 +93,13 @@ COMPOSE_VARIABLES: Sequence[tuple[str, str, str]] = (
     ("ROBOPROBE_DB_USER", "roboprobe", "PostgreSQL user name."),
     ("ROBOPROBE_DB_PORT", "5432", "Loopback host port for Postgres (dev profile only)."),
     ("ROBOPROBE_K2D_REPLICAS", "2", "Number of kinematic2d worker containers."),
+    ("ROBOPROBE_GRAFANA_PORT", "3000", "Loopback host port for Grafana (observability profile)."),
+    (
+        "ROBOPROBE_PROMETHEUS_PORT",
+        "9090",
+        "Loopback host port for Prometheus (observability profile).",
+    ),
+    ("ROBOPROBE_JAEGER_PORT", "16686", "Loopback host port for Jaeger (observability profile)."),
 )
 
 ENV_HEADER = """\

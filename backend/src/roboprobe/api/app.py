@@ -25,6 +25,11 @@ from roboprobe.api.routers import meta as meta_router
 from roboprobe.core.logging import bind_context
 from roboprobe.core.metrics_registry import Metrics, create_metrics
 from roboprobe.core.settings import RoboProbeSettings, load_settings
+from roboprobe.observability.tracing import (
+    configure_tracing,
+    current_trace_id,
+    instrument_fastapi,
+)
 
 __all__ = ["GZIP_MINIMUM_SIZE", "create_app"]
 
@@ -92,6 +97,10 @@ def create_app(settings: RoboProbeSettings | None = None) -> FastAPI:
 
         app.mount("/metrics", make_asgi_app(registry=metrics.registry))
 
+    configure_tracing(
+        resolved.observability, resolved.observability.service_name or "roboprobe-api"
+    )
+    instrument_fastapi(app)
     return app
 
 
@@ -128,7 +137,7 @@ class _TraceIdMiddleware:
             await self.app(scope, receive, send)
             return
         headers = {k.decode().lower(): v.decode() for k, v in scope.get("headers", [])}
-        trace_id = headers.get("x-trace-id") or str(uuid.uuid4())
+        trace_id = headers.get("x-trace-id") or current_trace_id() or str(uuid.uuid4())
         scope.setdefault("state", {})
         # Starlette request.state is populated from scope["state"] when present.
         state = scope.get("state")
