@@ -10,7 +10,7 @@ describe('SpecimenTag', () => {
         <SpecimenTag kind="run" id="run 87" verdict="FAIL" label="Collision" />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('link', { name: 'run 87 Collision, Run, FAIL' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'FAIL run 87 Collision, Run' })).toHaveAttribute(
       'href',
       '/runs/run%2087',
     );
