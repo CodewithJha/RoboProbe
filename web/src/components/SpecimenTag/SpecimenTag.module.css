@@ -1,5 +1,7 @@
 .tag {
   display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
@@ -35,6 +37,8 @@
 .id {
   font-family: var(--font-mono);
   font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+  max-width: 100%;
 }
 
 .label {
