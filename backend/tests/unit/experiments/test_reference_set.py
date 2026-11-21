@@ -10,7 +10,7 @@ import pytest
 from roboprobe.backends.kinematic2d.calibration import load_calibration
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import Verdict
-from roboprobe.experiments.reference_set import (
+from roboprobe.bootstrap.reference_set import (
     generate_rows,
     label_rows,
     sha256_file,

@@ -19,7 +19,9 @@ import pyarrow.parquet as pq
 
 from roboprobe.backends.base import EpisodeRequest, episode_timeouts
 from roboprobe.backends.kinematic2d.backend import Kinematic2DBackend
-from roboprobe.backends.kinematic2d.calibration import K2DGtCalibration
+from roboprobe.backends.kinematic2d.calibration import K2DGtCalibration, load_calibration
+from roboprobe.backends.kinematic2d.model import Kinematic2DModel
+from roboprobe.core import errors
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import Scenario, SutProfile, Verdict
 from roboprobe.metrics.discovery_metrics import NOVEL_LABEL, label_failures
@@ -32,7 +34,9 @@ from roboprobe.scenario.task import load_task
 
 __all__ = [
     "ReferenceManifest",
+    "generate_and_write",
     "generate_rows",
+    "label_parquet",
     "label_rows",
     "sha256_file",
     "write_manifest",
@@ -171,3 +175,61 @@ def write_manifest(path: Path, manifest: ReferenceManifest) -> None:
         json.dumps(manifest.__dict__, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
+
+
+def _repo_root() -> Path:
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / "configs" / "scenario_spaces").is_dir():
+            return parent
+    msg = "repository root not found (configs/scenario_spaces missing)"
+    raise errors.ConfigError(msg)
+
+
+def generate_and_write(
+    settings: RoboProbeSettings,
+    *,
+    output: Path,
+    n: int | None,
+    seed: int | None,
+    space_id: str,
+) -> ReferenceManifest:
+    """Generate, write parquet, and return manifest metadata."""
+    ref = settings.experiments.reference_set
+    count = n if n is not None else ref.n
+    ref_seed = seed if seed is not None else ref.seed
+    root = _repo_root()
+    space = ScenarioSpace.from_yaml(
+        root / "configs" / "scenario_spaces" / f"{space_id}.yaml", base_dir=root
+    )
+    work = Path(settings.storage.workdir_root) / "reference-generate"
+    rows = generate_rows(space, settings, n=count, seed=ref_seed, repo_root=root, workdir=work)
+    write_parquet(output, rows)
+    model = Kinematic2DModel.from_yaml(Path(settings.backends.kinematic2d.model_file))
+    manifest = ReferenceManifest(
+        path=str(output),
+        sha256=sha256_file(output),
+        n=count,
+        seed=ref_seed,
+        space_id=space.id,
+        space_version=space.version,
+        k2d_model_version=model.id,
+    )
+    write_manifest(output.with_suffix(".manifest.json"), manifest)
+    return manifest
+
+
+def label_parquet(
+    settings: RoboProbeSettings,
+    source: Path,
+    *,
+    output: Path | None,
+) -> tuple[Path, int]:
+    """Label failures in ``source`` and write to ``output`` (default in-place)."""
+    calibration = load_calibration(Path(settings.backends.kinematic2d.calibration_file))
+    table = pq.read_table(source)
+    rows = table.to_pylist()
+    label_rows(rows, calibration, radius=settings.experiments.mode_match_radius)
+    dest = output or source
+    write_parquet(dest, rows)
+    return dest, sum(1 for row in rows if row.get("gt_label"))
