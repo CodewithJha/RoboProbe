@@ -19,6 +19,11 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   `Last-Event-ID` resume. New settings: `api.sse.poll_interval_s`, `queue_size`, `batch_size`,
   `reconnect_initial_s`, `reconnect_max_s`, `connect_timeout_s`. Metrics: `roboprobe_sse_clients`,
   `roboprobe_sse_reconnects_total`.
+- Release tooling (T-119, T-124): `scripts/release_check.py` rejects a tag whose version does not
+  match `backend/pyproject.toml`, `web/package.json`, and `package.xml` when the ROS package exists,
+  or whose changelog section is missing. `.github/workflows/images.yml` builds the backend image
+  (web and Gazebo when their Dockerfiles exist), scans it with Trivy, and attaches an SBOM.
+  `.github/workflows/release.yml` runs that check, publishes images, and opens the GitHub Release.
 - Experiment configs EXP-01…EXP-07 (T-104): `configs/experiments/` plus the d=8 and
   doubled-lidar-noise warehouse spaces. Each file records the frozen S-PROBE pre-registration hash.
 - API foundation (T-080a–d): FastAPI `create_app` with CORS/GZip, `/health/live|ready`, `/api/v1/meta`,
