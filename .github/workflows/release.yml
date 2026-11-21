@@ -1,0 +1,70 @@
+# Tag push publishes images and a GitHub Release (T-124). workflow_dispatch verifies only.
+name: release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to verify (vX.Y.Z). Required for a dry run.
+        type: string
+        required: true
+      dry_run:
+        description: Verify only; do not publish.
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+        with:
+          python-version: "3.12"
+      - name: Version consistency
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: uv run --directory backend python ../scripts/release_check.py --tag "$RELEASE_TAG"
+
+  images:
+    name: images
+    needs: verify
+    if: github.event_name == 'push' && inputs.dry_run != true
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+      id-token: write
+    uses: ./.github/workflows/images.yml
+
+  release:
+    name: github-release
+    needs: images
+    if: github.event_name == 'push' && inputs.dry_run != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+        with:
+          python-version: "3.12"
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          uv run --directory backend python ../scripts/release_check.py \
+            --tag "$GITHUB_REF_NAME" --notes > /tmp/notes.md
+          args=(gh release create "$GITHUB_REF_NAME" --verify-tag --notes-file /tmp/notes.md)
+          case "$GITHUB_REF_NAME" in
+            *-*) args+=(--prerelease) ;;
+          esac
+          "${args[@]}"
