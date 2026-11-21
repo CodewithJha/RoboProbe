@@ -80,6 +80,10 @@
           "$ref": "#/$defs/relative_path",
           "description": "kinematic2d model file holding the robot, controller and planner constants (T-029)."
         },
+        "perception_model_file": {
+          "$ref": "#/$defs/relative_path",
+          "description": "Perception degradation constants for depth simulation (T-034); defaults from settings when omitted."
+        },
         "gain_overrides": {
           "description": "Constants overridden for this profile, keyed by their dotted path in `model_file`.",
           "type": "object",

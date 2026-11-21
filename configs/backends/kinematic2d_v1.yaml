@@ -3,29 +3,35 @@
 schema_version: 1
 id: kinematic2d_v1
 robot:
-  footprint_radius_m: 0.17      # TB4 disc [m]
-  a_max_mps2: 0.5               # linear accel limit [m/s²]
-  alpha_max_radps2: 2.0         # yaw accel limit [rad/s²]
+  footprint_radius_m: 0.17
+  a_max_mps2: 0.5
+  alpha_max_radps2: 2.0
 lidar:
   r_min_m: 0.15
   r_max_m: 12.0
-  fov_rad: 6.283185307179586    # 2π, 360°
+  fov_rad: 6.283185307179586
 depth:
   r_min_m: 0.15
-  fov_rad: 1.2217304763960306   # 70°
+  fov_rad: 1.2217304763960306
 localization:
-  k0: 1.0                       # scan-match gain at P4=0, P8=0
-  lidar_noise_ref_m: 0.1        # P4 at which gain reaches 0 [m]
+  k0: 0.25
+  lidar_noise_ref_m: 0.08
 costmap:
-  inflation_m: 0.35
+  inflation_m: 0.3
   size_m: 6.0
   resolution_m: 0.05
+  lidar_hit_inflation_cells: 0
+  depth_hit_inflation_cells: 0
+  lidar_overlay_min_noise_std_m: 0.10
 planner:
   replan_hz: 1.0
 controller:
-  lookahead_m: 0.6
+  lookahead_m: 0.45
   proximity_m: 1.0
   curvature_gain_m: 0.5
+friction:
+  mu_base: 0.32
+  yaw_slip_exponent: 2.0
 world:
   resolution_m: 0.05
   origin_x_m: 0.0

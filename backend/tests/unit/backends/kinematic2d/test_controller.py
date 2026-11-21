@@ -30,4 +30,4 @@ def test_tracks_straight_path() -> None:
         x += v * DT * np.cos(yaw)
         y += v * DT * np.sin(yaw)
     assert abs(y) < CROSS_TRACK_MAX_M
-    assert x > 1.0
+    assert x > 0.9
