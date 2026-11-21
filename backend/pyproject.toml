@@ -190,7 +190,11 @@ filterwarnings = ["error"]
 [tool.coverage.run]
 source = ["roboprobe"]
 branch = true
-omit = ["*/roboprobe/backends/gazebo_nav2/*"]
+omit = [
+    "*/roboprobe/backends/gazebo_nav2/*",
+    # Thin FastAPI routers: contract-tested via openapi-check + nightly Schemathesis (T-084).
+    "*/roboprobe/api/routers/*",
+]
 
 [tool.coverage.report]
 fail_under = 85

@@ -4,12 +4,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
-from roboprobe.core.errors import NotFoundError
+from roboprobe.core.errors import ErrorCode, NotFoundError, ValidationError
 from roboprobe.core.types import CampaignStatus
 from roboprobe.store.flush import execute
 from roboprobe.store.mapping import campaign_record
@@ -85,3 +86,50 @@ class SqlCampaignRepo:
             .order_by(CampaignRow.id)
         ).all()
         return tuple(campaign_record(row) for row in rows)
+
+    def etag_version(self, campaign_id: UUID) -> int:
+        row = self._s.get(CampaignRow, campaign_id)
+        if row is None:
+            msg = "campaign not found"
+            raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
+        return int(row.etag_version)
+
+    def patch(
+        self,
+        campaign_id: UUID,
+        *,
+        name: str | None = None,
+        tags: Sequence[str] | None = None,
+        expected_etag: int,
+    ) -> int:
+        row = self._s.get(CampaignRow, campaign_id)
+        if row is None:
+            msg = "campaign not found"
+            raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
+        if int(row.etag_version) != expected_etag:
+            msg = "If-Match does not match current campaign version"
+            raise ValidationError(
+                msg,
+                code=ErrorCode.PRECONDITION_FAILED,
+                context={"campaign_id": str(campaign_id), "etag_version": int(row.etag_version)},
+            )
+        new_etag = int(row.etag_version) + 1
+        values: dict[str, object] = {"etag_version": new_etag}
+        if name is not None:
+            values["name"] = name
+        if tags is not None:
+            values["tags"] = list(tags)
+        result = execute(
+            self._s,
+            update(CampaignRow).where(CampaignRow.id == campaign_id).values(**values),
+        )
+        if int(getattr(result, "rowcount", 0) or 0) != 1:
+            msg = "campaign not found"
+            raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
+        return new_etag
+
+    def delete(self, campaign_id: UUID) -> None:
+        result = execute(self._s, delete(CampaignRow).where(CampaignRow.id == campaign_id))
+        if int(getattr(result, "rowcount", 0) or 0) != 1:
+            msg = "campaign not found"
+            raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})

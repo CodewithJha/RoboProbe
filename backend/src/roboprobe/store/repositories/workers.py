@@ -15,6 +15,7 @@ from roboprobe.core.errors import NotFoundError
 from roboprobe.store.flush import execute
 from roboprobe.store.mapping import worker_record
 from roboprobe.store.orm import WorkerRow
+from roboprobe.store.pagination import Page, clamp_limit, extra_item
 from roboprobe.store.records import WorkerRecord
 
 _ONLINE = ("IDLE", "BUSY", "DRAINING")
@@ -72,6 +73,16 @@ class SqlWorkerRepo:
         if int(getattr(result, "rowcount", 0) or 0) != 1:
             msg = "worker not found"
             raise NotFoundError(msg, context={"worker_id": worker_id})
+
+    def list(self, *, limit: int | None = None, cursor: str | None = None) -> Page[WorkerRecord]:
+        size = clamp_limit(limit)
+        stmt = select(WorkerRow).order_by(WorkerRow.id)
+        if cursor is not None:
+            stmt = stmt.where(WorkerRow.id > cursor)
+        rows = self._s.scalars(stmt.limit(size + 1)).all()
+        items, extra = extra_item([worker_record(r) for r in rows], size)
+        nxt = None if extra is None else items[-1].id
+        return Page(items=items, next_cursor=nxt)
 
     def online(self, backend: str) -> tuple[WorkerRecord, ...]:
         rows = self._s.scalars(

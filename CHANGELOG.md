@@ -7,6 +7,10 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- M7 REST API (T-081/082/084): `/api/v1` CRUD for spaces, SUT profiles, campaigns (lifecycle
+  commands), runs, artifacts, failure modes, importance/risk, experiments, reports, and workers.
+  Bootstrap wires `CampaignService` and analysis jobs; committed OpenAPI snapshot includes the new
+  routes.
 - `make backup` / `make restore` (`scripts/backup.sh`, `scripts/restore.sh`): timestamped `pg_dump -Fc` plus a
   zstd artefact archive with a SHA256 manifest. `BACKUP_RETENTION` (default 7) caps how many copies are kept.
   Restore refuses a non-empty database unless `--force` is passed, then runs `db upgrade` and `artifacts verify`.
