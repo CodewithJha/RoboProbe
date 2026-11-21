@@ -42,6 +42,7 @@ __all__ = [
     "Kinematic2DProfileConfig",
     "config_hash",
     "load_sut_profile",
+    "load_sut_profile_text",
 ]
 
 _SCHEMA = "sut_profile"
@@ -83,12 +84,15 @@ def config_hash(backend: str, config: Mapping[str, JsonValue]) -> str:
     return hashing.content_hash({"backend": backend, "config": dict(config)})
 
 
-def load_sut_profile(path: Path, *, strict: bool = False) -> SutProfile:
+def load_sut_profile(
+    path: Path, *, strict: bool = False, max_bytes: int | None = None
+) -> SutProfile:
     """Load, validate and hash a SUT profile file.
 
     Args:
         path: ``configs/sut_profiles/<id>.yaml``.
         strict: Also reject profiles with ``provisional`` values (release builds, Gazebo runs).
+        max_bytes: Reject larger files (callers pass ``api.max_upload_mb`` for uploads).
 
     Returns:
         The profile with its normalised ``config`` and ``config_hash``.
@@ -100,7 +104,36 @@ def load_sut_profile(path: Path, *, strict: bool = False) -> SutProfile:
             provisional values; ``context["errors"]`` lists JSON pointers.
     """
     source = str(path)
-    document = load_yaml_document(read_document(path), source=source)
+    document = load_yaml_document(read_document(path), source=source, max_bytes=max_bytes)
+    return _parse_document(
+        document, source=source, strict=strict, expected_stem=path.stem, file_name=path.name
+    )
+
+
+def load_sut_profile_text(
+    text: str | bytes,
+    *,
+    source: str,
+    strict: bool = False,
+    max_bytes: int | None = None,
+) -> SutProfile:
+    """Like :func:`load_sut_profile` for in-memory content (an API upload named ``source``).
+
+    There is no file name to match, so the ``id`` check is skipped: the document is the source of
+    truth for the profile id.
+    """
+    document = load_yaml_document(text, source=source, max_bytes=max_bytes)
+    return _parse_document(document, source=source, strict=strict)
+
+
+def _parse_document(
+    document: object,
+    *,
+    source: str,
+    strict: bool,
+    expected_stem: str | None = None,
+    file_name: str | None = None,
+) -> SutProfile:
     validate_document(document, schema=_SCHEMA, source=source)
     document = cast("dict[str, Any]", document)  # the schema guarantees an object
     profile_id: str = document["id"]
@@ -118,8 +151,8 @@ def load_sut_profile(path: Path, *, strict: bool = False) -> SutProfile:
     config: dict[str, JsonValue] = parsed.model_dump(mode="json", exclude_none=True)
 
     issues: list[tuple[str, str]] = []
-    if path.stem != profile_id:
-        issues.append(("/id", f"id {profile_id!r} must match the file name {path.name!r}"))
+    if expected_stem is not None and expected_stem != profile_id:
+        issues.append(("/id", f"id {profile_id!r} must match the file name {file_name!r}"))
     provisional: list[str] = document.get("provisional", [])
     for index, key in enumerate(provisional):
         pointer = json_pointer(["provisional", index])

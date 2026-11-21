@@ -726,12 +726,12 @@
         "title": "Page[FailureModeOut]",
         "type": "object"
       },
-      "Page_SpaceOut_": {
+      "Page_SpaceSummary_": {
         "additionalProperties": false,
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/SpaceOut"
+              "$ref": "#/components/schemas/SpaceSummary"
             },
             "title": "Items",
             "type": "array"
@@ -751,15 +751,15 @@
         "required": [
           "items"
         ],
-        "title": "Page[SpaceOut]",
+        "title": "Page[SpaceSummary]",
         "type": "object"
       },
-      "Page_SutProfileOut_": {
+      "Page_SutProfileDTO_": {
         "additionalProperties": false,
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/SutProfileOut"
+              "$ref": "#/components/schemas/SutProfileDTO"
             },
             "title": "Items",
             "type": "array"
@@ -779,7 +779,7 @@
         "required": [
           "items"
         ],
-        "title": "Page[SutProfileOut]",
+        "title": "Page[SutProfileDTO]",
         "type": "object"
       },
       "Page_WorkerOut_": {
@@ -1160,45 +1160,24 @@
         "title": "RunOut",
         "type": "object"
       },
-      "SpaceOut": {
+      "SpaceError": {
         "additionalProperties": false,
+        "description": "One validation problem: RFC 6901 pointer plus a message.",
         "properties": {
-          "created_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At"
-          },
-          "id": {
-            "title": "Id",
+          "message": {
+            "title": "Message",
             "type": "string"
           },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "schema_version": {
-            "title": "Schema Version",
-            "type": "integer"
-          },
-          "version": {
-            "title": "Version",
+          "pointer": {
+            "title": "Pointer",
             "type": "string"
           }
         },
         "required": [
-          "id",
-          "version",
-          "name",
-          "schema_version"
+          "pointer",
+          "message"
         ],
-        "title": "SpaceOut",
+        "title": "SpaceError",
         "type": "object"
       },
       "SpaceRef": {
@@ -1224,6 +1203,163 @@
           "id"
         ],
         "title": "SpaceRef",
+        "type": "object"
+      },
+      "SpaceSummary": {
+        "additionalProperties": false,
+        "description": "List-row view of one registered space version.",
+        "properties": {
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "dimension": {
+            "title": "Dimension",
+            "type": "integer"
+          },
+          "enabled_params": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Enabled Params",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "name",
+          "dimension",
+          "enabled_params",
+          "schema_version"
+        ],
+        "title": "SpaceSummary",
+        "type": "object"
+      },
+      "SpaceValidationResult": {
+        "additionalProperties": false,
+        "description": "Outcome of ``POST /spaces/validate`` (HTTP 200 even when invalid).",
+        "properties": {
+          "dimension": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dimension"
+          },
+          "enabled_params": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Enabled Params",
+            "type": "array"
+          },
+          "errors": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SpaceError"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "valid"
+        ],
+        "title": "SpaceValidationResult",
+        "type": "object"
+      },
+      "SpaceVersion": {
+        "additionalProperties": false,
+        "description": "Full stored definition of one space version (docs/12 \u00a76).",
+        "properties": {
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "definition": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Definition",
+            "type": "object"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "schema_version": {
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "name",
+          "definition",
+          "schema_version"
+        ],
+        "title": "SpaceVersion",
         "type": "object"
       },
       "StrategyRef": {
@@ -1258,8 +1394,9 @@
         "title": "StrategyRef",
         "type": "object"
       },
-      "SutProfileCreate": {
+      "SutProfileDTO": {
         "additionalProperties": false,
+        "description": "One robot-stack profile (docs/11 ``sut_profiles``).",
         "properties": {
           "backend": {
             "title": "Backend",
@@ -1271,25 +1408,6 @@
             },
             "title": "Config",
             "type": "object"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "backend"
-        ],
-        "title": "SutProfileCreate",
-        "type": "object"
-      },
-      "SutProfileOut": {
-        "additionalProperties": false,
-        "properties": {
-          "backend": {
-            "title": "Backend",
-            "type": "string"
           },
           "config_hash": {
             "title": "Config Hash",
@@ -1315,9 +1433,10 @@
         "required": [
           "id",
           "backend",
+          "config",
           "config_hash"
         ],
-        "title": "SutProfileOut",
+        "title": "SutProfileDTO",
         "type": "object"
       },
       "ValidationError": {
@@ -3043,7 +3162,7 @@
     },
     "/api/v1/spaces": {
       "get": {
-        "description": "List registered scenario spaces.",
+        "description": "Return one keyset page of spaces, ordered by ``id`` then ``version``.",
         "operationId": "list_spaces_api_v1_spaces_get",
         "parameters": [
           {
@@ -3053,6 +3172,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "minimum": 1,
                   "type": "integer"
                 },
                 {
@@ -3084,7 +3204,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page_SpaceOut_"
+                  "$ref": "#/components/schemas/Page_SpaceSummary_"
                 }
               }
             },
@@ -3101,27 +3221,43 @@
             "description": "Validation Error"
           }
         },
-        "summary": "List Spaces",
+        "summary": "List registered scenario spaces",
         "tags": [
           "spaces"
         ]
       },
       "post": {
-        "description": "Register a space from YAML or JSON body.",
+        "description": "Register a YAML/JSON space; identical content is idempotent (200, same version).",
         "operationId": "register_space_api_v1_spaces_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            },
+            "application/yaml": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "description": "Scenario-space document (YAML or JSON; JSON is valid YAML).",
+          "required": false
+        },
         "responses": {
           "201": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SpaceOut"
+                  "$ref": "#/components/schemas/SpaceVersion"
                 }
               }
             },
             "description": "Successful Response"
           }
         },
-        "summary": "Register Space",
+        "summary": "Validate and register a scenario space",
         "tags": [
           "spaces"
         ]
@@ -3129,25 +3265,37 @@
     },
     "/api/v1/spaces/validate": {
       "post": {
-        "description": "Validate a space document without persisting.",
+        "description": "Validate a YAML/JSON space; invalid input still returns 200 with ``valid: false``.",
         "operationId": "validate_space_api_v1_spaces_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            },
+            "application/yaml": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "description": "Scenario-space document (YAML or JSON; JSON is valid YAML).",
+          "required": false
+        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Validate Space Api V1 Spaces Validate Post",
-                  "type": "object"
+                  "$ref": "#/components/schemas/SpaceValidationResult"
                 }
               }
             },
             "description": "Successful Response"
           }
         },
-        "summary": "Validate Space",
+        "summary": "Validate a scenario space without storing it",
         "tags": [
           "spaces"
         ]
@@ -3155,8 +3303,8 @@
     },
     "/api/v1/spaces/{space_id}/versions/{version}": {
       "get": {
-        "description": "Return a stored space definition.",
-        "operationId": "get_space_api_v1_spaces__space_id__versions__version__get",
+        "description": "Return the stored definition of ``(space_id, version)``.",
+        "operationId": "get_space_version_api_v1_spaces__space_id__versions__version__get",
         "parameters": [
           {
             "in": "path",
@@ -3182,9 +3330,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Get Space Api V1 Spaces  Space Id  Versions  Version  Get",
-                  "type": "object"
+                  "$ref": "#/components/schemas/SpaceVersion"
                 }
               }
             },
@@ -3201,7 +3347,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Get Space",
+        "summary": "Get one stored space version",
         "tags": [
           "spaces"
         ]
@@ -3209,7 +3355,8 @@
     },
     "/api/v1/sut-profiles": {
       "get": {
-        "operationId": "list_profiles_api_v1_sut_profiles_get",
+        "description": "Return one keyset page of robot-stack profiles, ordered by ``id``.",
+        "operationId": "list_sut_profiles_api_v1_sut_profiles_get",
         "parameters": [
           {
             "in": "query",
@@ -3218,6 +3365,7 @@
             "schema": {
               "anyOf": [
                 {
+                  "minimum": 1,
                   "type": "integer"
                 },
                 {
@@ -3249,7 +3397,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Page_SutProfileOut_"
+                  "$ref": "#/components/schemas/Page_SutProfileDTO_"
                 }
               }
             },
@@ -3266,46 +3414,43 @@
             "description": "Validation Error"
           }
         },
-        "summary": "List Profiles",
+        "summary": "List registered SUT profiles",
         "tags": [
           "sut-profiles"
         ]
       },
       "post": {
-        "operationId": "create_profile_api_v1_sut_profiles_post",
+        "description": "Register a YAML/JSON profile; identical content is idempotent (200, same hash).",
+        "operationId": "create_sut_profile_api_v1_sut_profiles_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SutProfileCreate"
+                "type": "object"
+              }
+            },
+            "application/yaml": {
+              "schema": {
+                "type": "object"
               }
             }
           },
-          "required": true
+          "description": "SUT profile document (YAML or JSON; JSON is valid YAML).",
+          "required": false
         },
         "responses": {
           "201": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SutProfileOut"
+                  "$ref": "#/components/schemas/SutProfileDTO"
                 }
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
-        "summary": "Create Profile",
+        "summary": "Validate and register a SUT profile",
         "tags": [
           "sut-profiles"
         ]
