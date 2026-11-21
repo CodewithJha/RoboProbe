@@ -22,7 +22,10 @@ from roboprobe.core.types import JsonValue
 from roboprobe.scenario._documents import load_yaml_document, read_document
 from roboprobe.scenario.space import ScenarioSpace
 
-__all__ = ["app", "register_space"]
+__all__ = ["REPO_ROOT", "app", "discover_repo_root", "register_space"]
+
+# cli/space.py → cli → roboprobe → src → backend → repository root.
+_SOURCE_LAYOUT_DEPTH = 4
 
 app = typer.Typer(
     name="space",
@@ -30,8 +33,38 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
-"""Repository root (``cli/space.py`` → … → ``backend`` → repo)."""
+
+def discover_repo_root(start: Path | None = None) -> Path:
+    """Directory that contains ``configs/scenario_spaces``.
+
+    A source checkout is found by walking parents of this module. The backend
+    image installs the package under ``site-packages`` and ships configs in the
+    working directory (``/app``), so the walk continues from :func:`Path.cwd`.
+
+    Args:
+        start: File or directory to search from. Defaults to this module.
+
+    Returns:
+        The first directory on that walk that holds scenario-space YAML.
+
+    Implements: T-047
+    """
+    origin = (start or Path(__file__)).resolve()
+    cwd = Path.cwd().resolve()
+    seen: set[Path] = set()
+    for candidate in (origin, *origin.parents, cwd, *cwd.parents):
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if (candidate / "configs" / "scenario_spaces").is_dir():
+            return candidate
+    if len(origin.parents) > _SOURCE_LAYOUT_DEPTH:
+        return origin.parents[_SOURCE_LAYOUT_DEPTH]
+    return origin
+
+
+REPO_ROOT = discover_repo_root()
+"""Repository root, or ``/app`` inside the backend image (T-047)."""
 
 
 class _SpaceRow(Protocol):

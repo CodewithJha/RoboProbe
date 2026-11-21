@@ -32,7 +32,7 @@ UP_FLAGS    ?= --build
 
 .DEFAULT_GOAL := help
 .PHONY: help setup lock lint format typecheck test test-fast test-cov pre-commit docs-check clean \
-	config-docs config-docs-check up down db-up logs ps backup restore observability
+	config-docs config-docs-check up down db-up logs ps demo backup restore observability
 
 BACKUP_DIR ?= backups
 BACKUP_RETENTION ?= 7
@@ -125,3 +125,7 @@ restore: ## Restore BACKUP=path (set FORCE=1 to overwrite a non-empty database)
 observability: $(DB_PASSWORD_FILE) ## Prometheus, Grafana and Jaeger (profile observability)
 	@mkdir -p $(ARTIFACTS_DIR)
 	$(COMPOSE) --profile observability up -d --wait prometheus grafana otel-collector jaeger
+
+demo: $(DB_PASSWORD_FILE) ## Register warehouse_v1 and run the 50-run k2d S-PROBE demo (idempotent space)
+	@mkdir -p $(ARTIFACTS_DIR)
+	PROFILES="$(PROFILES)" COMPOSE_FILE="$(COMPOSE_FILE)" scripts/demo.sh
