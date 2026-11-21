@@ -1,6 +1,7 @@
 import { createBrowserRouter, type RouteObject } from 'react-router-dom';
 import type { ComponentType } from 'react';
 import { Shell } from './Shell';
+import { BootFallback } from './BootFallback';
 import { NotFound } from './NotFound';
 import { RouteError } from './ProblemView';
 import { benchRoutes } from '../features/bench/routes';
@@ -16,13 +17,14 @@ import { getConfig } from '../lib/config';
 const galleries = import.meta.env.DEV
   ? import.meta.glob<{ ComponentGallery: ComponentType }>('../components/ComponentGallery.tsx')
   : {};
-const gallery = galleries['../components/ComponentGallery.tsx'];
+const gallery = import.meta.env.DEV ? galleries['../components/ComponentGallery.tsx'] : undefined;
 export function appRoutes(): RouteObject[] {
   const config = getConfig();
   return [
     {
       path: '/',
       Component: Shell,
+      HydrateFallback: BootFallback,
       ErrorBoundary: RouteError,
       children: [
         ...benchRoutes,
