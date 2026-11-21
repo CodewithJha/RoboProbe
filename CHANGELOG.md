@@ -19,6 +19,11 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   `Last-Event-ID` resume. New settings: `api.sse.poll_interval_s`, `queue_size`, `batch_size`,
   `reconnect_initial_s`, `reconnect_max_s`, `connect_timeout_s`. Metrics: `roboprobe_sse_clients`,
   `roboprobe_sse_reconnects_total`.
+- Security suite (T-109): `backend/tests/security/` maps each doc 31 threat to a test, and
+  `scripts/check_security_map.py` fails CI when a `TM-xx` row is missing from
+  `docs/evidence/security-tests.md`. Constraint literal exponents above
+  `scenario.constraint_max_literal_exponent` and YAML alias bombs above `scenario.yaml_max_aliases`
+  are rejected.
 - Experiment configs EXP-01…EXP-07 (T-104): `configs/experiments/` plus the d=8 and
   doubled-lidar-noise warehouse spaces. Each file records the frozen S-PROBE pre-registration hash.
 - API foundation (T-080a–d): FastAPI `create_app` with CORS/GZip, `/health/live|ready`, `/api/v1/meta`,

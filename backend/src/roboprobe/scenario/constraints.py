@@ -37,6 +37,7 @@ import numpy as np
 import numpy.typing as npt
 
 from roboprobe.core import errors
+from roboprobe.core.settings.scenario import ScenarioSettings
 
 __all__ = [
     "BatchSampler",
@@ -86,11 +87,34 @@ def _invalid(expr: str, message: str) -> errors.ValidationError:
     )
 
 
+def default_max_literal_exponent() -> int:
+    """Return the configured cap on literal constraint exponents (TM-03)."""
+    value = ScenarioSettings.model_fields["constraint_max_literal_exponent"].default
+    if not isinstance(value, int):
+        msg = "constraint_max_literal_exponent default must be an int"
+        raise TypeError(msg)
+    return value
+
+
+def _exponent_rejected(node: ast.AST, limit: int) -> bool:
+    """True when a power's exponent contains an oversized integer literal.
+
+    Float literals stay allowed: they are already ``float64`` and ``np.power`` overflows in
+    constant time. Integer literals above ``limit`` are rejected before that conversion.
+    """
+    for child in ast.walk(node):
+        value = child.value if isinstance(child, ast.Constant) else None
+        if isinstance(value, int) and not isinstance(value, bool) and abs(value) > limit:
+            return True
+    return False
+
+
 class _Compiler:
     """Single-use whitelist compiler; collects referenced parameter ids while compiling."""
 
-    def __init__(self, expr: str) -> None:
+    def __init__(self, expr: str, *, max_literal_exponent: int) -> None:
         self.expr = expr
+        self.max_literal_exponent = max_literal_exponent
         self.param_ids: set[str] = set()
 
     def compile(self, node: ast.expr) -> tuple[_Kind, _NumFn | _BoolFn]:
@@ -140,6 +164,13 @@ class _Compiler:
         op = _BIN_OPS.get(type(node.op))
         if op is None:
             raise self._reject(node, f"operator {type(node.op).__name__} is not allowed")
+        if isinstance(node.op, ast.Pow) and _exponent_rejected(
+            node.right, self.max_literal_exponent
+        ):
+            raise self._reject(
+                node,
+                f"integer exponent exceeds {self.max_literal_exponent}",
+            )
         left, right = self.num(node.left), self.num(node.right)
         return "num", lambda values: op(left(values), right(values))
 
@@ -231,19 +262,24 @@ class CompiledConstraint:
         return np.broadcast_to(mask, (matrix.shape[0],)).copy()
 
 
-def compile_constraint(expr: str) -> CompiledConstraint:
+def compile_constraint(expr: str, *, max_literal_exponent: int | None = None) -> CompiledConstraint:
     """Parse and whitelist-compile ``expr`` (see the module grammar); never executes Python code.
+
+    Args:
+        expr: Boolean constraint over dotted parameter ids.
+        max_literal_exponent: Cap on literal exponents. The scenario setting when omitted.
 
     Raises:
         roboprobe.core.errors.ValidationError: For syntax errors and any disallowed construct.
     """
+    limit = default_max_literal_exponent() if max_literal_exponent is None else max_literal_exponent
     try:
         tree = ast.parse(expr, mode="eval")
     except SyntaxError as exc:
         raise _invalid(expr, f"invalid expression: {exc.msg}") from exc
     except (ValueError, RecursionError, MemoryError) as exc:  # null bytes, absurd nesting
         raise _invalid(expr, f"invalid expression: {type(exc).__name__}") from exc
-    compiler = _Compiler(expr)
+    compiler = _Compiler(expr, max_literal_exponent=limit)
     try:
         predicate = compiler.boolean(tree.body)
     except RecursionError as exc:
