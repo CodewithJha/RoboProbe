@@ -22,8 +22,9 @@ def test_shipped_model_has_doc_10_constants() -> None:
     assert model.robot.footprint_radius_m == 0.17
     assert model.robot.a_max_mps2 == 0.5
     assert model.robot.alpha_max_radps2 == 2.0
-    assert model.costmap.inflation_m == 0.35
-    assert model.controller.lookahead_m == 0.6
+    assert model.costmap.inflation_m == 0.3
+    assert model.controller.lookahead_m == 0.45
+    assert model.friction.mu_base == 0.32
     assert model.planner.replan_hz == 1.0
     assert model.world.start_x_m == 2.12
     assert model.world.start_y_m == -21.3

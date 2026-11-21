@@ -65,9 +65,7 @@ class Kinematic2DBackend:
         self._settings = settings
         self._k2d = settings.backends.kinematic2d
         self._model = Kinematic2DModel.from_yaml(Path(self._k2d.model_file))
-        self._perception = PerceptionModel.from_yaml(
-            Path(settings.backends.gazebo_nav2.perception_model_file)
-        )
+        self._perception = PerceptionModel.from_yaml(Path(self._k2d.perception_model_file))
         self._cancel = threading.Event()
         self.capabilities = BackendCapabilities(
             name="kinematic2d",

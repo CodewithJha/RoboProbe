@@ -58,8 +58,9 @@ def step(  # noqa: PLR0913,PLR0917
     v_limited = _clip_accel(state.v, v_pub, robot.a_max_mps2, dt)
     w_limited = _clip_accel(state.w, w_pub, robot.alpha_max_radps2, dt)
     accel = abs(v_limited - state.v) / dt if dt > 0.0 else 0.0
-    tau = traction(friction, accel)
-    v_real, w_real = apply_slip(v_limited, w_limited, tau)
+    slip = model.friction
+    tau = traction(friction, accel, mu_base=slip.mu_base)
+    v_real, w_real = apply_slip(v_limited, w_limited, tau, yaw_exponent=slip.yaw_slip_exponent)
     cos_yaw, sin_yaw = math.cos(state.yaw), math.sin(state.yaw)
     state.x += v_real * dt * cos_yaw
     state.y += v_real * dt * sin_yaw

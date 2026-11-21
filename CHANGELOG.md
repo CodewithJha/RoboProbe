@@ -7,6 +7,11 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- kinematic2d calibration (T-034): tuned `kinematic2d_v1` + `oakd_k2d_v1`, sensor-informed
+  replanning, canonical GT scenarios in `configs/reference/k2d_gt_canonical.yaml`, and acceptance
+  test `test_calibration.py`.
+- k2d reference set CLI (T-103): `roboprobe reference generate|label`, Parquet export + manifest
+  hash for MET-02/MET-08 (`experiments.reference_set.*`).
 - M7 REST API (T-081/082/084): `/api/v1` CRUD for spaces, SUT profiles, campaigns (lifecycle
   commands), runs, artifacts, failure modes, importance/risk, experiments, reports, and workers.
   Bootstrap wires `CampaignService` and analysis jobs; committed OpenAPI snapshot includes the new
