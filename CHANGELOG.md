@@ -27,6 +27,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Weekly mutation testing (T-131): `mutmut` on `selection/` and `oracles/` via
   `.github/workflows/mutation.yml` (schedule + manual, not a pull-request check). Kill rate is
   written to the job summary and an HTML artifact.
+- Compose `orchestrator` and scalable `worker-k2d` services on the `core` profile (`ROBOPROBE_K2D_REPLICAS`,
+  `/healthz` checks) and `make demo` for the 50-run `warehouse_v1` S-PROBE campaign
+  (`configs/campaigns/k2d_demo_50.yaml`). Re-registering the space is a no-op.
 - Experiment configs EXP-01…EXP-07 (T-104): `configs/experiments/` plus the d=8 and
   doubled-lidar-noise warehouse spaces. Each file records the frozen S-PROBE pre-registration hash.
 - API foundation (T-080a–d): FastAPI `create_app` with CORS/GZip, `/health/live|ready`, `/api/v1/meta`,

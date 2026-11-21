@@ -2,8 +2,8 @@
 #   make up      -> --profile core up -d      make down -> stop and remove containers + network
 #   make db-up   -> postgres only             add `--profile dev` to publish Postgres on 127.0.0.1
 # Every tunable comes from ../.env (docs/27 §4.12); only image names/tags have defaults here.
-# Later tasks append *new service blocks only* (api/orchestrator/worker: T-047, web: T-116,
-# gazebo: T-095, observability: T-125).
+# Later tasks append *new service blocks only* (api: T-080, web: T-116,
+# gazebo: T-095, observability: T-125). Orchestrator and worker-k2d: T-047.
 name: roboprobe
 
 x-backend: &backend
@@ -58,6 +58,46 @@ services:
     command: ["db", "upgrade"]
     restart: "no"
     depends_on: {postgres: {condition: service_healthy}}
+
+  # Health port is worker.health_port (default 9101). Override both together with
+  # ROBOPROBE_WORKER__HEALTH_PORT. Each container has its own network namespace.
+  orchestrator:
+    <<: *backend
+    profiles: [core]
+    command: ["orchestrator"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os,urllib.request; p=os.environ.get('ROBOPROBE_WORKER__HEALTH_PORT','9101'); urllib.request.urlopen(f'http://127.0.0.1:{p}/healthz', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    depends_on: {migrate: {condition: service_completed_successfully}}
+
+  worker-k2d:
+    <<: *backend
+    profiles: [core]
+    command: ["worker", "--backend", "kinematic2d"]
+    deploy:
+      replicas: ${ROBOPROBE_K2D_REPLICAS:-2}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os,urllib.request; p=os.environ.get('ROBOPROBE_WORKER__HEALTH_PORT','9101'); urllib.request.urlopen(f'http://127.0.0.1:{p}/healthz', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    depends_on: {migrate: {condition: service_completed_successfully}}
 
   # Observability profile (T-125, T-126). Scrapes API :8000 and the orchestrator/worker
   # internal metrics port (worker.health_port, default 9101). Those services join this
