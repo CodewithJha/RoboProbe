@@ -84,10 +84,9 @@ export function applyServerEvent(client: QueryClient, event: SseEvent): void {
   } else if (event.type === 'worker.updated') {
     void client.invalidateQueries({ queryKey: ['workers'] });
   } else if (event.type === 'alert') {
-    client.setQueryData<readonly Record<string, unknown>[]>(['alerts'], (old) => [
-      event.data,
-      ...(old ?? []),
-    ]);
+    client.setQueryData<readonly Record<string, unknown>[]>(['alerts'], (old) =>
+      [event.data, ...(old ?? [])].slice(0, getConfig().sseRecentEventLimit),
+    );
   } else if (event.type === 'resync') {
     void client.invalidateQueries({ queryKey: cid ? ['campaigns', cid] : ['campaigns'] });
     void client.invalidateQueries({ queryKey: ['workers'] });

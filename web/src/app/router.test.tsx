@@ -62,7 +62,7 @@ describe('notebook routes', () => {
     await screen.findByRole('heading', { name: 'Bench' });
     expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Bench' })).toHaveAttribute('aria-current', 'page');
-    fireEvent.click(screen.getByRole('button', { name: 'Theme: system. Change theme' }));
+    fireEvent.click(screen.getByRole('button', { name: 'System theme. Change theme' }));
     await waitFor(() => {
       expect(localStorage.getItem('roboprobe.theme')).toBe('light');
     });

@@ -29,7 +29,7 @@ export function Shell() {
       </a>
       <div className="app-shell">
         <aside className="margin-rail">
-          <NavLink className="brand" to="/" aria-label="RoboProbe Bench">
+          <NavLink className="brand" to="/" aria-label="RoboProbe Field Notebook, Bench">
             <svg aria-hidden="true" viewBox="0 0 32 32">
               <path d="M5 24V8h10a7 7 0 0 1 0 14H5M15 22l10 7M2 5h27" />
             </svg>
@@ -68,7 +68,7 @@ export function Shell() {
                   preference === 'system' ? 'light' : preference === 'light' ? 'dark' : 'system',
                 );
               }}
-              aria-label={`Theme: ${preference}. Change theme`}
+              aria-label={`${preference === 'dark' ? 'Night Shift' : preference === 'light' ? 'Paper' : 'System theme'}. Change theme`}
             >
               ◐{' '}
               <span>
