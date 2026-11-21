@@ -36,6 +36,7 @@ from roboprobe.runner.heartbeat import HeartbeatService
 from roboprobe.runner.lifecycle import CampaignService
 from roboprobe.runner.loop import CampaignLoop
 from roboprobe.runner.scheduler import Scheduler
+from roboprobe.runner.space_loader import load_campaign_space
 from roboprobe.runner.stop_rules import counters_from_runs, evaluate_stop_rules
 from roboprobe.scenario._documents import load_yaml_document, read_document, validate_document
 from roboprobe.scenario.space import ScenarioSpace
@@ -231,8 +232,7 @@ def run_inline(  # noqa: PLR0912,PLR0915 - inline supervisor wires loop, workers
             if campaign is None:
                 msg = "campaign not found"
                 raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
-        space_yaml = REPO_ROOT / "configs" / "scenario_spaces" / f"{campaign.space_id}.yaml"
-        space = ScenarioSpace.from_yaml(space_yaml, base_dir=REPO_ROOT)
+            space = load_campaign_space(uow, campaign, root=REPO_ROOT)
         ctx = StrategyContext(
             space=space,
             budget=campaign.budget,

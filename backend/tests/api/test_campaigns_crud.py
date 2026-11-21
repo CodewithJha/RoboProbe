@@ -7,9 +7,10 @@ from typing import Any
 from uuid import UUID
 
 import pytest
+import structlog.testing
 import yaml
 from fastapi.testclient import TestClient
-from tests.fakes.store import InMemoryUnitOfWork
+from tests.fakes.store import InMemoryUnitOfWork, _Modes, _Runs
 
 from roboprobe.cli import campaign as cli_campaign
 from roboprobe.core.types import CampaignStatus
@@ -181,3 +182,77 @@ def test_cli_and_http_share_campaign_snapshots(
         "pins",
     ):
         assert getattr(http, field) == getattr(cli, field)
+
+
+@pytest.mark.parametrize("start", [False, True])
+def test_failed_idempotency_persistence_rolls_back_creation(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch, start: bool
+) -> None:
+    def fail(*args, **kwargs):
+        message = "simulate cache persistence failure"
+        raise RuntimeError(message)
+
+    monkeypatch.setattr("roboprobe.api.campaign_idempotency.remember", fail)
+    with structlog.testing.capture_logs(), pytest.raises(RuntimeError, match="cache persistence"):
+        client.post(API, json=body(start=start), headers={"Idempotency-Key": "atomic"})
+    with client.app.state.services.uow_factory() as uow:
+        assert not uow.campaigns.list().items
+
+
+def test_idempotency_replay_uses_database_after_process_cache_reset(client: TestClient) -> None:
+    headers = {"Idempotency-Key": "durable"}
+    first = client.post(API, json=body(start=True), headers=headers)
+    client.app.state.services.idempotency = _Idempotency()
+    replay = client.post(API, json=body(start=True), headers=headers)
+    assert first.status_code == replay.status_code == 201
+    assert first.json() == replay.json()
+    assert replay.headers["location"] == first.headers["location"]
+    assert replay.json()["status"] == "RUNNING"
+
+
+def test_campaign_filters_precede_stable_pagination(client: TestClient) -> None:
+    ids = []
+    for name in ["first", "second", "third"]:
+        response = client.post(API, json=body(name=name))
+        assert response.status_code == 201
+        ids.append(response.json()["id"])
+    first = client.get(
+        API, params={"limit": 1, "strategy": "S-RANDOM", "backend": "kinematic2d"}
+    ).json()
+    second = client.get(
+        API,
+        params={
+            "limit": 1,
+            "cursor": first["next_cursor"],
+            "strategy": "S-RANDOM",
+            "backend": "kinematic2d",
+        },
+    ).json()
+    third = client.get(API, params={"limit": 1, "cursor": second["next_cursor"]}).json()
+    assert [page["items"][0]["id"] for page in [first, second, third]] == list(reversed(ids))
+    assert third["next_cursor"] is None
+    assert not client.get(API, params={"status": "RUNNING"}).json()["items"]
+    assert not client.get(API, params={"strategy": "unknown"}).json()["items"]
+    assert not client.get(API, params={"backend": "unknown"}).json()["items"]
+    assert client.get(API, params={"cursor": "invalid"}).status_code == 422
+
+
+def test_campaign_list_reads_page_aggregates_without_loading_runs(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    created = client.post(API, json=body()).json()
+    cid = UUID(created["id"])
+    monkeypatch.setattr(
+        _Runs, "counts_for_campaigns", lambda self, ids: {cid: {"pending": 10000}}, raising=False
+    )
+    monkeypatch.setattr(_Modes, "counts_for_campaigns", lambda self, ids: {cid: 3}, raising=False)
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("list must not load individual runs or mode rows")
+
+    monkeypatch.setattr(_Runs, "list_for_campaign", forbidden)
+    monkeypatch.setattr(_Modes, "list_for_campaign", forbidden)
+    response = client.get(API)
+    assert response.status_code == 200
+    assert response.json()["items"][0]["counts"]["pending"] == 10000
+    assert response.json()["items"][0]["modes_found"] == 3

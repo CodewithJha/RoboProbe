@@ -15,7 +15,11 @@ from roboprobe.store.records import (
 
 
 def seed_campaign(
-    uow: UnitOfWork, *, status: CampaignStatus = CampaignStatus.RUNNING, n_runs: int = 0
+    uow: UnitOfWork,
+    *,
+    status: CampaignStatus = CampaignStatus.RUNNING,
+    n_runs: int = 0,
+    budget: int = 100,
 ):
     sut_id = f"p-{new_uuid()}"
     space_id = f"s-{new_uuid()}"
@@ -34,7 +38,7 @@ def seed_campaign(
             backend="kinematic2d",
             strategy_id="S-RANDOM",
             seed=1,
-            budget=100,
+            budget=budget,
             oracle_config={},
             status=status,
         )
