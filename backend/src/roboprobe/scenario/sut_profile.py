@@ -115,7 +115,7 @@ def load_sut_profile(path: Path, *, strict: bool = False) -> SutProfile:
             source,
             [(_CONFIG_POINTER + json_pointer(e["loc"]), e["msg"]) for e in exc.errors()],
         ) from exc
-    config: dict[str, JsonValue] = parsed.model_dump(mode="json")
+    config: dict[str, JsonValue] = parsed.model_dump(mode="json", exclude_none=True)
 
     issues: list[tuple[str, str]] = []
     if path.stem != profile_id:
