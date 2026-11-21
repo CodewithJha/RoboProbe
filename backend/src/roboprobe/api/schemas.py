@@ -71,6 +71,9 @@ class CampaignOut(BaseModel):
     status: CampaignStatus
     backend: str
     strategy: StrategyRef
+    space: SpaceRef | None = None
+    pins: dict[str, JsonValue] = Field(default_factory=dict)
+    oracle_config: dict[str, JsonValue] = Field(default_factory=dict)
     budget: int
     repeats: int
     batch_size: int

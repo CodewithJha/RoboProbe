@@ -19,6 +19,7 @@ from roboprobe.api.schemas import (
     RiskOut,
     RunOut,
     SpaceOut,
+    SpaceRef,
     StrategyRef,
     SutProfileOut,
     WorkerOut,
@@ -67,6 +68,13 @@ def campaign_out(
             seed=record.seed,
             params=dict(record.strategy_params),
         ),
+        space=(
+            SpaceRef(id=record.space_id, version=record.space_version)
+            if hasattr(record, "space_id")
+            else None
+        ),
+        pins=dict(getattr(record, "pins", {}) or {}),
+        oracle_config=dict(getattr(record, "oracle_config", {}) or {}),
         budget=record.budget,
         repeats=record.repeats,
         batch_size=record.batch_size,

@@ -210,9 +210,33 @@
             "title": "Name",
             "type": "string"
           },
+          "oracle_config": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Oracle Config",
+            "type": "object"
+          },
+          "pins": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Pins",
+            "type": "object"
+          },
           "repeats": {
             "title": "Repeats",
             "type": "integer"
+          },
+          "space": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SpaceRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "started_at": {
             "anyOf": [
