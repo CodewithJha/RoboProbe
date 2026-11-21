@@ -104,6 +104,10 @@
 # max_budget = 20000
 # Maximum proposals per batch.
 # max_batch_size = 32
+# Maximum repeats per manual request.
+# max_manual_repeats = 100
+# Queue priority for manual runs.
+# manual_priority = 10
 # Whether INVALID runs consume campaign budget.
 # count_invalid_in_budget = false
 # Campaigns driven concurrently per orchestrator.

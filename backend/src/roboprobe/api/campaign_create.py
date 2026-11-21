@@ -14,10 +14,12 @@ import yaml
 
 from roboprobe.api._store import new_uuid, records
 from roboprobe.api.schemas import CampaignCreate
+from roboprobe.bootstrap.campaigns import campaign_supported_params
 from roboprobe.core.errors import NotFoundError, ValidationError
 from roboprobe.core.seeding import random_campaign_seed
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import CampaignStatus, JsonValue
+from roboprobe.runner.campaign_factory import CampaignFactory
 from roboprobe.runner.lifecycle import CampaignService
 from roboprobe.scenario._documents import load_yaml_document, read_document, validate_document
 from roboprobe.scenario.repo_root import discover_repo_root
@@ -46,15 +48,24 @@ def create_campaign(
         msg = f"batch_size must be in 1..{settings.runner.max_batch_size}"
         raise ValidationError(msg, context={"batch_size": body.batch_size})
     space_id = body.space.id
-    space_yaml = root / "configs" / "scenario_spaces" / f"{space_id}.yaml"
-    if not space_yaml.is_file():
-        msg = f"scenario space file not found for {space_id!r}"
-        raise NotFoundError(msg, context={"space_id": space_id})
-    space = ScenarioSpace.from_yaml(space_yaml, base_dir=root)
-    if body.space.version is not None and body.space.version != space.version:
-        msg = "space.version does not match registered space"
-        raise ValidationError(msg, context={"expected": space.version})
-    _ensure_space_row(uow, space, space_yaml)
+    existing = uow.spaces.get(space_id, body.space.version) if body.space.version else None
+    if existing is not None:
+        space = ScenarioSpace.from_text(
+            yaml.safe_dump(existing.definition), source="registered space", base_dir=root
+        )
+    else:
+        space_yaml = _config_path(root, "scenario_spaces", space_id)
+        if not space_yaml.is_file():
+            msg = f"scenario space not found for {space_id!r}"
+            raise NotFoundError(msg, context={"space_id": space_id})
+        space = ScenarioSpace.from_yaml(space_yaml, base_dir=root)
+        if body.space.version is not None and body.space.version != space.version:
+            msg = "registered space version not found"
+            raise NotFoundError(msg, context={"space_id": space_id})
+        _ensure_space_row(uow, space, space_yaml)
+    body = CampaignFactory(settings).prepare(
+        body, space=space, supported_params=campaign_supported_params(body.backend, settings)
+    )
     backend = body.backend
     default_sut = "k2d_default" if backend == "kinematic2d" else ""
     profile_id = body.sut_profile_id or default_sut
@@ -101,6 +112,8 @@ def create_campaign(
         )
     )
     if body.start:
+        # Lifecycle uses a separate transaction and must see the inserted campaign.
+        uow.commit()
         campaigns.start(cid)
     return UUID(str(cid))
 
@@ -127,7 +140,13 @@ def _ensure_space_row(uow: Any, space: ScenarioSpace, path: Path) -> None:
 
 
 def _ensure_sut(uow: Any, profile_id: str, backend: str, root: Path) -> None:
-    path = root / "configs" / "sut_profiles" / f"{profile_id}.yaml"
+    registered = uow.sut_profiles.get(profile_id)
+    if registered is not None and hasattr(registered, "backend"):
+        if registered.backend != backend:
+            msg = "SUT profile backend does not match campaign backend"
+            raise ValidationError(msg)
+        return
+    path = _config_path(root, "sut_profiles", profile_id)
     if not path.is_file():
         msg = f"SUT profile file not found: {path}"
         raise NotFoundError(msg, context={"sut_profile_id": profile_id})
@@ -173,3 +192,12 @@ def parse_space_body(raw: bytes, content_type: str) -> dict[str, JsonValue]:
     document = load_yaml_document(json.dumps(parsed), source="api")
     validate_document(document, schema="scenario_space", source="api")
     return {str(k): _as_json(v) for k, v in parsed.items()}
+
+
+def _config_path(root: Path, kind: str, identifier: str) -> Path:
+    directory = (root / "configs" / kind).resolve()
+    path = (directory / f"{identifier}.yaml").resolve()
+    if not path.is_relative_to(directory):
+        msg = "configuration reference escapes its directory"
+        raise ValidationError(msg)
+    return path

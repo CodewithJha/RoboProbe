@@ -70,6 +70,7 @@ def campaign_out(
         batch_size=record.batch_size,
         counts=counts or {},
         modes_found=int(counts.get("modes_found", 0)) if counts else 0,
+        first_failure_at=counts.get("first_failure_at") if counts else None,
         tags=list(record.tags),
         created_at=record.created_at,
         started_at=record.started_at,
@@ -100,11 +101,12 @@ def campaign_counts(runs: list[Any], *, budget: int) -> dict[str, int]:
             out["running"] += 1
         elif status is RunStatus.DONE:
             out["done"] += 1
-            verdict = run.verdict
+            verdict = None if run.verdict is None else Verdict(_enum_value(run.verdict))
             if verdict is Verdict.PASS:
                 out["pass"] += 1
             elif verdict is Verdict.FAIL:
                 out["fail"] += 1
+                out["first_failure_at"] = min(out.get("first_failure_at", run.ordinal), run.ordinal)
             elif verdict is Verdict.INVALID:
                 out["invalid"] += 1
     return out
@@ -120,6 +122,7 @@ def run_out(record: Any, *, oracles: list[dict[str, object]] | None = None) -> R
         repeat_index=record.repeat_index,
         status=_enum_value(record.status),
         phase=record.phase,
+        manifest=getattr(record, "manifest", None),
         scenario={
             "hash": record.scenario_hash,
             "values": dict(record.scenario_values),

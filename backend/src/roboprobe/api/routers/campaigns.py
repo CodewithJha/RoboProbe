@@ -5,14 +5,16 @@ Implements: T-081
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Request, Response, status
+import yaml
+from fastapi import APIRouter, Depends, Header, Query, Request, Response, status
 from fastapi.responses import JSONResponse
 
 from roboprobe.analysis.base import AnalysisKind
 from roboprobe.api.campaign_create import create_campaign
+from roboprobe.api.campaign_idempotency import cached_campaign, remember_campaign
 from roboprobe.api.concurrency import assert_if_match, format_etag
 from roboprobe.api.deps import get_services, get_uow
 from roboprobe.api.mapping import campaign_counts, campaign_out
@@ -24,8 +26,11 @@ from roboprobe.api.schemas import (
     CampaignProgress,
     ManualRunCreate,
 )
-from roboprobe.core.errors import ConflictError, ErrorCode, NotFoundError
-from roboprobe.core.types import CampaignStatus
+from roboprobe.core.clock import SystemClock
+from roboprobe.core.errors import ConflictError, ErrorCode, NotFoundError, ValidationError
+from roboprobe.core.seeding import RUN, derive_seed
+from roboprobe.core.types import CampaignStatus, FailureClass, RunStatus, Verdict
+from roboprobe.scenario.space import ScenarioSpace
 
 __all__ = ["router"]
 
@@ -76,12 +81,17 @@ def list_campaigns(
     return Page(items=items, next_cursor=page.next_cursor)
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
-def create_campaign_route(
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=CampaignOut)
+async def create_campaign_route(
     body: CampaignCreate,
     request: Request,
+    response: Response,
     uow: Any = Depends(get_uow),
-) -> CampaignOut:
+) -> CampaignOut | JSONResponse:
+    raw = await request.body()
+    cached = cached_campaign(request, raw)
+    if cached is not None:
+        return cached
     services = get_services(request)
     cid = create_campaign(
         body,
@@ -95,7 +105,10 @@ def create_campaign_route(
     if row is None:
         msg = "campaign not found after create"
         raise NotFoundError(msg, context={"campaign_id": str(cid)})
-    return campaign_out(row, base_path=_base_path(request))
+    response.headers["Location"] = f"{_base_path(request)}/campaigns/{cid}"
+    payload = campaign_out(row, base_path=_base_path(request))
+    remember_campaign(request, raw, payload.model_dump(mode="json"))
+    return payload
 
 
 @router.get("/{campaign_id}")
@@ -169,7 +182,22 @@ def _command(campaign_id: UUID, request: Request, cmd: str, uow: Any) -> Campaig
     if row is None:
         msg = "campaign not found"
         raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
-    return campaign_out(row, base_path=_base_path(request))
+    result = campaign_out(row, base_path=_base_path(request))
+    if cmd == "start":
+        now = SystemClock().now()
+        online = getattr(uow.workers, "online", None)
+        workers = online(row.backend) if callable(online) else uow.workers.list().items
+        active = any(
+            worker.last_heartbeat is not None
+            and (now - worker.last_heartbeat).total_seconds()
+            <= services.settings.runner.heartbeat_timeout_s
+            for worker in workers
+        )
+        if not active:
+            result.warnings.append(
+                {"code": "NO_WORKERS", "message": "No online worker supports this backend."}
+            )
+    return result
 
 
 @router.post("/{campaign_id}:start", status_code=status.HTTP_202_ACCEPTED)
@@ -219,21 +247,33 @@ def campaign_progress(campaign_id: UUID, uow: Any = Depends(get_uow)) -> Campaig
     runs = _load_runs(uow, campaign_id)
     counts = campaign_counts(runs, budget=row.budget)
     curve: list[dict[str, object]] = []
-    ordinal = 0
-    for run in sorted(runs, key=lambda r: r.ordinal):
-        if getattr(run.verdict, "value", run.verdict) != "FAIL":
-            continue
-        ordinal += 1
-        curve.append({"ordinal": run.ordinal, "failure_index": ordinal})
+    ordinals = {run.id: run.ordinal for run in runs}
+    modes = uow.modes.list_for_campaign(campaign_id)
+    first_seen = sorted(
+        ordinals[mode.first_seen_run]
+        for mode in modes
+        if getattr(mode, "first_seen_run", None) in ordinals
+    )
+    for unique_modes, ordinal in enumerate(first_seen, start=1):
+        curve.append({"run_ordinal": ordinal, "unique_modes": unique_modes})
+    counts["modes_found"] = len(modes)
     return CampaignProgress(campaign_id=campaign_id, counts=counts, discovery_curve=curve)
 
 
 @router.get("/{campaign_id}/runs")
-def list_runs(
+def list_runs(  # noqa: PLR0913, PLR0917 - documented run filters
     campaign_id: UUID,
     request: Request,
     limit: int | None = None,
     cursor: str | None = None,
+    status: RunStatus | None = None,
+    verdict: Verdict | None = None,
+    phase: str | None = None,
+    failure_class: FailureClass | None = None,
+    tag: Annotated[list[str] | None, Query()] = None,
+    sort: Literal[
+        "ordinal", "-ordinal", "finished_at", "-finished_at", "robustness", "-robustness"
+    ] = "ordinal",
     uow: Any = Depends(get_uow),
 ) -> Page[dict[str, object]]:
     from roboprobe.api.mapping import run_out
@@ -242,31 +282,64 @@ def list_runs(
         msg = "campaign not found"
         raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
     settings = request.app.state.settings
-    page = uow.runs.list_for_campaign(
-        campaign_id,
-        limit=clamp_limit(
-            limit,
-            default=settings.api.page_limit_default,
-            maximum=settings.api.page_limit_max,
-        ),
-        cursor=cursor,
+    size = clamp_limit(
+        limit, default=settings.api.page_limit_default, maximum=settings.api.page_limit_max
     )
+    query = getattr(uow.runs, "query_for_campaign", None)
+    if callable(query):
+        page = query(
+            campaign_id,
+            limit=size,
+            cursor=cursor,
+            sort=sort,
+            status=None if status is None else status.value,
+            verdict=None if verdict is None else verdict.value,
+            phase=phase,
+            failure_class=None if failure_class is None else failure_class.value,
+            tags=tuple(tag or ()),
+        )
+    else:
+        page = uow.runs.list_for_campaign(campaign_id, limit=size, cursor=cursor)
     items = [run_out(r).model_dump(mode="json") for r in page.items]
     return Page(items=items, next_cursor=page.next_cursor)
 
 
-@router.post("/{campaign_id}/runs", status_code=status.HTTP_201_CREATED)
-def add_manual_runs(
+@router.post("/{campaign_id}/runs", status_code=status.HTTP_201_CREATED, response_model=None)
+async def add_manual_runs(
     campaign_id: UUID,
     body: ManualRunCreate,
+    request: Request,
     uow: Any = Depends(get_uow),
-) -> dict[str, object]:
+) -> dict[str, object] | JSONResponse:
     from roboprobe.api._store import new_uuid, records
+
+    raw = await request.body()
+    cached = cached_campaign(request, raw)
+    if cached is not None:
+        return cached
 
     campaign = uow.campaigns.get(campaign_id)
     if campaign is None:
         msg = "campaign not found"
         raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
+    settings = get_services(request).settings
+    if body.repeats > settings.runner.max_manual_repeats:
+        msg = "repeats exceeds runner.max_manual_repeats"
+        raise ValidationError(msg)
+    stored = uow.spaces.get(campaign.space_id, campaign.space_version)
+    if stored is None:
+        msg = "registered campaign space not found"
+        raise NotFoundError(msg)
+    space = ScenarioSpace.from_text(
+        yaml.safe_dump(stored.definition),
+        source="registered campaign space",
+        base_dir=get_services(request).space_root,
+    ).with_pins(campaign.pins)
+    scenario = space.make_scenario(body.values)
+    lock = f"manual:{campaign_id}"
+    if not uow.try_advisory_lock(lock):
+        msg = "another manual request is being enqueued; retry"
+        raise ConflictError(msg)
     max_ord = max((r.ordinal for r in _load_runs(uow, campaign_id)), default=0)
     rec = records()
     pending = []
@@ -278,15 +351,18 @@ def add_manual_runs(
                 ordinal=max_ord,
                 repeat_index=rep,
                 backend=campaign.backend,
-                scenario_hash="manual",
-                scenario_values=dict(body.values),
-                x_unit=(),
-                seed=0,
+                scenario_hash=scenario.scenario_hash,
+                scenario_values=dict(scenario.values),
+                x_unit=tuple(float(v) for v in space.to_unit(scenario.values)),
+                seed=derive_seed(campaign.seed, RUN, max_ord),
                 phase="manual",
                 tags=tuple(body.tags),
                 id=new_uuid(),
+                priority=settings.runner.manual_priority,
             )
         )
-    uow.runs.insert_batch(pending)
+    ids = uow.runs.insert_batch(pending)
     uow.commit()
-    return {"created": len(pending)}
+    payload = {"created": len(ids), "run_ids": [str(rid) for rid in ids]}
+    remember_campaign(request, raw, payload)
+    return payload

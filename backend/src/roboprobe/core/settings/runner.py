@@ -89,6 +89,10 @@ class RunnerSettings(SettingsSection):
     max_attempts: int = Field(default=3, ge=1, description="Run attempts (1 + retries).")
     max_budget: int = Field(default=20000, gt=0, description="Maximum runs per campaign.")
     max_batch_size: int = Field(default=32, gt=0, description="Maximum proposals per batch.")
+    max_manual_repeats: int = Field(
+        default=100, gt=0, description="Maximum repeats per manual request."
+    )
+    manual_priority: int = Field(default=10, ge=0, description="Queue priority for manual runs.")
     auto_pause: AutoPauseSettings = Field(default_factory=AutoPauseSettings)
     alerts: AlertSettings = Field(default_factory=AlertSettings)
     analysis: RunnerAnalysisSettings = Field(default_factory=RunnerAnalysisSettings)

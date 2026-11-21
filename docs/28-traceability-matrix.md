@@ -36,6 +36,12 @@ Catalogue API verification (T-081a, #146; FR-API-001, FR-SCN-001, UC-01/UC-10):
 YAML/JSON uploads, semantic validation, JSON pointers, versioning, idempotency, profile conflicts,
 configured task-root confinement, pagination limits and bounded streaming (TM-02/TM-13).
 
+Campaign API verification (T-081b/c/d, #147–#149; FR-API-001, FR-CLI-001):
+`tests/api/test_campaigns_crud.py` covers creation, idempotency, lifecycle states, pins, manual runs
+and ETags; `test_uow_lifecycle.py` covers transaction entry/exit. Shared factory validation is in
+`tests/unit/runner/test_campaign_factory.py`; SQL filter/keyset checks and PostgreSQL pagination
+are in `tests/unit/store/test_run_queries.py` and `tests/integration/store/test_run_queries.py`.
+
 ## 2. Non-functional requirements → verification
 
 | NFR | Design | Verification | Gate |

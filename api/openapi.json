@@ -46,10 +46,12 @@
           },
           "batch_size": {
             "default": 1,
+            "exclusiveMinimum": 0.0,
             "title": "Batch Size",
             "type": "integer"
           },
           "budget": {
+            "exclusiveMinimum": 0.0,
             "title": "Budget",
             "type": "integer"
           },
@@ -80,6 +82,7 @@
           },
           "repeats": {
             "default": 1,
+            "exclusiveMinimum": 0.0,
             "title": "Repeats",
             "type": "integer"
           },
@@ -175,6 +178,17 @@
             ],
             "title": "Finished At"
           },
+          "first_failure_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Failure At"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -223,6 +237,16 @@
               "type": "string"
             },
             "title": "Tags",
+            "type": "array"
+          },
+          "warnings": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "title": "Warnings",
             "type": "array"
           }
         },
@@ -448,6 +472,22 @@
         "title": "ExperimentOut",
         "type": "object"
       },
+      "FailureClass": {
+        "description": "Failure taxonomy identifiers (docs/08 \u00a72); values are the documented IDs verbatim.",
+        "enum": [
+          "F-COL",
+          "F-NEAR",
+          "F-TIMEOUT",
+          "F-STUCK",
+          "F-LOC",
+          "F-PLAN",
+          "F-INST",
+          "F-OSC",
+          "F-INFRA"
+        ],
+        "title": "FailureClass",
+        "type": "string"
+      },
       "FailureModeOut": {
         "additionalProperties": false,
         "properties": {
@@ -618,6 +658,7 @@
         "properties": {
           "repeats": {
             "default": 1,
+            "exclusiveMinimum": 0.0,
             "title": "Repeats",
             "type": "integer"
           },
@@ -1008,6 +1049,20 @@
             "title": "Id",
             "type": "string"
           },
+          "manifest": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manifest"
+          },
           "metrics": {
             "additionalProperties": {
               "$ref": "#/components/schemas/JsonValue"
@@ -1159,6 +1214,20 @@
         ],
         "title": "RunOut",
         "type": "object"
+      },
+      "RunStatus": {
+        "description": "Lifecycle state of a run (docs/11 ``runs.status``).",
+        "enum": [
+          "PENDING",
+          "CLAIMED",
+          "RUNNING",
+          "EVALUATING",
+          "DONE",
+          "ERROR",
+          "CANCELLED"
+        ],
+        "title": "RunStatus",
+        "type": "string"
       },
       "SpaceError": {
         "additionalProperties": false,
@@ -1379,6 +1448,7 @@
           "seed": {
             "anyOf": [
               {
+                "minimum": 0.0,
                 "type": "integer"
               },
               {
@@ -1478,6 +1548,16 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "Verdict": {
+        "description": "Outcome of judging one run (docs/08 \u00a73).",
+        "enum": [
+          "PASS",
+          "FAIL",
+          "INVALID"
+        ],
+        "title": "Verdict",
+        "type": "string"
       },
       "WorkerOut": {
         "additionalProperties": false,
@@ -2111,6 +2191,107 @@
               ],
               "title": "Cursor"
             }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RunStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "verdict",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Verdict"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Verdict"
+            }
+          },
+          {
+            "in": "query",
+            "name": "phase",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Phase"
+            }
+          },
+          {
+            "in": "query",
+            "name": "failure_class",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/FailureClass"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Failure Class"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "ordinal",
+              "enum": [
+                "ordinal",
+                "-ordinal",
+                "finished_at",
+                "-finished_at",
+                "robustness",
+                "-robustness"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2168,11 +2349,7 @@
           "201": {
             "content": {
               "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Add Manual Runs Api V1 Campaigns  Campaign Id  Runs Post",
-                  "type": "object"
-                }
+                "schema": {}
               }
             },
             "description": "Successful Response"

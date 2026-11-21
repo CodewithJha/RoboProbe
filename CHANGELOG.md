@@ -7,6 +7,10 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Campaign/run API completion (T-081b/c/d): entered request transactions, shared CLI/API
+  validation and snapshots, idempotent creation, lifecycle warnings, mode-discovery progress,
+  validated manual runs with derived seeds, and filtered stable SQL keyset pagination.
+
 - Catalogue API completion (T-081a, #146): bounded YAML/JSON uploads, semantic space
   validation with JSON pointers, idempotent registration, immutable validated SUT profiles,
   and shared CLI catalogue services.

@@ -16,7 +16,7 @@ from types import TracebackType
 from typing import Any
 from uuid import UUID
 
-from roboprobe.core.errors import ConflictError, NotFoundError, ValidationError
+from roboprobe.core.errors import ConflictError, ErrorCode, NotFoundError, ValidationError
 from roboprobe.core.types import (
     CampaignStatus,
     FailureClass,
@@ -67,6 +67,7 @@ class _Db:
         self.spaces: dict[tuple[str, str], SpaceRecord] = {}
         self.suts: dict[str, SutProfileRecord] = {}
         self.campaigns: dict[UUID, CampaignRecord] = {}
+        self.campaign_versions: dict[UUID, int] = {}
         self.runs: dict[UUID, RunRecord] = {}
         self.oracles: dict[UUID, list[OracleResultRecord]] = {}
         self.strategies: dict[UUID, StrategyStateRecord] = {}
@@ -152,6 +153,34 @@ class _Campaigns:
         items, extra = extra_item(rows, size)
         nxt = None if extra is None else str(items[-1].id)
         return Page(items=items, next_cursor=nxt)
+
+    def etag_version(self, campaign_id: UUID) -> int:
+        if campaign_id not in self._db.campaigns:
+            raise NotFoundError("campaign not found")
+        return self._db.campaign_versions.get(campaign_id, 1)
+
+    def patch(
+        self,
+        campaign_id: UUID,
+        *,
+        name: str | None = None,
+        tags: Sequence[str] | None = None,
+        expected_etag: int,
+    ) -> int:
+        if expected_etag != self.etag_version(campaign_id):
+            raise ValidationError("stale campaign", code=ErrorCode.PRECONDITION_FAILED)
+        update = {}
+        if name is not None:
+            update["name"] = name
+        if tags is not None:
+            update["tags"] = tuple(tags)
+        self._db.campaigns[campaign_id] = self._db.campaigns[campaign_id].model_copy(update=update)
+        self._db.campaign_versions[campaign_id] = expected_etag + 1
+        return expected_etag + 1
+
+    def delete(self, campaign_id: UUID) -> None:
+        if self._db.campaigns.pop(campaign_id, None) is None:
+            raise NotFoundError("campaign not found")
 
     def list_for_experiment(self, experiment_id: UUID) -> tuple[CampaignRecord, ...]:
         rows = sorted(

@@ -139,6 +139,8 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `runner.max_attempts` | int | `3` | `ROBOPROBE_RUNNER__MAX_ATTEMPTS` | Run attempts (1 + retries). |
 | `runner.max_budget` | int | `20000` | `ROBOPROBE_RUNNER__MAX_BUDGET` | Maximum runs per campaign. |
 | `runner.max_batch_size` | int | `32` | `ROBOPROBE_RUNNER__MAX_BATCH_SIZE` | Maximum proposals per batch. |
+| `runner.max_manual_repeats` | int | `100` | `ROBOPROBE_RUNNER__MAX_MANUAL_REPEATS` | Maximum repeats per manual request. |
+| `runner.manual_priority` | int | `10` | `ROBOPROBE_RUNNER__MANUAL_PRIORITY` | Queue priority for manual runs. |
 | `runner.auto_pause.invalid_ratio` | float | `0.2` | `ROBOPROBE_RUNNER__AUTO_PAUSE__INVALID_RATIO` | INVALID share that pauses a campaign [0-1]. |
 | `runner.auto_pause.min_runs` | int | `20` | `ROBOPROBE_RUNNER__AUTO_PAUSE__MIN_RUNS` | Finished runs before `invalid_ratio` is evaluated. |
 | `runner.auto_pause.max_consecutive_invalid` | int | `10` | `ROBOPROBE_RUNNER__AUTO_PAUSE__MAX_CONSECUTIVE_INVALID` | Consecutive INVALID runs that pause a campaign. |

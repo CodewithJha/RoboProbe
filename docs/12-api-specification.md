@@ -186,6 +186,23 @@ profiles. A new id returns 201, an identical repost returns 200, and an existing
 different hash returns 422 `VALIDATION_ERROR`; use a new id to compare changed configurations.
 Space uploads resolve task paths relative to the configured API `space_root` and cannot escape it.
 
+### 3.8 Campaign and manual-run creation
+
+The CLI and API share `runner.CampaignFactory` validation: positive budget/repeats/batch,
+configured caps, valid pins, backend support for unpinned parameters, strategy parameters and
+resolved oracle thresholds. Registered space versions can be used without a matching file name;
+shipped configs remain a convenience when no version is supplied. Config references cannot escape
+`configs/scenario_spaces` or `configs/sut_profiles`.
+
+Successful campaign creation returns `Location`. `Idempotency-Key` replays are persisted in
+`idempotency_keys`; using a key for different content returns 422. `start: true` commits the
+campaign before invoking its separate lifecycle transaction. Start responses warn with `NO_WORKERS`
+when no fresh worker is available. Progress reports discovered modes, not the number of failures.
+Manual requests apply campaign pins, normalize and hash values, derive repeat seeds from the
+campaign seed, and respect `runner.max_manual_repeats` and `runner.manual_priority`.
+Run filters are applied in SQL before keyset pagination; sort ties use run id, and null values
+sort first in ascending order (last descending). Cursors must retain their original sort order.
+
 ## 4. Server-Sent Events
 
 `GET /api/v1/events?campaign_id=<id>` → `text/event-stream`; supports `Last-Event-ID` resume (event ids are `events.id`).

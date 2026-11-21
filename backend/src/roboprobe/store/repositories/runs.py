@@ -18,6 +18,7 @@ from roboprobe.store.mapping import run_record
 from roboprobe.store.orm import RunRow
 from roboprobe.store.pagination import Page, clamp_limit, extra_item
 from roboprobe.store.records import NewRun, RunRecord
+from roboprobe.store.run_queries import RunSort, query_runs
 
 
 class SqlRunRepo:
@@ -115,6 +116,32 @@ class SqlRunRepo:
         items, extra = extra_item([run_record(r) for r in rows], size)
         nxt = None if extra is None else str(items[-1].id)
         return Page(items=items, next_cursor=nxt)
+
+    def query_for_campaign(  # noqa: PLR0913 - explicit run filters
+        self,
+        campaign_id: UUID,
+        *,
+        limit: int,
+        cursor: str | None = None,
+        sort: RunSort = "ordinal",
+        status: str | None = None,
+        verdict: str | None = None,
+        phase: str | None = None,
+        failure_class: str | None = None,
+        tags: tuple[str, ...] = (),
+    ) -> Page[RunRecord]:
+        return query_runs(
+            self._s,
+            campaign_id,
+            limit=limit,
+            cursor=cursor,
+            sort=sort,
+            status=status,
+            verdict=verdict,
+            phase=phase,
+            failure_class=failure_class,
+            tags=tags,
+        )
 
     def history(
         self,

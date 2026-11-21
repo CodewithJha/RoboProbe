@@ -121,11 +121,13 @@ class SqlCampaignRepo:
             values["tags"] = list(tags)
         result = execute(
             self._s,
-            update(CampaignRow).where(CampaignRow.id == campaign_id).values(**values),
+            update(CampaignRow)
+            .where(CampaignRow.id == campaign_id, CampaignRow.etag_version == expected_etag)
+            .values(**values),
         )
         if int(getattr(result, "rowcount", 0) or 0) != 1:
-            msg = "campaign not found"
-            raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
+            msg = "campaign changed concurrently"
+            raise ValidationError(msg, code=ErrorCode.PRECONDITION_FAILED)
         return new_etag
 
     def delete(self, campaign_id: UUID) -> None:
