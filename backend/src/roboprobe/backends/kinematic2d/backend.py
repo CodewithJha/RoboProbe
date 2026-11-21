@@ -33,6 +33,7 @@ from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import NavStatus, Trace
 from roboprobe.perturbation.perception import PerceptionModel
 from roboprobe.scenario.materialize import place_obstacle, side_sign
+from roboprobe.scenario.repo_root import resolve_repo_path
 
 __all__ = ["K2D_SUPPORTED_PARAMS", "Kinematic2DBackend"]
 
@@ -64,8 +65,10 @@ class Kinematic2DBackend:
         """Load model and perception files from settings."""
         self._settings = settings
         self._k2d = settings.backends.kinematic2d
-        self._model = Kinematic2DModel.from_yaml(Path(self._k2d.model_file))
-        self._perception = PerceptionModel.from_yaml(Path(self._k2d.perception_model_file))
+        self._model = Kinematic2DModel.from_yaml(resolve_repo_path(Path(self._k2d.model_file)))
+        self._perception = PerceptionModel.from_yaml(
+            resolve_repo_path(Path(self._k2d.perception_model_file))
+        )
         self._cancel = threading.Event()
         self.capabilities = BackendCapabilities(
             name="kinematic2d",

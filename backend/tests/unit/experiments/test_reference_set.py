@@ -8,14 +8,14 @@ import pyarrow.parquet as pq
 import pytest
 
 from roboprobe.backends.kinematic2d.calibration import load_calibration
-from roboprobe.core.settings import RoboProbeSettings
-from roboprobe.core.types import Verdict
 from roboprobe.bootstrap.reference_set import (
     generate_rows,
     label_rows,
     sha256_file,
     write_parquet,
 )
+from roboprobe.core.settings import RoboProbeSettings
+from roboprobe.core.types import Verdict
 from roboprobe.scenario.space import ScenarioSpace
 
 pytestmark = [pytest.mark.unit, pytest.mark.slow]

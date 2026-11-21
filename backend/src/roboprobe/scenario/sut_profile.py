@@ -59,6 +59,7 @@ class Kinematic2DProfileConfig(_ProfileConfig):
     """kinematic2d stack: model file (T-029) plus per-profile constant overrides."""
 
     model_file: NonEmptyStr
+    perception_model_file: NonEmptyStr | None = None
     gain_overrides: dict[str, Scalar] = Field(default_factory=dict)
 
 

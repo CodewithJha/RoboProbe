@@ -28,6 +28,7 @@ from roboprobe.metrics.discovery_metrics import NOVEL_LABEL, label_failures
 from roboprobe.oracles.registry import create_all
 from roboprobe.oracles.verdict import EpisodeView, VerdictEngine
 from roboprobe.scenario.hashing import scenario_hash
+from roboprobe.scenario.repo_root import resolve_repo_path
 from roboprobe.scenario.samplers import SobolSampler
 from roboprobe.scenario.space import ScenarioSpace
 from roboprobe.scenario.task import load_task
@@ -199,7 +200,9 @@ def generate_and_write(
     work = Path(settings.storage.workdir_root) / "reference-generate"
     rows = generate_rows(space, settings, n=count, seed=ref_seed, repo_root=root, workdir=work)
     write_parquet(output, rows)
-    model = Kinematic2DModel.from_yaml(Path(settings.backends.kinematic2d.model_file))
+    model = Kinematic2DModel.from_yaml(
+        resolve_repo_path(Path(settings.backends.kinematic2d.model_file))
+    )
     manifest = ReferenceManifest(
         path=str(output),
         sha256=sha256_file(output),
@@ -220,7 +223,9 @@ def label_parquet(
     output: Path | None,
 ) -> tuple[Path, int]:
     """Label failures in ``source`` and write to ``output`` (default in-place)."""
-    calibration = load_calibration(Path(settings.backends.kinematic2d.calibration_file))
+    calibration = load_calibration(
+        resolve_repo_path(Path(settings.backends.kinematic2d.calibration_file))
+    )
     table = pq.read_table(source)
     rows = table.to_pylist()
     label_rows(rows, calibration, radius=settings.experiments.mode_match_radius)
