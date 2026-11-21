@@ -20,7 +20,6 @@ _DEFAULT_ERROR_TYPE_BASE = "https://github.com/CodewithJha/RoboProbe/blob/main/d
 _DEFAULT_CURSOR_SECRET = "roboprobe-dev-cursor-secret"  # noqa: S105 - HMAC key, not a password
 
 
-
 class SseSettings(SettingsSection):
     """Server-sent events stream settings."""
 
