@@ -49,6 +49,7 @@ EVENTS: frozenset[str] = frozenset(
         "analysis.failed",
         "analysis.artefact_write_failed",
         "api.request",
+        "artifact.path_rejected",
         "sse.cursor_unavailable",
         "sse.listen_lost",
         "sse.poll_failed",

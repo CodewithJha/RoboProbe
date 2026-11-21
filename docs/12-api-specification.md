@@ -203,6 +203,21 @@ campaign seed, and respect `runner.max_manual_repeats` and `runner.manual_priori
 Run filters are applied in SQL before keyset pagination; sort ties use run id, and null values
 sort first in ascending order (last descending). Cursors must retain their original sort order.
 
+### 3.9 Trace and artifact transport
+
+`GET /api/v1/runs/{id}/trace?hz=10&columns=gt_x,gt_y,contact` returns
+`{t, columns, hz, source_hz, truncated}`. `columns` is a comma-separated subset; time remains
+in `t`. The target rate defaults to `api.trace_default_hz` and is capped at `api.trace_max_hz`.
+Each time bucket retains its minimum clearance; endpoints and both sides of Boolean/status
+transitions are retained as extra samples, so safety events can exceed the target rate.
+`truncated` means samples were reduced or the requested rate was capped. Empty or single-sample
+traces have no measurable `source_hz` (null). Invalid columns/rates return 422.
+
+`Accept: application/vnd.apache.parquet` returns the original stored Parquet. Artifact downloads
+resolve by id through the confined artifact-store path, stream as attachments, set a quoted
+SHA-256 `ETag` and `X-Content-Type-Options: nosniff`, and sanitize filenames. Unsafe or missing
+stored paths return 404 and emit `artifact.path_rejected` without revealing the path.
+
 ## 4. Server-Sent Events
 
 `GET /api/v1/events?campaign_id=<id>` → `text/event-stream`; supports `Last-Event-ID` resume (event ids are `events.id`).

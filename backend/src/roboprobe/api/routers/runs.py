@@ -11,8 +11,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import PlainTextResponse, Response
 
-from roboprobe.api.artifact_ref import artifact_ref_from_record
 from roboprobe.api.deps import get_services, get_uow
+from roboprobe.api.downloads import artifact_path, download_response
 from roboprobe.api.mapping import artifact_out, run_out
 from roboprobe.api.schemas import ArtifactOut, ReplayRequest, RunOut
 from roboprobe.core.clock import SystemClock
@@ -65,8 +65,9 @@ def artifact_content(
         msg = "artifact not found"
         raise NotFoundError(msg, context={"artifact_id": str(artifact_id)})
     store = get_services(request).artifact_store
-    data = cast(Any, store.open(artifact_ref_from_record(art))).read()
-    return Response(content=data, media_type=art.media_type)
+    path = artifact_path(store, art)
+    run = uow.runs.get(art.run_id) if art.run_id is not None else None
+    return download_response(path, art, ordinal=None if run is None else run.ordinal)
 
 
 @router.post("/runs/{run_id}:replay", status_code=202)

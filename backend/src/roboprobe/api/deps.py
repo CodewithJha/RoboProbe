@@ -34,6 +34,10 @@ class ArtifactStoreProto(Protocol):
         """Artefact filesystem root."""
         ...
 
+    def path(self, ref: object) -> Path:
+        """Resolve a stored blob inside the artifact root."""
+        ...
+
     def open(self, ref: object) -> object:
         """Open a stored blob."""
         ...
