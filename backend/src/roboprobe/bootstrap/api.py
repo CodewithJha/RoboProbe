@@ -9,16 +9,25 @@ from __future__ import annotations
 
 import importlib
 import importlib.metadata
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from typing import Any
+from pathlib import Path
+from typing import Any, cast
 
 from sqlalchemy.engine import Engine
 
 from roboprobe.backends.registry import ENTRY_POINT_GROUP, get_backend
 from roboprobe.bootstrap._infra import Infrastructure, UowFactory, build_infrastructure
+from roboprobe.core.clock import SystemClock
 from roboprobe.core.metrics_registry import Metrics, create_metrics
 from roboprobe.core.settings import RoboProbeSettings, load_settings
 from roboprobe.oracles.registry import BUILTIN_ORACLES
+from roboprobe.reporting.report_jobs import ReportJobStore
+from roboprobe.runner.analysis_jobs import AnalysisJobRunner
+from roboprobe.runner.lifecycle import CampaignService
+from roboprobe.runner.ports import UnitOfWorkPort
+from roboprobe.scenario.repo_root import discover_repo_root
 from roboprobe.selection import registry as strategy_registry
 from roboprobe.store.artifacts import LocalArtifactStore
 
@@ -32,6 +41,10 @@ class ApiServices:
     settings: RoboProbeSettings
     infra: Infrastructure
     metrics: Metrics
+    campaigns: CampaignService
+    analysis: AnalysisJobRunner
+    report_jobs: ReportJobStore
+    space_root: Path
     plugin_catalog: dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -50,7 +63,9 @@ class ApiServices:
         return self.infra.artifact_store
 
     def close(self) -> None:
-        """Dispose pooled DB connections."""
+        """Dispose pooled DB connections and background pools."""
+        self.analysis._executor.shutdown(wait=False, cancel_futures=True)
+        self.report_jobs._executor.shutdown(wait=False, cancel_futures=True)
         self.infra.close()
 
 
@@ -58,10 +73,29 @@ def build_api(settings: RoboProbeSettings) -> ApiServices:
     """Wire persistence, metrics and plugin catalogues for the API process."""
     infra = build_infrastructure(settings)
     metrics = create_metrics(enabled=settings.observability.metrics_enabled)
+    uow_factory = cast("Callable[[], UnitOfWorkPort]", infra.uow_factory)
+    campaigns = CampaignService(uow_factory)
+    pool = ThreadPoolExecutor(max_workers=settings.runner.analysis.max_workers)
+    analysis = AnalysisJobRunner(
+        uow_factory,
+        infra.artifact_store,
+        settings,
+        pool,
+        SystemClock(),
+        campaigns=campaigns,
+        engine=infra.engine,
+        space_root=discover_repo_root(),
+    )
     return ApiServices(
         settings=settings,
         infra=infra,
         metrics=metrics,
+        campaigns=campaigns,
+        analysis=analysis,
+        report_jobs=ReportJobStore(
+            ThreadPoolExecutor(max_workers=settings.runner.analysis.max_workers)
+        ),
+        space_root=discover_repo_root(),
         plugin_catalog=_plugin_catalog(settings),
     )
 
