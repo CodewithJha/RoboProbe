@@ -34,9 +34,7 @@ def reference_generate(
     """Sample Sobol scenarios, run kinematic2d once each, write Parquet + manifest."""
     state = get_state(ctx)
     settings: RoboProbeSettings = state.bootstrap()
-    manifest = generate_and_write(
-        settings, output=output, n=n, seed=seed, space_id=space_id
-    )
+    manifest = generate_and_write(settings, output=output, n=n, seed=seed, space_id=space_id)
     state.output.data(manifest.__dict__)
 
 

@@ -140,14 +140,8 @@ def write_parquet(path: Path, rows: Sequence[Mapping[str, Any]]) -> None:
     """Write reference rows to ``path`` with schema version metadata."""
     table = pa.Table.from_pylist([dict(row) for row in rows])
     path.parent.mkdir(parents=True, exist_ok=True)
-    pq.write_table(
-        table,
-        path,
-        compression="zstd",
-        metadata={
-            b"reference_schema_version": str(_REFERENCE_SCHEMA_VERSION).encode(),
-        },
-    )
+    meta = {b"reference_schema_version": str(_REFERENCE_SCHEMA_VERSION).encode()}
+    pq.write_table(table.replace_schema_metadata(meta), path, compression="zstd")
 
 
 def label_rows(
