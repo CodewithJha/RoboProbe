@@ -7,6 +7,10 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Catalogue API completion (T-081a, #146): bounded YAML/JSON uploads, semantic space
+  validation with JSON pointers, idempotent registration, immutable validated SUT profiles,
+  and shared CLI catalogue services.
+
 - M7 REST API (T-081/082/084): `/api/v1` CRUD for spaces, SUT profiles, campaigns (lifecycle
   commands), runs, artifacts, failure modes, importance/risk, experiments, reports, and workers.
   Bootstrap wires `CampaignService` and analysis jobs; committed OpenAPI snapshot includes the new

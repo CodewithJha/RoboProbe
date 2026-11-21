@@ -45,9 +45,14 @@ __all__ = [
     "RunRepoPort",
     "RunView",
     "SimulatorBackendPort",
+    "SpacePage",
+    "SpaceRepoPort",
+    "SpaceView",
     "StrategyStateRepoPort",
     "StrategyStateView",
+    "SutProfilePage",
     "SutProfileRepoPort",
+    "SutProfileView",
     "UnitOfWorkPort",
     "UowFactory",
     "WorkerRepoPort",
@@ -137,6 +142,67 @@ class StrategyStateView(Protocol):
     campaign_id: UUID
     n_obs: int
     state: dict[str, JsonValue]
+
+
+class SpaceView(Protocol):
+    """Scenario-space row fields the catalogue service and routers read."""
+
+    @property
+    def id(self) -> str: ...
+
+    @property
+    def version(self) -> str: ...
+
+    @property
+    def name(self) -> str: ...
+
+    @property
+    def definition(self) -> dict[str, JsonValue]: ...
+
+    @property
+    def schema_version(self) -> int: ...
+
+    @property
+    def created_at(self) -> datetime | None: ...
+
+
+class SpacePage(Protocol):
+    """One page of scenario spaces."""
+
+    @property
+    def items(self) -> Sequence[SpaceView]: ...
+
+    @property
+    def next_cursor(self) -> str | None: ...
+
+
+class SutProfileView(Protocol):
+    """SUT-profile row fields the catalogue service and routers read."""
+
+    @property
+    def id(self) -> str: ...
+
+    @property
+    def backend(self) -> str: ...
+
+    @property
+    def config(self) -> dict[str, JsonValue]: ...
+
+    @property
+    def config_hash(self) -> str: ...
+
+    @property
+    def created_at(self) -> datetime | None: ...
+
+
+class SutProfilePage(Protocol):
+    """One page of SUT profiles."""
+
+    @property
+    def items(self) -> Sequence[SutProfileView]: ...
+
+    @property
+    def next_cursor(self) -> str | None: ...
 
 
 class NewRunView(Protocol):
@@ -229,7 +295,19 @@ class StrategyStateRepoPort(Protocol):
 
 
 class SutProfileRepoPort(Protocol):
-    def get(self, profile_id: str) -> object | None: ...
+    def get(self, profile_id: str) -> SutProfileView | None: ...
+
+    def add(self, record: object) -> None: ...
+
+    def list(self, *, limit: int | None = None, cursor: str | None = None) -> SutProfilePage: ...
+
+
+class SpaceRepoPort(Protocol):
+    def get(self, space_id: str, version: str) -> SpaceView | None: ...
+
+    def add(self, record: object) -> None: ...
+
+    def list(self, *, limit: int | None = None, cursor: str | None = None) -> SpacePage: ...
 
 
 class ArtifactRepoPort(Protocol):
@@ -286,6 +364,7 @@ class UnitOfWorkPort(Protocol):
     events: EventRepoPort
     workers: WorkerRepoPort
     strategy_states: StrategyStateRepoPort
+    spaces: SpaceRepoPort
     sut_profiles: SutProfileRepoPort
     artifacts: ArtifactRepoPort
     oracle_results: object
