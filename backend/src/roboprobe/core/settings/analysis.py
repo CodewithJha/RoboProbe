@@ -121,6 +121,9 @@ class RiskSettings(SettingsSection):
     slice_resolution: int = Field(
         default=50, ge=_MIN_SLICE_RESOLUTION, description="Grid points per axis of a 2-D slice."
     )
+    max_slice_resolution: int = Field(
+        default=100, ge=10, description="Maximum on-demand API slice resolution."
+    )
     volume_samples: int = Field(
         default=8192,
         ge=1,

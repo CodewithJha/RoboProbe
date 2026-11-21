@@ -16,7 +16,7 @@ from roboprobe.api.downloads import artifact_path, download_response
 from roboprobe.api.mapping import artifact_out, run_out
 from roboprobe.api.schemas import ArtifactOut, ReplayRequest, RunOut
 from roboprobe.core.clock import SystemClock
-from roboprobe.core.errors import NotFoundError
+from roboprobe.core.errors import NotFoundError, ValidationError
 from roboprobe.core.types import FailureClass, Scenario, Verdict
 from roboprobe.runner.replay import ReplayRequest as ReplayBody
 from roboprobe.runner.replay import enqueue_replays
@@ -77,6 +77,9 @@ def replay_run(
     request: Request,
 ) -> dict[str, object]:
     services = get_services(request)
+    if body.repeats > services.settings.runner.max_manual_repeats:
+        msg = "repeats exceeds runner.max_manual_repeats"
+        raise ValidationError(msg)
     from roboprobe.runner.ports import UowFactory
 
     ids = enqueue_replays(
@@ -87,7 +90,11 @@ def replay_run(
 
 
 @router.get("/runs/{run_id}/scenario.yaml", response_class=PlainTextResponse)
-def export_scenario(run_id: UUID, request: Request, uow: Any = Depends(get_uow)) -> str:
+def export_scenario(
+    run_id: UUID, request: Request, response: Response, uow: Any = Depends(get_uow)
+) -> str:
+    response.headers["Content-Disposition"] = f'attachment; filename="{run_id}-scenario.yaml"'
+    response.headers["Content-Type"] = "application/yaml"
     run = uow.runs.get(run_id)
     if run is None:
         msg = "run not found"

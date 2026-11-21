@@ -63,6 +63,12 @@
 # trace_default_hz = 10.0
 # Maximum JSON trace sampling target [Hz].
 # trace_max_hz = 50.0
+# Concurrent API report/export jobs.
+# report_workers = 1
+# Cached risk slices per API process.
+# slice_cache_size = 32
+# Risk slice computation timeout [s].
+# slice_timeout_s = 30.0
 # Maximum request body size [MB].
 # max_upload_mb = 10
 # Default page size [items].
@@ -436,6 +442,8 @@
 [risk]
 # Grid points per axis of a 2-D slice.
 # slice_resolution = 50
+# Maximum on-demand API slice resolution.
+# max_slice_resolution = 100
 # Sobol QMC sample count for region volume estimates (power of two).
 # volume_samples = 8192
 

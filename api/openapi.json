@@ -401,9 +401,34 @@
         "title": "ExperimentCreate",
         "type": "object"
       },
+      "ExperimentNotes": {
+        "additionalProperties": false,
+        "description": "Editable threats-to-validity notes (T-112b).",
+        "properties": {
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "title": "ExperimentNotes",
+        "type": "object"
+      },
       "ExperimentOut": {
         "additionalProperties": false,
         "properties": {
+          "cells": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "title": "Cells",
+            "type": "array"
+          },
           "created_at": {
             "anyOf": [
               {
@@ -444,6 +469,11 @@
             "title": "Name",
             "type": "string"
           },
+          "notes": {
+            "default": "",
+            "title": "Notes",
+            "type": "string"
+          },
           "results": {
             "anyOf": [
               {
@@ -461,6 +491,11 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
           }
         },
         "required": [
@@ -496,9 +531,27 @@
             "title": "Campaign Id",
             "type": "string"
           },
+          "characteristic": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Characteristic",
+            "type": "array"
+          },
           "code": {
             "title": "Code",
             "type": "string"
+          },
+          "duplicate_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of"
           },
           "id": {
             "format": "uuid",
@@ -523,9 +576,52 @@
             "title": "Label",
             "type": "string"
           },
+          "label_is_user": {
+            "default": false,
+            "title": "Label Is User",
+            "type": "boolean"
+          },
+          "medoid_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Medoid Run Id"
+          },
+          "minimal_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimal Run Id"
+          },
+          "param_ranges": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Param Ranges",
+            "type": "object"
+          },
           "primary_class": {
             "title": "Primary Class",
             "type": "string"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Rules",
+            "type": "array"
           },
           "size": {
             "title": "Size",
@@ -534,6 +630,11 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
           }
         },
         "required": [
@@ -551,9 +652,22 @@
       "FailureModePatch": {
         "additionalProperties": false,
         "properties": {
+          "duplicate_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of"
+          },
           "label": {
             "anyOf": [
               {
+                "maxLength": 80,
+                "minLength": 1,
                 "type": "string"
               },
               {
@@ -565,6 +679,12 @@
           "status": {
             "anyOf": [
               {
+                "enum": [
+                  "open",
+                  "accepted",
+                  "fixed",
+                  "duplicate"
+                ],
                 "type": "string"
               },
               {
@@ -1005,9 +1125,32 @@
             "title": "Kind",
             "type": "string"
           },
+          "report_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Id"
+          },
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "status_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Url"
           },
           "target_id": {
             "format": "uuid",
@@ -1027,10 +1170,34 @@
       "RiskOut": {
         "additionalProperties": false,
         "properties": {
+          "analysis_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis Id"
+          },
           "campaign_id": {
             "format": "uuid",
             "title": "Campaign Id",
             "type": "string"
+          },
+          "computed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Computed At"
           },
           "robustness_score": {
             "anyOf": [
@@ -1078,6 +1245,46 @@
             "title": "Grid",
             "type": "object"
           },
+          "log_x": {
+            "default": false,
+            "title": "Log X",
+            "type": "boolean"
+          },
+          "log_y": {
+            "default": false,
+            "title": "Log Y",
+            "type": "boolean"
+          },
+          "p_fail": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "title": "P Fail",
+            "type": "array"
+          },
+          "points": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "title": "Points",
+            "type": "array"
+          },
+          "region": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "title": "Region",
+            "type": "array"
+          },
           "resolution": {
             "title": "Resolution",
             "type": "integer"
@@ -1086,9 +1293,23 @@
             "title": "X Param",
             "type": "string"
           },
+          "x_values": {
+            "items": {
+              "type": "number"
+            },
+            "title": "X Values",
+            "type": "array"
+          },
           "y_param": {
             "title": "Y Param",
             "type": "string"
+          },
+          "y_values": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Y Values",
+            "type": "array"
           }
         },
         "required": [
@@ -1640,6 +1861,40 @@
           "backend": {
             "title": "Backend",
             "type": "string"
+          },
+          "current_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Run Id"
+          },
+          "heartbeat_age_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heartbeat Age S"
+          },
+          "host_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Hash"
           },
           "id": {
             "title": "Id",
@@ -2946,6 +3201,7 @@
     },
     "/api/v1/campaigns/{campaign_id}/risk/slice": {
       "get": {
+        "description": "Compute in a worker thread with a deadline; cached slices track analysis versions.",
         "operationId": "risk_slice_api_v1_campaigns__campaign_id__risk_slice_get",
         "parameters": [
           {
@@ -2991,9 +3247,15 @@
             "name": "resolution",
             "required": false,
             "schema": {
-              "default": 50,
-              "title": "Resolution",
-              "type": "integer"
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Resolution"
             }
           }
         ],
@@ -3737,6 +3999,130 @@
         "summary": "Cancel Campaign",
         "tags": [
           "campaigns"
+        ]
+      }
+    },
+    "/api/v1/campaigns/{campaign_id}:export": {
+      "post": {
+        "description": "Export via the shared job status/content endpoints without blocking HTTP.",
+        "operationId": "export_campaign_api_v1_campaigns__campaign_id__export_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "campaign_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Campaign Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportJobOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "412": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Precondition Failed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Export Campaign",
+        "tags": [
+          "actions"
         ]
       }
     },
@@ -4639,6 +5025,154 @@
         "tags": [
           "experiments"
         ]
+      },
+      "patch": {
+        "description": "Save threats notes with optimistic concurrency.",
+        "operationId": "patch_experiment_notes_api_v1_experiments__experiment_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "experiment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Experiment Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExperimentNotes"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "412": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Precondition Failed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Patch Experiment Notes",
+        "tags": [
+          "experiments"
+        ]
       }
     },
     "/api/v1/experiments/{experiment_id}/comparison": {
@@ -5148,6 +5682,7 @@
     },
     "/api/v1/modes/{mode_id}:confirm-interaction": {
       "post": {
+        "description": "Enqueue the actual idempotent confirmation plan instead of acknowledging a no-op.",
         "operationId": "confirm_interaction_api_v1_modes__mode_id__confirm_interaction_post",
         "parameters": [
           {
@@ -5166,9 +5701,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
+                  "additionalProperties": true,
                   "title": "Response Confirm Interaction Api V1 Modes  Mode Id  Confirm Interaction Post",
                   "type": "object"
                 }

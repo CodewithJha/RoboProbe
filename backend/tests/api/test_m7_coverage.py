@@ -184,7 +184,7 @@ def test_mapping_helpers() -> None:
                 },
             )()
         ).id
-        == "w"
+        != "w"
     )
 
 

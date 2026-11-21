@@ -135,6 +135,8 @@ class ExperimentRow(Base):
     __table_args__ = (CheckConstraint(_in_sql("status", EXPERIMENT_STATUSES), name="status"),)
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=new_uuid)
+    notes: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("''"))
+    etag_version: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
     name: Mapped[str] = mapped_column(Text, nullable=False)
     design: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
@@ -392,6 +394,7 @@ class FailureModeRow(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=text("now()")
     )
+    duplicate_of: Mapped[str | None] = mapped_column(Text)
     etag_version: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
 
 
@@ -484,3 +487,14 @@ class IdempotencyKeyRow(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=text("now()")
     )
+
+
+class ReportJobRow(Base):
+    """Durable report/export job state (T-084a)."""
+
+    __tablename__ = "report_jobs"
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    kind: Mapped[str] = mapped_column(Text, nullable=False)
+    target_id: Mapped[UUID] = mapped_column(Uuid, nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    html_path: Mapped[str | None] = mapped_column(Text)

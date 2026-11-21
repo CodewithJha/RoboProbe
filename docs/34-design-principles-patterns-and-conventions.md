@@ -98,6 +98,8 @@ def build_worker(settings: RoboProbeSettings) -> WorkerProcess:
 | `analysis.finished` | INFO | n_runs, n_modes, wall_s |
 | `analysis.skipped` | INFO | campaign_id, kind, reason |
 | `artifact.path_rejected` | WARNING | artifact_id (no stored path or file contents) |
+
+| `report.failed` | WARNING | job_id, error class |
 | `analysis.failed` | WARNING | campaign_id, kind, error |
 | `analysis.artefact_write_failed` | WARNING | (exc_info) |
 | `api.request` | INFO | method, route, status, duration_ms |

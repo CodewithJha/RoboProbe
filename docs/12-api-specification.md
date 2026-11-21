@@ -218,6 +218,27 @@ resolve by id through the confined artifact-store path, stream as attachments, s
 SHA-256 `ETag` and `X-Content-Type-Options: nosniff`, and sanitize filenames. Unsafe or missing
 stored paths return 404 and emit `artifact.path_rejected` without revealing the path.
 
+### 3.10 Analysis and reports
+
+Mode detail returns `version`, `label_is_user`, parameter ranges, characteristic parameters,
+rules and reproducing run ids. GET returns an ETag; PATCH requires it and the SQL update checks
+it atomically. Duplicate status requires another mode code in the same campaign. Confirmation
+requests delegate to the existing idempotent `ConfirmationService` and return actual run ids.
+
+Risk slice responses expose `x_values`, `y_values`, `p_fail`, `region`, log-axis flags and
+observed points in physical units. Stored NPZ slices are used when the pair/resolution/nominal
+anchor match; otherwise the GP is deterministically refitted from valid stored observations.
+Per-process caching keys include the risk analysis id. Computation runs off the event loop,
+with `api.slice_timeout_s`, `api.slice_cache_size` and `risk.max_slice_resolution` bounds.
+`POST :analyze` reserves its actual analysis id before returning 202. Bundle exports use
+`POST /campaigns/{id}:export` and the shared report job status/content routes.
+
+Report jobs persist in `report_jobs`; interrupted RUNNING work becomes FAILED on the first
+job access after restart. Report/export concurrency is configured by `api.report_workers`.
+HTML content has a restrictive CSP and nosniff. Worker ids and run worker references are
+SHA-256 identifiers; workers include `host_hash`, heartbeat age and current run id.
+Experiment detail includes campaign design cells; PATCH notes requires If-Match.
+
 ## 4. Server-Sent Events
 
 `GET /api/v1/events?campaign_id=<id>` → `text/event-stream`; supports `Last-Event-ID` resume (event ids are `events.id`).

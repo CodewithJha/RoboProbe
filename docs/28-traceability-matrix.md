@@ -51,6 +51,11 @@ Shared dashboard verification (T-086a/b, #166/#167; FR-DSH-008, NFR-ACC-001):
 component's own name); `web/src/components/accessibility.test.tsx` checks the shared assembly with
 axe. See `docs/evidence/T-086-components.md` for contracts and virtualisation settings.
 
+Analysis API verification (T-082a/b/c, T-084a; #151–#153, #157):
+`tests/api/test_modes.py`, `test_risk_queries.py`, `tests/unit/runner/test_analysis_jobs.py`
+and `tests/unit/reporting/test_report_persistence.py` cover optimistic mode edits, confirmation
+service delegation, exact NPZ slice/cache output, async request ids and restart recovery.
+
 ## 2. Non-functional requirements → verification
 
 | NFR | Design | Verification | Gate |

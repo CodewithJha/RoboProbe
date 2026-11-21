@@ -17,6 +17,11 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   verdict shapes; centered robustness meters; keyboard-selectable virtual run spines; sortable
   virtual statistics tables; and actionable empty states.
 
+- Analysis API completion (T-082a/b/c, T-084a): versioned mode edits and real confirmation
+  requests, exact cached NPZ/on-demand risk slices, complete importance payloads, reserved async
+  analysis ids, bundle export jobs and durable report status across restart. Worker identifiers
+  are opaque hashes. Migration `0003_api_state` adds report jobs and editable experiment notes.
+
 - Campaign/run API completion (T-081b/c/d): entered request transactions, shared CLI/API
   validation and snapshots, idempotent creation, lifecycle warnings, mode-discovery progress,
   validated manual runs with derived seeds, and filtered stable SQL keyset pagination.

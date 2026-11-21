@@ -70,6 +70,8 @@ def sut_record(row: SutProfileRow) -> SutProfileRecord:
 
 def experiment_record(row: ExperimentRow) -> ExperimentRecord:
     return ExperimentRecord(
+        notes=row.notes,
+        etag_version=row.etag_version,
         id=row.id,
         name=row.name,
         design=_json(row.design),
@@ -186,6 +188,8 @@ def mode_record(row: FailureModeRow) -> FailureModeRecord:
         code=row.code,
         label=row.label,
         label_is_user=row.label_is_user,
+        etag_version=row.etag_version,
+        duplicate_of=row.duplicate_of,
         primary_class=row.primary_class,
         class_mix=_json(row.class_mix),
         size=row.size,

@@ -8,9 +8,10 @@ Implements: T-081, T-082, T-084
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal, Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from roboprobe.core.types import CampaignStatus, JsonValue
 from roboprobe.runner.campaign_spec import CampaignCreate, SpaceRef, StrategyRef
@@ -23,6 +24,7 @@ __all__ = [
     "CampaignProgress",
     "ExperimentComparisonOut",
     "ExperimentCreate",
+    "ExperimentNotes",
     "ExperimentOut",
     "FailureModeOut",
     "FailureModePatch",
@@ -176,6 +178,14 @@ class FailureModeOut(BaseModel):
     campaign_id: UUID
     code: str
     label: str
+    label_is_user: bool = False
+    version: int = 1
+    duplicate_of: str | None = None
+    param_ranges: dict[str, JsonValue] = Field(default_factory=dict)
+    characteristic: list[str] = Field(default_factory=list)
+    rules: list[JsonValue] = Field(default_factory=list)
+    medoid_run_id: UUID | None = None
+    minimal_run_id: UUID | None = None
     size: int
     primary_class: str
     status: str
@@ -184,9 +194,26 @@ class FailureModeOut(BaseModel):
 
 class FailureModePatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    label: str | None = Field(default=None, min_length=1, max_length=80)
+    status: Literal["open", "accepted", "fixed", "duplicate"] | None = None
+    duplicate_of: str | None = None
 
-    label: str | None = None
-    status: str | None = None
+    @field_validator("label")
+    @classmethod
+    def _label(cls, value: str | None) -> str | None:
+        if value is not None:
+            value = value.strip()
+            if not value or any(ord(char) < 32 or ord(char) == 127 for char in value):
+                msg = "label must be printable and nonempty"
+                raise ValueError(msg)
+        return value
+
+    @model_validator(mode="after")
+    def _duplicate(self) -> Self:
+        if self.status == "duplicate" and not self.duplicate_of:
+            msg = "duplicate status requires duplicate_of"
+            raise ValueError(msg)
+        return self
 
 
 class ImportanceOut(BaseModel):
@@ -203,6 +230,8 @@ class RiskOut(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     campaign_id: UUID
+    analysis_id: UUID | None = None
+    computed_at: datetime | None = None
     robustness_score: float | None = None
     volumes: dict[str, JsonValue] = Field(default_factory=dict)
     thresholds: dict[str, JsonValue] = Field(default_factory=dict)
@@ -216,6 +245,13 @@ class RiskSliceOut(BaseModel):
     anchor: str
     resolution: int
     grid: dict[str, JsonValue] = Field(default_factory=dict)
+    x_values: list[float] = Field(default_factory=list)
+    y_values: list[float] = Field(default_factory=list)
+    p_fail: list[list[float]] = Field(default_factory=list)
+    region: list[list[int]] = Field(default_factory=list)
+    log_x: bool = False
+    log_y: bool = False
+    points: list[dict[str, JsonValue]] = Field(default_factory=list)
 
 
 class ExperimentCreate(BaseModel):
@@ -224,8 +260,18 @@ class ExperimentCreate(BaseModel):
     design: dict[str, JsonValue]
 
 
+class ExperimentNotes(BaseModel):
+    """Editable threats-to-validity notes (T-112b)."""
+
+    model_config = ConfigDict(extra="forbid")
+    notes: str
+
+
 class ExperimentOut(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    notes: str = ""
+    version: int = 1
+    cells: list[dict[str, JsonValue]] = Field(default_factory=list)
 
     id: UUID
     name: str
@@ -260,6 +306,8 @@ class ReportJobOut(BaseModel):
     kind: str
     target_id: UUID
     artifact_id: UUID | None = None
+    report_id: UUID | None = None
+    status_url: str | None = None
 
 
 class ArtifactOut(BaseModel):
@@ -280,3 +328,6 @@ class WorkerOut(BaseModel):
     status: str
     version: str
     last_heartbeat: datetime | None = None
+    heartbeat_age_s: float | None = None
+    current_run_id: UUID | None = None
+    host_hash: str | None = None

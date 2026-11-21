@@ -92,6 +92,7 @@ def analyze_campaign(  # noqa: PLR0913
     metrics: Metrics | None = None,
     load_space: Callable[[str, str], ScenarioSpace] | None = None,
     analyzers: Sequence[Analyzer] | None = None,
+    analysis_id: UUID | None = None,
 ) -> AnalysisReport:
     """Run the analysis chain for ``campaign_id`` and persist results.
 
@@ -104,10 +105,12 @@ def analyze_campaign(  # noqa: PLR0913
     if campaign is None:
         msg = "campaign not found"
         raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
-    analysis_id = uuid4()
+    analysis_id = analysis_id or uuid4()
     started = clock.monotonic()
     risk_settings = risk or RiskSettings()
-    space = load_space(campaign.space_id, campaign.space_version)
+    space = load_space(campaign.space_id, campaign.space_version).with_pins(
+        getattr(campaign, "pins", {})
+    )
     runs, gp_x, gp_y = _load_runs(uow, campaign_id)
     chain = list(analyzers) if analyzers is not None else _chain_for_kind(kind)
     ctx = AnalysisContext(
@@ -523,10 +526,12 @@ def _summary(ctx: AnalysisContext) -> dict[str, Any]:
         }
     summary["n_modes"] = len(ctx.modes)
     if ctx.importance is not None:
-        summary["importance"] = {
-            "low_confidence": ctx.importance.low_confidence,
-            "auc_mean": ctx.importance.auc_mean,
+        summary["importance"] = ctx.importance.model_dump(mode="json")
+        summary["interactions"] = {
+            "names": list(ctx.importance.names),
+            "values": [list(row) for row in ctx.importance.interactions],
         }
+    summary["rules"] = [rule.model_dump(mode="json") for rule in ctx.rules]
     if ctx.volumes is not None:
         summary["volumes"] = dict(ctx.volumes)
     summary["n_rules"] = len(ctx.rules)

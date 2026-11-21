@@ -7,6 +7,7 @@ Implements: T-081, T-082, T-084
 
 from __future__ import annotations
 
+import hashlib
 from typing import Any
 from uuid import UUID
 
@@ -22,6 +23,7 @@ from roboprobe.api.schemas import (
     SutProfileOut,
     WorkerOut,
 )
+from roboprobe.core.clock import SystemClock
 from roboprobe.core.types import CampaignStatus, RunStatus, Verdict
 
 __all__ = [
@@ -135,7 +137,9 @@ def run_out(record: Any, *, oracles: list[dict[str, object]] | None = None) -> R
         warnings=list(record.warnings),
         oracles=oracles or [],
         metrics=dict(record.metrics),
-        worker_id=record.worker_id,
+        worker_id=None
+        if record.worker_id is None
+        else hashlib.sha256(record.worker_id.encode()).hexdigest(),
         timing={
             "enqueued_at": record.enqueued_at,
             "started_at": record.started_at,
@@ -170,6 +174,14 @@ def failure_mode_out(record: Any) -> FailureModeOut:
         campaign_id=record.campaign_id,
         code=record.code,
         label=record.label,
+        label_is_user=getattr(record, "label_is_user", False),
+        version=getattr(record, "etag_version", 1),
+        duplicate_of=getattr(record, "duplicate_of", None),
+        param_ranges=dict(getattr(record, "param_ranges", {})),
+        characteristic=list(getattr(record, "characteristic", ())),
+        rules=list(getattr(record, "rules", ())),
+        medoid_run_id=getattr(record, "medoid_run_id", None),
+        minimal_run_id=getattr(record, "minimal_run_id", None),
         size=record.size,
         primary_class=record.primary_class,
         status=record.status,
@@ -180,6 +192,8 @@ def failure_mode_out(record: Any) -> FailureModeOut:
 def risk_out(record: Any, *, campaign_id: UUID) -> RiskOut:
     return RiskOut(
         campaign_id=campaign_id,
+        analysis_id=getattr(record, "analysis_id", None),
+        computed_at=getattr(record, "created_at", None),
         robustness_score=record.robustness_score,
         volumes=dict(record.volumes),
         thresholds=dict(record.thresholds),
@@ -188,6 +202,8 @@ def risk_out(record: Any, *, campaign_id: UUID) -> RiskOut:
 
 def experiment_out(record: Any) -> ExperimentOut:
     return ExperimentOut(
+        notes=getattr(record, "notes", ""),
+        version=getattr(record, "etag_version", 1),
         id=record.id,
         name=record.name,
         status=record.status,
@@ -210,9 +226,14 @@ def artifact_out(record: Any) -> ArtifactOut:
 
 def worker_out(record: Any) -> WorkerOut:
     return WorkerOut(
-        id=record.id,
+        id=hashlib.sha256(record.id.encode()).hexdigest(),
         backend=record.backend,
         status=record.status,
         version=record.version,
         last_heartbeat=record.last_heartbeat,
+        heartbeat_age_s=None
+        if record.last_heartbeat is None
+        else max(0.0, (SystemClock().now() - record.last_heartbeat).total_seconds()),
+        current_run_id=getattr(record, "current_run_id", None),
+        host_hash=hashlib.sha256(record.id.split(":", 1)[0].encode()).hexdigest(),
     )

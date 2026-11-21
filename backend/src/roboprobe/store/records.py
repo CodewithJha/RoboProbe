@@ -59,6 +59,8 @@ class SutProfileRecord(_Record):
 
 
 class ExperimentRecord(_Record):
+    notes: str = ""
+    etag_version: int = 1
     id: UUID
     name: str
     design: dict[str, JsonValue]
@@ -187,6 +189,8 @@ class FailureModeRecord(_Record):
     code: str
     label: str
     label_is_user: bool = False
+    etag_version: int = 1
+    duplicate_of: str | None = None
     primary_class: str
     class_mix: dict[str, JsonValue]
     size: int

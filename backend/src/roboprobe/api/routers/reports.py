@@ -41,6 +41,8 @@ def create_report(body: ReportCreate, request: Request) -> ReportJobOut:
         status=job.status,
         kind=job.kind,
         target_id=job.target_id,
+        report_id=job.id,
+        status_url=f"{request.app.state.settings.api.base_path}/reports/{job.id}",
     )
 
 
@@ -55,6 +57,8 @@ def report_status(report_id: UUID, request: Request) -> ReportJobOut:
         status=job.status,
         kind=job.kind,
         target_id=job.target_id,
+        report_id=job.id,
+        status_url=f"{request.app.state.settings.api.base_path}/reports/{job.id}",
     )
 
 
@@ -66,4 +70,14 @@ def report_content(report_id: UUID, request: Request) -> Response:
         raise NotFoundError(msg, context={"report_id": str(report_id)})
     if job.status != "COMPLETED":
         return JSONResponse(status_code=202, content={"status": job.status})
-    return FileResponse(job.html_path, media_type="text/html")
+    media_type = "application/zstd" if job.kind == "bundle" else "text/html"
+    return FileResponse(
+        job.html_path,
+        media_type=media_type,
+        headers={
+            "Content-Security-Policy": (
+                "default-src 'none'; style-src 'unsafe-inline'; img-src data:"
+            ),
+            "X-Content-Type-Options": "nosniff",
+        },
+    )

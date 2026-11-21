@@ -342,6 +342,29 @@ class _Modes:
         mode_ids = {m.id for m in self.list_for_campaign(campaign_id)}
         return tuple(m for m in self._db.members if m.mode_id in mode_ids)
 
+    def patch(
+        self,
+        mode_id: UUID,
+        *,
+        label: str | None = None,
+        status: str | None = None,
+        duplicate_of: str | None = None,
+        expected_etag: int | None = None,
+    ) -> None:
+        row = self.get(mode_id)
+        if row is None:
+            raise NotFoundError("mode not found")
+        if expected_etag is not None and row.etag_version != expected_etag:
+            raise ValidationError("stale mode", code=ErrorCode.PRECONDITION_FAILED)
+        update = {"etag_version": row.etag_version + 1}
+        if label is not None:
+            update.update(label=label, label_is_user=True)
+        if status is not None:
+            update["status"] = status
+        if duplicate_of is not None:
+            update["duplicate_of"] = duplicate_of
+        self._db.modes[mode_id] = row.model_copy(update=update)
+
     def upsert_modes(
         self,
         campaign_id: UUID,
@@ -358,7 +381,14 @@ class _Modes:
                 continue
             label = prev.label if prev.label_is_user else mode.label
             self._db.modes[prev.id] = mode.model_copy(
-                update={"id": prev.id, "label": label, "label_is_user": prev.label_is_user}
+                update={
+                    "id": prev.id,
+                    "label": label,
+                    "label_is_user": prev.label_is_user,
+                    "status": prev.status,
+                    "duplicate_of": prev.duplicate_of,
+                    "etag_version": prev.etag_version + 1,
+                }
             )
             kept.add(prev.id)
         self._db.members = [m for m in self._db.members if m.mode_id not in kept] + [

@@ -15,20 +15,25 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
 
+import yaml
 from sqlalchemy.engine import Engine
 
 from roboprobe.backends.registry import ENTRY_POINT_GROUP, get_backend
 from roboprobe.bootstrap._infra import Infrastructure, UowFactory, build_infrastructure
 from roboprobe.bootstrap.idempotency import SqlAlchemyIdempotencyStore
+from roboprobe.bootstrap.report_jobs import SqlReportJobs
 from roboprobe.core.clock import SystemClock
+from roboprobe.core.errors import NotFoundError
 from roboprobe.core.metrics_registry import Metrics, create_metrics
 from roboprobe.core.settings import RoboProbeSettings, load_settings
 from roboprobe.oracles.registry import BUILTIN_ORACLES
 from roboprobe.reporting.report_jobs import ReportJobStore
 from roboprobe.runner.analysis_jobs import AnalysisJobRunner
+from roboprobe.runner.confirmations import ConfirmationService
 from roboprobe.runner.lifecycle import CampaignService
 from roboprobe.runner.ports import UnitOfWorkPort
 from roboprobe.scenario.repo_root import discover_repo_root
+from roboprobe.scenario.space import ScenarioSpace
 from roboprobe.selection import registry as strategy_registry
 from roboprobe.store.artifacts import LocalArtifactStore
 from roboprobe.store.engine import session_factory
@@ -48,6 +53,7 @@ class ApiServices:
     report_jobs: ReportJobStore
     space_root: Path
     idempotency: object | None = None
+    confirmations: object | None = None
     plugin_catalog: dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -78,6 +84,19 @@ def build_api(settings: RoboProbeSettings) -> ApiServices:
     metrics = create_metrics(enabled=settings.observability.metrics_enabled)
     uow_factory = cast("Callable[[], UnitOfWorkPort]", infra.uow_factory)
     campaigns = CampaignService(uow_factory)
+
+    def load_space(space_id: str, version: str) -> ScenarioSpace:
+        with infra.uow_factory() as uow:
+            row = uow.spaces.get(space_id, version)
+            if row is None:
+                msg = "registered scenario space not found"
+                raise NotFoundError(msg)
+            return ScenarioSpace.from_text(
+                yaml.safe_dump(row.definition),
+                source="registered space",
+                base_dir=discover_repo_root(),
+            )
+
     pool = ThreadPoolExecutor(max_workers=settings.runner.analysis.max_workers)
     analysis = AnalysisJobRunner(
         uow_factory,
@@ -88,7 +107,9 @@ def build_api(settings: RoboProbeSettings) -> ApiServices:
         campaigns=campaigns,
         engine=infra.engine,
         space_root=discover_repo_root(),
+        load_space=load_space,
     )
+
     return ApiServices(
         settings=settings,
         infra=infra,
@@ -96,10 +117,17 @@ def build_api(settings: RoboProbeSettings) -> ApiServices:
         campaigns=campaigns,
         analysis=analysis,
         report_jobs=ReportJobStore(
-            ThreadPoolExecutor(max_workers=settings.runner.analysis.max_workers)
+            ThreadPoolExecutor(max_workers=settings.api.report_workers),
+            SqlReportJobs(session_factory(infra.engine)),
         ),
         space_root=discover_repo_root(),
         idempotency=SqlAlchemyIdempotencyStore(session_factory(infra.engine)),
+        confirmations=ConfirmationService(
+            uow_factory,
+            interaction=settings.analysis.interaction,
+            confirm_priority=settings.runner.confirm_priority,
+            load_space=load_space,
+        ),
         plugin_catalog=_plugin_catalog(settings),
     )
 
