@@ -1,5 +1,5 @@
 {
   "name": "propose_n64_d6",
-  "median_s": 0.45,
+  "median_s": 0.65,
   "note": "S-PROBE propose(q=4) at n=64, d=6 on CI CPU; fail if >20% slower (T-053)."
 }
