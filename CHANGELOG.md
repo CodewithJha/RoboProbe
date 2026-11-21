@@ -24,6 +24,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   `docs/evidence/security-tests.md`. Constraint literal exponents above
   `scenario.constraint_max_literal_exponent` and YAML alias bombs above `scenario.yaml_max_aliases`
   are rejected.
+- Weekly mutation testing (T-131): `mutmut` on `selection/` and `oracles/` via
+  `.github/workflows/mutation.yml` (schedule + manual, not a pull-request check). Kill rate is
+  written to the job summary and an HTML artifact.
 - Experiment configs EXP-01…EXP-07 (T-104): `configs/experiments/` plus the d=8 and
   doubled-lidar-noise warehouse spaces. Each file records the frozen S-PROBE pre-registration hash.
 - API foundation (T-080a–d): FastAPI `create_app` with CORS/GZip, `/health/live|ready`, `/api/v1/meta`,
