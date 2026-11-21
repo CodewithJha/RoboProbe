@@ -113,5 +113,8 @@ def test_build_api_wires_infra(tmp_path: Path) -> None:
         assert services.settings is not None
         assert "backends" in services.plugin_catalog
         assert "strategies" in services.plugin_catalog
+        assert services.campaigns is not None
+        assert services.analysis is not None
+        assert services.report_jobs is not None
     finally:
         services.close()
