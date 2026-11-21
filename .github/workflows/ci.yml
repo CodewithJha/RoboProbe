@@ -298,3 +298,29 @@ jobs:
           -v "$PWD/docker/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
           prom/prometheus@sha256:63805ebb8d2b3920190daf1cb14a60871b16fd38bed42b857a3182bc621f4996
           check config /etc/prometheus/prometheus.yml
+
+  openapi-check:
+    name: openapi-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: OpenAPI snapshot is fresh
+        run: uv run --directory backend python ../scripts/export_openapi.py --check
+      - name: Reject breaking OpenAPI changes
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --depth=1 origin "${{ github.base_ref }}"
+          if git cat-file -e "FETCH_HEAD:api/openapi.json"; then
+            git show "FETCH_HEAD:api/openapi.json" > /tmp/openapi-base.json
+            docker run --rm \
+              -v "$PWD/api/openapi.json:/spec/openapi.json:ro" \
+              -v /tmp/openapi-base.json:/base/openapi.json:ro \
+              tufin/oasdiff:v1.39.0@sha256:004bef22058ace818b61f0eb2f05efb89fc6a3882f68bf4db0b6a86f40723fe0 \
+              breaking /base/openapi.json /spec/openapi.json --fail-on ERR
+          else
+            echo "base has no api/openapi.json; skipping oasdiff"
+          fi

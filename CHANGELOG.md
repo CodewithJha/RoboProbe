@@ -14,6 +14,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   (anonymous Viewer, admin password from a secret file) and an OTLP collector + Jaeger.
   Optional tracing (`roboprobe[otel]`) exports spans only when `observability.otlp_endpoint` is set.
   Compose ports: `ROBOPROBE_GRAFANA_PORT`, `ROBOPROBE_PROMETHEUS_PORT`, `ROBOPROBE_JAEGER_PORT`.
+- OpenAPI snapshot (T-084b): `make openapi` writes `api/openapi.json` from `create_app`. CI job
+  `openapi-check` fails on drift and, once the snapshot is on the base branch, runs `oasdiff breaking`.
+  Nightly `api-fuzz.yml` runs Schemathesis against the served API.
 - Experiment configs EXP-01…EXP-07 (T-104): `configs/experiments/` plus the d=8 and
   doubled-lidar-noise warehouse spaces. Each file records the frozen S-PROBE pre-registration hash.
 - API foundation (T-080a–d): FastAPI `create_app` with CORS/GZip, `/health/live|ready`, `/api/v1/meta`,

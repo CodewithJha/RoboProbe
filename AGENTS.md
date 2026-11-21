@@ -39,7 +39,7 @@ See `docs/32` §3 — all boxes must be ticked, including docs, config reference
 
 ## 6. Useful commands (after M1)
 
-`make setup` · `make lint` · `make typecheck` · `make test` · `make test-fast` · `make up` · `make demo` · `make docs-check` · `uv run roboprobe --help`
+`make setup` · `make lint` · `make typecheck` · `make test` · `make test-fast` · `make up` · `make demo` · `make docs-check` · `make openapi` · `uv run roboprobe --help`
 
 ## 7. When you finish a task
 
