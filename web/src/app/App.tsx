@@ -1,11 +1,13 @@
-import type { JSX } from 'react';
-
-/** Root component. Routing and providers arrive with the app shell (T-085b). */
-export function App(): JSX.Element {
+import { useState } from 'react';
+import { RouterProvider } from 'react-router-dom';
+import { AppProviders } from './providers';
+import { createAppRouter } from './router';
+/** Mounted only after runtime configuration has been validated. */
+export function App() {
+  const [router] = useState(createAppRouter);
   return (
-    <main>
-      <h1>RoboProbe</h1>
-      <p>Dashboard skeleton: feature screens land in milestone M8.</p>
-    </main>
+    <AppProviders>
+      <RouterProvider router={router} />
+    </AppProviders>
   );
 }

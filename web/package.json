@@ -22,14 +22,22 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "gen:api": "openapi-typescript ../api/openapi.json -o src/api/schema.d.ts && prettier --write src/api/schema.d.ts",
+    "check:api": "pnpm gen:api && git diff --exit-code -- src/api/schema.d.ts"
   },
   "dependencies": {
+    "@radix-ui/react-tooltip": "^1.4.1",
+    "@tanstack/react-query": "^5.108.2",
+    "@tanstack/react-virtual": "^3.14.26",
+    "openapi-fetch": "^0.17.0",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.65.1",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^8.0.0",
     "@testing-library/react": "^16.3.3",
@@ -38,6 +46,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^4.7.0",
     "@vitest/coverage-v8": "^5.1.1",
+    "axe-core": "^4.14.1",
     "eslint": "^9.39.5",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsx-a11y": "^6.10.2",
@@ -45,6 +54,8 @@
     "eslint-plugin-react-refresh": "^0.5.8",
     "globals": "^17.14.0",
     "jsdom": "^31.0.1",
+    "msw": "^3.0.7",
+    "openapi-typescript": "^7.13.0",
     "prettier": "^3.10.1",
     "stylelint": "^18.0.0",
     "stylelint-config-standard": "^41.0.0",

@@ -31,6 +31,7 @@ backend/mutants/
 
 # --- Node / web ---
 node_modules/
+node_modules
 web/dist/
 web/.vite/
 web/coverage/
