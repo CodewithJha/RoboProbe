@@ -18,7 +18,7 @@ from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import Verdict
 from roboprobe.scenario.space import ScenarioSpace
 
-pytestmark = [pytest.mark.unit, pytest.mark.slow]
+pytestmark = pytest.mark.unit
 
 REPO = Path(__file__).resolve().parents[4]
 
