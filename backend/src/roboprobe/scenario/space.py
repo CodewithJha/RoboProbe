@@ -402,6 +402,28 @@ class ScenarioSpace(_Frozen):
     ) -> ScenarioSpace:
         """Like :meth:`from_yaml` for in-memory content (e.g. an API upload named ``source``)."""
         document = load_yaml_document(text, source=source, code=_CODE, max_bytes=max_bytes)
+        return cls.from_mapping(document, source=source, base_dir=base_dir, strict_task=strict_task)
+
+    @classmethod
+    def from_mapping(
+        cls,
+        document: object,
+        *,
+        source: str,
+        base_dir: Path | None = None,
+        strict_task: bool = False,
+    ) -> ScenarioSpace:
+        """Validate an already-parsed document (YAML or JSON mapping).
+
+        Args:
+            document: Parsed document (``yaml.safe_load`` / ``json.loads`` output).
+            source: Name used in error messages (file name or ``"<upload>"``).
+            base_dir: Directory the ``task`` reference is resolved against.
+            strict_task: Load the task in strict mode (reject provisional values).
+
+        Raises:
+            roboprobe.core.errors.ValidationError: ``SPACE_INVALID`` with ``context["errors"]``.
+        """
         validate_document(document, schema=_SCHEMA, source=source, code=_CODE)
         if not isinstance(document, dict):  # pragma: no cover - the schema requires an object
             raise document_error(source, [("", "space document must be a mapping")], _CODE)
