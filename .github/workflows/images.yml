@@ -1,0 +1,99 @@
+# Build and publish container images (T-119). Web and Gazebo Dockerfiles are built when present.
+name: images
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: image ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: backend
+            file: docker/backend.Dockerfile
+          - name: web
+            file: docker/web.Dockerfile
+          - name: gazebo
+            file: docker/gazebo/Dockerfile
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Dockerfile present
+        id: gate
+        run: |
+          if [ -f "${{ matrix.file }}" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "${{ matrix.file }} is not in the tree yet; skipping"
+          fi
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        if: steps.gate.outputs.present == 'true'
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        if: steps.gate.outputs.present == 'true'
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        if: steps.gate.outputs.present == 'true' && github.event_name != 'pull_request'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - id: meta
+        if: steps.gate.outputs.present == 'true'
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ghcr.io/${{ github.repository }}/${{ matrix.name }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha,format=short
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        if: steps.gate.outputs.present == 'true'
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          # pull_request builds with push: false (load the image for the scan below).
+          push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: ${{ github.event_name != 'pull_request' && 'mode=max' || false }}
+          sbom: ${{ github.event_name != 'pull_request' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Trivy
+        if: steps.gate.outputs.present == 'true'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: sarif
+          output: trivy.sarif
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          vuln-type: os
+          ignore-unfixed: true
+          exit-code: "1"
+      - name: Upload Trivy SARIF
+        if: steps.gate.outputs.present == 'true' && hashFiles('trivy.sarif') != ''
+        uses: github/codeql-action/upload-sarif@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
+        with:
+          sarif_file: trivy.sarif
+      - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        if: steps.gate.outputs.present == 'true' && github.event_name != 'pull_request'
+        with:
+          image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          format: spdx-json

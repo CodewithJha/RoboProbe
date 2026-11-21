@@ -33,6 +33,8 @@ WORKDIR /src/backend
 # Dependencies first (cached layer while only source code changes); CPU-only torch comes from the
 # pytorch-cpu index pinned in uv.lock.
 COPY backend/pyproject.toml backend/uv.lock ./
+# `--extra ml` pulls editable workspace plugins; sync must see them before lock resolution.
+COPY plugins /src/plugins
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --no-install-project ${UV_EXTRAS}
 
@@ -74,6 +76,9 @@ RUN groupadd --system --gid "${APP_GID}" roboprobe \
  && install -d -o roboprobe -g roboprobe /data/artifacts \
  && install -d /app \
  && ln -s /data /app/data
+RUN apt-get update \
+ && apt-get -y --no-install-recommends upgrade \
+ && rm -rf /var/lib/apt/lists/*
 
 # Code and data are root-owned and read-only for the runtime user; only /data/artifacts is writable.
 COPY --from=builder /app/.venv /app/.venv

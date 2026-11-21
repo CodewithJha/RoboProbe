@@ -19,6 +19,11 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   `Last-Event-ID` resume. New settings: `api.sse.poll_interval_s`, `queue_size`, `batch_size`,
   `reconnect_initial_s`, `reconnect_max_s`, `connect_timeout_s`. Metrics: `roboprobe_sse_clients`,
   `roboprobe_sse_reconnects_total`.
+- Release tooling (T-119, T-124): `scripts/release_check.py` rejects a tag whose version does not
+  match `backend/pyproject.toml`, `web/package.json`, and `package.xml` when the ROS package exists,
+  or whose changelog section is missing. `.github/workflows/images.yml` builds the backend image
+  (web and Gazebo when their Dockerfiles exist), scans it with Trivy, and attaches an SBOM.
+  `.github/workflows/release.yml` runs that check, publishes images, and opens the GitHub Release.
 - Security suite (T-109): `backend/tests/security/` maps each doc 31 threat to a test, and
   `scripts/check_security_map.py` fails CI when a `TM-xx` row is missing from
   `docs/evidence/security-tests.md`. Constraint literal exponents above
