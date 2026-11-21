@@ -1,7 +1,7 @@
 """Composition roots: the only place that wires concrete adapters to application services.
 
 Factories: :func:`build_worker`, :func:`build_orchestrator`, :func:`build_cli_services`,
-:func:`build_api` (stub until T-080a). See docs/34 §3 and ADR-0016.
+:func:`build_api`. See docs/34 §3 and ADR-0016.
 
 Layer: Application (L3) — composition roots. See docs/16 §2 for the allowed import directions.
 

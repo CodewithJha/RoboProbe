@@ -67,6 +67,11 @@
 # page_limit_max = 500
 # Retention of idempotency keys [s].
 # idempotency_ttl_s = 86400
+# Base URL for RFC 9457 problem `type` links (docs/errors.md anchors).
+# error_type_base = "https://github.com/CodewithJha/RoboProbe/blob/main/docs/errors.md"
+# HMAC key for opaque pagination cursors. Override in production so cursors survive process
+# restarts; the committed default is for local/dev only.
+# cursor_secret = "roboprobe-dev-cursor-secret"
 
 [api.sse]
 # Keep-alive ping interval on SSE streams [s].

@@ -44,7 +44,7 @@ def test_upgrade_downgrade_upgrade(pg_engine: Engine, monkeypatch: pytest.Monkey
     inspector = inspect(pg_engine)
     assert "runs" in inspector.get_table_names()
     script = ScriptDirectory.from_config(cfg)
-    assert script.get_current_head() == "0001_initial"
+    assert script.get_current_head() == "0002_idempotency_keys"
 
 
 def test_autogenerate_is_empty(pg_engine: Engine, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -7,6 +7,10 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- API foundation (T-080a–d): FastAPI `create_app` with CORS/GZip, `/health/live|ready`, `/api/v1/meta`,
+  `/metrics`, RFC 9457 `problem+json` (`docs/errors.md`), optional bearer auth (constant-time; required
+  off-loopback), cursor pagination + ETag/`If-Match` helpers, Idempotency-Key store + Alembic
+  `0002_idempotency_keys`, and `roboprobe api`. New settings: `api.error_type_base`, `api.cursor_secret`.
 - Pins and sub-spaces (T-025): `ScenarioSpace.with_pins` and `roboprobe.scenario.pins.validate_pins`. Pinned parameters
   leave `params`/`dim` but keep the space id and version; `make_scenario` re-inserts them, so the hash includes them.
 - Perception and friction models (T-031b): `roboprobe.perturbation.perception.PerceptionModel` (P3 depth degradation:

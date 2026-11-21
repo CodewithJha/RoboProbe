@@ -53,6 +53,7 @@ api = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "sse-starlette>=2.1",
+    "httpx2>=2.0",
 ]
 dev = [
     "pytest>=8.3",
@@ -70,6 +71,7 @@ dev = [
     "types-jsonschema>=4.23",
     "scipy-stubs>=1.14",
     "pyarrow-stubs>=17",
+    "httpx2>=2.0",
 ]
 
 [project.scripts]
@@ -134,6 +136,8 @@ known-first-party = ["roboprobe"]
 [tool.ruff.lint.per-file-ignores]
 # Tests: asserts and literal expectations are the point; docstrings optional.
 "tests/**/*.py" = ["S101", "S104", "S105", "S106", "PLR2004", "D100", "D101", "D102", "D103", "D104", "ANN"]
+# FastAPI: Depends() in defaults, lazy optional imports, HTTP status literals in handlers.
+"src/roboprobe/api/**/*.py" = ["B008", "PLC0415", "PLR2004", "ANN401"]
 
 [tool.ruff.format]
 docstring-code-format = true

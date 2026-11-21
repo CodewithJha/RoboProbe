@@ -49,6 +49,7 @@ __all__ = [
     "ExperimentRow",
     "FailureModeMemberRow",
     "FailureModeRow",
+    "IdempotencyKeyRow",
     "OracleResultRow",
     "RiskMapRow",
     "RunRow",
@@ -199,6 +200,7 @@ class CampaignRow(Base):
     )
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    etag_version: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
 
 
 class WorkerRow(Base):
@@ -390,6 +392,7 @@ class FailureModeRow(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=text("now()")
     )
+    etag_version: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
 
 
 class FailureModeMemberRow(Base):
@@ -461,6 +464,23 @@ class EventRow(Base):
     topic: Mapped[str] = mapped_column(Text, nullable=False)
     campaign_id: Mapped[UUID | None] = mapped_column(Uuid)
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+
+
+class IdempotencyKeyRow(Base):
+    """``idempotency_keys`` — cached POST responses (docs/12 §1)."""
+
+    __tablename__ = "idempotency_keys"
+    __table_args__ = (Index("ix_idempotency_keys_created", "created_at"),)
+
+    key: Mapped[str] = mapped_column(Text, primary_key=True)
+    method: Mapped[str] = mapped_column(Text, nullable=False)
+    path: Mapped[str] = mapped_column(Text, nullable=False)
+    body_sha256: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[int] = mapped_column(Integer, nullable=False)
+    response_json: Mapped[dict[str, Any] | list[Any] | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=text("now()")
     )
