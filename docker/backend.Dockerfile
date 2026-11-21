@@ -33,6 +33,8 @@ WORKDIR /src/backend
 # Dependencies first (cached layer while only source code changes); CPU-only torch comes from the
 # pytorch-cpu index pinned in uv.lock.
 COPY backend/pyproject.toml backend/uv.lock ./
+# `--extra ml` pulls editable workspace plugins; sync must see them before lock resolution.
+COPY plugins /src/plugins
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --no-install-project ${UV_EXTRAS}
 
