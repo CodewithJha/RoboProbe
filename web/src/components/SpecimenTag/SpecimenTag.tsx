@@ -23,7 +23,7 @@ export function SpecimenTag({ kind, id, verdict, label, strip, to }: SpecimenTag
           to ??
           (kind === 'run' ? `/runs/${encodeURIComponent(id)}` : `/modes/${encodeURIComponent(id)}`)
         }
-        aria-label={`${kind === 'run' ? 'Run' : 'Mode'} ${id}, ${verdict}: ${label}`}
+        aria-label={`${id} ${label}, ${kind === 'run' ? 'Run' : 'Mode'}, ${verdict}`}
       >
         <VerdictNotch verdict={verdict} />
         <span className={styles.id}>{id}</span>
