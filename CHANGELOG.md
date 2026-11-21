@@ -14,6 +14,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   (anonymous Viewer, admin password from a secret file) and an OTLP collector + Jaeger.
   Optional tracing (`roboprobe[otel]`) exports spans only when `observability.otlp_endpoint` is set.
   Compose ports: `ROBOPROBE_GRAFANA_PORT`, `ROBOPROBE_PROMETHEUS_PORT`, `ROBOPROBE_JAEGER_PORT`.
+- Compose `orchestrator` and scalable `worker-k2d` services on the `core` profile (`ROBOPROBE_K2D_REPLICAS`,
+  `/healthz` checks) and `make demo` for the 50-run `warehouse_v1` S-PROBE campaign
+  (`configs/campaigns/k2d_demo_50.yaml`). Re-registering the space is a no-op.
 - Experiment configs EXP-01…EXP-07 (T-104): `configs/experiments/` plus the d=8 and
   doubled-lidar-noise warehouse spaces. Each file records the frozen S-PROBE pre-registration hash.
 - API foundation (T-080a–d): FastAPI `create_app` with CORS/GZip, `/health/live|ready`, `/api/v1/meta`,

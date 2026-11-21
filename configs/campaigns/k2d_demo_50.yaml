@@ -1,0 +1,14 @@
+# 50-run kinematic2d S-PROBE demo (T-047, docs/17 §3). Space re-registration is a no-op.
+schema_version: 1
+name: k2d_demo_50
+space:
+  id: warehouse_v1
+sut_profile_id: k2d_default
+backend: kinematic2d
+strategy:
+  id: S-PROBE
+  seed: 7
+budget: 50
+repeats: 1
+batch_size: 4
+start: true
