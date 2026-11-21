@@ -114,6 +114,8 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `api.base_path` | str | `/api/v1` | `ROBOPROBE_API__BASE_PATH` | URL prefix of the versioned API. |
 | `api.token` | SecretStr? | – | `ROBOPROBE_API__TOKEN` (alias `ROBOPROBE_API_TOKEN`) | Bearer token required on every request (and for any non-loopback `host`). |
 | `api.cors_origins` | list[str] | `["http://localhost:5173", "http://localhost:8080"]` | `ROBOPROBE_API__CORS_ORIGINS` | Origins allowed by CORS (dev server and dashboard). |
+| `api.trace_default_hz` | float | `10.0` | `ROBOPROBE_API__TRACE_DEFAULT_HZ` | Default JSON trace sampling target [Hz]. |
+| `api.trace_max_hz` | float | `50.0` | `ROBOPROBE_API__TRACE_MAX_HZ` | Maximum JSON trace sampling target [Hz]. |
 | `api.max_upload_mb` | int | `10` | `ROBOPROBE_API__MAX_UPLOAD_MB` | Maximum request body size [MB]. |
 | `api.page_limit_default` | int | `50` | `ROBOPROBE_API__PAGE_LIMIT_DEFAULT` | Default page size [items]. |
 | `api.page_limit_max` | int | `500` | `ROBOPROBE_API__PAGE_LIMIT_MAX` | Maximum page size [items]. |

@@ -7,6 +7,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Trace and artifact transport (T-081e): event-preserving JSON downsampling, original
+  Parquet downloads, confined streamed attachments with digest ETags, and rejected-path logs.
+
 - Campaign/run API completion (T-081b/c/d): entered request transactions, shared CLI/API
   validation and snapshots, idempotent creation, lifecycle warnings, mode-discovery progress,
   validated manual runs with derived seeds, and filtered stable SQL keyset pagination.

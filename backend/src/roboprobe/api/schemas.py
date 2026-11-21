@@ -40,6 +40,7 @@ __all__ = [
     "StrategyRef",
     "SutProfileCreate",
     "SutProfileOut",
+    "TraceOut",
     "WorkerOut",
 ]
 
@@ -88,6 +89,17 @@ class CampaignProgress(BaseModel):
     campaign_id: UUID
     counts: dict[str, int]
     discovery_curve: list[dict[str, JsonValue]] = Field(default_factory=list)
+
+
+class TraceOut(BaseModel):
+    """Event-preserving trace samples (T-081e; docs/12 §3.9)."""
+
+    model_config = ConfigDict(extra="forbid")
+    t: list[float]
+    columns: dict[str, list[JsonValue]]
+    hz: float
+    source_hz: float | None
+    truncated: bool
 
 
 class RunOut(BaseModel):
