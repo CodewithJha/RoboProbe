@@ -84,9 +84,9 @@ jobs:
           output: trivy.sarif
           scanners: vuln
           severity: HIGH,CRITICAL
+          vuln-type: os
           ignore-unfixed: true
           exit-code: "1"
-          trivy-options: --pkg-types os
       - name: Upload Trivy SARIF
         if: steps.gate.outputs.present == 'true' && hashFiles('trivy.sarif') != ''
         uses: github/codeql-action/upload-sarif@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
