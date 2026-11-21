@@ -76,6 +76,9 @@ RUN groupadd --system --gid "${APP_GID}" roboprobe \
  && install -d -o roboprobe -g roboprobe /data/artifacts \
  && install -d /app \
  && ln -s /data /app/data
+RUN apt-get update \
+ && apt-get -y --no-install-recommends upgrade \
+ && rm -rf /var/lib/apt/lists/*
 
 # Code and data are root-owned and read-only for the runtime user; only /data/artifacts is writable.
 COPY --from=builder /app/.venv /app/.venv
