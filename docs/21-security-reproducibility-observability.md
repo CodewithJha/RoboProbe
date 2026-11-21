@@ -81,6 +81,8 @@ JSON lines via structlog to stdout (Docker collects); fields: `ts` (UTC ISO), `l
 | `roboprobe_episode_rtf` | histogram | backend |
 | `roboprobe_infra_errors_total` | counter | backend, reason |
 | `roboprobe_api_request_duration_seconds` | histogram | route, method, status |
+| `roboprobe_sse_clients` | gauge | – |
+| `roboprobe_sse_reconnects_total` | counter | – |
 
 All metrics are defined once in `roboprobe.core.metrics_registry` (dedicated registry injected into each service; a no-op Null Object when `observability.metrics_enabled=false`). Histogram buckets are documented *instrumentation constants* in that module rather than settings, because changing them breaks dashboard continuity and no service needs per-deployment overrides.
 

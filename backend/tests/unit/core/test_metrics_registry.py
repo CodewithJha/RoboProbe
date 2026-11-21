@@ -21,6 +21,8 @@ SPEC: dict[str, tuple[str, tuple[str, ...]]] = {
     "roboprobe_episode_rtf": ("histogram", ("backend",)),
     "roboprobe_infra_errors_total": ("counter", ("backend", "reason")),
     "roboprobe_api_request_duration_seconds": ("histogram", ("route", "method", "status")),
+    "roboprobe_sse_clients": ("gauge", ()),
+    "roboprobe_sse_reconnects_total": ("counter", ()),
 }
 
 

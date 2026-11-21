@@ -71,6 +71,8 @@ def api_client(api_settings: RoboProbeSettings, tmp_path: Path) -> Iterator[Test
     """TestClient with stubbed services; override deps via ``client.app.dependency_overrides``."""
     (tmp_path / "a").mkdir(parents=True, exist_ok=True)
     app = create_app(api_settings)
+    # Unit tests have no database; the outbox listener stays stopped.
+    app.state.event_hub_autostart = False
     services = StubServices(settings=api_settings)
     # Ready check: pretend DB + migrations are fine.
     engine = MagicMock()

@@ -26,6 +26,45 @@ class SseSettings(SettingsSection):
     ping_interval_s: float = Field(
         default=15.0, gt=0, description="Keep-alive ping interval on SSE streams [s]."
     )
+    poll_interval_s: float = Field(
+        default=2.0,
+        gt=0,
+        description="How often the outbox listener re-reads events.id when NOTIFY is missed [s].",
+    )
+    queue_size: int = Field(
+        default=256,
+        gt=0,
+        description=(
+            "Per-subscriber SSE queue depth; overflow drops the oldest event and sends resync."
+        ),
+    )
+    batch_size: int = Field(
+        default=200,
+        gt=0,
+        description="Maximum events read from the outbox per poll [rows].",
+    )
+    reconnect_initial_s: float = Field(
+        default=0.5,
+        gt=0,
+        description="Initial delay before reopening a dropped LISTEN connection [s].",
+    )
+    reconnect_max_s: float = Field(
+        default=30.0,
+        gt=0,
+        description="Cap on LISTEN reconnect backoff [s].",
+    )
+    connect_timeout_s: float = Field(
+        default=5.0,
+        gt=0,
+        description="TCP timeout for the dedicated LISTEN and poll connections [s].",
+    )
+
+    @model_validator(mode="after")
+    def _check_backoff(self) -> Self:
+        if self.reconnect_initial_s > self.reconnect_max_s:
+            msg = "api.sse.reconnect_initial_s must not exceed api.sse.reconnect_max_s"
+            raise ValueError(msg)
+        return self
 
 
 class ApiSettings(SettingsSection):

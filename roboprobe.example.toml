@@ -76,6 +76,18 @@
 [api.sse]
 # Keep-alive ping interval on SSE streams [s].
 # ping_interval_s = 15.0
+# How often the outbox listener re-reads events.id when NOTIFY is missed [s].
+# poll_interval_s = 2.0
+# Per-subscriber SSE queue depth; overflow drops the oldest event and sends resync.
+# queue_size = 256
+# Maximum events read from the outbox per poll [rows].
+# batch_size = 200
+# Initial delay before reopening a dropped LISTEN connection [s].
+# reconnect_initial_s = 0.5
+# Cap on LISTEN reconnect backoff [s].
+# reconnect_max_s = 30.0
+# TCP timeout for the dedicated LISTEN and poll connections [s].
+# connect_timeout_s = 5.0
 
 [runner]
 # Campaign loop tick [s].

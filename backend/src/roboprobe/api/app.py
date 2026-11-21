@@ -50,9 +50,17 @@ def create_app(settings: RoboProbeSettings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        from roboprobe.api.sse import EventHub
+
+        hub = EventHub(resolved, app.state.metrics)
+        app.state.event_hub = hub
+        autostart = bool(getattr(app.state, "event_hub_autostart", True))
+        if autostart:
+            await hub.start()
         try:
             yield
         finally:
+            await hub.stop()
             services = getattr(app.state, "services", None)
             close = getattr(services, "close", None)
             if callable(close):

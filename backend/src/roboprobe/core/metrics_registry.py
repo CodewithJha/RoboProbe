@@ -65,6 +65,8 @@ class Metrics:
         episode_rtf: Episode real-time factor. Labels: backend.
         infra_errors_total: Infrastructure errors. Labels: backend, reason.
         api_request_duration_seconds: API request latency [s]. Labels: route, method, status.
+        sse_clients: Connected SSE subscribers. No labels.
+        sse_reconnects_total: LISTEN connection recoveries. No labels.
     """
 
     registry: CollectorRegistry | None
@@ -78,6 +80,8 @@ class Metrics:
     episode_rtf: Histogram
     infra_errors_total: Counter
     api_request_duration_seconds: Histogram
+    sse_clients: Gauge
+    sse_reconnects_total: Counter
 
     @property
     def enabled(self) -> bool:
@@ -162,5 +166,15 @@ def create_metrics(*, enabled: bool) -> Metrics:
             ("route", "method", "status"),
             registry=reg,
             buckets=API_REQUEST_BUCKETS_S,
+        ),
+        sse_clients=Gauge(
+            "roboprobe_sse_clients",
+            "Connected server-sent-event subscribers.",
+            registry=reg,
+        ),
+        sse_reconnects_total=Counter(
+            "roboprobe_sse_reconnects_total",
+            "Times the outbox LISTEN connection was reopened.",
+            registry=reg,
         ),
     )
