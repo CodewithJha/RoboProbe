@@ -5,6 +5,7 @@ Implements: T-080b, FR-API-003
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 import structlog
@@ -132,7 +133,13 @@ def install_error_handlers(app: FastAPI) -> None:
         status = _STATUS.get(code, 500)
         if code is ErrorCode.INTERNAL:
             return _internal(request)
-        return problem_response(request=request, code=code, detail=exc.message, status=status)
+        return problem_response(
+            request=request,
+            code=code,
+            detail=exc.message,
+            status=status,
+            errors=_context_errors(exc),
+        )
 
     @app.exception_handler(RequestValidationError)
     async def _validation(request: Request, exc: RequestValidationError) -> JSONResponse:
@@ -185,6 +192,23 @@ def _field_error(err: dict[str, Any]) -> FieldError:
     parts = [str(part) for part in loc if part not in {"body", "query", "path", "header"}]
     pointer = "/" + "/".join(parts) if parts else "/"
     return FieldError(pointer=pointer, detail=str(err.get("msg", "invalid")))
+
+
+def _context_errors(exc: RoboProbeError) -> list[FieldError]:
+    """JSON-pointer errors from ``exc.context["errors"]`` (space/document validation)."""
+    raw = exc.context.get("errors")
+    if not isinstance(raw, list):
+        return []
+    fields: list[FieldError] = []
+    for item in raw:
+        if isinstance(item, Mapping):
+            fields.append(
+                FieldError(
+                    pointer=str(item.get("path", "")),
+                    detail=str(item.get("message", "")),
+                )
+            )
+    return fields
 
 
 def _internal(request: Request) -> JSONResponse:

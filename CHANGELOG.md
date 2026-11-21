@@ -7,6 +7,13 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Scenario-space and SUT-profile API (T-081a, #146): `GET/POST /api/v1/spaces`,
+  `GET /api/v1/spaces/{id}/versions/{version}`, `POST /api/v1/spaces/validate` and
+  `GET/POST /api/v1/sut-profiles`. Uploads accept `application/yaml` or `application/json`,
+  are bounded by `api.max_upload_mb` (413 before parsing) and reject alias bombs; registration is
+  content-addressed and idempotent, and `SPACE_INVALID` responses carry JSON-pointer `errors[]`.
+  `SpaceService`/`SutProfileService` in `roboprobe.runner.catalog` are shared with the `space` CLI,
+  and `ScenarioSpace.from_mapping` / `load_sut_profile_text` loaders reuse the same validation.
 - `make backup` / `make restore` (`scripts/backup.sh`, `scripts/restore.sh`): timestamped `pg_dump -Fc` plus a
   zstd artefact archive with a SHA256 manifest. `BACKUP_RETENTION` (default 7) caps how many copies are kept.
   Restore refuses a non-empty database unless `--force` is passed, then runs `db upgrade` and `artifacts verify`.

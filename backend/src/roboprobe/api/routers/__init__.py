@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from roboprobe.api.routers import events, health, meta
+from roboprobe.api.routers import events, health, meta, spaces, sut_profiles
 
 __all__ = ["ROUTERS"]
 
@@ -15,4 +15,6 @@ ROUTERS: list[APIRouter] = [
     health.router,
     meta.router,
     events.router,
+    spaces.router,
+    sut_profiles.router,
 ]

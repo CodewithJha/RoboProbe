@@ -162,6 +162,20 @@ Validation: space exists; backend registered and supports all enabled, unpinned 
             "p": 0.00012, "p_holm": 0.00048, "a12": 0.81, "effect": "large"}]}
 ```
 
+### 3.6 `SpaceValidationResult`
+
+`POST /api/v1/spaces/validate` is a query: it returns HTTP 200 with `valid: false` rather than 422.
+
+```json
+{"valid": false, "errors": [{"pointer": "/parameters/2/high", "message": "high (0.5) must be greater than low (0.5)"}],
+ "dimension": null, "enabled_params": []}
+```
+
+`POST /api/v1/spaces` returns 201 for a new `(id, version)` and 200 when the canonical content is
+already stored; invalid content is 422 `SPACE_INVALID` with the same pointer list in `errors`.
+Both upload routes accept `application/yaml` or `application/json` and reject a body larger than
+`api.max_upload_mb` with 413 before parsing.
+
 ## 4. Server-Sent Events
 
 `GET /api/v1/events?campaign_id=<id>` → `text/event-stream`; supports `Last-Event-ID` resume (event ids are `events.id`).
