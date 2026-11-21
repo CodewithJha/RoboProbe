@@ -18,7 +18,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from roboprobe.api.auth import assert_bind_safe, require_json_mutation, require_token
-from roboprobe.api.errors import install_error_handlers
+from roboprobe.api.errors import ProblemDetail, install_error_handlers
 from roboprobe.api.routers import ROUTERS
 from roboprobe.api.routers import health as health_router
 from roboprobe.api.routers import meta as meta_router
@@ -69,6 +69,17 @@ def create_app(settings: RoboProbeSettings | None = None) -> FastAPI:
     app = FastAPI(
         title="RoboProbe API",
         version="v1",
+        responses={
+            status: {
+                "model": ProblemDetail,
+                "content": {
+                    "application/problem+json": {
+                        "schema": {"$ref": "#/components/schemas/ProblemDetail"}
+                    }
+                },
+            }
+            for status in (401, 404, 409, 412, 422, 500)
+        },
         lifespan=lifespan,
         docs_url=f"{resolved.api.base_path}/docs",
         openapi_url=f"{resolved.api.base_path}/openapi.json",

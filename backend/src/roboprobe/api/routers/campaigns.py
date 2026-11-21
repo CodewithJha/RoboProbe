@@ -25,6 +25,7 @@ from roboprobe.api.schemas import (
     CampaignPatch,
     CampaignProgress,
     ManualRunCreate,
+    RunOut,
 )
 from roboprobe.core.clock import SystemClock
 from roboprobe.core.errors import ConflictError, ErrorCode, NotFoundError, ValidationError
@@ -111,7 +112,7 @@ async def create_campaign_route(
     return payload
 
 
-@router.get("/{campaign_id}")
+@router.get("/{campaign_id}", response_model=CampaignOut)
 def get_campaign(campaign_id: UUID, request: Request, uow: Any = Depends(get_uow)) -> Response:
     row = uow.campaigns.get(campaign_id)
     if row is None:
@@ -128,7 +129,7 @@ def get_campaign(campaign_id: UUID, request: Request, uow: Any = Depends(get_uow
     )
 
 
-@router.patch("/{campaign_id}")
+@router.patch("/{campaign_id}", response_model=CampaignOut)
 def patch_campaign(
     campaign_id: UUID,
     body: CampaignPatch,
@@ -260,7 +261,7 @@ def campaign_progress(campaign_id: UUID, uow: Any = Depends(get_uow)) -> Campaig
     return CampaignProgress(campaign_id=campaign_id, counts=counts, discovery_curve=curve)
 
 
-@router.get("/{campaign_id}/runs")
+@router.get("/{campaign_id}/runs", response_model=Page[RunOut])
 def list_runs(  # noqa: PLR0913, PLR0917 - documented run filters
     campaign_id: UUID,
     request: Request,
