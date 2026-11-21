@@ -17,6 +17,7 @@ EXPECTED_SUBPACKAGES = (
     "experiments",
     "geometry",
     "metrics",
+    "observability",
     "oracles",
     "perturbation",
     "reporting",

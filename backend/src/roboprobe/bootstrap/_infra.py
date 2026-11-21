@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from sqlalchemy.engine import Engine
 
 from roboprobe.core.settings import RoboProbeSettings
+from roboprobe.observability.tracing import configure_tracing, instrument_sqlalchemy
 from roboprobe.store.artifacts import LocalArtifactStore
 from roboprobe.store.engine import create_engine_from_settings, session_factory
 from roboprobe.store.queue_pg import PostgresRunQueue
@@ -39,7 +40,9 @@ class Infrastructure:
 
 def build_infrastructure(settings: RoboProbeSettings) -> Infrastructure:
     """Construct shared persistence adapters from ``settings``."""
+    configure_tracing(settings.observability, settings.observability.service_name or "roboprobe")
     engine = create_engine_from_settings(settings.database)
+    instrument_sqlalchemy(engine)
     factory = session_factory(engine)
     channel = settings.database.notify_channel
 

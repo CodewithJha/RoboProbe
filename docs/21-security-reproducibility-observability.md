@@ -84,11 +84,11 @@ JSON lines via structlog to stdout (Docker collects); fields: `ts` (UTC ISO), `l
 
 All metrics are defined once in `roboprobe.core.metrics_registry` (dedicated registry injected into each service; a no-op Null Object when `observability.metrics_enabled=false`). Histogram buckets are documented *instrumentation constants* in that module rather than settings, because changing them breaks dashboard continuity and no service needs per-deployment overrides.
 
-Optional `observability` compose profile ships Prometheus + Grafana with a provisioned dashboard (`docker/observability/`).
+Optional `observability` compose profile (`make observability`) ships Prometheus + Grafana with a provisioned dashboard (`docker/observability/`) and an OTLP collector forwarding to Jaeger. Prometheus adds a bearer token only when the `api_token` secret file is non-empty.
 
 ### 5.3 Tracing (optional)
 
-OpenTelemetry SDK with OTLP exporter disabled by default (`observability.otlp_endpoint` unset). Spans: `campaign.tick`, `strategy.propose`, `run.execute` (child spans `materialize`, `episode`, `judge`, `persist`). `trace_id` propagated into run rows' log context.
+OpenTelemetry SDK with OTLP exporter disabled by default (`observability.otlp_endpoint` unset; `roboprobe.observability.tracing.configure_tracing` does not import the SDK until the endpoint is set — extra `roboprobe[otel]`). Spans: `campaign.tick`, `strategy.propose`, `run.execute` (child spans `materialize`, `episode`, `judge`, `persist`). `trace_id` propagated into log context and problem+json.
 
 ### 5.4 Health
 

@@ -32,6 +32,8 @@ MPL-2.0
 Apache Software License
 BSD
 BSD License
+# Trove spelling of BSD-3-Clause reported for protobuf.
+3-Clause BSD License
 ISC License (ISCL)
 MIT License
 Mozilla Public License 2.0 (MPL 2.0)

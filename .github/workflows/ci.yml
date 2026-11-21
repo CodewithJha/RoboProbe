@@ -283,3 +283,18 @@ jobs:
           python3 scripts/check_licenses.py
           --pip-licenses "$RUNNER_TEMP/pip-licenses.json"
           --pnpm-licenses "$RUNNER_TEMP/pnpm-licenses.json"
+
+  observability-config:
+    name: observability-config
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Dashboard metrics match the registry
+        run: python3 scripts/check_observability.py
+      - name: promtool check config
+        run: >-
+          docker run --rm --entrypoint promtool
+          -v "$PWD/docker/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+          prom/prometheus@sha256:63805ebb8d2b3920190daf1cb14a60871b16fd38bed42b857a3182bc621f4996
+          check config /etc/prometheus/prometheus.yml

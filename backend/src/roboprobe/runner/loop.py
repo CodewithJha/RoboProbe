@@ -27,6 +27,7 @@ from roboprobe.core.types import (
     RunStatus,
     Verdict,
 )
+from roboprobe.observability.tracing import span
 from roboprobe.runner.ports import CampaignView, RunView, UowFactory
 from roboprobe.runner.scheduler import Scheduler
 from roboprobe.scenario.space import ScenarioSpace
@@ -136,7 +137,8 @@ class CampaignLoop:
 
         def _call() -> None:
             try:
-                box.append(self._strategy.propose(history, pending, q))
+                with span("strategy.propose"):
+                    box.append(self._strategy.propose(history, pending, q))
             except BaseException as exc:
                 box.append(exc)
 

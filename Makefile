@@ -32,7 +32,7 @@ UP_FLAGS    ?= --build
 
 .DEFAULT_GOAL := help
 .PHONY: help setup lock lint format typecheck test test-fast test-cov pre-commit docs-check clean \
-	config-docs config-docs-check up down db-up logs ps backup restore
+	config-docs config-docs-check up down db-up logs ps backup restore observability
 
 BACKUP_DIR ?= backups
 BACKUP_RETENTION ?= 7
@@ -121,3 +121,7 @@ backup: ## pg_dump custom format plus artefact archive (doc 29 §7)
 
 restore: ## Restore BACKUP=path (set FORCE=1 to overwrite a non-empty database)
 	scripts/restore.sh $(if $(FORCE),--force,) "$(BACKUP)"
+
+observability: $(DB_PASSWORD_FILE) ## Prometheus, Grafana and Jaeger (profile observability)
+	@mkdir -p $(ARTIFACTS_DIR)
+	$(COMPOSE) --profile observability up -d --wait prometheus grafana otel-collector jaeger

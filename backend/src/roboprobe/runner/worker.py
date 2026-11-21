@@ -34,6 +34,7 @@ from roboprobe.core.types import (
     SutProfile,
     TaskSpec,
 )
+from roboprobe.observability.tracing import span
 from roboprobe.oracles.verdict import VerdictEngine
 from roboprobe.runner.manifest import ManifestBuilder, hash_uv_lock
 from roboprobe.runner.ports import (
@@ -250,52 +251,59 @@ class WorkerProcess:
                 wall_timeout_s=wall_s,
             )
             log.info("run.started", run_id=str(run.run_id), worker_id=self.worker_id)
-            materialized = self._backend.materialize(req)
-            self.state = WorkerState.RUNNING
+            with span("run.execute", run_id=str(run.run_id)):
+                with span("materialize"):
+                    materialized = self._backend.materialize(req)
+                self.state = WorkerState.RUNNING
 
-            def _on_progress(frac: float) -> None:
-                del frac
-                if self._cancel_episode.is_set() or self._campaign_cancelled(run.campaign_id):
-                    self._backend.cancel()
+                def _on_progress(frac: float) -> None:
+                    del frac
+                    if self._cancel_episode.is_set() or self._campaign_cancelled(run.campaign_id):
+                        self._backend.cancel()
 
-            result = self._backend.run_episode(req, materialized, on_progress=_on_progress)
-            elapsed = self._clock.monotonic() - started
-            infra = result.infra_error
-            if infra is None and elapsed > wall_s:
-                infra = "wall_timeout"
-            if infra is not None:
-                self._queue.fail(run.run_id, infra)
-                self._observe_finished(run.backend, "INVALID", "F-INFRA", elapsed)
-                return
-            self.state = WorkerState.EVALUATING
-            self._queue.mark_evaluating(run.run_id)
-            outcome = self._verdict.judge(result, self._task)
-            self.state = WorkerState.UPLOADING
-            sim_s = float(result.backend_meta.get("sim_time_s", elapsed))
-            manifest = self._build_manifest(
-                run,
-                space_id=space_id,
-                space_version=space_version,
-                sut=sut,
-                materialized=materialized.files,
-                workdir=workdir,
-                wall_s=elapsed,
-                sim_s=sim_s,
-            )
-            manifest_path = workdir / "manifest.json"
-            manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
-            artifacts = dict(result.artifacts)
-            artifacts["manifest"] = manifest_path
-            self._upload(run, artifacts, materialized.files)
-            self._queue.complete(run.run_id, outcome, manifest=manifest)
-            primary = "none" if outcome.primary_failure is None else outcome.primary_failure.value
-            self._observe_finished(run.backend, outcome.verdict.value, primary, elapsed)
-            log.info(
-                "run.finished",
-                run_id=str(run.run_id),
-                verdict=outcome.verdict.value,
-                worker_id=self.worker_id,
-            )
+                with span("episode"):
+                    result = self._backend.run_episode(req, materialized, on_progress=_on_progress)
+                elapsed = self._clock.monotonic() - started
+                infra = result.infra_error
+                if infra is None and elapsed > wall_s:
+                    infra = "wall_timeout"
+                if infra is not None:
+                    self._queue.fail(run.run_id, infra)
+                    self._observe_finished(run.backend, "INVALID", "F-INFRA", elapsed)
+                    return
+                self.state = WorkerState.EVALUATING
+                self._queue.mark_evaluating(run.run_id)
+                with span("judge"):
+                    outcome = self._verdict.judge(result, self._task)
+                self.state = WorkerState.UPLOADING
+                sim_s = float(result.backend_meta.get("sim_time_s", elapsed))
+                manifest = self._build_manifest(
+                    run,
+                    space_id=space_id,
+                    space_version=space_version,
+                    sut=sut,
+                    materialized=materialized.files,
+                    workdir=workdir,
+                    wall_s=elapsed,
+                    sim_s=sim_s,
+                )
+                manifest_path = workdir / "manifest.json"
+                manifest_path.write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
+                artifacts = dict(result.artifacts)
+                artifacts["manifest"] = manifest_path
+                with span("persist"):
+                    self._upload(run, artifacts, materialized.files)
+                    self._queue.complete(run.run_id, outcome, manifest=manifest)
+                primary = (
+                    "none" if outcome.primary_failure is None else outcome.primary_failure.value
+                )
+                self._observe_finished(run.backend, outcome.verdict.value, primary, elapsed)
+                log.info(
+                    "run.finished",
+                    run_id=str(run.run_id),
+                    verdict=outcome.verdict.value,
+                    worker_id=self.worker_id,
+                )
         except ConflictError:
             log.info("run.lost", run_id=str(run.run_id), worker_id=self.worker_id)
             return

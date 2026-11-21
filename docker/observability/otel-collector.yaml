@@ -1,0 +1,23 @@
+# OTLP collector for the observability profile (docs/21 §5.3, T-126). Receives traces and
+# forwards them to Jaeger. No sampling knobs: the SDK default applies.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  debug:
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlp/jaeger, debug]

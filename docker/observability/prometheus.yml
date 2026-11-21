@@ -1,0 +1,23 @@
+# Prometheus scrape config for the observability profile (docs/21 §5.2, T-125).
+# Scrape interval is the profile default (15s). The api-auth-slot line is replaced with a
+# bearer-token block by render_and_run.sh when /run/secrets/api_token is non-empty.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: roboprobe-api
+    metrics_path: /metrics
+    # api-auth-slot
+    static_configs:
+      - targets: ["api:8000"]
+
+  - job_name: roboprobe-orchestrator
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["orchestrator:9101"]
+
+  - job_name: roboprobe-worker
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["worker-k2d:9101"]

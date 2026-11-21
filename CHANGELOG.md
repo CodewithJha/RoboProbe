@@ -10,6 +10,10 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - `make backup` / `make restore` (`scripts/backup.sh`, `scripts/restore.sh`): timestamped `pg_dump -Fc` plus a
   zstd artefact archive with a SHA256 manifest. `BACKUP_RETENTION` (default 7) caps how many copies are kept.
   Restore refuses a non-empty database unless `--force` is passed, then runs `db upgrade` and `artifacts verify`.
+- Observability profile (T-125, T-126): `make observability` starts digest-pinned Prometheus, Grafana
+  (anonymous Viewer, admin password from a secret file) and an OTLP collector + Jaeger.
+  Optional tracing (`roboprobe[otel]`) exports spans only when `observability.otlp_endpoint` is set.
+  Compose ports: `ROBOPROBE_GRAFANA_PORT`, `ROBOPROBE_PROMETHEUS_PORT`, `ROBOPROBE_JAEGER_PORT`.
 - Experiment configs EXP-01…EXP-07 (T-104): `configs/experiments/` plus the d=8 and
   doubled-lidar-noise warehouse spaces. Each file records the frozen S-PROBE pre-registration hash.
 - API foundation (T-080a–d): FastAPI `create_app` with CORS/GZip, `/health/live|ready`, `/api/v1/meta`,
