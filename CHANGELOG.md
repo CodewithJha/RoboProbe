@@ -19,6 +19,11 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   `Last-Event-ID` resume. New settings: `api.sse.poll_interval_s`, `queue_size`, `batch_size`,
   `reconnect_initial_s`, `reconnect_max_s`, `connect_timeout_s`. Metrics: `roboprobe_sse_clients`,
   `roboprobe_sse_reconnects_total`.
+- Security suite (T-109): `backend/tests/security/` maps each doc 31 threat to a test, and
+  `scripts/check_security_map.py` fails CI when a `TM-xx` row is missing from
+  `docs/evidence/security-tests.md`. Constraint literal exponents above
+  `scenario.constraint_max_literal_exponent` and YAML alias bombs above `scenario.yaml_max_aliases`
+  are rejected.
 - Weekly mutation testing (T-131): `mutmut` on `selection/` and `oracles/` via
   `.github/workflows/mutation.yml` (schedule + manual, not a pull-request check). Kill rate is
   written to the job summary and an HTML artifact.

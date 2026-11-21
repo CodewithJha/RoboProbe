@@ -6,6 +6,8 @@ Shared by the scenario-space, task, scenario and profile loaders. Guarantees:
 * Duplicate mapping keys are rejected (PyYAML silently keeps the last one otherwise).
 * Timestamps stay strings, exactly as JSON Schema sees them.
 * Optional byte-size limit, so uploads cannot exhaust memory.
+* Alias expansions are capped (``scenario.yaml_max_aliases``), so a billion-laughs document
+  is rejected before it is expanded.
 * Every problem is reported as ``{"path": <JSON pointer>, "message": ...}`` inside a
   :class:`~roboprobe.core.errors.ValidationError`.
 
@@ -27,6 +29,7 @@ from jsonschema import Draft202012Validator
 from pydantic import JsonValue
 
 from roboprobe.core import errors
+from roboprobe.core.settings.scenario import ScenarioSettings
 
 __all__ = [
     "document_error",
@@ -67,6 +70,42 @@ _StrictSafeLoader.yaml_implicit_resolvers = {
 }
 
 
+def default_yaml_max_aliases() -> int:
+    """Return the configured cap on YAML alias expansions (TM-02)."""
+    value = ScenarioSettings.model_fields["yaml_max_aliases"].default
+    if not isinstance(value, int):
+        msg = "yaml_max_aliases default must be an int"
+        raise TypeError(msg)
+    return value
+
+
+def _alias_limiting_loader(max_aliases: int) -> type[yaml.SafeLoader]:
+    """Safe loader that refuses documents expanding more than ``max_aliases`` aliases."""
+
+    class Loader(_StrictSafeLoader):
+        def __init__(self, stream: str | bytes) -> None:
+            super().__init__(stream)
+            self._alias_count = 0
+            self._max_aliases = max_aliases
+
+        def compose_node(self, parent: yaml.Node | None, index: int) -> yaml.Node | None:
+            if self.check_event(yaml.AliasEvent):
+                self._alias_count += 1
+                if self._alias_count > self._max_aliases:
+                    event = self.peek_event()  # type: ignore[no-untyped-call]
+                    mark = getattr(event, "start_mark", None)
+                    message = f"too many aliases (limit {self._max_aliases})"
+                    raise yaml.composer.ComposerError(  # noqa: TRY003 - PyYAML requires the message
+                        "while composing an alias",
+                        mark,
+                        message,
+                        mark,
+                    )
+            return super().compose_node(parent, index)
+
+    return Loader
+
+
 def document_error(
     source: str,
     issues: list[tuple[str, str]],
@@ -104,6 +143,7 @@ def load_yaml_document(
     source: str,
     code: errors.ErrorCode = errors.ErrorCode.VALIDATION_ERROR,
     max_bytes: int | None = None,
+    max_aliases: int | None = None,
 ) -> object:
     """Parse one YAML document strictly.
 
@@ -112,20 +152,22 @@ def load_yaml_document(
         source: Name used in error messages (file name or ``"<upload>"``).
         code: Error code to raise with (e.g. ``SPACE_INVALID``).
         max_bytes: Reject documents larger than this many bytes (``None`` = unlimited).
+        max_aliases: Alias-expansion cap. ``scenario.yaml_max_aliases`` when omitted.
 
     Returns:
         The parsed document (plain dicts, lists and scalars).
 
     Raises:
-        roboprobe.core.errors.ValidationError: Oversized input, syntax errors, unsafe tags or
-            duplicate keys.
+        roboprobe.core.errors.ValidationError: Oversized input, syntax errors, unsafe tags,
+            duplicate keys, or too many aliases.
     """
     raw = text.encode("utf-8") if isinstance(text, str) else text
     if max_bytes is not None and len(raw) > max_bytes:
         message = f"document is {len(raw)} bytes; limit is {max_bytes}"
         raise document_error(source, [(_ROOT_POINTER, message)], code)
+    alias_cap = default_yaml_max_aliases() if max_aliases is None else max_aliases
     try:
-        document: object = yaml.load(raw, Loader=_StrictSafeLoader)  # noqa: S506 - SafeLoader subclass
+        document: object = yaml.load(raw, Loader=_alias_limiting_loader(alias_cap))  # noqa: S506
     except yaml.YAMLError as exc:
         mark = getattr(exc, "problem_mark", None)
         where = f" (line {mark.line + 1}, column {mark.column + 1})" if mark else ""

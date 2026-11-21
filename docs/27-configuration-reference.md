@@ -221,6 +221,8 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
 | `scenario.constraint_max_attempts` | int | `1000` | `ROBOPROBE_SCENARIO__CONSTRAINT_MAX_ATTEMPTS` | Sampler draws before rejection sampling of constrained spaces gives up. |
+| `scenario.constraint_max_literal_exponent` | int | `8` | `ROBOPROBE_SCENARIO__CONSTRAINT_MAX_LITERAL_EXPONENT` | Largest absolute integer exponent allowed in a constraint (TM-03). |
+| `scenario.yaml_max_aliases` | int | `32` | `ROBOPROBE_SCENARIO__YAML_MAX_ALIASES` | Maximum YAML alias expansions in one uploaded document (TM-02). |
 | `selection.probe.n0_fraction` | float | `0.1` | `ROBOPROBE_SELECTION__PROBE__N0_FRACTION` | Warm-up share of the budget [0-1]. |
 | `selection.probe.n0_min_factor` | int | `2` | `ROBOPROBE_SELECTION__PROBE__N0_MIN_FACTOR` | Minimum warm-up runs as a multiple of the dimension d. |
 | `selection.probe.weights.mode_search` | float | `0.6` | `ROBOPROBE_SELECTION__PROBE__WEIGHTS__MODE_SEARCH` | Mode-search share. |

@@ -181,6 +181,7 @@ markers = [
     "benchmark: pytest-benchmark performance and scientific-regression gates",
     "sim: tests that need a simulator backend (Gazebo); excluded by default",
     "slow: long-running tests; excluded by default",
+    "security: doc 31 threat-model tests (T-109)",
 ]
 xfail_strict = true
 filterwarnings = ["error"]

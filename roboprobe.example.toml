@@ -216,6 +216,10 @@
 [scenario]
 # Sampler draws before rejection sampling of constrained spaces gives up.
 # constraint_max_attempts = 1000
+# Largest absolute integer exponent allowed in a constraint (TM-03).
+# constraint_max_literal_exponent = 8
+# Maximum YAML alias expansions in one uploaded document (TM-02).
+# yaml_max_aliases = 32
 
 [selection.probe]
 # Warm-up share of the budget [0-1].
