@@ -11,7 +11,6 @@ from roboprobe.backends.base import PLUGIN_API_VERSION, BackendCapabilities
 from roboprobe.backends.registry import ENTRY_POINT_GROUP
 from roboprobe.bootstrap import build_cli_services, build_orchestrator, build_worker
 from roboprobe.bootstrap.api import build_api
-from roboprobe.core.errors import NotFoundError
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.runner.worker import WorkerProcess
 from roboprobe.scenario.task import load_task
@@ -108,6 +107,11 @@ def test_build_cli_and_orchestrator(tmp_path: Path) -> None:
         orch.close()
 
 
-def test_build_api_stub_raises() -> None:
-    with pytest.raises(NotFoundError, match="T-080a"):
-        build_api(RoboProbeSettings())
+def test_build_api_wires_infra(tmp_path: Path) -> None:
+    services = build_api(_settings(tmp_path))
+    try:
+        assert services.settings is not None
+        assert "backends" in services.plugin_catalog
+        assert "strategies" in services.plugin_catalog
+    finally:
+        services.close()

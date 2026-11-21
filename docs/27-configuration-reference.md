@@ -119,6 +119,8 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `api.page_limit_max` | int | `500` | `ROBOPROBE_API__PAGE_LIMIT_MAX` | Maximum page size [items]. |
 | `api.sse.ping_interval_s` | float | `15.0` | `ROBOPROBE_API__SSE__PING_INTERVAL_S` | Keep-alive ping interval on SSE streams [s]. |
 | `api.idempotency_ttl_s` | int | `86400` | `ROBOPROBE_API__IDEMPOTENCY_TTL_S` | Retention of idempotency keys [s]. |
+| `api.error_type_base` | str | `https://github.com/CodewithJha/RoboProbe/blob/main/docs/errors.md` | `ROBOPROBE_API__ERROR_TYPE_BASE` | Base URL for RFC 9457 problem `type` links (docs/errors.md anchors). |
+| `api.cursor_secret` | SecretStr | `roboprobe-dev-cursor-secret` | `ROBOPROBE_API__CURSOR_SECRET` | HMAC key for opaque pagination cursors. Override in production so cursors survive process restarts; the committed default is for local/dev only. |
 
 ### 4.4 Runner (orchestrator) & worker
 

@@ -120,16 +120,30 @@ def api_cmd(
     host: Annotated[str | None, typer.Option("--host")] = None,
     port: Annotated[int | None, typer.Option("--port")] = None,
 ) -> None:
-    """Serve the HTTP API (requires the ``api`` extra / T-080a)."""
-    del host, port
+    """Serve the HTTP API (requires the ``api`` extra)."""
     if ctx.invoked_subcommand is not None:
         return
     state = get_state(ctx)
-    state.bootstrap()
+    settings = state.bootstrap()
+    bind_host = host if host is not None else settings.api.host
+    bind_port = port if port is not None else settings.api.port
+    if host is not None or port is not None:
+        settings = settings.model_copy(
+            update={
+                "api": settings.api.model_copy(
+                    update={
+                        **({"host": bind_host} if host is not None else {}),
+                        **({"port": bind_port} if port is not None else {}),
+                    }
+                )
+            }
+        )
     try:
-        importlib.import_module("roboprobe.api")
+        uvicorn = importlib.import_module("uvicorn")
+        bootstrap_api = importlib.import_module("roboprobe.bootstrap.api")
     except ModuleNotFoundError as exc:
-        msg = "API package not available yet (T-080a); install the api extra once shipped"
+        msg = "API dependencies missing; install the api extra (pip/uv install 'roboprobe[api]')"
         raise ValidationError(msg) from exc
-    msg = "API server entry point is not wired yet (T-080a)"
-    raise ValidationError(msg)
+    app = bootstrap_api.create_api_app(settings)
+    state.output.data({"service": "api", "host": bind_host, "port": bind_port})
+    uvicorn.run(app, host=bind_host, port=bind_port, log_level="info")

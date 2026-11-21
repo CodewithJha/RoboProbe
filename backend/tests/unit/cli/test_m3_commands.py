@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -401,9 +402,20 @@ def test_worker_service(monkeypatch: pytest.MonkeyPatch, settings_env: Path) -> 
     assert result.exit_code == ExitCode.OK, result.output
 
 
-def test_api_service_not_available(settings_env: Path) -> None:
+def test_api_service_starts(monkeypatch: pytest.MonkeyPatch, settings_env: Path) -> None:
+    calls: list[tuple[object, ...]] = []
+
+    def fake_import(name: str, *args: object, **kwargs: object) -> object:
+        if name == "uvicorn":
+            return SimpleNamespace(run=lambda *a, **k: calls.append(("run", a, k)))
+        if name == "roboprobe.bootstrap.api":
+            return SimpleNamespace(create_api_app=lambda _s: "app")
+        return importlib.import_module(name, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr("roboprobe.cli.services.importlib.import_module", fake_import)
     result = runner.invoke(app, ["api"])
-    assert result.exit_code == ExitCode.USAGE_ERROR
+    assert result.exit_code == ExitCode.OK, result.output
+    assert calls and calls[0][0] == "run"
 
 
 def test_artifacts_verify(monkeypatch: pytest.MonkeyPatch, settings_env: Path) -> None:
