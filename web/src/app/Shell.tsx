@@ -34,7 +34,7 @@ export function Shell() {
               <path d="M5 24V8h10a7 7 0 0 1 0 14H5M15 22l10 7M2 5h27" />
             </svg>
             <span>
-              RoboProbe<small>FIELD NOTEBOOK</small>
+              RoboProbe <small>FIELD NOTEBOOK</small>
             </span>
           </NavLink>
           <nav aria-label="Main navigation">
