@@ -8,6 +8,7 @@
   border: var(--border-width) solid var(--ink-muted);
   border-radius: var(--radius-tag);
   background: var(--paper-raised);
+  animation: ink-in var(--motion-slow) var(--motion-ease);
 }
 
 .tag::before {
@@ -46,4 +47,15 @@
 
 .link:hover .label {
   text-decoration: underline;
+}
+
+@keyframes ink-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-ink-in-offset));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
