@@ -1,0 +1,24 @@
+.root {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border-left: var(--border-width) solid var(--margin-line);
+}
+
+.root p {
+  max-width: 56ch;
+  color: var(--ink-muted);
+}
+
+.action {
+  display: inline-flex;
+  padding: var(--space-2) var(--space-3);
+  color: var(--paper-raised);
+  background: var(--accent);
+  border: var(--border-width) solid var(--accent);
+  border-radius: var(--radius-tag);
+  font-weight: var(--font-weight-strong);
+  text-decoration: none;
+  cursor: pointer;
+}

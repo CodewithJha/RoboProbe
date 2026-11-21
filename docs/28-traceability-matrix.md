@@ -46,6 +46,11 @@ Trace transport verification (T-081e, #150; FR-DSH-005, FR-STO-002, NFR-SEC-003)
 `tests/api/test_trace_artifacts.py` covers clearance minima, flag transitions, rate caps, column
 selection, Parquet/attachment headers, unknown ids, and malicious stored paths (TM-04).
 
+Shared dashboard verification (T-086a/b, #166/#167; FR-DSH-008, NFR-ACC-001):
+`web/src/components/**/Component.test.tsx` covers component states and interaction (using each
+component's own name); `web/src/components/accessibility.test.tsx` checks the shared assembly with
+axe. See `docs/evidence/T-086-components.md` for contracts and virtualisation settings.
+
 ## 2. Non-functional requirements → verification
 
 | NFR | Design | Verification | Gate |

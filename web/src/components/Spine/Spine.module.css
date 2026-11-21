@@ -1,0 +1,50 @@
+.viewport {
+  overflow: auto;
+  min-width: 8rem;
+  border-left: var(--border-width) solid var(--margin-line);
+}
+
+.track {
+  position: relative;
+  width: 100%;
+}
+
+.tick {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding-inline: var(--space-2);
+  cursor: pointer;
+}
+
+.tick[aria-selected='true'] {
+  background: var(--paper-raised);
+  font-weight: var(--font-weight-strong);
+  border-right: var(--focus-ring-width) solid var(--accent);
+}
+
+.tick:hover {
+  background: var(--grid-line);
+}
+
+.ordinal {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  min-width: 4ch;
+  text-align: right;
+}
+
+.rule {
+  width: var(--space-6);
+  border-top: var(--border-width) solid var(--ink-muted);
+}
+
+.empty {
+  color: var(--ink-muted);
+  font-size: var(--font-size-sm);
+}

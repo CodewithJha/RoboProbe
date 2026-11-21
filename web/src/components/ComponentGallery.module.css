@@ -1,0 +1,26 @@
+.gallery {
+  display: grid;
+  gap: var(--section-gap);
+  max-width: 68rem;
+  padding: var(--space-6);
+  margin-inline: auto;
+}
+
+.gallery header p {
+  color: var(--ink-muted);
+  max-width: 56ch;
+}
+
+.section {
+  display: grid;
+  gap: var(--space-3);
+  padding-block: var(--space-4);
+  border-bottom: var(--border-width) solid var(--ink-muted);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}

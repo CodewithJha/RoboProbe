@@ -13,6 +13,10 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   persisted Paper/Night Shift themes, runtime config, generated typed API hooks, session-scoped
   bearer auth, ETag-aware mutations and SSE reconnect/resume with query-cache updates.
 
+- Shared Field Notebook components (T-086a/b): accessible scenario strips, specimen tags and
+  verdict shapes; centered robustness meters; keyboard-selectable virtual run spines; sortable
+  virtual statistics tables; and actionable empty states.
+
 - Campaign/run API completion (T-081b/c/d): entered request transactions, shared CLI/API
   validation and snapshots, idempotent creation, lifecycle warnings, mode-discovery progress,
   validated manual runs with derived seeds, and filtered stable SQL keyset pagination.
