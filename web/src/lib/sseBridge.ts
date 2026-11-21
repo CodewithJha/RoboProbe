@@ -2,6 +2,7 @@
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 import type { Schema } from '../api/client';
 import type { RunsPage } from '../api/hooks';
+import { getConfig } from './config';
 import { EVENT_TYPES, type SseClient, type SseEvent, type Unsubscribe } from './sse';
 
 export const EVENT_QUERIES: Record<(typeof EVENT_TYPES)[number], readonly string[]> = {
@@ -19,7 +20,13 @@ export function applyServerEvent(client: QueryClient, event: SseEvent): void {
   const cid = typeof campaignId === 'string' ? campaignId : undefined;
   if (event.type === 'campaign.updated' && cid) {
     client.setQueryData<Schema['CampaignOut']>(['campaigns', cid], (old) =>
-      old ? { ...old, ...event.data } : old,
+      old
+        ? {
+            ...old,
+            ...event.data,
+            counts: { ...old.counts, ...numericCounts(event.data['counts']) },
+          }
+        : old,
     );
     void client.invalidateQueries({ queryKey: ['campaigns', cid, 'progress'] });
     void client.invalidateQueries({ queryKey: ['campaigns'], exact: true });
@@ -36,7 +43,20 @@ export function applyServerEvent(client: QueryClient, event: SseEvent): void {
     ) {
       const complete = run as Schema['RunOut'];
       client.setQueriesData<InfiniteData<RunsPage>>(
-        { queryKey: ['campaigns', cid, 'runs'] },
+        {
+          queryKey: ['campaigns', cid, 'runs'],
+          predicate: (query) => {
+            const filters = query.queryKey[3];
+            return (
+              typeof filters === 'object' &&
+              filters !== null &&
+              Object.entries(filters).every(
+                ([key, value]) => key === 'sort' && value === '-ordinal',
+              ) &&
+              'sort' in filters
+            );
+          },
+        },
         (old) =>
           old
             ? {
@@ -84,4 +104,13 @@ export function bindSse(client: QueryClient, source: SseClient): Unsubscribe {
       stop();
     });
   };
+}
+
+function numericCounts(value: unknown): Record<string, number> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).filter(
+      (entry): entry is [string, number] => typeof entry[1] === 'number',
+    ),
+  );
 }

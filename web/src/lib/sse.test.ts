@@ -46,6 +46,7 @@ describe('SSE reconnect and resume', () => {
     expect(resumed.searchParams.get('token')).toBe('session-secret');
     sources[1]?.emit('run.finished', '{}', '17');
     sources[1]?.emit('run.finished', '{}', '18');
+    sources[1]?.emit('run.finished', '{}', '16');
     expect(handler).toHaveBeenCalledTimes(2);
     client.disconnect();
     expect(client.status).toBe('closed');

@@ -23,7 +23,6 @@ export class SseClient {
   status: SseStatus = 'closed';
   private source: EventSource | undefined;
   private reconnect: ReturnType<typeof setTimeout> | undefined;
-  private heartbeat: ReturnType<typeof setTimeout> | undefined;
   private attempt = 0;
   private campaignId: string | undefined;
   private resume = '';
@@ -63,7 +62,6 @@ export class SseClient {
     this.source?.close();
     this.source = undefined;
     clearTimeout(this.reconnect);
-    clearTimeout(this.heartbeat);
     this.change('closed');
   }
   private change(status: SseStatus): void {
@@ -86,7 +84,6 @@ export class SseClient {
       if (source !== this.source) return;
       this.attempt = 0;
       this.change('open');
-      this.watchdog();
     };
     source.onerror = () => {
       if (source === this.source) this.retry();
@@ -94,7 +91,6 @@ export class SseClient {
     for (const type of EVENT_TYPES)
       source.addEventListener(type, (event) => {
         if (source !== this.source) return;
-        this.watchdog();
         const message = event as MessageEvent<string>;
         let data: unknown;
         try {
@@ -104,7 +100,12 @@ export class SseClient {
         }
         if (typeof data !== 'object' || data === null || Array.isArray(data)) return;
         const id = message.lastEventId;
-        if (id && this.recent.has(id)) return;
+        if (
+          id &&
+          (this.recent.has(id) ||
+            (/^\d+$/.test(id) && /^\d+$/.test(this.resume) && BigInt(id) <= BigInt(this.resume)))
+        )
+          return;
         if (id) {
           this.resume = id;
           this.recent.add(id);
@@ -118,16 +119,9 @@ export class SseClient {
         });
       });
   }
-  private watchdog(): void {
-    clearTimeout(this.heartbeat);
-    this.heartbeat = setTimeout(() => {
-      this.retry();
-    }, this.config.sseHeartbeatTimeoutMs);
-  }
   private retry(): void {
     this.source?.close();
     this.source = undefined;
-    clearTimeout(this.heartbeat);
     if (this.stopped) return;
     this.change('connecting');
     const base = Math.min(

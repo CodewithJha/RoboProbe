@@ -11,7 +11,6 @@ export interface RuntimeConfig {
   sseReconnectInitialMs: number;
   sseReconnectMaxMs: number;
   sseReconnectJitter: number;
-  sseHeartbeatTimeoutMs: number;
   sseRecentEventLimit: number;
 }
 
@@ -25,7 +24,6 @@ export const DEFAULT_CONFIG: RuntimeConfig = {
   sseReconnectInitialMs: 500,
   sseReconnectMaxMs: 30_000,
   sseReconnectJitter: 0.2,
-  sseHeartbeatTimeoutMs: 45_000,
   sseRecentEventLimit: 2048,
 };
 let current = DEFAULT_CONFIG;
@@ -67,7 +65,6 @@ export function parseConfig(raw: unknown): RuntimeConfig {
     'queryRetryAttempts',
     'sseReconnectInitialMs',
     'sseReconnectMaxMs',
-    'sseHeartbeatTimeoutMs',
     'sseRecentEventLimit',
   ] as const;
   for (const key of tunables) {

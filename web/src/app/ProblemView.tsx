@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useRouteError } from 'react-router-dom';
 import { ProblemError } from '../api/client';
 export function ProblemView({ error }: { error: unknown }) {
-  const [copied, setCopied] = useState(false);
+  const [copyStatus, setCopyStatus] = useState('Copy trace ID');
   const problem = error instanceof ProblemError ? error : undefined;
   return (
     <section role="alert" className="problem-view">
@@ -14,12 +14,21 @@ export function ProblemView({ error }: { error: unknown }) {
         <button
           type="button"
           onClick={() => {
-            void navigator.clipboard.writeText(problem.traceId ?? '').then(() => {
-              setCopied(true);
-            });
+            if (!window.isSecureContext) {
+              setCopyStatus('Select and copy trace ID');
+              return;
+            }
+            void navigator.clipboard
+              .writeText(problem.traceId ?? '')
+              .then(() => {
+                setCopyStatus('Trace ID copied');
+              })
+              .catch(() => {
+                setCopyStatus('Select and copy trace ID');
+              });
           }}
         >
-          {copied ? 'Trace ID copied' : `Copy trace ID ${problem.traceId}`}
+          {`${copyStatus} ${problem.traceId}`}
         </button>
       ) : null}
       <Link to="/">Return to Bench</Link>

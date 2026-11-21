@@ -33,7 +33,7 @@ export function appRoutes(): RouteObject[] {
         ...settingsRoutes,
         ...(config.featureFlags.trials ? trialsRoutes : []),
         ...(config.featureFlags.reports ? reportsRoutes : []),
-        ...(gallery
+        ...(import.meta.env.DEV && gallery
           ? [
               {
                 path: 'dev/components',

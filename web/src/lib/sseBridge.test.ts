@@ -35,7 +35,7 @@ describe('SSE query bridge', () => {
   it('deduplicates complete run records while preserving infinite page cursors', () => {
     const client = new QueryClient();
     const run = { id: 'r1', campaign_id: 'c1', ordinal: 1, scenario: {} };
-    client.setQueryData(['campaigns', 'c1', 'runs', {}], {
+    client.setQueryData(['campaigns', 'c1', 'runs', { sort: '-ordinal' }], {
       pages: [
         { items: [run], next_cursor: 'next' },
         { items: [run], next_cursor: null },
@@ -43,7 +43,7 @@ describe('SSE query bridge', () => {
       pageParams: [undefined, 'next'],
     });
     applyServerEvent(client, { type: 'run.finished', id: '5', data: { campaign_id: 'c1', run } });
-    expect(client.getQueryData(['campaigns', 'c1', 'runs', {}])).toMatchObject({
+    expect(client.getQueryData(['campaigns', 'c1', 'runs', { sort: '-ordinal' }])).toMatchObject({
       pages: [
         { items: [run], next_cursor: 'next' },
         { items: [], next_cursor: null },
