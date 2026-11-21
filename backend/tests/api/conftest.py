@@ -45,6 +45,10 @@ class StubServices:
             "analyzers": [],
         }
     )
+    campaigns: Any = None
+    analysis: Any = None
+    report_jobs: Any = None
+    space_root: Any = field(default_factory=Path.cwd)
 
     def close(self) -> None:
         return None

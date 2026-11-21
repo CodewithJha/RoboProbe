@@ -6,11 +6,13 @@ Implements: T-080a
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator
-from typing import Protocol
+from pathlib import Path
+from typing import Any, Protocol
 
 from fastapi import Request
 
 from roboprobe.core.settings import RoboProbeSettings
+from roboprobe.runner.lifecycle import CampaignService
 
 __all__ = [
     "ArtifactStoreProto",
@@ -31,6 +33,10 @@ class ArtifactStoreProto(Protocol):
         """Artefact filesystem root."""
         ...
 
+    def open(self, ref: object) -> object:
+        """Open a stored blob."""
+        ...
+
 
 class ServicesProto(Protocol):
     """API collaborators attached at startup (bootstrap)."""
@@ -40,6 +46,10 @@ class ServicesProto(Protocol):
     artifact_store: ArtifactStoreProto
     metrics: object
     plugin_catalog: dict[str, object]
+    campaigns: CampaignService
+    analysis: Any
+    report_jobs: Any
+    space_root: Path
 
     def close(self) -> None:
         """Release process resources."""

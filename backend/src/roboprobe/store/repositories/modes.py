@@ -7,10 +7,11 @@ from __future__ import annotations
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from roboprobe.core.errors import NotFoundError
 from roboprobe.store.flush import execute
 from roboprobe.store.mapping import mode_record
 from roboprobe.store.orm import FailureModeMemberRow, FailureModeRow
@@ -26,6 +27,28 @@ class SqlFailureModeRepo:
     def get(self, mode_id: UUID) -> FailureModeRecord | None:
         row = self._s.get(FailureModeRow, mode_id)
         return None if row is None else mode_record(row)
+
+    def patch(
+        self,
+        mode_id: UUID,
+        *,
+        label: str | None = None,
+        status: str | None = None,
+    ) -> None:
+        values: dict[str, object] = {}
+        if label is not None:
+            values["label"] = label
+            values["label_is_user"] = True
+        if status is not None:
+            values["status"] = status
+        if not values:
+            return
+        result = execute(
+            self._s, update(FailureModeRow).where(FailureModeRow.id == mode_id).values(**values)
+        )
+        if int(getattr(result, "rowcount", 0) or 0) != 1:
+            msg = "failure mode not found"
+            raise NotFoundError(msg, context={"mode_id": str(mode_id)})
 
     def list_for_campaign(self, campaign_id: UUID) -> tuple[FailureModeRecord, ...]:
         rows = self._s.scalars(
