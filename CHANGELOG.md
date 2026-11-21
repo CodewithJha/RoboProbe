@@ -14,6 +14,11 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   (anonymous Viewer, admin password from a secret file) and an OTLP collector + Jaeger.
   Optional tracing (`roboprobe[otel]`) exports spans only when `observability.otlp_endpoint` is set.
   Compose ports: `ROBOPROBE_GRAFANA_PORT`, `ROBOPROBE_PROMETHEUS_PORT`, `ROBOPROBE_JAEGER_PORT`.
+- SSE outbox hub and `GET /api/v1/events` (T-083a/b): LISTEN on `database.notify_channel` with poll
+  recovery, per-subscriber queues that drop the oldest event and emit `resync` on overflow, and
+  `Last-Event-ID` resume. New settings: `api.sse.poll_interval_s`, `queue_size`, `batch_size`,
+  `reconnect_initial_s`, `reconnect_max_s`, `connect_timeout_s`. Metrics: `roboprobe_sse_clients`,
+  `roboprobe_sse_reconnects_total`.
 - Experiment configs EXP-01…EXP-07 (T-104): `configs/experiments/` plus the d=8 and
   doubled-lidar-noise warehouse spaces. Each file records the frozen S-PROBE pre-registration hash.
 - API foundation (T-080a–d): FastAPI `create_app` with CORS/GZip, `/health/live|ready`, `/api/v1/meta`,

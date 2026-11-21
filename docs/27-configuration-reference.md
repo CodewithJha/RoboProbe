@@ -118,6 +118,12 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `api.page_limit_default` | int | `50` | `ROBOPROBE_API__PAGE_LIMIT_DEFAULT` | Default page size [items]. |
 | `api.page_limit_max` | int | `500` | `ROBOPROBE_API__PAGE_LIMIT_MAX` | Maximum page size [items]. |
 | `api.sse.ping_interval_s` | float | `15.0` | `ROBOPROBE_API__SSE__PING_INTERVAL_S` | Keep-alive ping interval on SSE streams [s]. |
+| `api.sse.poll_interval_s` | float | `2.0` | `ROBOPROBE_API__SSE__POLL_INTERVAL_S` | How often the outbox listener re-reads events.id when NOTIFY is missed [s]. |
+| `api.sse.queue_size` | int | `256` | `ROBOPROBE_API__SSE__QUEUE_SIZE` | Per-subscriber SSE queue depth; overflow drops the oldest event and sends resync. |
+| `api.sse.batch_size` | int | `200` | `ROBOPROBE_API__SSE__BATCH_SIZE` | Maximum events read from the outbox per poll [rows]. |
+| `api.sse.reconnect_initial_s` | float | `0.5` | `ROBOPROBE_API__SSE__RECONNECT_INITIAL_S` | Initial delay before reopening a dropped LISTEN connection [s]. |
+| `api.sse.reconnect_max_s` | float | `30.0` | `ROBOPROBE_API__SSE__RECONNECT_MAX_S` | Cap on LISTEN reconnect backoff [s]. |
+| `api.sse.connect_timeout_s` | float | `5.0` | `ROBOPROBE_API__SSE__CONNECT_TIMEOUT_S` | TCP timeout for the dedicated LISTEN and poll connections [s]. |
 | `api.idempotency_ttl_s` | int | `86400` | `ROBOPROBE_API__IDEMPOTENCY_TTL_S` | Retention of idempotency keys [s]. |
 | `api.error_type_base` | str | `https://github.com/CodewithJha/RoboProbe/blob/main/docs/errors.md` | `ROBOPROBE_API__ERROR_TYPE_BASE` | Base URL for RFC 9457 problem `type` links (docs/errors.md anchors). |
 | `api.cursor_secret` | SecretStr | `roboprobe-dev-cursor-secret` | `ROBOPROBE_API__CURSOR_SECRET` | HMAC key for opaque pagination cursors. Override in production so cursors survive process restarts; the committed default is for local/dev only. |
