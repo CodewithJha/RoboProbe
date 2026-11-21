@@ -32,7 +32,7 @@ UP_FLAGS    ?= --build
 
 .DEFAULT_GOAL := help
 .PHONY: help setup lock lint format typecheck test test-fast test-cov pre-commit docs-check clean \
-	config-docs config-docs-check up down db-up logs ps demo backup restore observability
+	config-docs config-docs-check openapi up down db-up logs ps demo backup restore observability
 
 BACKUP_DIR ?= backups
 BACKUP_RETENTION ?= 7
@@ -92,6 +92,9 @@ config-docs: ## Regenerate docs/27 §4 tables, .env.example and roboprobe.exampl
 
 config-docs-check: ## Fail (with a diff) if generated configuration docs/templates are stale
 	$(UV_RUN) python $(CONFIG_DOCS_SCRIPT) --check
+
+openapi: ## Regenerate api/openapi.json from the FastAPI app (T-084b)
+	$(UV_RUN) python $(SCRIPTS_DIR)/export_openapi.py
 
 $(DB_PASSWORD_FILE): ## Generate a random local DB password (git-ignored; never overwritten)
 	@mkdir -p $(SECRETS_DIR) && chmod 700 $(SECRETS_DIR)
