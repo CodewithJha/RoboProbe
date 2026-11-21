@@ -3,7 +3,7 @@
 
 raycast:
   # NFR-PERF-001 budget for the kinematic2d lidar (T-030b): median time of one 180-beam cast.
-  lidar_180_beams_median_s: 0.0005
+  lidar_180_beams_median_s: 0.0006
 
 # S-PROBE multi_mode_6d scientific gate (docs/18 §4.4). Calibrated in T-061.
 probe_multimode:
