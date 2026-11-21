@@ -17,7 +17,8 @@ __all__ = ["ApiSettings", "SseSettings", "is_loopback_host"]
 _LOOPBACK_NAMES = frozenset({"localhost"})
 _DEFAULT_ERROR_TYPE_BASE = "https://github.com/CodewithJha/RoboProbe/blob/main/docs/errors.md"
 # Dev-only default; set ``api.cursor_secret`` for stable cursors across restarts (T-080d).
-_DEFAULT_CURSOR_SECRET = "roboprobe-dev-cursor-secret"
+_DEFAULT_CURSOR_SECRET = "roboprobe-dev-cursor-secret"  # noqa: S105 - HMAC key, not a password
+
 
 
 class SseSettings(SettingsSection):
