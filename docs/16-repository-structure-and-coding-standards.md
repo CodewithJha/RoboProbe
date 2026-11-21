@@ -34,6 +34,7 @@ RoboProbe/
 │   │   ├── metrics/               # definitions.py (MET-*), statistics.py
 │   │   ├── experiments/           # planner.py, runner.py
 │   │   ├── runner/                # loop.py, scheduler.py, reaper.py, worker.py, queue.py
+│   │   ├── observability/         # optional OpenTelemetry tracing (docs/21 §5.3)
 │   │   ├── backends/              # base.py, registry.py, kinematic2d/, gazebo_nav2/, replay/
 │   │   ├── geometry/              # footprint, distance transform (shared with ROS pkg)
 │   │   ├── perturbation/          # noise/dropout/delay/perception models (shared with ROS pkg)

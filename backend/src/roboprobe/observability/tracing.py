@@ -26,6 +26,7 @@ __all__ = [
     "span",
 ]
 
+
 class _TracingState:
     """Process-wide flag so a second configure call does not replace the provider."""
 
