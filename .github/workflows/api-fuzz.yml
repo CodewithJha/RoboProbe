@@ -1,0 +1,55 @@
+# Nightly Schemathesis run against the API (T-084b). Seed data from T-107 is optional.
+name: api-fuzz
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: schemathesis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: roboprobe
+          POSTGRES_PASSWORD: roboprobe-ci
+          POSTGRES_DB: roboprobe_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U roboprobe -d roboprobe_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PYTHON_VERSION: "3.12"
+      ROBOPROBE_ENV: ci
+      ROBOPROBE_DATABASE__URL: postgresql+psycopg://roboprobe:roboprobe-ci@localhost:5432/roboprobe_test
+      ROBOPROBE_API__HOST: 127.0.0.1
+      ROBOPROBE_API__PORT: "8000"
+      ROBOPROBE_STORAGE__ARTIFACT_ROOT: /tmp/roboprobe-artifacts
+      ROBOPROBE_STORAGE__WORKDIR_ROOT: /tmp/roboprobe-work
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Migrate and serve
+        run: |
+          mkdir -p /tmp/roboprobe-artifacts /tmp/roboprobe-work
+          uv run --directory backend roboprobe db upgrade
+          uv run --directory backend roboprobe api &
+          for _ in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8000/health/live && break
+            sleep 1
+          done
+      - name: Schemathesis
+        run: |
+          uvx schemathesis==4.33.4 run http://127.0.0.1:8000/api/v1/openapi.json \
+            --checks all \
+            --max-examples 50 \
+            --exclude-path-regex '/events'

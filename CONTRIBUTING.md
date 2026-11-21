@@ -65,6 +65,9 @@ git commit                    # Conventional Commit message
 git push origin HEAD          # open a PR against CodewithJha/RoboProbe:main
 ```
 
+API shape is the committed snapshot `api/openapi.json`. After changing routes, run `make openapi` and
+commit the file; CI rejects drift and breaking changes against `main`.
+
 Local stack: `make up` (Docker Compose `core` profile) · `make demo` (sample campaign) · Gazebo: [`docs/17`](docs/17-dev-environment-and-docker.md).
 
 ## 4. Branch & commit conventions
