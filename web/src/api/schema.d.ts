@@ -475,6 +475,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/runs/{run_id}/trace': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get Trace
+     * @description Return event-preserving JSON columns or stream the original Parquet file.
+     */
+    get: operations['get_trace_api_v1_runs__run_id__trace_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/runs/{run_id}:replay': {
     parameters: {
       query?: never;
@@ -1254,6 +1274,24 @@ export interface components {
       created_at?: string | null;
       /** Id */
       id: string;
+    };
+    /**
+     * TraceOut
+     * @description Event-preserving trace samples (T-081e; docs/12 §3.9).
+     */
+    TraceOut: {
+      /** Columns */
+      columns: {
+        [key: string]: components['schemas']['JsonValue'][];
+      };
+      /** Hz */
+      hz: number;
+      /** Source Hz */
+      source_hz: number | null;
+      /** T */
+      t: number[];
+      /** Truncated */
+      truncated: boolean;
     };
     /**
      * Verdict
@@ -4027,6 +4065,92 @@ export interface operations {
         content: {
           'application/problem+json': components['schemas']['ProblemDetail'];
           'text/plain': components['schemas']['ProblemDetail'];
+        };
+      };
+    };
+  };
+  get_trace_api_v1_runs__run_id__trace_get: {
+    parameters: {
+      query?: {
+        hz?: number | null;
+        columns?: string | null;
+      };
+      header?: never;
+      path: {
+        run_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['TraceOut'];
+          'application/vnd.apache.parquet': string;
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Precondition Failed */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Unprocessable Entity */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
     };
