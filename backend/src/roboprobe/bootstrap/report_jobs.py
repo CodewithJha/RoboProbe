@@ -55,6 +55,6 @@ class SqlReportJobs:
         """Mark work interrupted by the prior API process as failed."""
         with self._factory() as session:
             session.execute(
-                update(ReportJobRow).where(ReportJobRow.status == "RUNNING").values(status="FAILED")
+                update(ReportJobRow).where(ReportJobRow.status == "RUNNING").values(status="ERROR")
             )
             session.commit()

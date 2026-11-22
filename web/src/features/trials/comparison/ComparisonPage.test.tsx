@@ -275,3 +275,19 @@ it('generates a report, waits for completion, and downloads HTML with bearer aut
     vi.unstubAllGlobals();
   }
 });
+
+it('unblocks report export when a restart interrupted the previous job', async () => {
+  const job = { id: 'interrupted', kind: 'experiment', target_id: 'e1' };
+  server.use(
+    http.post(apiUrl('/reports'), () =>
+      HttpResponse.json({ ...job, status: 'RUNNING' }, { status: 202 }),
+    ),
+    http.get(apiUrl('/reports/interrupted'), () => HttpResponse.json({ ...job, status: 'ERROR' })),
+  );
+  mount('/trials/e1/comparison');
+  const exportButton = await screen.findByRole('button', { name: 'Export report' });
+  fireEvent.click(exportButton);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Report generation failed.');
+  expect(exportButton).toBeEnabled();
+  expect(screen.queryByRole('button', { name: 'Download HTML report' })).toBeNull();
+});

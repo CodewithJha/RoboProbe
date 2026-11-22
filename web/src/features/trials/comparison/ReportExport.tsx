@@ -10,8 +10,8 @@ export function ReportExport({ experimentId }: { experimentId: string }) {
   const job = useReportJob(jobId, queryStaleTimeMs);
   const status = job.data?.status ?? create.data?.status;
   const ready = status === 'COMPLETED' && !job.isError;
-  const running =
-    create.isPending || (Boolean(jobId) && !job.isError && !ready && status !== 'FAILED');
+  const failed = status === 'FAILED' || status === 'ERROR';
+  const running = create.isPending || (Boolean(jobId) && !job.isError && !ready && !failed);
   const download = useMutation({
     mutationFn: async (id: string) => {
       const result = await api.GET('/api/v1/reports/{report_id}/content', {
@@ -62,7 +62,7 @@ export function ReportExport({ experimentId }: { experimentId: string }) {
         </button>
       )}
       {error && <p role="alert">{error.message}</p>}
-      {!error && status === 'FAILED' && <p role="alert">Report generation failed.</p>}
+      {!error && failed && <p role="alert">Report generation failed.</p>}
     </section>
   );
 }

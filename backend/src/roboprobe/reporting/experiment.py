@@ -8,26 +8,23 @@ from __future__ import annotations
 import os
 import tempfile
 from dataclasses import dataclass
+from math import isfinite
 from pathlib import Path
 from typing import cast
 from uuid import UUID
 
-import numpy as np
-
 from roboprobe.core.errors import NotFoundError
-from roboprobe.core.seeding import ANALYSIS, derive_seed
 from roboprobe.core.settings.experiments import ExperimentSettings
 from roboprobe.core.settings.reporting import ReportingSettings
 from roboprobe.core.types import JsonValue, Verdict
-from roboprobe.experiments.runner import _as_campaign_row, build_comparison
+from roboprobe.experiments.comparison import read_campaign_runs, resolve_comparison
+from roboprobe.experiments.runner import _as_campaign_row
 from roboprobe.metrics.campaign_metrics import (
-    CampaignRun,
     FirstFailure,
     comparison_runs,
     failure_discovery_rate,
     first_failure,
 )
-from roboprobe.metrics.statistics import effect_label
 from roboprobe.reporting import figures
 from roboprobe.reporting._env import template_env
 from roboprobe.reporting.campaign import _css_block
@@ -61,37 +58,6 @@ class ExperimentReportContext:
     css: str
 
 
-def _campaign_runs(uow: ReportUnitOfWork, campaign_id: UUID, budget: int) -> list[CampaignRun]:
-    page = uow.runs.list_for_campaign(campaign_id, limit=None)
-    rows = sorted(page.items, key=lambda r: (r.ordinal, r.repeat_index))
-    out: list[CampaignRun] = []
-    for row in rows:
-        if row.verdict is None:
-            continue
-        verdict = row.verdict if isinstance(row.verdict, Verdict) else Verdict(str(row.verdict))
-        duration = (row.metrics or {}).get("duration_s", 0.0)
-        out.append(
-            CampaignRun(
-                verdict=verdict,
-                wall_time_s=float(cast(float | int | str, duration)),
-                x_unit=tuple(float(x) for x in (row.x_unit or ())),
-                phase=str(row.phase or ""),
-                tags=tuple(str(t) for t in (row.tags or ())),
-            )
-        )
-    _ = budget
-    return out
-
-
-def _variant_label(raw: object) -> str:
-    tags = getattr(raw, "tags", ()) or ()
-    for tag in tags:
-        text = str(tag)
-        if text.startswith("variant:"):
-            return text[len("variant:") :]
-    return str(getattr(raw, "strategy_id", ""))
-
-
 def build_experiment_context(  # noqa: PLR0912, PLR0915
     experiment_id: UUID,
     uow: ReportUnitOfWork,
@@ -99,72 +65,53 @@ def build_experiment_context(  # noqa: PLR0912, PLR0915
     settings: ReportingSettings | None = None,
     experiment_settings: ExperimentSettings | None = None,
 ) -> ExperimentReportContext:
-    """Build report view model, recomputing comparison when stored results exist."""
+    """Build the HTML view with the same comparison data as the API."""
     cfg = settings or ReportingSettings()
     exp = uow.experiments.get(experiment_id)
     if exp is None:
         msg = "experiment not found"
         raise NotFoundError(msg, context={"experiment_id": str(experiment_id)})
     design = dict(exp.design) if isinstance(exp.design, dict) else {}
-    results = dict(exp.results) if isinstance(exp.results, dict) else {}
-    campaigns = list(uow.campaigns.list_for_experiment(experiment_id))
-    rows = [_as_campaign_row(c) for c in campaigns]
-    runs_by = {row.id: tuple(_campaign_runs(uow, row.id, row.budget)) for row in rows}
-    metrics = [str(m) for m in design.get("metrics", ["MET-01", "MET-03"])]
-    if not results:
-        exp_cfg = experiment_settings or ExperimentSettings()
-        seed = int((design.get("seeds") or {}).get("root", 0))
-        rng = np.random.Generator(np.random.PCG64(derive_seed(seed, ANALYSIS, "compare")))
-        results = build_comparison(
-            experiment_id, rows, runs_by, metrics=metrics, settings=exp_cfg, rng=rng
-        )
-    strat_raw = results.get("strategies")
-    strategies = (
-        sorted(str(s) for s in cast(dict[str, object], strat_raw))
-        if isinstance(strat_raw, dict)
-        else []
+    rows = [_as_campaign_row(row) for row in uow.campaigns.list_for_experiment(experiment_id)]
+    runs_by = {row.id: read_campaign_runs(uow.runs, row.id) for row in rows}
+    results = resolve_comparison(
+        experiment_id, exp, rows, runs_by, experiment_settings or ExperimentSettings()
     )
-    if not strategies:
-        strategies = sorted({_variant_label(c) for c in campaigns})
+    metrics = [
+        metric for metric in cast(list[JsonValue], results["metrics"]) if isinstance(metric, str)
+    ]
+    strategies = sorted(cast(dict[str, JsonValue], results["strategies"]))
     stats_rows: list[dict[str, str]] = []
     tests = results.get("tests") or []
     if isinstance(tests, list):
-        for row in tests:
-            if not isinstance(row, dict):
+        for test in tests:
+            if not isinstance(test, dict):
                 continue
-            a12_val = row.get("a12")
-            effect = (
-                str(effect_label(float(a12_val))) if isinstance(a12_val, (int, float)) else "n/a"
-            )
+            a12_val = test.get("a12")
             stats_rows.append(
                 {
-                    "metric": str(row.get("metric", "")),
-                    "a_vs_b": f"{row.get('a', '')} vs {row.get('b', '')}",
-                    "p": str(row.get("p", "")),
-                    "p_holm": str(row.get("p_holm", "")),
+                    "metric": str(test.get("metric", "")),
+                    "a_vs_b": f"{test.get('a', '')} vs {test.get('b', '')}",
+                    "p": str(test.get("p", "")),
+                    "p_holm": str(test.get("p_holm", "")),
                     "a12": str(a12_val),
-                    "effect": effect,
+                    "effect": str(test.get("effect") or "n/a"),
                 }
             )
     boxplots: dict[str, str] = {}
     discovery_figures: dict[str, str] = {}
     km_inputs: dict[str, list[FirstFailure]] = {}
-    strat_blocks = cast(dict[str, object], strat_raw) if isinstance(strat_raw, dict) else {}
     for metric in metrics:
-        samples: dict[str, list[float]] = {s: [] for s in strategies}
-        for label, block in strat_blocks.items():
-            if not isinstance(block, dict):
-                continue
-            metric_block = cast(dict[str, object], block).get(metric)
-            if not isinstance(metric_block, dict):
-                continue
-            samples[str(label)] = [float(metric_block.get("median", 0.0))]
+        samples: dict[str, list[float]] = {strategy: [] for strategy in strategies}
         for row in rows:
             label = row.strategy_label
             runs = comparison_runs(runs_by.get(row.id, ()))
+            if not runs:
+                continue
             if metric == "MET-01":
                 fdr, _ = failure_discovery_rate(runs)
-                samples.setdefault(label, []).append(float(fdr))
+                if isfinite(fdr):
+                    samples.setdefault(label, []).append(fdr)
             elif metric == "MET-03":
                 ff = first_failure(runs, budget=row.budget)
                 samples.setdefault(label, []).append(float(ff.n1 + 1 if ff.censored else ff.n1))

@@ -26,5 +26,5 @@ def test_jobs_survive_api_process_replacement(pg_engine: Engine, tmp_path: Path)
         replacement = ReportJobStore(executor, SqlReportJobs(sessionmaker(pg_engine)))
         assert replacement.get(completed.id) == completed
         recovered = replacement.get(interrupted.id)
-        assert recovered is not None and recovered.status == "FAILED"
+        assert recovered is not None and recovered.status == "ERROR"
     assert previous_process.get(interrupted.id) == recovered
