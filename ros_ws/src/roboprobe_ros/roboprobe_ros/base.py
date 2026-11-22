@@ -36,6 +36,14 @@ def _read_yaml(path: Path) -> dict[str, object]:
         return _mapping(yaml.safe_load(stream), str(path))
 
 
+def _stamped_cmd_vel(config: dict[str, object]) -> bool:
+    stamped = config.get("stamped_cmd_vel", False)
+    if not isinstance(stamped, bool):
+        msg = "stamped_cmd_vel must be a boolean"
+        raise TypeError(msg)
+    return stamped
+
+
 class RoboProbeNode(Node):
     """Load generated episode data and expose deterministic node utilities."""
 
@@ -55,7 +63,9 @@ class RoboProbeNode(Node):
             seed = self.declare_parameter("seed", 0)
             topics_path = Path(topic_file.get_parameter_value().string_value)
             perturb_path = perturb_file.get_parameter_value().string_value
-            self._topics = _mapping(_read_yaml(topics_path).get("topics"), "topics")
+            topic_config = _read_yaml(topics_path)
+            self._topics = _mapping(topic_config.get("topics"), "topics")
+            self.stamped_cmd_vel = _stamped_cmd_vel(topic_config)
             self.perturbation = _read_yaml(Path(perturb_path)) if perturb_path else {}
             self.rng = Generator(PCG64(seed.get_parameter_value().integer_value))
         except Exception:

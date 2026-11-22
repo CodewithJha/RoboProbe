@@ -46,6 +46,11 @@ and ETags; `test_uow_lifecycle.py` covers transaction entry/exit. Shared factory
 `tests/unit/runner/test_campaign_factory.py`; SQL filter/keyset checks and PostgreSQL pagination
 are in `tests/unit/store/test_run_queries.py` and `tests/integration/store/test_run_queries.py`.
 
+Gazebo velocity relay verification (T-093d, #195, FR-SIM-003):
+`ros_ws/src/roboprobe_ros/test/test_cmd_delay.py` launches installed Jazzy relays
+against a fake simulation clock and verifies both velocity message types, FIFO ordering,
+reported latency, zero-delay delivery and process shutdown.
+
 Trace transport verification (T-081e, #150; FR-DSH-005, FR-STO-002, NFR-SEC-003):
 `tests/api/test_trace_artifacts.py` covers clearance minima, flag transitions, rate caps, column
 selection, Parquet/attachment headers, unknown ids, and malicious stored paths (TM-04).

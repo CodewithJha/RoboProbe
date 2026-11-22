@@ -103,6 +103,12 @@ Give the sensor-data topics `scan_raw` and `scan` separate resolved names to pre
 The node publishes cumulative `count` (processed beams) and `dropped` (new `+inf` returns)
 as JSON in `std_msgs/msg/String` once per second on `/roboprobe/perturber_stats`.
 
+The `cmd_delay` node reads `cmd_delay_ms` and the Nav2 controller's `rate_hz` from
+`perturb_params.yaml`. It keeps messages in order on the simulation clock and publishes the
+observed latency in **seconds** as `std_msgs/msg/Float64` on `/roboprobe/cmd_delay_actual`.
+The `stamped_cmd_vel` flag in `topics.yaml` selects the ROS message type. Zero delay forwards
+the message in its subscription callback with a reported latency of zero.
+
 The Jazzy depth relay reads `illuminance_lux` and `perception_model_file` from the episode's
 `perturb_params.yaml`, with the model path taken from `backends.gazebo_nav2.perception_model_file`.
 It consumes `depth_points_raw` and publishes XYZ points on `depth_points` with depth-one sensor QoS.
