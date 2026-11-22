@@ -41,7 +41,7 @@ jobs:
           apt-get install -y --no-install-recommends \
             python3-numpy python3-scipy python3-yaml python3-pytest python3-pip \
             ros-jazzy-launch-testing ros-jazzy-rmw-cyclonedds-cpp ros-jazzy-nav2-msgs \
-            ros-jazzy-rosbag2 ros-jazzy-rosbag2-storage-mcap
+            ros-jazzy-rosbag2 ros-jazzy-rosbag2-storage-mcap ros-jazzy-xacro
           python3 -m pip install --break-system-packages './ros_ws/src/roboprobe_ros[recorder]'
       - name: Build and test
         working-directory: ros_ws

@@ -24,7 +24,7 @@ if ! "${args[@]}" ps --status running --services | grep -qx orchestrator; then
     exit 1
 fi
 
-created="$("${args[@]}" exec -T orchestrator --json campaign run "$DEMO_CONFIG")"
+created="$("${args[@]}" exec -T orchestrator roboprobe --json campaign run "$DEMO_CONFIG")"
 campaign_id="$(
     python3 -c 'import json,sys
 for line in sys.stdin:
@@ -37,7 +37,7 @@ raise SystemExit("campaign run did not print campaign_id")' <<<"$created"
 echo "demo campaign ${campaign_id}"
 
 if command -v timeout >/dev/null 2>&1; then
-    timeout "$DEMO_TIMEOUT_S" "${args[@]}" exec -T orchestrator --json campaign status "$campaign_id" --watch
+    timeout "$DEMO_TIMEOUT_S" "${args[@]}" exec -T orchestrator roboprobe --json campaign status "$campaign_id" --watch
 else
-    "${args[@]}" exec -T orchestrator --json campaign status "$campaign_id" --watch
+    "${args[@]}" exec -T orchestrator roboprobe --json campaign status "$campaign_id" --watch
 fi
