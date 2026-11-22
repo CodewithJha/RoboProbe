@@ -331,7 +331,7 @@ export function Component() {
               <input
                 type="number"
                 min={1}
-                value={repeats || ''}
+                value={repeats ?? ''}
                 required
                 onChange={(event) => {
                   setRepeats(event.target.valueAsNumber || 0);
