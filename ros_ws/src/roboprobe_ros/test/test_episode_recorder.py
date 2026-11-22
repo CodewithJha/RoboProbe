@@ -108,7 +108,7 @@ def test_simulation_trace_and_bag(  # noqa: PLR0915 - keep DDS setup and teardow
     executor.add_node(recorder)
     executor.add_node(source)
     gt_pub = source.create_publisher(
-        PoseStamped, recorder.topic("ground_truth_pose"), qos_profile_sensor_data
+        PoseStamped, recorder.topic("ground_truth_pose"), recorder.qos("ground_truth_pose")
     )
     amcl_pub = source.create_publisher(
         PoseWithCovarianceStamped, recorder.topic("amcl_pose"), recorder.qos("amcl_pose")
