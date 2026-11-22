@@ -7,12 +7,29 @@ from pydantic import Field
 
 from roboprobe.core.settings._base import SettingsSection
 
-__all__ = ["ScenarioSettings"]
+__all__ = ["MapAlignmentSettings", "ScenarioSettings"]
+
+
+class MapAlignmentSettings(SettingsSection):
+    """Warehouse map alignment gates for ``warehouse_v1`` (docs/06 §1, T-092)."""
+
+    min_iou: float = Field(
+        default=0.95,
+        ge=0.0,
+        le=1.0,
+        description="Minimum occupied-cell IoU between kinematic2d and Gazebo maps.",
+    )
+    path_length_tolerance_ratio: float = Field(
+        default=0.02,
+        ge=0.0,
+        description="Allowed relative difference between backend nominal path lengths.",
+    )
 
 
 class ScenarioSettings(SettingsSection):
     """Scenario sampling settings shared by every strategy."""
 
+    map_alignment: MapAlignmentSettings = Field(default_factory=MapAlignmentSettings)
     constraint_max_attempts: int = Field(
         default=1000,
         ge=1,

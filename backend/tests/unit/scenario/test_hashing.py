@@ -26,18 +26,18 @@ FIXTURES = Path(__file__).resolve().parents[2] / "fixtures" / "spaces"
 # (space_version, values, canonical bytes, scenario_hash)
 GOLDEN = [
     (
-        "4326a28381df",
+        "98c8f6e8ce35",
         {"robot.max_speed": 0.26, "env.illuminance": 300.0, "obstacle.clearance": 0.8},
-        b'{"space_version":"4326a28381df","values":{"env.illuminance":300.0,'
+        b'{"space_version":"98c8f6e8ce35","values":{"env.illuminance":300.0,'
         b'"obstacle.clearance":0.8,"robot.max_speed":0.26}}',
-        "4c576b5be442f310",
+        "edf34eb8ac140374",
     ),
     (
-        "4326a28381df",
+        "98c8f6e8ce35",
         {"robot.max_speed": 0.5, "env.people": 3, "env.layout": "narrow"},
-        b'{"space_version":"4326a28381df","values":{"env.layout":"narrow","env.people":3,'
+        b'{"space_version":"98c8f6e8ce35","values":{"env.layout":"narrow","env.people":3,'
         b'"robot.max_speed":0.5}}',
-        "21ded8540940e4c0",
+        "af36f0aff5a155c4",
     ),
     (
         "fb5449ae0c1c",

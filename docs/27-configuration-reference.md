@@ -231,6 +231,8 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
+| `scenario.map_alignment.min_iou` | float | `0.95` | `ROBOPROBE_SCENARIO__MAP_ALIGNMENT__MIN_IOU` | Minimum occupied-cell IoU between kinematic2d and Gazebo maps. |
+| `scenario.map_alignment.path_length_tolerance_ratio` | float | `0.02` | `ROBOPROBE_SCENARIO__MAP_ALIGNMENT__PATH_LENGTH_TOLERANCE_RATIO` | Allowed relative difference between backend nominal path lengths. |
 | `scenario.constraint_max_attempts` | int | `1000` | `ROBOPROBE_SCENARIO__CONSTRAINT_MAX_ATTEMPTS` | Sampler draws before rejection sampling of constrained spaces gives up. |
 | `scenario.constraint_max_literal_exponent` | int | `8` | `ROBOPROBE_SCENARIO__CONSTRAINT_MAX_LITERAL_EXPONENT` | Largest absolute integer exponent allowed in a constraint (TM-03). |
 | `scenario.yaml_max_aliases` | int | `32` | `ROBOPROBE_SCENARIO__YAML_MAX_ALIASES` | Maximum YAML alias expansions in one uploaded document (TM-02). |
@@ -376,6 +378,14 @@ Browser tests default to `E2E_BASE_URL=http://127.0.0.1:8080`. Use HTTP on `loca
 The `[p95_ms]` table in [thresholds.toml](../backend/tests/perf/thresholds.toml) sets the p95 limit
 in milliseconds for each Locust endpoint group. All four groups default to 200 ms. The checker
 also fails if a configured group lacks samples or reports failed requests.
+
+### 4.15 Gazebo episode ROS parameters
+
+| ROS parameter | Default | Use |
+|---------------|---------|-----|
+| `topics_file` | Installed `roboprobe_ros/config/topics.yaml` | Logical names and QoS profiles for the node's topics |
+| `perturb_file` | Empty | YAML parameters written into the episode working directory |
+| `seed` | `0` | Initial PCG64 state for the node's random stream |
 
 ## 5. Example `roboprobe.toml`
 

@@ -18,13 +18,20 @@ from roboprobe.core.settings.experiments import ExperimentSettings
 from roboprobe.core.settings.reporting import ReportingSettings
 from roboprobe.core.types import JsonValue, Verdict
 from roboprobe.experiments.comparison import read_campaign_runs, resolve_comparison
-from roboprobe.experiments.runner import _as_campaign_row
+from roboprobe.experiments.runner import (
+    N_MULTIMODE_TARGETS,
+    _as_campaign_row,
+    _metric_value,
+    analytic_mode_labels,
+    is_analytic_multimode,
+)
 from roboprobe.metrics.campaign_metrics import (
     FirstFailure,
     comparison_runs,
     failure_discovery_rate,
     first_failure,
 )
+from roboprobe.metrics.discovery_metrics import discovery_curve
 from roboprobe.reporting import figures
 from roboprobe.reporting._env import template_env
 from roboprobe.reporting.campaign import _css_block
@@ -72,6 +79,7 @@ def build_experiment_context(  # noqa: PLR0912, PLR0915
         msg = "experiment not found"
         raise NotFoundError(msg, context={"experiment_id": str(experiment_id)})
     design = dict(exp.design) if isinstance(exp.design, dict) else {}
+    multimode = is_analytic_multimode(design)
     rows = [_as_campaign_row(row) for row in uow.campaigns.list_for_experiment(experiment_id)]
     runs_by = {row.id: read_campaign_runs(uow.runs, row.id) for row in rows}
     results = resolve_comparison(
@@ -116,6 +124,8 @@ def build_experiment_context(  # noqa: PLR0912, PLR0915
                 ff = first_failure(runs, budget=row.budget)
                 samples.setdefault(label, []).append(float(ff.n1 + 1 if ff.censored else ff.n1))
                 km_inputs.setdefault(label, []).append(ff)
+            elif multimode and metric in {"MET-02", "MET-09"}:
+                samples.setdefault(label, []).append(_metric_value(metric, runs, row.budget))
             else:
                 continue
         boxplots[metric] = figures.experiment_boxplot_svg(samples, metric=metric, settings=cfg)
@@ -125,8 +135,13 @@ def build_experiment_context(  # noqa: PLR0912, PLR0915
             if row.strategy_label != label:
                 continue
             runs = comparison_runs(runs_by.get(row.id, ()))
-            fails = [1.0 if r.verdict is Verdict.FAIL else 0.0 for r in runs]
-            cumulative = [float(sum(fails[: i + 1])) for i in range(len(fails))]
+            if multimode:
+                cumulative = discovery_curve(
+                    analytic_mode_labels(runs), N_MULTIMODE_TARGETS
+                ).tolist()
+            else:
+                fails = [1.0 if r.verdict is Verdict.FAIL else 0.0 for r in runs]
+                cumulative = [float(sum(fails[: i + 1])) for i in range(len(fails))]
             if cumulative:
                 curves.append(cumulative)
         if curves:

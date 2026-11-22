@@ -7,6 +7,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Warehouse map export, Gazebo reference map, nominal path artefacts, and map alignment tooling (T-092).
 - Verified TB4 Nav2 topic map (`ros_ws/src/roboprobe_ros/config/topics.yaml`), JSON Schema, and evidence capture script (T-091).
 - Playwright E2E harness and journeys (T-117, T-118, T-114): compose-backed global setup with
   seeded warehouse campaign, axe helper and page objects, journey specs, `e2e.yml`, Lighthouse
@@ -20,6 +21,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Web production image (T-116): read-only nginx-unprivileged SPA, runtime `/config.json`,
   CSP and security headers, and a Compose `app` profile that starts the authenticated API,
   workers and dashboard with same-origin SSE.
+- RoboProbe ROS package (T-093a) loads episode parameters and topic QoS, provides seeded
+  node utilities, and checks vendored numerical modules against the backend source.
 - Opt-in experiment API launch atomically creates the planned campaign matrix and runs it
   through the orchestrator and workers (T-084a).
 - Casebook and Insights (T-110a/b): filter and edit analyzed failure modes, replay or export
@@ -91,6 +94,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   Nightly `api-fuzz.yml` runs Schemathesis against the served API.
 - Experiment configs EXP-01…EXP-07 (T-104): `configs/experiments/` plus the d=8 and
   doubled-lidar-noise warehouse spaces. Each file records the frozen S-PROBE pre-registration hash.
+- The experiment CLI registers its SUT profile on a fresh database and isolates inline campaign
+  heartbeats. The analytical multi-mode arm reports canonical mode counts and discovery AUC
+  from observed failures (T-105a).
 - API foundation (T-080a–d): FastAPI `create_app` with CORS/GZip, `/health/live|ready`, `/api/v1/meta`,
   `/metrics`, RFC 9457 `problem+json` (`docs/errors.md`), optional bearer auth (constant-time; required
   off-loopback), cursor pagination + ETag/`If-Match` helpers, Idempotency-Key store + Alembic
