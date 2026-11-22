@@ -79,6 +79,12 @@ Upgrade: change `ROBOPROBE_IMAGE_TAG`, `pull`, `up -d` (the `migrate` service ap
 
 Because workers are stateless and pull from the queue, horizontal scaling needs **no code change** — only more worker processes with the same `DATABASE_URL`.
 
+Each worker process has its own database pool. The default `database.pool_size=5` served the
+one-, two-, four-, and eight-worker campaign pilot, with sampled database peaks of 5, 7, 11,
+and 11 connections respectively. Account for the API, orchestrator, and administrative
+connections before raising per-process pool sizes. Observe `pg_stat_activity` and claim latency
+on the deployment workload when tuning. [T-130 scalability evidence](evidence/T-130-scalability.md)
+
 ## 6. Remote worker (T2) setup
 
 1. On host A, expose Postgres only on the WireGuard interface (`ports: ["10.8.0.1:5432:5432"]`, `dev` profile override) or use `ssh -N -L 5432:localhost:5432 hostA` from host B.
