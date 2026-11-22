@@ -8,6 +8,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 ### Added
 
 - Gazebo worker backend with process-group shutdown, cancellation, and typed infrastructure failures (T-096b).
+- Gazebo workers lease host-local slots with distinct ROS domains and transport partitions (T-097a).
 - Record Gazebo episodes as Trace v1 Parquet on simulation time, with optional MCAP bags (T-094b).
 - The verified warehouse occupancy map, aligned kinematic map, and Nav2 nominal path for cross-backend pallet placement (T-092).
 - Deterministic Gazebo episode materialization for the warehouse world, Nav2, sensor perturbations, and bridge configuration (T-096a).

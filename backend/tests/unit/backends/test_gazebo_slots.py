@@ -16,6 +16,8 @@ from roboprobe.backends.gazebo_nav2.slots import SlotAllocator, SlotsExhaustedEr
 if TYPE_CHECKING:
     from multiprocessing.synchronize import Event
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.parametrize(("base", "capacity"), [(-1, 1), (30, 0), (232, 2)])
 def test_invalid_domain_ranges_are_rejected(tmp_path: Path, base: int, capacity: int) -> None:

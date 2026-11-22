@@ -61,9 +61,7 @@ def test_simulator_loss_during_navigation_is_infrastructure_failure(
                 server = name.startswith("gz sim server") or (
                     len(command) >= 2 and Path(command[0]).name == "gz" and command[1] == "sim"
                 )
-                if server and process.environ().get("GZ_PARTITION", "").endswith(
-                    episode.run_id.hex
-                ):
+                if server and Path(process.cwd()) == episode.workdir.resolve():
                     process.kill()
                     killed = True
                     return

@@ -5,6 +5,8 @@ import pytest
 from roboprobe.bootstrap.worker import worker_slot_count
 from roboprobe.core.settings import RoboProbeSettings
 
+pytestmark = pytest.mark.unit
+
 
 @pytest.mark.parametrize(
     ("backend", "requested", "expected"),

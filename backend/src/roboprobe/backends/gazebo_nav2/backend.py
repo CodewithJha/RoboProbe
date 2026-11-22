@@ -26,6 +26,7 @@ from roboprobe.backends.gazebo_nav2.materialize import (
     _find_package,
 )
 from roboprobe.backends.gazebo_nav2.process import EpisodeProcess, ProcessExit, ProcessState
+from roboprobe.backends.gazebo_nav2.slots import Slot, SlotAllocator, SlotsExhaustedError
 from roboprobe.backends.trace_io import read_trace
 from roboprobe.core.errors import EpisodeLaunchError, NotFoundError, ValidationError
 from roboprobe.core.settings import RoboProbeSettings
@@ -159,6 +160,12 @@ class GazeboNav2Backend:
         )
         self._cancel = threading.Event()
         self._busy = threading.Lock()
+        self._slots = SlotAllocator(
+            settings.storage.workdir_root,
+            domain_id_base=self._gazebo.domain_id_base,
+            capacity=self._gazebo.max_parallel_per_host,
+            worker_id=f"{settings.worker.id_prefix}:{os.getpid()}",
+        )
         self.capabilities = BackendCapabilities(
             name=_BACKEND,
             supported_params=GAZEBO_SUPPORTED_PARAMS,
@@ -201,13 +208,20 @@ class GazeboNav2Backend:
         """Launch ROS, tear down its group and verify the recorder's terminal files."""
         with self._busy:
             self._cancel.clear()
-            return self._run(req, materialized, on_progress)
+            while not self._cancel.is_set():
+                try:
+                    with self._slots.reserve() as slot:
+                        return self._run(req, materialized, on_progress, slot)
+                except SlotsExhaustedError:
+                    self._cancel.wait(self._settings.worker.poll_interval_s)
+            return _failed(req, InfraReason.CANCELED)
 
     def _run(
         self,
         req: EpisodeRequest,
         materialized: MaterializedScenario,
         on_progress: Callable[[float], None] | None,
+        slot: Slot,
     ) -> EpisodeResult:
         limit = materialized.payload.get("time_limit_s")
         if isinstance(limit, bool) or not isinstance(limit, int | float) or limit <= 0:
@@ -231,7 +245,7 @@ class GazeboNav2Backend:
                     f"workdir:={workdir}",
                 ],
                 workdir=workdir,
-                env=self._episode_env(req),
+                env=self._episode_env(slot),
                 wall_timeout_s=timeout,
                 cancel=self._cancel,
                 on_progress=on_progress,
@@ -240,14 +254,9 @@ class GazeboNav2Backend:
             return _failed(req, InfraReason.LAUNCH_FAILED)
         return self._result(req, process)
 
-    def _episode_env(self, req: EpisodeRequest) -> dict[str, str]:
+    def _episode_env(self, slot: Slot) -> dict[str, str]:
         env = dict(os.environ)
-        env.update(
-            ROS_DOMAIN_ID=str(self._gazebo.domain_id_base),
-            GZ_PARTITION=f"rp_{os.getpid()}_{req.run_id.hex}",
-            RMW_IMPLEMENTATION=self._gazebo.rmw,
-            ROS_AUTOMATIC_DISCOVERY_RANGE="LOCALHOST",
-        )
+        env.update(slot.environment(), RMW_IMPLEMENTATION=self._gazebo.rmw)
         if self._gazebo.software_rendering:
             env["LIBGL_ALWAYS_SOFTWARE"] = "1"
         return env
