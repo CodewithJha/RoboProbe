@@ -67,7 +67,7 @@ uploaded spaces and pins; factory tests verify effective selection snapshot rest
 | NFR-CFG-001…003 | 27 | config tests, PLR2004, drift check | PR |
 | NFR-DEP-001…003 | 17, 20, 29 | compose smoke, image build | PR / main |
 | NFR-USE-001 | 13 | hallway test | release |
-| NFR-ACC-001 | 13 §1.1, §7 | axe | nightly |
+| NFR-ACC-001 | 13 §1.1, §7 | Playwright and axe against the seeded Compose stack (T-117) | dashboard/API PRs and nightly |
 | NFR-SEC-001…003 | 21 §1, 31 | bind test, audits, gitleaks, Trivy | PR |
 | NFR-PORT-001 | 17 §1 | CI OS matrix | PR |
 | NFR-COST-001 | 15 | licence check | PR |
