@@ -59,7 +59,7 @@ uploaded spaces and pins; factory tests verify effective selection snapshot rest
 | NFR-PERF-001/002 | 07 §6.4, 10 §7 | pytest-benchmark | PR |
 | NFR-PERF-003 | 10 §8 | [T-090 spike](evidence/T-090-gazebo-spike.md) + nightly sim metrics | nightly |
 | NFR-PERF-004 | 11 §3 indexes, 12 §7 | `backend/tests/perf/locustfile.py` (T-106) | nightly and load-harness PRs |
-| NFR-SCAL-001/002 | 04 §7, 29 §5 | load test, remote-worker manual test | release |
+| NFR-SCAL-001/002 | 04 §7, 29 §5 | `scripts/load_campaign.py` (T-130), remote-worker manual test | release |
 | NFR-REL-001/002 | 05 §5, 14 §5 | chaos tests | PR |
 | NFR-REP-001/002 | 21 §2–4 | replay tests, EXP-06 | PR / release |
 | NFR-MNT-001/002 | 16, 34 | coverage, ruff D rules, mypy, weekly mutmut (T-131) | PR |
