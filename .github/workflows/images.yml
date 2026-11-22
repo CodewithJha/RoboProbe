@@ -97,3 +97,18 @@ jobs:
         with:
           image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
           format: spdx-json
+
+  web-smoke:
+    name: Production web Compose smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-web
+        with:
+          node-version: "24"
+      - name: Install Chromium
+        working-directory: web
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Verify the production stack
+        run: bash scripts/web_image_smoke.sh
