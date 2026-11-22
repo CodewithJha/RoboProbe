@@ -82,7 +82,7 @@ requests share a bounded cache for the current analysis. Earlier stored JSON sli
 available at their saved resolution.
 
 Report and bundle job status survives an API restart. The next API process marks interrupted
-jobs `FAILED`. `GET /workers` returns opaque worker identifiers for process-derived IDs.
+jobs `ERROR`. Report generation failures return `FAILED`. `GET /workers` returns opaque worker identifiers for process-derived IDs.
 
 ## 3. Key schemas (Pydantic DTOs; JSON shown)
 
@@ -171,6 +171,10 @@ Validation: space exists; backend registered and supports all enabled, unpinned 
  "tests": [{"metric": "MET-03", "a": "S-PROBE", "b": "S-RANDOM", "test": "mann_whitney_u",
             "p": 0.00012, "p_holm": 0.00048, "a12": 0.81, "effect": "large"}]}
 ```
+
+Experiment reports embed this same payload in the inert JSON element `experiment-comparison`.
+If no comparison is stored, the API and the renderer use every page of recorded runs in
+proposal order and the experiment’s analysis seed. Unavailable numeric results are `null`.
 
 `GET /api/v1/experiments/{id}/comparison/charts` returns per-strategy samples and step points
 from completed cells with adjudicated runs. Discovery counts the earliest eligible member of each

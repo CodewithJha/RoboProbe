@@ -26,7 +26,7 @@ def test_completed_job_survives_new_store_and_running_job_is_failed(tmp_path: Pa
     with ThreadPoolExecutor(max_workers=1) as pool:
         store = ReportJobStore(pool, persistence)
         assert store.get(completed.id).html_path == completed.html_path
-        assert store.get(interrupted.id).status == "FAILED"
+        assert store.get(interrupted.id).status == "ERROR"
     engine.dispose()
 
 

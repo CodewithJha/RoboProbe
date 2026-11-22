@@ -216,6 +216,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Fixed
 
+- Embed the API comparison payload in offline experiment reports and surface restart-interrupted
+  report jobs as errors (T-084a).
+
 - The campaign Console loads scenario bounds for run condition strips and shows selector
   predictions when the strategy supplies them (T-088b, #172).
 

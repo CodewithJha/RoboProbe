@@ -5,11 +5,9 @@ Implements: T-084
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from typing import Any, cast
+from typing import Any
 from uuid import UUID
 
-import numpy as np
 import pydantic
 from fastapi import APIRouter, Depends, Header, Request, Response
 
@@ -25,9 +23,9 @@ from roboprobe.api.schemas import (
     ExperimentOut,
 )
 from roboprobe.core.errors import NotFoundError, ValidationError
+from roboprobe.experiments.comparison import read_campaign_runs, resolve_comparison
 from roboprobe.experiments.planner import ExperimentDesign
-from roboprobe.experiments.runner import _as_campaign_row, build_comparison
-from roboprobe.metrics.campaign_metrics import CampaignRun, comparison_runs
+from roboprobe.experiments.runner import _as_campaign_row
 
 __all__ = ["router"]
 
@@ -132,54 +130,13 @@ def experiment_comparison(
     if row is None:
         msg = "experiment not found"
         raise NotFoundError(msg, context={"experiment_id": str(experiment_id)})
-    stored_results = getattr(row, "results", None)
-    if stored_results:
-        return _comparison_response(experiment_id, stored_results)
-    campaigns = uow.campaigns.list_for_experiment(experiment_id)
-    runs_by: dict[UUID, list[CampaignRun]] = {}
-    for camp in campaigns:
-        runs: list[tuple[tuple[int, int], CampaignRun]] = []
-        cursor: str | None = None
-        while True:
-            page = uow.runs.list_for_campaign(camp.id, limit=None, cursor=cursor)
-            for r in page.items:
-                if r.verdict is None:
-                    continue
-                run = CampaignRun(
-                    verdict=r.verdict,
-                    wall_time_s=float((r.metrics or {}).get("duration_s", 0.0)),
-                    x_unit=tuple(float(x) for x in r.x_unit),
-                    phase=str(r.phase or ""),
-                    tags=tuple(str(t) for t in r.tags),
-                )
-                runs.append(((r.ordinal, r.repeat_index), run))
-            cursor = page.next_cursor
-            if cursor is None:
-                break
-        runs.sort(key=lambda entry: entry[0])
-        runs_by[camp.id] = list(comparison_runs(tuple(run for _, run in runs)))
-    if not campaigns:
-        return ExperimentComparisonOut(experiment_id=experiment_id)
-    services = get_services(request)
-    design = ExperimentDesign.model_validate(row.design)
-    metrics = tuple(design.metrics) if design.metrics else ("MET-01", "MET-03")
-    payload = build_comparison(
-        experiment_id,
-        [_as_campaign_row(c) for c in campaigns],
-        runs_by,
-        metrics=metrics,
-        settings=services.settings.experiments,
-        rng=np.random.default_rng(services.settings.experiments.reference_set.seed),
+    campaigns = (
+        []
+        if row.results
+        else [_as_campaign_row(c) for c in uow.campaigns.list_for_experiment(experiment_id)]
     )
-    return _comparison_response(experiment_id, payload)
-
-
-def _comparison_response(
-    experiment_id: UUID, payload: Mapping[str, object]
-) -> ExperimentComparisonOut:
-    return ExperimentComparisonOut(
-        experiment_id=experiment_id,
-        metrics=[str(m) for m in cast(list[object], payload.get("metrics", []))],
-        strategies=cast(dict[str, dict[str, object]], payload.get("strategies", {})),
-        tests=cast(list[dict[str, object]], payload.get("tests", [])),
+    runs_by = {campaign.id: read_campaign_runs(uow.runs, campaign.id) for campaign in campaigns}
+    payload = resolve_comparison(
+        experiment_id, row, campaigns, runs_by, get_services(request).settings.experiments
     )
+    return ExperimentComparisonOut.model_validate(payload)

@@ -36,11 +36,13 @@ class _Run:
     tags: tuple[str, ...] = ()
     metrics: dict[str, float] = field(default_factory=lambda: {"duration_s": 1.0})
     repeat_index: int = 0
+    id: UUID = field(default_factory=uuid4)
 
 
 @dataclass
 class _Page:
     items: list[_Run]
+    next_cursor: str | None = None
 
 
 class _FakeUow:
@@ -75,7 +77,7 @@ class _FakeUow:
             "R",
             (),
             {
-                "list_for_campaign": lambda _s, _cid, limit=None: _Page(
+                "list_for_campaign": lambda _s, _cid, limit=None, cursor=None: _Page(
                     items=[
                         _Run(1, "FAIL"),
                         _Run(2, "PASS"),
