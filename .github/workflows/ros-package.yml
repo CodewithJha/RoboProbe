@@ -6,6 +6,11 @@ on:
       - ".github/workflows/ros-package.yml"
       - "backend/src/roboprobe/geometry/**"
       - "backend/src/roboprobe/perturbation/**"
+      - "backend/src/roboprobe/backends/trace_io.py"
+      - "backend/src/roboprobe/core/errors.py"
+      - "backend/src/roboprobe/core/types/enums.py"
+      - "backend/src/roboprobe/core/types/trace.py"
+      - "backend/tests/fixtures/traces/**"
       - "ros_ws/**"
       - "scripts/vendor_geometry.py"
       - "scripts/tests/test_vendor_geometry.py"
@@ -34,8 +39,10 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            python3-numpy python3-scipy python3-yaml python3-pytest \
-            ros-jazzy-launch-testing ros-jazzy-rmw-cyclonedds-cpp ros-jazzy-nav2-msgs ros-jazzy-xacro
+            python3-numpy python3-scipy python3-yaml python3-pytest python3-pip \
+            ros-jazzy-launch-testing ros-jazzy-rmw-cyclonedds-cpp ros-jazzy-nav2-msgs \
+            ros-jazzy-rosbag2 ros-jazzy-rosbag2-storage-mcap ros-jazzy-xacro
+          python3 -m pip install --break-system-packages './ros_ws/src/roboprobe_ros[recorder]'
       - name: Build and test
         working-directory: ros_ws
         env:

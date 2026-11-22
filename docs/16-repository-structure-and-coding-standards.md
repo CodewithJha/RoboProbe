@@ -137,8 +137,8 @@ contract 2 as well. The executable form (ids `layers`, `domain-independence`, `a
 Use `node.topic(key)` and `node.qos(key)` when wiring a publisher or subscription. `node.log_event`
 writes JSON lines with event, node, service, and UTC timestamp fields.
 
-Geometry and perturbations are generated from the backend's numerical modules. After changing
-either source package, run `python3 scripts/vendor_geometry.py` from the repository root.
+Geometry, perturbations, and the Trace v1 reader and writer are generated from the backend.
+After changing any of these sources, run `python3 scripts/vendor_geometry.py` from the repository root.
 The ROS package workflow checks the source digests and generated files, then runs
 `colcon build --packages-select roboprobe_ros` and `colcon test --packages-select roboprobe_ros`
 in the Jazzy container.
