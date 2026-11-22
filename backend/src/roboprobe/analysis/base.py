@@ -86,6 +86,7 @@ class AnalysisContext:
     optional_failed: bool = False
     gp_x: Any = None
     gp_y: Any = None
+    gp_lengthscales: dict[str, float] | None = None
 
 
 class Analyzer(Protocol):

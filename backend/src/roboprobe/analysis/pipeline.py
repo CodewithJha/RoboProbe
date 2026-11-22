@@ -183,9 +183,9 @@ def default_analyzers() -> list[Analyzer]:
         FeaturesAnalyzer(),
         ClusteringAnalyzer(),
         ModesAnalyzer(),
+        RiskVolumesAnalyzer(),
         ImportanceAnalyzer(),
         RulesAnalyzer(),
-        RiskVolumesAnalyzer(),
     ]
 
 
@@ -272,12 +272,11 @@ class ImportanceAnalyzer:
         matrix, names, y_fail, run_ids = _design_matrix(ctx)
         settings = ImportanceSettings.from_analysis(ctx.settings)
         explainer = ImportanceExplainer(settings, seed=ctx.campaign_seed)
-        lengthscales = _gp_lengthscales(ctx)
         ctx.importance = explainer.explain(
             matrix,
             y_fail,
             names,
-            lengthscales=lengthscales,
+            lengthscales=ctx.gp_lengthscales,
             modes=ctx.modes,
             run_ids=run_ids,
         )
@@ -331,6 +330,12 @@ class RiskVolumesAnalyzer:
         except ModelFitError as exc:
             ctx.warnings.append(f"risk_volumes: GP fit failed ({exc})")
             return
+        scales = getattr(gp, "lengthscales", ())
+        if len(scales) == ctx.space.dim:
+            ctx.gp_lengthscales = {
+                parameter.id: float(scale)
+                for parameter, scale in zip(ctx.space.params, scales, strict=True)
+            }
         try:
             mapper = RiskMapper(gp, ctx.space, ctx.risk.thresholds)
         except ValidationError as exc:
@@ -425,6 +430,7 @@ def _to_analysis_run(row: AnalysisRunRow) -> AnalysisRun:
     values = {str(k): cast(ParamValue, v) for k, v in dict(row.scenario_values or {}).items()}
     return AnalysisRun(
         id=row.id,
+        ordinal=getattr(row, "ordinal", None),
         verdict=verdict,
         phase=phase,
         primary_failure=primary,
@@ -497,10 +503,6 @@ def _design_matrix(
     return matrix, names, y_fail, run_ids
 
 
-def _gp_lengthscales(ctx: AnalysisContext) -> dict[str, float] | None:
-    return None
-
-
 def _status(ctx: AnalysisContext, core_error: Exception | None) -> str:
     if core_error is not None:
         return "ERROR"
@@ -523,10 +525,12 @@ def _summary(ctx: AnalysisContext) -> dict[str, Any]:
         }
     summary["n_modes"] = len(ctx.modes)
     if ctx.importance is not None:
-        summary["importance"] = {
-            "low_confidence": ctx.importance.low_confidence,
-            "auc_mean": ctx.importance.auc_mean,
+        summary["importance"] = ctx.importance.model_dump(mode="json")
+        summary["interactions"] = {
+            "names": list(ctx.importance.names),
+            "values": [list(row) for row in ctx.importance.interactions],
         }
+    summary["rules"] = [rule.model_dump(mode="json") for rule in ctx.rules]
     if ctx.volumes is not None:
         summary["volumes"] = dict(ctx.volumes)
     summary["n_rules"] = len(ctx.rules)
@@ -693,6 +697,7 @@ def _mode_records(
         if ctx.clustering is not None
         else {}
     )
+    ordinals = {run.id: run.ordinal for run in ctx.runs if run.ordinal is not None}
     for summary in ctx.modes:
         mode_id = ctx.mode_ids[summary.code]
         class_mix = {k.value: float(v) for k, v in summary.class_mix.items()}
@@ -711,6 +716,11 @@ def _mode_records(
                 characteristic=tuple(sorted(summary.characteristic)),
                 medoid_run_id=summary.medoid_run_id,
                 minimal_run_id=summary.minimal_run_id,
+                first_seen_run=min(
+                    (run_id for run_id in summary.member_run_ids if run_id in ordinals),
+                    key=ordinals.__getitem__,
+                    default=None,
+                ),
                 rules=rules_by_code.get(summary.code, []),
                 analysis_id=ctx.analysis_id,
             )

@@ -11,7 +11,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from roboprobe.core.errors import NotFoundError
+from roboprobe.core.errors import ErrorCode, NotFoundError, ValidationError
 from roboprobe.store.flush import execute
 from roboprobe.store.mapping import mode_record
 from roboprobe.store.orm import FailureModeMemberRow, FailureModeRow
@@ -34,6 +34,8 @@ class SqlFailureModeRepo:
         *,
         label: str | None = None,
         status: str | None = None,
+        duplicate_of: str | None = None,
+        expected_etag: int | None = None,
     ) -> None:
         values: dict[str, object] = {}
         if label is not None:
@@ -41,14 +43,21 @@ class SqlFailureModeRepo:
             values["label_is_user"] = True
         if status is not None:
             values["status"] = status
+        if duplicate_of is not None or (status is not None and status != "duplicate"):
+            values["duplicate_of"] = duplicate_of
         if not values:
             return
-        result = execute(
-            self._s, update(FailureModeRow).where(FailureModeRow.id == mode_id).values(**values)
-        )
+        values["etag_version"] = FailureModeRow.etag_version + 1
+        condition = FailureModeRow.id == mode_id
+        if expected_etag is not None:
+            condition = condition & (FailureModeRow.etag_version == expected_etag)
+        result = execute(self._s, update(FailureModeRow).where(condition).values(**values))
         if int(getattr(result, "rowcount", 0) or 0) != 1:
-            msg = "failure mode not found"
-            raise NotFoundError(msg, context={"mode_id": str(mode_id)})
+            if expected_etag is None:
+                msg = "failure mode not found"
+                raise NotFoundError(msg, context={"mode_id": str(mode_id)})
+            msg = "failure mode changed concurrently"
+            raise ValidationError(msg, code=ErrorCode.PRECONDITION_FAILED)
 
     def counts_for_campaigns(self, campaign_ids: Sequence[UUID]) -> dict[UUID, int]:
         """Count modes for a whole page in one query (T-081b)."""
@@ -121,8 +130,9 @@ class SqlFailureModeRepo:
             row.rules = list(mode.rules)
             row.interaction = None if mode.interaction is None else dict(mode.interaction)
             row.reproducibility = mode.reproducibility
-            row.status = mode.status
-            row.first_seen_run = mode.first_seen_run
+            row.status = row.status if row.status != "open" else mode.status
+            row.etag_version += 1
+            row.first_seen_run = row.first_seen_run or mode.first_seen_run
             row.analysis_id = mode.analysis_id
             row.label = label
         self._s.flush()

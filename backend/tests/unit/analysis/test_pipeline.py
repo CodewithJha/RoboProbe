@@ -15,6 +15,7 @@ from tests.unit.analysis.conftest import DEFAULT_METRICS, REPO_ROOT, WAREHOUSE
 from roboprobe.analysis.base import AnalysisContext, AnalysisKind
 from roboprobe.analysis.pipeline import analyze_campaign, default_analyzers
 from roboprobe.core.clock import FakeClock
+from roboprobe.core.errors import ValidationError
 from roboprobe.core.metrics_registry import create_metrics
 from roboprobe.core.settings.analysis import AnalysisSettings, RiskSettings
 from roboprobe.core.types import CampaignStatus, RunStatus, Verdict
@@ -187,6 +188,46 @@ def test_analyze_campaign_idempotent_mode_codes(
         uow.commit()
     assert first.mode_codes
     assert first.mode_codes == second.mode_codes
+
+
+def test_full_analysis_emits_fitted_gp_importance_ranks(
+    space: ScenarioSpace, clock: FakeClock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _FittedGP:
+        def __init__(self, dim: int, **_kwargs: object) -> None:
+            self.lengthscales = np.arange(1, dim + 1, dtype=np.float64)
+
+        def fit(self, _x: object, _y: object) -> None:
+            pass
+
+    def unavailable_mapper(*_args: object) -> None:
+        msg = "risk grid unavailable"
+        raise ValidationError(msg)
+
+    monkeypatch.setattr("roboprobe.selection.surrogate.RobustnessGP", _FittedGP)
+    monkeypatch.setattr("roboprobe.analysis.pipeline.RiskMapper", unavailable_mapper)
+    uow = InMemoryUnitOfWork()
+    cid = _seed_campaign(uow, space)
+    store = importlib.import_module("roboprobe.store.artifacts").NullArtifactStore()
+    with uow:
+        rows = uow.runs.list_for_campaign(cid).items
+        for row in rows[::2]:
+            uow.runs._db.runs[row.id] = row.model_copy(
+                update={"verdict": Verdict.PASS, "primary_failure": None, "robustness": 0.5}
+            )
+        report = analyze_campaign(
+            cid,
+            uow,
+            store,
+            settings=AnalysisSettings(),
+            clock=clock,
+            load_space=_load_space,
+        )
+
+    ranks = report.summary["importance"]["gp_normalized"]
+    assert ranks is not None, report.warnings
+    assert len(ranks) == space.dim
+    assert ranks == sorted(ranks, reverse=True)
 
 
 class _BoomAnalyzer:

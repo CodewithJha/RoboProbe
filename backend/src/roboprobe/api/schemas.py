@@ -8,9 +8,10 @@ Implements: T-081, T-082, T-084
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from roboprobe.core.types import CampaignStatus, JsonValue
 from roboprobe.runner.campaign_spec import CampaignCreate, SpaceRef, StrategyRef
@@ -178,18 +179,52 @@ class FailureModeOut(BaseModel):
     campaign_id: UUID
     code: str
     label: str
+    label_is_user: bool = False
+    provisional: bool = False
+    first_seen_ordinal: int | None = None
+    reproducibility: float | None = None
+    version: int = 1
+    duplicate_of: str | None = None
+    param_ranges: dict[str, JsonValue] = Field(default_factory=dict)
+    characteristic: list[str] = Field(default_factory=list)
+    rules: list[JsonValue] = Field(default_factory=list)
+    medoid_run_id: UUID | None = None
+    minimal_run_id: UUID | None = None
     size: int
     primary_class: str
     status: str
     interaction: dict[str, JsonValue] | None = None
-    medoid_run_id: UUID | None = None
+
+
+_MODE_LABEL_MAX_LENGTH = 80
+_MODE_STATUSES = frozenset({"open", "accepted", "fixed", "duplicate"})
 
 
 class FailureModePatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
-
     label: str | None = None
     status: str | None = None
+    duplicate_of: str | None = None
+
+    @field_validator("label")
+    @classmethod
+    def _label(cls, value: str | None) -> str | None:
+        if value is not None:
+            value = value.strip()
+            if not 1 <= len(value) <= _MODE_LABEL_MAX_LENGTH or not value.isprintable():
+                msg = f"label must use 1 to {_MODE_LABEL_MAX_LENGTH} characters"
+                raise ValueError(msg)
+        return value
+
+    @model_validator(mode="after")
+    def _duplicate(self) -> Self:
+        if self.status is not None and self.status not in _MODE_STATUSES:
+            msg = "unknown failure mode status"
+            raise ValueError(msg)
+        if self.status == "duplicate" and not self.duplicate_of:
+            msg = "duplicate status requires duplicate_of"
+            raise ValueError(msg)
+        return self
 
 
 class ImportanceOut(BaseModel):

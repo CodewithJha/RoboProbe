@@ -365,7 +365,10 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Confirm Interaction */
+    /**
+     * Confirm Interaction
+     * @description Enqueue the actual idempotent confirmation plan instead of acknowledging a no-op.
+     */
     post: operations['confirm_interaction_api_v1_modes__mode_id__confirm_interaction_post'];
     delete?: never;
     options?: never;
@@ -885,8 +888,14 @@ export interface components {
        * Format: uuid
        */
       campaign_id: string;
+      /** Characteristic */
+      characteristic?: string[];
       /** Code */
       code: string;
+      /** Duplicate Of */
+      duplicate_of?: string | null;
+      /** First Seen Ordinal */
+      first_seen_ordinal?: number | null;
       /**
        * Id
        * Format: uuid
@@ -898,17 +907,44 @@ export interface components {
       } | null;
       /** Label */
       label: string;
+      /**
+       * Label Is User
+       * @default false
+       */
+      label_is_user: boolean;
       /** Medoid Run Id */
       medoid_run_id?: string | null;
+      /** Minimal Run Id */
+      minimal_run_id?: string | null;
+      /** Param Ranges */
+      param_ranges?: {
+        [key: string]: components['schemas']['JsonValue'];
+      };
       /** Primary Class */
       primary_class: string;
+      /**
+       * Provisional
+       * @default false
+       */
+      provisional: boolean;
+      /** Reproducibility */
+      reproducibility?: number | null;
+      /** Rules */
+      rules?: components['schemas']['JsonValue'][];
       /** Size */
       size: number;
       /** Status */
       status: string;
+      /**
+       * Version
+       * @default 1
+       */
+      version: number;
     };
     /** FailureModePatch */
     FailureModePatch: {
+      /** Duplicate Of */
+      duplicate_of?: string | null;
       /** Label */
       label?: string | null;
       /** Status */
@@ -3448,7 +3484,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': unknown;
+          'application/json': components['schemas']['FailureModeOut'];
         };
       };
       /** @description Unauthorized */
@@ -3530,7 +3566,7 @@ export interface operations {
         };
         content: {
           'application/json': {
-            [key: string]: string;
+            [key: string]: unknown;
           };
         };
       };

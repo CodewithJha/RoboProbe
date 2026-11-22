@@ -158,6 +158,11 @@ Status chip per case: open / accepted / fixed / duplicate. Side panel "Insights"
 interaction heatmap (parameter × parameter), GP lengthscale comparison, classifier CV AUC with
 confidence label.
 
+Casebook edits use the visible mode revision. A conflicting edit reloads the latest mode before
+another change can be submitted. Insights opens from either the Casebook panel or the campaign
+tab. The interaction heatmap represents the campaign analysis while importance bars can switch to
+per-mode values where available.
+
 ### 3.6 Risk atlas — FR-DSH-004, US-006
 
 - Left: **pair matrix** — `d×d` small multiples (upper triangle) of `p_fail` slices; click to enlarge.
