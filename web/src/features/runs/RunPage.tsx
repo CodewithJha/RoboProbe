@@ -169,10 +169,7 @@ function Parameters({
             const unit = typeof definition?.['unit'] === 'string' ? definition['unit'] : '';
             return (
               <div key={key}>
-                <dt>
-                  {key}
-                  null}
-                </dt>
+                <dt>{key}</dt>
                 <dd>
                   {label(value)} {unit}
                   {hasRange ? (
