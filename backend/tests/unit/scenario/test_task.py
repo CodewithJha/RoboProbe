@@ -25,7 +25,7 @@ from roboprobe.scenario.task import (
 pytestmark = pytest.mark.unit
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-WAREHOUSE_TASK = REPO_ROOT / "tasks" / "warehouse_delivery_v1.yaml"
+WAREHOUSE_TASK = REPO_ROOT / "tasks" / "warehouse_delivery_aligned_v1.yaml"
 CHECK_SCRIPT = REPO_ROOT / "scripts" / "check_no_tbd.py"
 
 
@@ -83,13 +83,13 @@ def test_warehouse_nominal_path_matches_task() -> None:
 
 
 def test_placeholders_rejected_in_both_modes_with_pointer(tmp_path: Path) -> None:
-    document = task_document(goal={"x": "TBD_T092", "y": "TBD_T092", "yaw": 1.57})
+    document = task_document(goal={"x": "TBD_T042", "y": "TBD_T042", "yaw": 1.57})
     path = write_task(tmp_path, document)
     for strict in (False, True):
-        with pytest.raises(errors.ValidationError, match="TBD_T092") as exc:
+        with pytest.raises(errors.ValidationError, match="TBD_T042") as exc:
             load_task(path, strict=strict)
         assert issue_paths(exc) == ["/goal/x", "/goal/y"]
-        assert "backlog task T-092" in str(exc.value)
+        assert "backlog task T-042" in str(exc.value)
 
 
 def test_doc_06_example_loads_after_t092(tmp_path: Path) -> None:
@@ -147,8 +147,8 @@ def test_json_pointer_escapes_rfc_6901() -> None:
 
 
 def test_find_placeholders_walks_nested_documents() -> None:
-    document = {"a": ["TBD_T091", {"b": "TBD_T092"}], "c": "TBD", "d": 1}
-    assert find_placeholders(document) == [("/a/0", "TBD_T091"), ("/a/1/b", "TBD_T092")]
+    document = {"a": ["TBD_T091", {"b": "TBD_T042"}], "c": "TBD", "d": 1}
+    assert find_placeholders(document) == [("/a/0", "TBD_T091"), ("/a/1/b", "TBD_T042")]
     assert find_placeholders({"x/y": "TBD_T091"}) == [("/x~1y", "TBD_T091")]
 
 
@@ -249,11 +249,11 @@ def test_check_script_strict_flags_provisional(tmp_path: Path) -> None:
 
 
 def test_check_script_finds_placeholders_and_bad_yaml(tmp_path: Path) -> None:
-    (tmp_path / "a.yaml").write_text("goal: {x: TBD_T092}\n", encoding="utf-8")
-    (tmp_path / "notes.txt").write_text("TBD_T092", encoding="utf-8")
+    (tmp_path / "a.yaml").write_text("goal: {x: TBD_T042}\n", encoding="utf-8")
+    (tmp_path / "notes.txt").write_text("TBD_T042", encoding="utf-8")
     result = run_check(tmp_path)
     assert result.returncode == 1
-    assert "/goal/x: placeholder TBD_T092" in result.stderr
+    assert "/goal/x: placeholder TBD_T042" in result.stderr
     assert "notes.txt" not in result.stderr
     (tmp_path / "b.yml").write_text("a: [\n", encoding="utf-8")
     assert run_check(tmp_path).returncode == 2

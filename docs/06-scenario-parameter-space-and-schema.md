@@ -7,10 +7,10 @@
 | Item | Value |
 |------|-------|
 | Robot | TurtleBot 4 (standard) model from `nav2_minimal_tb4_description`; in kinematic2d a 0.17 m-radius differential-drive disc with the same footprint |
-| World | Nav2 `nav2_minimal_tb4_sim/worlds/warehouse.sdf` (Gazebo); `warehouse_k2d.json` 2-D occupancy clone (kinematic2d) |
-| Map | Pre-built occupancy map of the warehouse shipped in `ros_ws/src/roboprobe_ros/maps/warehouse.yaml` (generated once with `slam_toolbox`, T-092) |
+| World | Nav2 `nav2_minimal_tb4_sim/worlds/warehouse.sdf` (Gazebo); `configs/maps/warehouse_v1_k2d.json` occupancy clone (kinematic2d) |
+| Map | The shipped `nav2_bringup` warehouse occupancy map, copied to `configs/maps/warehouse_v1.yaml` (T-092) |
 | Start ("Dock A") | spawn pose from the Nav2 warehouse example: `x = 2.12, y = −21.3, yaw = 1.57` (verified in T-091) |
-| Goal ("Station B") | `x = 2.12, y = −8.3, yaw = 1.57` (~13 m north through the centre aisle; verified T-092 on the k2d grid) |
+| Goal ("Station B") | `x = 2.12, y = −8.3, yaw = 1.57` (13 m north through the centre aisle, verified by Nav2 in T-092) |
 | Nominal path | Polyline computed once from Nav2 planner on the empty map; stored with the task; used to place injected obstacles |
 | Injected obstacle | "Dropped pallet": 0.8 × 0.6 m box whose **top is below the 2-D lidar scan plane** (height derived from TB4 URDF in T-091) so it is detectable only by the depth camera ⇒ perception and lighting matter |
 | Success | reach goal within 0.25 m position / 0.5 rad yaw tolerance before time limit, without any oracle failure |
@@ -97,7 +97,7 @@ id: warehouse_v1
 name: Warehouse delivery - single injected pallet
 description: >
   TurtleBot 4 delivers from Dock A to Station B; a low pallet is injected near the nominal path.
-task: tasks/warehouse_delivery_v1.yaml
+task: tasks/warehouse_delivery_aligned_v1.yaml
 parameters:
   - id: robot.max_speed
     name: Max linear speed
@@ -292,19 +292,19 @@ provenance:
   exported_at: 2026-11-19T18:30:00Z
 ```
 
-## 7. Task file (`tasks/warehouse_delivery_v1.yaml`)
+## 7. Task file (`tasks/warehouse_delivery_aligned_v1.yaml`)
 
 ```yaml
 schema_version: 1
 id: warehouse_delivery_v1
-world: {gazebo: nav2_minimal_tb4_sim/worlds/warehouse.sdf, kinematic2d: worlds/warehouse_k2d.json}
-map: maps/warehouse.yaml
+world: {gazebo: nav2_minimal_tb4_sim/worlds/warehouse.sdf, kinematic2d: configs/maps/warehouse_v1_k2d.json}
+map: configs/maps/warehouse_v1.yaml
 start: {x: 2.12, y: -21.3, yaw: 1.57}
-goal:  {x: 2.12, y: -8.3, yaw: 1.57}
+goal: {x: 2.12, y: -8.3, yaw: 1.57}
 goal_tolerance: {xy: 0.25, yaw: 0.5}
-nominal_path: paths/warehouse_delivery_v1.csv
+nominal_path: paths/warehouse_v1_nominal_path.csv
 injected_obstacles:
-  - {model: dropped_pallet, size: [0.8, 0.6, 0.144], placement: {along: obstacle.along_path, lateral: obstacle.clearance, side: left}}
+  - {model: dropped_pallet, size: [0.8, 0.6, 0.135], placement: {along: obstacle.along_path, lateral: obstacle.clearance, side: left}}
 time_limit: {factor: 2.5, offset_s: 10, cap_s: 120}
 ```
 
@@ -315,6 +315,7 @@ optional `provisional: [goal, …]` key. They load normally and are rejected onl
 (release builds, Gazebo runs). `scripts/check_no_tbd.py [--strict]` applies the same guard to
 `tasks/` and `configs/` in CI. The nominal path is a CSV (`x,y` header) resolved relative to the task file.
 `time_limit_s(task, max_speed_mps, path_length_m)` implements the `T_max` formula of §1.
+The warehouse map and path were measured against the pinned packages. [T-092 map evidence](evidence/T-092.md)
 
 ## 8. Scenario lifecycle
 

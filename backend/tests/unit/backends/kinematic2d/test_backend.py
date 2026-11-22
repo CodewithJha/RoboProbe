@@ -12,7 +12,7 @@ from roboprobe.backends.kinematic2d.backend import Kinematic2DBackend
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import SutProfile
 from roboprobe.scenario.space import ScenarioSpace
-from roboprobe.scenario.task import load_task
+from roboprobe.scenario.task import load_nominal_path
 
 pytestmark = pytest.mark.unit
 
@@ -38,7 +38,7 @@ def _request(tmp_path: Path, settings: RoboProbeSettings) -> EpisodeRequest:
     return EpisodeRequest(
         run_id=uuid4(),
         scenario=space.nominal(),
-        task=load_task(REPO / "tasks" / "warehouse_delivery_v1.yaml", strict=False),
+        task=space.task,
         sut_profile=SutProfile(id="k2d", backend="kinematic2d", config={}, config_hash="a" * 16),
         seed=11,
         workdir=tmp_path / "run",
@@ -55,6 +55,10 @@ def test_materialize_is_byte_identical(tmp_path: Path) -> None:
     ma, mb = backend.materialize(a), backend.materialize(b)
     assert ma.files["world"].read_bytes() == mb.files["world"].read_bytes()
     assert ma.files["obstacle"].read_bytes() == mb.files["obstacle"].read_bytes()
+    world_source = REPO / a.task.world["kinematic2d"]
+    assert ma.files["world"].read_bytes() == world_source.read_bytes()
+    task_file = REPO / "tasks/warehouse_delivery_aligned_v1.yaml"
+    assert ma.payload["nominal_path"] == load_nominal_path(task_file, a.task).tolist()
 
 
 def test_run_episode_writes_trace(tmp_path: Path) -> None:
@@ -66,3 +70,14 @@ def test_run_episode_writes_trace(tmp_path: Path) -> None:
     assert result.infra_error is None
     assert result.artifacts["trace"].is_file()
     assert result.backend_meta["k2d_model_version"] == "kinematic2d_v1"
+
+
+def test_legacy_task_uses_the_calibrated_world_model(tmp_path: Path) -> None:
+    settings = _settings()
+    backend = Kinematic2DBackend(settings)
+    req = _request(tmp_path, settings)
+    task = req.task.model_copy(update={"world": {"kinematic2d": "worlds/warehouse_k2d.json"}})
+    materialized = backend.materialize(req.model_copy(update={"task": task}))
+    expected = REPO / "configs/backends/warehouse_k2d.json"
+    assert materialized.files["world"].read_bytes() == expected.read_bytes()
+    assert "nominal_path" not in materialized.payload
