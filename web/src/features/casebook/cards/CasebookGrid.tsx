@@ -10,7 +10,15 @@ type Mode = Schema['FailureModeOut'] & {
   medoid_run_id?: string | null;
   rules?: unknown[];
   version?: number;
+  provisional?: boolean;
+  duplicate_of?: string | null;
+  characteristic?: Array<{ name?: string; value?: unknown }>;
+  param_ranges?: Record<string, unknown>;
+  reproducibility?: unknown;
+  minimal_run_id?: string | null;
+  first_seen_ordinal?: number | null;
 };
+type PatchBody = Schema['FailureModePatch'] & { duplicate_of?: string | null };
 type ModePage = Schema['Page_FailureModeOut_'];
 type Status = NonNullable<Schema['FailureModePatch']['status']>;
 const statuses: Status[] = ['open', 'accepted', 'fixed', 'duplicate'];
@@ -40,8 +48,8 @@ function CaseCard({
   const replay = useReplay(mode.medoid_run_id ?? '');
   const interaction = object(mode.interaction);
   const interactionStatus = interaction['status'];
-  const patch = useMutation({
-    mutationFn: async (body: Schema['FailureModePatch']) =>
+  const patch = useMutation<Mode, Error, PatchBody>({
+    mutationFn: async (body) =>
       requireData(
         await api.PATCH('/api/v1/modes/{mode_id}', {
           params: { path: { mode_id: mode.id } },
