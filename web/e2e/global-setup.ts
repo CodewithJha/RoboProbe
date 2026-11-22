@@ -1,10 +1,11 @@
 import { execFile } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import type { FullConfig } from '@playwright/test';
+import { seed } from './seed.ts';
 
 const root = resolve(import.meta.dirname, '../..');
 const reportDir = join(root, 'web/e2e-artifacts');
@@ -126,7 +127,35 @@ export async function startE2eStack(baseURL: string) {
         `The dashboard proxy returned ${String(campaigns.status)} instead of campaigns.`,
       );
     }
-    return { apiToken, cleanup };
+    // The imported campaign retains its historical space version. Register the shipped
+    // definition separately so new Wizard campaigns can run against the current task files.
+    const spaceId = seed.campaign.space.id;
+    const definition = await readFile(
+      join(root, 'configs/scenario_spaces', `${spaceId}.yaml`),
+      'utf8',
+    );
+    const space = await fetch(new URL('/api/v1/spaces', browserURL), {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiToken}`, 'Content-Type': 'application/yaml' },
+      body: definition,
+      signal: AbortSignal.timeout(COMMAND_TIMEOUT_MS),
+    });
+    if (!space.ok) {
+      throw new Error(`Registering the shipped Wizard space returned ${String(space.status)}.`);
+    }
+    const registered: unknown = await space.json();
+    if (
+      !registered ||
+      typeof registered !== 'object' ||
+      !('id' in registered) ||
+      registered.id !== spaceId ||
+      !('version' in registered) ||
+      typeof registered.version !== 'string' ||
+      !registered.version
+    ) {
+      throw new Error('The Wizard space registration did not return an id and version.');
+    }
+    return { apiToken, cleanup, wizardSpaceVersion: registered.version };
   } catch (error) {
     const errors: unknown[] = [error];
     try {
@@ -151,7 +180,8 @@ export async function startE2eStack(baseURL: string) {
 export default async function globalSetup(config: FullConfig) {
   const baseURL = config.projects[0]?.use.baseURL;
   if (!baseURL) throw new Error('The Playwright project must declare a base URL.');
-  const { apiToken, cleanup } = await startE2eStack(baseURL);
+  const { apiToken, cleanup, wizardSpaceVersion } = await startE2eStack(baseURL);
   process.env['E2E_API_TOKEN'] = apiToken;
+  process.env['E2E_WIZARD_SPACE_VERSION'] = wizardSpaceVersion;
   return cleanup;
 }

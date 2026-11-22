@@ -97,7 +97,9 @@ Component tests for ConditionStrip, RiskHeatmap, RobustnessBar (rendering & a11y
 From `web/`, install Chromium and Firefox with `pnpm exec playwright install chromium firefox`.
 Run the seeded smoke in both browsers with `pnpm test:e2e smoke.spec.ts`. The harness builds
 the production images, loads the shared seed into a dedicated Compose project, and tears it down
-on completion. Browser reports and Compose logs are under `web/playwright-report/`,
+on completion. The seed retains its historical campaign, and the Wizard creates new campaigns
+using the version returned when the harness registers the shipped warehouse definition.
+Browser reports and Compose logs are under `web/playwright-report/`,
 `web/e2e-results/`, and `web/e2e-artifacts/`.
 
 ## 5. Test data & fixtures
