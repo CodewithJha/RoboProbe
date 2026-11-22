@@ -9,7 +9,8 @@ import type { FullConfig } from '@playwright/test';
 const root = resolve(import.meta.dirname, '../..');
 const reportDir = join(root, 'web/test-results');
 const run = promisify(execFile);
-const START_TIMEOUT_MS = 420_000;
+const BUILD_TIMEOUT_MS = 420_000;
+const START_TIMEOUT_MS = 180_000;
 const COMMAND_TIMEOUT_MS = 30_000;
 const OUTPUT_LIMIT = 8 * 1024 * 1024;
 const SEED_SCRIPT = [
@@ -82,10 +83,14 @@ export default async function globalSetup(config: FullConfig) {
   };
   try {
     await Promise.all([
+      rm(join(reportDir, 'compose.log'), { force: true }),
+      rm(join(reportDir, 'compose-setup-error.txt'), { force: true }),
       writeFile(databasePasswordFile, randomBytes(32).toString('hex'), { mode: 0o444 }),
       writeFile(apiTokenFile, apiToken, { mode: 0o444 }),
     ]);
-    await compose(['up', '--build', '-d', '--wait', '--wait-timeout', '150'], START_TIMEOUT_MS);
+    // The API, orchestrator and workers all use the backend image built for migrate.
+    await compose(['build', 'migrate', 'web'], BUILD_TIMEOUT_MS);
+    await compose(['up', '--no-build', '-d', '--wait', '--wait-timeout', '150'], START_TIMEOUT_MS);
     await compose([
       'run',
       '--no-deps',
