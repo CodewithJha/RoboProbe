@@ -10,7 +10,7 @@
 | `ci.yml` | push, pull_request | `lint` (ruff, mypy, import-linter, ESLint, Prettier), `test-backend` (matrix ubuntu/macos; unit, property, contract), `test-integration` (Postgres 17 service), `benchmark-smoke`, `test-web` (Vitest), `build-web`, `openapi-check`, `config-docs-check`, `license-check`, `security` (pip-audit, pnpm audit, gitleaks) | ≤ 10 min |
 | `docs.yml` | changes in `docs/**`, `*.md` | markdownlint, mermaid-cli render of every Mermaid block, lychee link check, ADR index check | ≤ 3 min |
 | `images.yml` | push to `main`, tags | build `backend`, `web`, `gazebo` images (Buildx + GHA cache), Trivy scan, push to GHCR (`:sha`, `:main`, `:vX.Y.Z`), SBOM (Syft) attached | ≤ 25 min (gazebo cached) |
-| `e2e.yml` | dashboard/API PRs, nightly 02:00 IST, manual | locally built Compose stack, seeded campaigns, Chromium/Firefox + axe | < 10 min |
+| `web-e2e.yml` | dashboard/API PRs, nightly 02:00 IST, manual | locally built Compose stack, seeded campaigns, Chromium/Firefox + axe | < 10 min |
 | `nightly-sim.yml` | nightly / manual (`workflow_dispatch`) | pull gazebo image, `pytest -m sim` with 1 worker, upload artefacts | ≤ 60 min (hosted runner CPU) |
 | `benchmark-full.yml` | weekly, manual | EXP-02 analytic + reduced EXP-01 (10 seeds) → compare with baseline JSON, comment on regression | ≤ 45 min |
 | `release.yml` | tag `v*` | verify CHANGELOG entry, build/push images, create GitHub Release with notes, report bundle | ≤ 30 min |

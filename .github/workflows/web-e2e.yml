@@ -1,11 +1,11 @@
 # Full-stack browser and accessibility smoke (T-117, docs/18 §4.10).
-name: e2e
+name: web-e2e
 
 on:
   pull_request:
     branches: [main]
     paths:
-      - .github/workflows/e2e.yml
+      - .github/workflows/web-e2e.yml
       - .github/actions/setup-web/**
       - api/**
       - backend/alembic/**
@@ -23,7 +23,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: e2e-${{ github.ref }}
+  group: web-e2e-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
