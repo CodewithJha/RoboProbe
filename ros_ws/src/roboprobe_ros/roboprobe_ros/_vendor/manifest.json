@@ -1,4 +1,8 @@
 {
+  "backends/trace_io.py": "bc389b046b86ec9f2c1dc6564b92398a9492e056fc7862f21e6af84e638e4858",
+  "core/errors.py": "89dbdc3b88652afce9d2c6c255ddfdfafa34b8c4c36d14da60bbbc56ec469a69",
+  "core/types/enums.py": "46fcc7a1cb01d44fb16dcd6f501b0bbac441e1518dafed1050a1333c660a27cf",
+  "core/types/trace.py": "66bad17ef20a5ed676327b9d45afcc78277aa5f68149d10d1ceb6ecb441e7e53",
   "geometry/__init__.py": "3826807f0fe22f569c18f37d06aca5df3e2947b0c8646296deb35d4256ff5318",
   "geometry/_arrays.py": "451d4055cca435bc5a17b0f1e891f03cdc8b34a3ef61fac4bc4f552c460eee57",
   "geometry/distance.py": "50104c62e88efc9c766a83a3a87dc35b6792fd2ed05430f1b08f2039b4a32953",

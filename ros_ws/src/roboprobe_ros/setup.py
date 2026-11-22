@@ -24,11 +24,13 @@ setup(
         ),
     ],
     install_requires=["setuptools"],
-    extras_require={"recorder": ["pyarrow>=17"]},
+    # Arrow 26 requires NumPy 2, while ROS Jazzy uses Ubuntu Noble's NumPy 1.26.
+    extras_require={"recorder": ["pyarrow>=17,<26", "pydantic>=2.7"]},
     entry_points={
         "console_scripts": [
             "cmd_delay = roboprobe_ros.cmd_delay:main",
             "episode_manager = roboprobe_ros.episode_manager:main",
+            "episode_recorder = roboprobe_ros.episode_recorder:main",
             "perception_degrader = roboprobe_ros.perception_degrader:main",
             "ground_truth_monitor = roboprobe_ros.ground_truth_node:main",
             "sensor_perturber = roboprobe_ros.sensor_perturber:main",

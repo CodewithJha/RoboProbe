@@ -34,7 +34,7 @@
 - [Tech stack](#tech-stack)
 - [Project status & roadmap](#project-status--roadmap)
 - [Documentation map](#documentation-map)
-- [Quick start (planned)](#quick-start-planned)
+- [Try the dashboard locally](#try-the-dashboard-locally)
 - [Repository structure](#repository-structure)
 - [Contributing](#contributing) · [Code of conduct](#code-of-conduct) · [Security](#security) · [License](#license)
 - [Citation](#citation) · [Acknowledgements & prior art](#acknowledgements--prior-art) · [Author](#author)
@@ -195,19 +195,23 @@ Start at [docs/00-index.md](docs/00-index.md) for reading paths and conventions.
 | ADR | [Decision records](docs/adr/README.md) | ADR-0001 … ADR-0016 |
 | — | [Templates](docs/templates/) · [RFCs](docs/rfc/README.md) · [Evidence](docs/evidence/README.md) | ADR/RFC/task/bug templates; proposals; results |
 
-## Quick start (planned)
+## Try the dashboard locally
 
-> [!NOTE]
-> Not available yet — these commands describe the intended experience once milestone **M1** lands (see [17](docs/17-dev-environment-and-docker.md)).
+Install Docker Engine with Compose v2, Git, Make, and Python 3. Then build and start
+the dashboard, authenticated API, PostgreSQL, orchestrator, and kinematic2d workers.
 
 ```bash
 git clone https://github.com/CodewithJha/RoboProbe.git && cd RoboProbe
 cp .env.example .env
-make setup        # Python 3.12 via uv, web deps via pnpm
-make up           # PostgreSQL, API, orchestrator, kinematic2d workers, dashboard
-make demo         # runs a small S-PROBE campaign
-# open http://localhost:8080
+make up PROFILES=app
+make demo PROFILES=app
 ```
+
+Open `http://127.0.0.1:8080`, enter the token from `secrets/api_token` in
+**Settings**, and open **Bench** to inspect the example warehouse campaign.
+Choose **New campaign** to run your own warehouse scenarios. Use `make down`
+when you finish. The [deployment guide](docs/29-deployment-guide.md) covers
+installation details and artifact permissions on native Linux.
 
 ### Backend development (available now)
 
