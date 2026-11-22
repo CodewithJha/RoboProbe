@@ -20,10 +20,12 @@ setup(
         ),
     ],
     install_requires=["setuptools"],
-    entry_points={"console_scripts": ["cmd_delay = roboprobe_ros.cmd_delay:main"]},
     extras_require={"recorder": ["pyarrow>=17"]},
     entry_points={
-        "console_scripts": ["sensor_perturber = roboprobe_ros.sensor_perturber:main"],
+        "console_scripts": [
+            "cmd_delay = roboprobe_ros.cmd_delay:main",
+            "sensor_perturber = roboprobe_ros.sensor_perturber:main",
+        ],
     },
     zip_safe=False,
     maintainer="CodewithJha",
