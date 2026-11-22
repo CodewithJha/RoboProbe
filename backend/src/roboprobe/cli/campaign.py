@@ -23,6 +23,7 @@ import yaml
 from roboprobe.bootstrap import build_cli_services, build_orchestrator, build_worker
 from roboprobe.bootstrap.campaigns import campaign_supported_params
 from roboprobe.bootstrap.cli import CliServices
+from roboprobe.bootstrap.worker import worker_slot_count
 from roboprobe.cli._context import get_state
 from roboprobe.cli.space import REPO_ROOT, register_space
 from roboprobe.core.clock import SystemClock
@@ -259,7 +260,7 @@ def run_inline(  # noqa: PLR0912,PLR0915 - inline supervisor wires loop, workers
             }
         )
         threads: list[threading.Thread] = []
-        for slot in range(workers):
+        for slot in range(worker_slot_count(worker_settings, workers)):
             slot_settings = worker_settings.model_copy(
                 update={
                     "worker": worker_settings.worker.model_copy(

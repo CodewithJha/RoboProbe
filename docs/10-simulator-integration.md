@@ -281,6 +281,10 @@ The backend uses `episode_done.json` and the v1 Parquet trace when the launch wr
 success. It treats launch failures, missing or invalid files, wall-clock deadlines and the shared
 startup/spawn/internal exit codes as infrastructure failures.
 
+The Gazebo worker caps the requested concurrency at `backends.gazebo_nav2.max_parallel_per_host`.
+Workers on one host use the same domain base and capacity and share the `storage.workdir_root` volume.
+The kernel releases each episode's lock on exit. Its numbered lockfile in `slots/` stays available.
+
 ## 10. Adding another simulator (Webots, MuJoCo, Isaac Sim)
 
 1. Create package `roboprobe_backend_<name>` implementing `SimulatorBackend`, producing the standard `Trace`.
