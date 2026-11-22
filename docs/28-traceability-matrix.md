@@ -9,7 +9,7 @@
 | PRD | SRS requirements | Design (docs §) | Tasks (22) | Verification (18) |
 |-----|------------------|-----------------|-----------|-------------------|
 | PR-01 Scenario space | FR-SCN-001…007 | 06 §2–5, 05 §3 | T-020…T-025 | unit/property `tests/unit/scenario`, schema fixtures |
-| PR-02 Autonomous campaigns | FR-RUN-001…006, FR-SIM-001, FR-SIM-003 | 04 §4–6, 05 §5, 10, 11 §4, 14 §2–5 | T-012, T-033, T-035, T-040…T-047, T-091, T-092, T-093a, T-096 | integration runner, chaos, backend contract, Jazzy package tests, sim map alignment |
+| PR-02 Autonomous campaigns | FR-RUN-001…006, FR-SIM-001, FR-SIM-003 | 04 §4–6, 05 §5, 10, 11 §4, 14 §2–5 | T-012, T-033, T-035, T-040…T-047, T-091, T-092, T-093a/b, T-096 | integration runner, chaos, backend contract, Jazzy package and lidar launch tests, sim map alignment |
 | PR-03 Intelligent selection | FR-SEL-002/003/005/006/007/008 | 07 §4–6 | T-055…T-061 | strategy contract, benchmark gates 18 §4.4, EXP-01 |
 | PR-04 Baselines | FR-SEL-001 | 07 §3 | T-050, T-051 | strategy contract, design tests |
 | PR-05 Failure detection | FR-ORC-001…006 | 08 | T-036…T-039 | golden traces, invariants |
