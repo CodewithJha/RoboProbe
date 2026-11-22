@@ -4,12 +4,16 @@
 !backend/pyproject.toml
 !backend/uv.lock
 !backend/src/
+!backend/alembic.ini
+!backend/alembic/
 !schemas/
 !configs/
 !tasks/
 !plugins/
 !web/
 !docker/web/
+**/node_modules/
+web/dist/
 **/__pycache__/
 **/*.py[cod]
 **/.DS_Store
