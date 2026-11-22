@@ -83,7 +83,7 @@ services:
   worker-k2d:
     <<: *backend
     profiles: [core, app]
-    command: ["worker", "--backend", "kinematic2d"]
+    command: ["worker", "--backend", "kinematic2d", "--health"]
     deploy:
       replicas: ${ROBOPROBE_K2D_REPLICAS:-2}
     healthcheck:

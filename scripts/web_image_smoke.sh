@@ -11,7 +11,14 @@ cleanup() {
     local result=$?
     if (( result != 0 )); then
         "${compose[@]}" ps -a >&2 || true
-        "${compose[@]}" logs --tail 50 >&2 || true
+        "${compose[@]}" logs --tail 50 2>&1 | python3 -c '
+from pathlib import Path
+import sys
+
+log = sys.stdin.read()
+token = Path(sys.argv[1])
+print(log.replace(token.read_text(), "[redacted]") if token.is_file() else log, end="")
+' "$scratch/api_token" >&2 || true
     fi
     "${compose[@]}" down -v --remove-orphans >/dev/null 2>&1 || true
     rm -rf "$scratch"
@@ -25,7 +32,7 @@ from pathlib import Path
 
 for name in ("db_password", "api_token"):
     path = Path(sys.argv[1]) / name
-    path.write_text(secrets.token_urlsafe(32) + "\n", encoding="utf-8")
+    path.write_text(secrets.token_urlsafe(32), encoding="utf-8")
     path.chmod(0o644)  # The project directory is private and container users read the files.
 PY
 export ROBOPROBE_API_TOKEN_FILE="$scratch/api_token"
@@ -115,4 +122,15 @@ grep -Eiq '^X-Accel-Buffering: no' "$scratch/sse.headers"
 grep -q '^: ping' "$scratch/events"
 
 WEB_SMOKE_URL="$base" WEB_SMOKE_TOKEN_FILE="$scratch/api_token" node web/scripts/check-production-csp.mjs
+
+# EventSource sends its bearer in the query. Even an upstream outage must keep it out of logs.
+"${compose[@]}" stop --timeout 1 api
+status="$(curl --silent --show-error --max-time 5 --get --data-urlencode "token@$scratch/api_token" \
+    -o /dev/null -w '%{http_code}' "$base/api/v1/events")"
+[[ "$status" == 502 ]]
+"${compose[@]}" logs web api >"$scratch/proxy.log" 2>&1
+if grep -Fq -f "$scratch/api_token" "$scratch/proxy.log"; then
+    echo 'The event stream credential appeared in the proxy or API logs.' >&2
+    exit 1
+fi
 echo 'Production web smoke passed (read-only, runtime config, security headers, gzip, SPA and real SSE).'

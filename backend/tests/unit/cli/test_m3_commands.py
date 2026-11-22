@@ -407,9 +407,13 @@ def test_orchestrator_service(monkeypatch: pytest.MonkeyPatch, settings_env: Pat
     assert result.exit_code == ExitCode.OK
 
 
-def test_worker_service(monkeypatch: pytest.MonkeyPatch, settings_env: Path) -> None:
+@pytest.mark.parametrize("health_enabled", [False, True])
+def test_worker_service(
+    monkeypatch: pytest.MonkeyPatch, settings_env: Path, health_enabled: bool
+) -> None:
     calls: list[str] = []
     health_ports: list[int] = []
+    listen: list[bool] = []
 
     class _Worker:
         def serve_forever(self, stop: object) -> None:
@@ -424,8 +428,9 @@ def test_worker_service(monkeypatch: pytest.MonkeyPatch, settings_env: Path) -> 
         def register(self) -> None:
             calls.append("register")
 
-        def start(self) -> None:
+        def start(self, *, serve_probe: bool) -> None:
             calls.append("start")
+            listen.append(serve_probe)
 
         def stop(self) -> None:
             calls.append("stop")
@@ -442,12 +447,12 @@ def test_worker_service(monkeypatch: pytest.MonkeyPatch, settings_env: Path) -> 
         ),
     )
     monkeypatch.setattr("roboprobe.cli.services.HeartbeatService", _Heartbeat)
-    result = runner.invoke(
-        app, ["--json", "worker", "--backend", "kinematic2d", "--concurrency", "2"]
-    )
+    args = ["--json", "worker", "--backend", "kinematic2d", "--concurrency", "2"]
+    result = runner.invoke(app, [*args, "--health"] if health_enabled else args)
     assert result.exit_code == ExitCode.OK, result.output
     assert calls == ["register", "start", "register", "start", "stop", "stop", "close"]
     assert health_ports[1] == health_ports[0] + 1
+    assert listen == [health_enabled, health_enabled]
 
 
 def test_api_service_starts(monkeypatch: pytest.MonkeyPatch, settings_env: Path) -> None:

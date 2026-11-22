@@ -55,6 +55,9 @@ pnpm --dir web dev                           # Vite dev server on :5173, proxies
 Volumes: `pgdata` (named), `./data/artifacts` (bind, shared by api/orchestrator/workers), `./data/workdirs` (bind, Gazebo scratch).
 Health checks use `pg_isready` for Postgres, authenticated `GET /health/ready` for the API,
 and internal `/healthz` for workers (heartbeat age). Compose stores temporary backend workdirs in `/tmp/roboprobe-workdirs`.
+For a worker started directly on the host, pass `roboprobe worker --backend kinematic2d --health`
+to expose its probe. Set `ROBOPROBE_WORKER__HEALTH_PORT` for that process if an orchestrator or
+another worker already uses the default port.
 Make targets (T-005b): `make up` (builds the backend image unless `UP_FLAGS=` is given, starts `PROFILES`, default `core`, and fails if the
 one-shot `migrate` job fails), `make down` (removes containers and network, keeps `pgdata`), `make db-up`, `make logs`, `make ps`.
 Postgres is reachable from the host only with the `dev` profile (`PROFILES=dev` or `PROFILES="core dev"`): a loopback-bound TCP forwarder
@@ -105,7 +108,7 @@ services:
   worker-k2d:
     <<: *backend
     profiles: [core]
-    command: ["worker", "--backend", "kinematic2d"]
+    command: ["worker", "--backend", "kinematic2d", "--health"]
     deploy: {replicas: ${ROBOPROBE_K2D_REPLICAS:-2}}
     depends_on: {migrate: {condition: service_completed_successfully}}
   worker-gazebo:

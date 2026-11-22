@@ -78,6 +78,9 @@ def worker_cmd(
     space_id: Annotated[
         str, typer.Option("--space", help="Scenario space whose task the worker judges.")
     ] = "warehouse_v1",
+    health: Annotated[
+        bool, typer.Option("--health", help="Serve the worker health endpoint.")
+    ] = False,
 ) -> None:
     """Run one or more worker slots for ``backend``."""
     if ctx.invoked_subcommand is not None:
@@ -121,7 +124,7 @@ def worker_cmd(
             )
             heartbeats.append(heartbeat)
             heartbeat.register()
-            heartbeat.start()
+            heartbeat.start(serve_probe=health)
             threads.append(
                 threading.Thread(
                     target=worker.serve_forever,
