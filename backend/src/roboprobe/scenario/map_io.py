@@ -177,9 +177,7 @@ def occupancy_iou(left: OccupancyGrid, right: OccupancyGrid) -> OccupancyIoU:
     rows = max(1, int(np.ceil((y1 - y0) / resolution)))
     origin = (x0, y0)
     left_mask = align_occupancy(left, resolution=resolution, origin=origin, rows=rows, cols=cols)
-    right_mask = align_occupancy(
-        right, resolution=resolution, origin=origin, rows=rows, cols=cols
-    )
+    right_mask = align_occupancy(right, resolution=resolution, origin=origin, rows=rows, cols=cols)
     inter = int(np.logical_and(left_mask, right_mask).sum())
     union = int(np.logical_or(left_mask, right_mask).sum())
     samples = left_mask.size
