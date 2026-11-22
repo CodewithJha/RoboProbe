@@ -1,14 +1,40 @@
 #!/usr/bin/env bash
 set -e
 
-install -d "$GZ_FUEL_CACHE_PATH"
+cache=${GZ_FUEL_CACHE_PATH:?}
+staging=
+cleanup() {
+  if [[ -n "$staging" ]]; then
+    rm -rf -- "$staging"
+    staging=
+  fi
+}
+trap cleanup EXIT
+
+mkdir -p "$cache"
 while IFS='|' read -r owner model version; do
   case "$owner" in ''|\#*) continue ;; esac
-  model_config="$GZ_FUEL_CACHE_PATH/fuel.gazebosim.org/$owner/models/$model/$version/model.config"
-  if [[ -f "$model_config" ]]; then
+  model_path="fuel.gazebosim.org/$owner/models/$model/$version"
+  destination="$cache/$model_path"
+  if [[ -f "$destination/model.config" ]]; then
     continue
   fi
-  url="https://fuel.gazebosim.org/1.0/$owner/models/${model// /%20}/$version"
-  gz fuel download -u "$url"
-  test -f "$model_config"
+  printf 'Caching %s/%s version %s\n' "$owner" "$model" "$version"
+  url="https://fuel.gazebosim.org/1.0/$owner/models/$model/$version"
+  for attempt in 1 2 3; do
+    staging=$(mktemp -d "$cache/.fuel-download.XXXXXX")
+    if GZ_FUEL_CACHE_PATH="$staging" gz fuel download -u "$url" </dev/null \
+      && [[ -f "$staging/$model_path/model.config" ]]; then
+      mkdir -p "$(dirname "$destination")"
+      mv -nT -- "$staging/$model_path" "$destination"
+      cleanup
+      break
+    fi
+    cleanup
+    sleep "$attempt"
+  done
+  if [[ ! -f "$destination/model.config" ]]; then
+    printf 'Failed to cache %s/%s version %s\n' "$owner" "$model" "$version" >&2
+    exit 1
+  fi
 done < "$1"
