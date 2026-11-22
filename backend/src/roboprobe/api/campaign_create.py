@@ -13,7 +13,7 @@ import numpy as np
 import yaml
 
 from roboprobe.api._store import new_uuid, records
-from roboprobe.api.schemas import CampaignCreate
+from roboprobe.api.schemas import CampaignCreate, SpaceRef
 from roboprobe.bootstrap.campaigns import campaign_supported_params
 from roboprobe.core.errors import NotFoundError, ValidationError
 from roboprobe.core.seeding import random_campaign_seed
@@ -28,16 +28,17 @@ from roboprobe.scenario.sut_profile import load_sut_profile
 from roboprobe.selection.base import StrategyContext
 from roboprobe.selection.registry import create as create_strategy
 
-__all__ = ["create_campaign"]
+__all__ = ["create_campaign", "resolve_campaign_space"]
 
 
-def create_campaign(
+def create_campaign(  # noqa: PLR0913 - independent campaign placement and ports
     body: CampaignCreate,
     *,
     uow: Any,
     settings: RoboProbeSettings,
     campaigns: CampaignService,
     space_root: Path | None = None,
+    experiment_cell: tuple[UUID, int] | None = None,
 ) -> UUID:
     """Stage validated creation and optional start in the caller-owned transaction."""
     root = discover_repo_root() if space_root is None else space_root
@@ -48,21 +49,7 @@ def create_campaign(
         msg = f"batch_size must be in 1..{settings.runner.max_batch_size}"
         raise ValidationError(msg, context={"batch_size": body.batch_size})
     space_id = body.space.id
-    existing = uow.spaces.get(space_id, body.space.version) if body.space.version else None
-    if existing is not None:
-        space = ScenarioSpace.from_text(
-            yaml.safe_dump(existing.definition), source="registered space", base_dir=root
-        )
-    else:
-        space_yaml = _config_path(root, "scenario_spaces", space_id)
-        if not space_yaml.is_file():
-            msg = f"scenario space not found for {space_id!r}"
-            raise NotFoundError(msg, context={"space_id": space_id})
-        space = ScenarioSpace.from_yaml(space_yaml, base_dir=root)
-        if body.space.version is not None and body.space.version != space.version:
-            msg = "registered space version not found"
-            raise NotFoundError(msg, context={"space_id": space_id})
-        _ensure_space_row(uow, space, space_yaml)
+    space = resolve_campaign_space(body.space, uow=uow, root=root)
     body = CampaignFactory(settings).prepare(
         body, space=space, supported_params=campaign_supported_params(body.backend, settings)
     )
@@ -108,12 +95,35 @@ def create_campaign(
             oracle_config=dict(body.oracle_overrides),
             stop_rules=dict(body.stop_rules),
             status=CampaignStatus.CREATED,
+            experiment_id=None if experiment_cell is None else experiment_cell[0],
+            experiment_rep=None if experiment_cell is None else experiment_cell[1],
             tags=tuple(body.tags),
         )
     )
     if body.start:
         campaigns.start_in_uow(cid, uow)
     return UUID(str(cid))
+
+
+def resolve_campaign_space(ref: SpaceRef, *, uow: Any, root: Path) -> ScenarioSpace:
+    """Resolve or register the same versioned space used by campaign creation."""
+    space_id = ref.id
+    existing = uow.spaces.get(space_id, ref.version) if ref.version else None
+    if existing is not None:
+        space = ScenarioSpace.from_text(
+            yaml.safe_dump(existing.definition), source="registered space", base_dir=root
+        )
+    else:
+        space_yaml = _config_path(root, "scenario_spaces", space_id)
+        if not space_yaml.is_file():
+            msg = f"scenario space not found for {space_id!r}"
+            raise NotFoundError(msg, context={"space_id": space_id})
+        space = ScenarioSpace.from_yaml(space_yaml, base_dir=root)
+        if ref.version is not None and ref.version != space.version:
+            msg = "registered space version not found"
+            raise NotFoundError(msg, context={"space_id": space_id})
+        _ensure_space_row(uow, space, space_yaml)
+    return space
 
 
 def _ensure_space_row(uow: Any, space: ScenarioSpace, path: Path) -> None:

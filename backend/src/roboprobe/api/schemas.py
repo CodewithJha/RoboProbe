@@ -268,6 +268,7 @@ class ExperimentCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     design: dict[str, JsonValue]
+    start: bool = False
 
 
 class ExperimentNotes(BaseModel):

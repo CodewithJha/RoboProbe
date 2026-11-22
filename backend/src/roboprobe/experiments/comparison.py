@@ -19,14 +19,29 @@ __all__ = ["ComparisonRuns", "ExperimentSnapshot", "read_campaign_runs", "resolv
 
 
 class _Run(Protocol):
-    id: UUID
-    ordinal: int
-    repeat_index: int
-    verdict: object
-    metrics: Mapping[str, JsonValue] | None
-    x_unit: Sequence[float] | None
-    phase: object
-    tags: Sequence[object] | None
+    @property
+    def id(self) -> UUID: ...
+
+    @property
+    def ordinal(self) -> int: ...
+
+    @property
+    def repeat_index(self) -> int: ...
+
+    @property
+    def verdict(self) -> object: ...
+
+    @property
+    def metrics(self) -> Mapping[str, JsonValue] | None: ...
+
+    @property
+    def x_unit(self) -> Sequence[float] | None: ...
+
+    @property
+    def phase(self) -> object: ...
+
+    @property
+    def tags(self) -> Sequence[object] | None: ...
 
 
 class _Page(Protocol):

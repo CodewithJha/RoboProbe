@@ -167,6 +167,13 @@ Validation: space exists; backend registered and supports all enabled, unpinned 
 
 ### 3.5 `ExperimentComparison`
 
+`POST /api/v1/experiments` registers a design by default. Include `start: true` to validate
+and create the full strategy-by-seed campaign matrix in one transaction and submit the
+experiment to the runner after commit. The orchestrator and backend workers process the
+cells. Experiment detail includes the planned campaigns and completed-cell progress.
+The API bounds submissions by `api.experiment_max_cells` and executes experiment jobs
+with `api.experiment_workers`.
+
 ```json
 {"experiment_id": "…", "metrics": ["MET-01", "MET-02", "MET-03"],
  "strategies": {"S-PROBE": {"MET-03": {"median": 18, "iqr": [12, 27], "ci95": [14, 22]}},

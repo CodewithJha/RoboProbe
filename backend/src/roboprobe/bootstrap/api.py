@@ -20,6 +20,7 @@ from sqlalchemy.engine import Engine
 
 from roboprobe.backends.registry import ENTRY_POINT_GROUP, get_backend
 from roboprobe.bootstrap._infra import Infrastructure, UowFactory, build_infrastructure
+from roboprobe.bootstrap.experiments import ExperimentJobs
 from roboprobe.bootstrap.idempotency import SqlAlchemyIdempotencyStore
 from roboprobe.bootstrap.report_jobs import SqlReportJobs
 from roboprobe.core.clock import SystemClock
@@ -51,6 +52,7 @@ class ApiServices:
     campaigns: CampaignService
     analysis: AnalysisJobRunner
     report_jobs: ReportJobStore
+    experiment_jobs: ExperimentJobs
     space_root: Path
     idempotency: object | None = None
     confirmations: ConfirmationService | None = None
@@ -73,6 +75,7 @@ class ApiServices:
 
     def close(self) -> None:
         """Dispose pooled DB connections and background pools."""
+        self.experiment_jobs.close()
         self.analysis._executor.shutdown(wait=False, cancel_futures=True)
         self.report_jobs._executor.shutdown(wait=False, cancel_futures=True)
         self.infra.close()
@@ -118,6 +121,7 @@ def build_api(settings: RoboProbeSettings) -> ApiServices:
             ThreadPoolExecutor(max_workers=settings.api.report_workers),
             persistence=SqlReportJobs(session_factory(infra.engine)),
         ),
+        experiment_jobs=ExperimentJobs(infra.uow_factory, settings, campaigns),
         space_root=root,
         idempotency=SqlAlchemyIdempotencyStore(session_factory(infra.engine)),
         confirmations=ConfirmationService(

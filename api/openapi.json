@@ -493,6 +493,11 @@
             },
             "title": "Design",
             "type": "object"
+          },
+          "start": {
+            "default": false,
+            "title": "Start",
+            "type": "boolean"
           }
         },
         "required": [

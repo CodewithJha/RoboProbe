@@ -60,11 +60,12 @@ from roboprobe.analysis import pipeline as analysis_pipeline
 from roboprobe.analysis.base import AnalysisKind
 from roboprobe.analysis.ports import AnalysisArtifactStore, AnalysisUnitOfWork
 from roboprobe.bootstrap import build_cli_services
-from roboprobe.bootstrap._infra import build_infrastructure
+from roboprobe.bootstrap._infra import UowFactory, build_infrastructure
+from roboprobe.bootstrap.experiments import SqlExperimentWriter
 from roboprobe.cli import experiment as experiment_module
 from roboprobe.cli.campaign import _ensure_sut, create_campaign_from_config, run_inline
 from roboprobe.cli.db import upgrade_head
-from roboprobe.cli.experiment import _resolve_key, _UowWriter
+from roboprobe.cli.experiment import _resolve_key
 from roboprobe.cli.space import register_space
 from roboprobe.core.clock import FakeClock, SystemClock
 from roboprobe.core.errors import ModelFitError
@@ -77,7 +78,6 @@ from roboprobe.risk import RiskMapper, VolumeEstimator, robustness_score
 from roboprobe.risk.mapper import RiskSlice
 from roboprobe.runner import worker as worker_module
 from roboprobe.runner.manifest import ManifestBuilder
-from roboprobe.runner.ports import UowFactory
 from roboprobe.scenario.repo_root import discover_repo_root
 from roboprobe.scenario.space import ScenarioSpace
 from roboprobe.scenario.sut_profile import load_sut_profile
@@ -450,8 +450,8 @@ class LargeSeedResult(TypedDict):
     seconds: float
 
 
-class _FixtureExperimentWriter(_UowWriter):
-    """``_UowWriter`` variant for fixture generation.
+class _FixtureExperimentWriter(SqlExperimentWriter):
+    """``SqlExperimentWriter`` variant for fixture generation.
 
     * injects ``schema_version`` into the stored design (the comparison route
       validates ``ExperimentDesign`` from it), and
@@ -460,7 +460,7 @@ class _FixtureExperimentWriter(_UowWriter):
     """
 
     def __init__(self, make_uow: UowFactory, requested_seed: int) -> None:
-        super().__init__(make_uow, SystemClock())
+        super().__init__(make_uow)
         self._requested_seed = requested_seed
 
     @override
@@ -507,7 +507,7 @@ def _run_small_experiment(
     services = build_cli_services(settings)
     _ensure_sut(services, "k2d_default", "kinematic2d")
     clock = FakeClock(_FIXED_TIMESTAMP)
-    writer = _FixtureExperimentWriter(cast(UowFactory, services.make_uow), seed)
+    writer = _FixtureExperimentWriter(services.make_uow, seed)
 
     def drive(campaign_id: UUID) -> CampaignStatus:
         services.campaigns.start(campaign_id)

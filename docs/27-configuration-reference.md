@@ -117,6 +117,8 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `api.trace_default_hz` | float | `10.0` | `ROBOPROBE_API__TRACE_DEFAULT_HZ` | Default JSON trace sampling target [Hz]. |
 | `api.trace_max_hz` | float | `50.0` | `ROBOPROBE_API__TRACE_MAX_HZ` | Maximum JSON trace sampling target [Hz]. |
 | `api.report_workers` | int | `1` | `ROBOPROBE_API__REPORT_WORKERS` | Concurrent API report/export jobs. |
+| `api.experiment_workers` | int | `1` | `ROBOPROBE_API__EXPERIMENT_WORKERS` | Concurrent API experiment jobs. |
+| `api.experiment_max_cells` | int | `128` | `ROBOPROBE_API__EXPERIMENT_MAX_CELLS` | Maximum planned strategy/seed cells per API experiment. |
 | `api.slice_cache_size` | int | `32` | `ROBOPROBE_API__SLICE_CACHE_SIZE` | Cached risk slices per API process. |
 | `api.slice_timeout_s` | float | `30.0` | `ROBOPROBE_API__SLICE_TIMEOUT_S` | Risk slice computation timeout [s]. |
 | `api.max_upload_mb` | int | `10` | `ROBOPROBE_API__MAX_UPLOAD_MB` | Maximum request body size [MB]. |

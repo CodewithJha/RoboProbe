@@ -12,6 +12,7 @@ from typing import Any, Protocol, cast
 
 from fastapi import Request
 
+from roboprobe.bootstrap.experiments import ExperimentJobs
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.runner.lifecycle import CampaignService
 
@@ -54,6 +55,7 @@ class ServicesProto(Protocol):
     campaigns: CampaignService
     analysis: Any
     report_jobs: Any
+    experiment_jobs: ExperimentJobs
     space_root: Path
 
     def close(self) -> None:

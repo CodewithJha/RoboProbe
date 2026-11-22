@@ -13,9 +13,10 @@ import yaml
 from tests.fakes.store import InMemoryUnitOfWork
 from typer.testing import CliRunner
 
-from roboprobe.cli.experiment import _resolve_key, _UowWriter
+from roboprobe.bootstrap.experiments import SqlExperimentWriter
+from roboprobe.cli.experiment import _resolve_key
 from roboprobe.cli.main import ExitCode, app
-from roboprobe.core.clock import FakeClock, SystemClock
+from roboprobe.core.clock import FakeClock
 from roboprobe.core.settings.experiments import ExperimentSettings
 from roboprobe.core.types import CampaignStatus, RunStatus, Verdict
 from roboprobe.experiments.planner import ComparabilityKey, ExperimentDesign
@@ -89,7 +90,7 @@ def _drive(uow: InMemoryUnitOfWork, campaign_id: UUID) -> CampaignStatus:
 
 def test_uow_writer_runs_experiment_end_to_end_and_reports() -> None:
     uow = InMemoryUnitOfWork()
-    writer = _UowWriter(lambda: uow, SystemClock())
+    writer = SqlExperimentWriter(lambda: uow)
     clock = FakeClock(start=datetime(2024, 1, 1, tzinfo=UTC))
     runner = ExperimentRunner(writer, SETTINGS, clock, lambda c: _drive(uow, c), new_uuid=uuid4)
     eid, comparison = runner.start(_design(), KEY)
@@ -189,7 +190,7 @@ def test_bundle_cli_export_then_import_skip(
     monkeypatch: pytest.MonkeyPatch, settings_env: Path, tmp_path: Path
 ) -> None:
     uow = InMemoryUnitOfWork()
-    writer = _UowWriter(lambda: uow, SystemClock())
+    writer = SqlExperimentWriter(lambda: uow)
     clock = FakeClock(start=datetime(2024, 1, 1, tzinfo=UTC))
     runner = ExperimentRunner(writer, SETTINGS, clock, lambda c: _drive(uow, c), new_uuid=uuid4)
     eid, _ = runner.start(_design(), KEY)

@@ -913,6 +913,11 @@ export interface components {
       design: {
         [key: string]: components['schemas']['JsonValue'];
       };
+      /**
+       * Start
+       * @default false
+       */
+      start: boolean;
     };
     /**
      * ExperimentNotes
