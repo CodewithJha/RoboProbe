@@ -197,6 +197,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Changed
 
+- Risk atlas off-axis controls now query and update the share URL after edits settle (T-111b).
 - `.env.example` and `roboprobe.example.toml` now list every setting (commented out, with defaults and
   descriptions) instead of a hand-picked subset.
 - Docs: fixed Markdown that rendered incorrectly (paragraphs swallowed into tables, unescaped `|` in table code spans,

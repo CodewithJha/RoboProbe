@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import {
   useCampaign,
   useManualRuns,
@@ -12,6 +12,7 @@ import {
   type SliceQuery,
 } from '../../api/hooks';
 import { RiskHeatmap } from '../../components/RiskHeatmap/RiskHeatmap';
+import { atlasConfig } from './atlasConfig';
 import styles from './AtlasPage.module.css';
 
 const REGIONS = ['safe', 'uncertain', 'failure'] as const;
@@ -42,13 +43,27 @@ function parameters(value: unknown, pins: Record<string, unknown>) {
   });
 }
 
-function parseOverrides(value: string | null) {
+type AnchorValue = number | string;
+type AnchorOverrides = Record<string, AnchorValue>;
+
+function parseOverrides(value: string | null): AnchorOverrides {
   if (!value) return {};
   try {
-    return record(JSON.parse(value));
+    return Object.fromEntries(
+      Object.entries(record(JSON.parse(value))).filter(
+        (entry): entry is [string, AnchorValue] =>
+          typeof entry[1] === 'number' || typeof entry[1] === 'string',
+      ),
+    );
   } catch {
     return {};
   }
+}
+
+function sliceSearch(x: string, y: string, anchor: string, values: string | null) {
+  const next = new URLSearchParams({ x, y, anchor });
+  if (values !== null) next.set('anchor_values', values);
+  return next;
 }
 
 function Preview({ campaign, query }: { campaign: string; query: SliceQuery }) {
@@ -64,6 +79,7 @@ function AnchorSlider({
   high,
   integral,
   value,
+  onChange,
 }: {
   id: string;
   title: string;
@@ -71,8 +87,8 @@ function AnchorSlider({
   high: number;
   integral: boolean;
   value: number;
+  onChange: (value: number) => void;
 }) {
-  const [draft, setDraft] = useState(value);
   return (
     <label>
       {title}{' '}
@@ -83,12 +99,12 @@ function AnchorSlider({
         min={low}
         max={high}
         step={integral ? 1 : 'any'}
-        value={draft}
+        value={value}
         onChange={(event) => {
-          setDraft(event.target.valueAsNumber);
+          onChange(event.target.valueAsNumber);
         }}
       />
-      <output>{draft}</output>
+      <output>{value}</output>
     </label>
   );
 }
@@ -154,18 +170,37 @@ export function Component() {
     numerical.slice(i + 1).map((right) => ({ left, right })),
   );
   const [search, setSearch] = useSearchParams();
+  const location = useLocation();
   const active =
     pairs.find(({ left, right }) => left.id === search.get('x') && right.id === search.get('y')) ??
     pairs[0];
   const anchor = search.get('anchor') ?? 'nominal';
   const encoded = search.get('anchor_values');
   const applied = parseOverrides(encoded);
+  const x = active?.left.id ?? '';
+  const y = active?.right.id ?? '';
+  const [draft, setDraft] = useState<{ locationKey: string; overrides: AnchorOverrides }>();
+  // Discard edits when moving to another URL, even if Back later restores this location key.
+  if (draft && draft.locationKey !== location.key) setDraft(undefined);
+  const localDraft = draft?.locationKey === location.key ? draft.overrides : undefined;
+  const nextEncoded =
+    localDraft && Object.keys(localDraft).length > 0 ? JSON.stringify(localDraft) : null;
+  const pending = localDraft !== undefined && nextEncoded !== encoded;
+  useEffect(() => {
+    if (!pending) return;
+    const timer = window.setTimeout(() => {
+      setSearch(sliceSearch(x, y, anchor, nextEncoded), { replace: true });
+    }, atlasConfig.anchorDebounceMs);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [anchor, nextEncoded, pending, setSearch, x, y]);
   const dimensions = free.filter(({ id }) => id !== active?.left.id && id !== active?.right.id);
   const { data: meta } = useMeta();
   const resolution = record(meta?.['defaults'])['risk_slice_resolution'];
   const query: SliceQuery = {
-    x: active?.left.id ?? '',
-    y: active?.right.id ?? '',
+    x,
+    y,
     anchor,
     ...(typeof resolution === 'number' ? { resolution } : {}),
     ...(encoded ? { anchor_values: encoded } : {}),
@@ -179,14 +214,19 @@ export function Component() {
   const [selection, setSelection] = useState<{ x: number; y: number; key: string }>();
   const [queued, setQueued] = useState(false);
   const key = JSON.stringify(query);
-  const probe = selection?.key === key ? selection : undefined;
+  const probe = !pending && selection?.key === key ? selection : undefined;
   const values = record(medoid.data?.scenario['values']);
   const anchorReady = anchor === 'nominal' || Boolean(medoid.data);
   const base = Object.fromEntries(dimensions.map(({ id, nominal }) => [id, values[id] ?? nominal]));
-  function setOverrides(overrides: Record<string, number | string>) {
-    const next = new URLSearchParams({ x: query.x, y: query.y, anchor });
-    if (Object.keys(overrides).length > 0) next.set('anchor_values', JSON.stringify(overrides));
-    setSearch(next);
+  function changeOverride(name: string, value: AnchorValue) {
+    setDraft((previous) => {
+      const existing = previous?.locationKey === location.key ? previous.overrides : applied;
+      const overrides =
+        value === base[name]
+          ? Object.fromEntries(Object.entries(existing).filter(([id]) => id !== name))
+          : { ...existing, [name]: value };
+      return { locationKey: location.key, overrides };
+    });
   }
 
   return (
@@ -276,71 +316,66 @@ export function Component() {
               </select>
             </label>
             {anchorReady && dimensions.length > 0 && (
-              <form
-                key={key}
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  const entries = new FormData(event.currentTarget);
-                  const overrides = Object.fromEntries(
-                    dimensions.flatMap(({ id, categorical }) => {
-                      const input = entries.get(id);
-                      if (typeof input !== 'string' || input === String(base[id])) return [];
-                      return [[id, categorical ? input : Number(input)]];
-                    }),
-                  );
-                  setOverrides(overrides);
-                }}
-              >
-                <fieldset className={styles['anchors']}>
-                  <legend>Off-axis parameters</legend>
-                  {dimensions.map(({ id, title, low, high, integral, choices }) => {
-                    const value = applied[id] ?? base[id];
-                    if (Array.isArray(choices) && typeof value === 'string') {
-                      return (
-                        <label key={id}>
-                          {title}{' '}
-                          <select name={id} defaultValue={value}>
-                            {choices
-                              .filter((item): item is string => typeof item === 'string')
-                              .map((item) => (
-                                <option key={item}>{item}</option>
-                              ))}
-                          </select>
-                        </label>
-                      );
-                    }
-                    if (
-                      typeof low !== 'number' ||
-                      typeof high !== 'number' ||
-                      typeof value !== 'number'
-                    ) {
-                      return null;
-                    }
+              <fieldset className={styles['anchors']}>
+                <legend>Off-axis parameters</legend>
+                {dimensions.map(({ id, title, low, high, integral, choices }) => {
+                  const value = (localDraft ?? applied)[id] ?? base[id];
+                  if (Array.isArray(choices) && typeof value === 'string') {
                     return (
-                      <AnchorSlider
-                        key={id}
-                        id={id}
-                        title={title}
-                        low={low}
-                        high={high}
-                        integral={integral}
-                        value={value}
-                      />
+                      <label key={id}>
+                        {title}{' '}
+                        <select
+                          name={id}
+                          value={value}
+                          onChange={(event) => {
+                            changeOverride(id, event.target.value);
+                          }}
+                        >
+                          {choices
+                            .filter((item): item is string => typeof item === 'string')
+                            .map((item) => (
+                              <option key={item}>{item}</option>
+                            ))}
+                        </select>
+                      </label>
                     );
-                  })}
-                  <button type="submit">Apply values</button>
-                  {encoded && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setOverrides({});
+                  }
+                  if (
+                    typeof low !== 'number' ||
+                    typeof high !== 'number' ||
+                    typeof value !== 'number'
+                  ) {
+                    return null;
+                  }
+                  return (
+                    <AnchorSlider
+                      key={id}
+                      id={id}
+                      title={title}
+                      low={low}
+                      high={high}
+                      integral={integral}
+                      value={value}
+                      onChange={(next) => {
+                        changeOverride(id, next);
                       }}
-                    >
-                      Reset values
-                    </button>
-                  )}
-                </fieldset>
-              </form>
+                    />
+                  );
+                })}
+                {(encoded !== null || pending) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDraft(undefined);
+                      if (encoded !== null) {
+                        setSearch(sliceSearch(x, y, anchor, null), { replace: true });
+                      }
+                    }}
+                  >
+                    Reset values
+                  </button>
+                )}
+              </fieldset>
             )}
             {slice.isPending && <p role="status">Loading risk slice…</p>}
             {slice.isError && <p role="alert">{slice.error.message}</p>}

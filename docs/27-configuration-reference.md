@@ -351,6 +351,9 @@ Build/dev-time variables (Vite, `web/.env.example`; read in `web/vite.config.ts`
 | `VITE_API_BASE_URL` | `/api/v1` | baked into the bundle; overridden at runtime by `config.json` `apiBaseUrl` |
 | `VITE_API_PROXY_TARGET` | `http://127.0.0.1:8000` | `pnpm --dir web dev` only: origin that `/api/*` requests are proxied to |
 
+Risk atlas timing is set by the typed `atlasConfig` in `web/src/features/atlas/atlasConfig.ts`.
+`anchorDebounceMs` defaults to 250 ms between the last off-axis edit and the slice query and URL update.
+
 ### 4.13 Compose-level variables (`.env`)
 
 `ROBOPROBE_IMAGE_TAG` (dev), `ROBOPROBE_API_PORT` (8000), `ROBOPROBE_WEB_PORT` (8080), `ROBOPROBE_DB_NAME`/`ROBOPROBE_DB_USER` (roboprobe), `ROBOPROBE_DB_PORT` (5432; published on `127.0.0.1` only with the `dev` profile), `ROBOPROBE_K2D_REPLICAS` (2), `ROBOPROBE_GRAFANA_PORT` (3000), `ROBOPROBE_PROMETHEUS_PORT` (9090), `ROBOPROBE_JAEGER_PORT` (16686). Grafana, Prometheus and Jaeger are published on `127.0.0.1` only with the `observability` profile.
