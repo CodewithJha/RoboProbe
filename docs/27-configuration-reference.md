@@ -381,11 +381,17 @@ also fails if a configured group lacks samples or reports failed requests.
 
 ### 4.15 Gazebo episode ROS parameters
 
+The worker materializes `episode.yaml` with `start` and `goal` mappings containing
+`x` and `y` in metres and `yaw` in radians. The navigation budget is `time_limit_s`
+in simulation seconds. Multiplying it by `wall_timeout_factor` gives the wall-clock
+safety limit. `startup_timeout_s` and `spawn_tolerance_m` carry the typed settings into ROS.
+
 | ROS parameter | Default | Use |
 |---------------|---------|-----|
 | `topics_file` | Installed `roboprobe_ros/config/topics.yaml` | Logical names and QoS profiles for the node's topics |
 | `perturb_file` | Empty | YAML parameters written into the episode working directory |
 | `seed` | `0` | Initial PCG64 state for the node's random stream |
+| `episode_file` | Required by `episode_manager` | Path to the materialized `episode.yaml` |
 
 The lidar node reads a nonnegative episode `seed` from the `perturb_file`.
 `lidar.sigma_m` is the finite, nonnegative Gaussian standard deviation in metres.
