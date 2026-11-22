@@ -25,6 +25,19 @@ hashes also matched. Pilot MET-06 was **1.0**.
 The [full EXP-01 design](../../configs/experiments/exp01_k2d_main.yaml) uses
 30 seeds. Its S-PROBE mode inventory and release verdict are pending. [Issue #209](https://github.com/CodewithJha/RoboProbe/issues/209)
 
+## First five completed EXP-01 campaigns
+
+An isolated PostgreSQL snapshot captured five completed S-PROBE campaigns from
+the full [preregistered EXP-01 design](../../configs/experiments/exp01_k2d_main.yaml).
+Each of those campaigns ran the original 200-episode budget. Full failure-mode
+analysis found 21 medoids across them. Each medoid was replayed five times with
+the original seed. All 105 replays matched the source verdict, primary failure,
+and trace hash. Each of the five campaigns measured **MET-06 = 1.0**.
+
+The [per-mode evidence](SC-5-k2d-exp01-first-five.csv) includes the source run
+IDs and match counts. The snapshot includes the five campaigns completed when
+it was taken. The full 30-seed result remains pending.
+
 ## Run the replay batch
 
 Export one CSV row per stored failure mode from the completed S-PROBE campaigns.
