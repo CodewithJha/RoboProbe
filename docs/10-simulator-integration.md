@@ -201,7 +201,7 @@ seed; no wall-clock dependence; float64 everywhere ⇒ identical trace hash acro
 
 - Headless server only (`headless:=True`, no RViz), `--headless-rendering` (EGL) for camera/GPU-lidar sensors; on machines without a usable GPU set `LIBGL_ALWAYS_SOFTWARE=1` (Mesa llvmpipe) — slower but works.
 - Target RTF configurable (`backends.gazebo_nav2.physics.real_time_factor`, default 1.0; try 2.0 when CPU allows; Nav2 uses `/clock`).
-- Parallelism: `max_parallel_per_host` default 1 on a 4-core laptop, 2 on 8 cores; measured in T-090.
+- On the Apple Silicon Docker Desktop VM measured in [T-090](evidence/T-090-gazebo-spike.md), use `max_parallel_per_host = 1` and `startup_timeout_s = 150` s for cold headless starts. Validate higher concurrency on the deployment host.
 - [V1] Optimisation: **warm reset** for parameters that don't require world reload (P1, P2/P7 via entity set_pose, P4, P6, P8) — group proposals by world-level params (P3, P5) is future work; MVP always cold-starts.
 
 ## 9. Isolation & cleanup
