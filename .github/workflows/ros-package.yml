@@ -1,0 +1,44 @@
+name: ROS package
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/ros-package.yml"
+      - "backend/src/roboprobe/geometry/**"
+      - "backend/src/roboprobe/perturbation/**"
+      - "ros_ws/**"
+      - "scripts/vendor_geometry.py"
+      - "scripts/tests/test_vendor_geometry.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  jazzy:
+    name: Build and test the Jazzy package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: ros:jazzy-ros-base-noble@sha256:5147d3ae250ce754afd399f6bfec15b33dd4e473ca357e30432a3182031bfad6
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check vendoring and drift regression
+        run: |
+          python3 scripts/vendor_geometry.py --check
+          python3 -m unittest discover -s scripts/tests -p test_vendor_geometry.py
+      - name: Install Python test and numerical dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends python3-numpy python3-scipy python3-yaml python3-pytest
+      - name: Build and test
+        working-directory: ros_ws
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          colcon build --packages-select roboprobe_ros
+          source install/setup.bash
+          colcon test --packages-select roboprobe_ros --event-handlers console_direct+ --return-code-on-test-failure
+          colcon test-result --verbose

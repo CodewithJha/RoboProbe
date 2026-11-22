@@ -20,6 +20,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Web production image (T-116): read-only nginx-unprivileged SPA, runtime `/config.json`,
   CSP and security headers, and a Compose `app` profile that starts the authenticated API,
   workers and dashboard with same-origin SSE.
+- RoboProbe ROS package (T-093a) loads episode parameters and topic QoS, provides seeded
+  node utilities, and checks vendored numerical modules against the backend source.
 - Opt-in experiment API launch atomically creates the planned campaign matrix and runs it
   through the orchestrator and workers (T-084a).
 - Casebook and Insights (T-110a/b): filter and edit analyzed failure modes, replay or export
