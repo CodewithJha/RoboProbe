@@ -254,6 +254,14 @@ def analyze_campaign(
         msg = "campaign not found"
         raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
     services = get_services(request)
+    enqueue = getattr(services.analysis, "enqueue", None)
+    if callable(enqueue):
+        analysis_id = enqueue(campaign_id, AnalysisKind.FULL)
+        return {
+            "analysis_id": str(analysis_id),
+            "campaign_id": str(campaign_id),
+            "status": "scheduled",
+        }
     services.analysis.schedule(campaign_id, AnalysisKind.FULL, complete_campaign=False)
     return {"campaign_id": str(campaign_id), "status": "scheduled"}
 

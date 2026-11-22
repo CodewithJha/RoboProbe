@@ -16,7 +16,7 @@ from roboprobe.api.downloads import artifact_path, download_response
 from roboprobe.api.mapping import artifact_out, run_out
 from roboprobe.api.schemas import ArtifactOut, ReplayRequest, RunOut
 from roboprobe.core.clock import SystemClock
-from roboprobe.core.errors import NotFoundError
+from roboprobe.core.errors import NotFoundError, ValidationError
 from roboprobe.core.types import FailureClass, Scenario, Verdict
 from roboprobe.runner.replay import ReplayRequest as ReplayBody
 from roboprobe.runner.replay import enqueue_replays
@@ -77,6 +77,9 @@ def replay_run(
     request: Request,
 ) -> dict[str, object]:
     services = get_services(request)
+    if body.repeats > services.settings.runner.max_manual_repeats:
+        msg = "repeats exceeds runner.max_manual_repeats"
+        raise ValidationError(msg)
     from roboprobe.runner.ports import UowFactory
 
     ids = enqueue_replays(
@@ -86,8 +89,11 @@ def replay_run(
     return {"run_ids": [str(rid) for rid in ids]}
 
 
-@router.get("/runs/{run_id}/scenario.yaml", response_class=PlainTextResponse)
-def export_scenario(run_id: UUID, request: Request, uow: Any = Depends(get_uow)) -> str:
+@router.get(
+    "/runs/{run_id}/scenario.yaml", response_class=PlainTextResponse,
+    responses={200: {"content": {"application/yaml": {"schema": {"type": "string"}}}}},
+)
+def export_scenario(run_id: UUID, request: Request, uow: Any = Depends(get_uow)) -> Response:
     run = uow.runs.get(run_id)
     if run is None:
         msg = "run not found"
@@ -122,9 +128,14 @@ def export_scenario(run_id: UUID, request: Request, uow: Any = Depends(get_uow))
             verdict=Verdict(str(getattr(run.verdict, "value", run.verdict))),
             failure_class=fc,
         )
-    return export_regression(
+    document = export_regression(
         scenario,
         seed=run.seed,
         provenance=RegressionProvenance(source_run=run_id, exported_at=SystemClock().now()),
         expect=expect,
+    )
+    return Response(
+        document,
+        media_type="application/yaml",
+        headers={"Content-Disposition": f'attachment; filename="{run_id}-scenario.yaml"'},
     )

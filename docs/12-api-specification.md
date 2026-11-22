@@ -67,12 +67,22 @@ Error codes (stable strings): `VALIDATION_ERROR` (422), `NOT_FOUND` (404), `CAMP
 | POST | `/api/v1/campaigns/{id}:analyze` | trigger analysis | FR-ANA-006 |
 | GET/POST | `/api/v1/experiments` | list / create experiment | FR-EXP-001 |
 | GET | `/api/v1/experiments/{id}` / `/comparison` | detail / metrics + statistics | FR-EXP-002 |
+| PATCH | `/api/v1/experiments/{id}` | save validity notes with `If-Match` | FR-DSH-006 |
 | POST | `/api/v1/reports` | `{kind: campaign\|experiment, id}` → 202 + report job | FR-DSH-007 |
 | GET | `/api/v1/reports/{id}` / `/content` | status / HTML | |
+| POST | `/api/v1/campaigns/{id}:export` | 202 + bundle job through the report status/content routes | FR-STO-003 |
 | GET | `/api/v1/workers` | worker list with health | FR-DSH-002 |
 | GET | `/api/v1/events?campaign_id=&last_event_id=` | SSE stream | FR-API-002 |
 
 Colon-suffixed command routes (`:start`) follow the "custom method" convention; FastAPI path is registered literally.
+
+Risk slices accept `anchor_values` as a JSON object with overrides for free parameters
+outside the two displayed axes. Named anchors use the mode medoid when available. Exact
+requests share a bounded cache for the current analysis. Earlier stored JSON slices remain
+available at their saved resolution.
+
+Report and bundle job status survives an API restart. The next API process marks interrupted
+jobs `FAILED`. `GET /workers` returns opaque worker identifiers for process-derived IDs.
 
 ## 3. Key schemas (Pydantic DTOs; JSON shown)
 

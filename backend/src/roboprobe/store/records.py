@@ -59,6 +59,8 @@ class SutProfileRecord(_Record):
 
 
 class ExperimentRecord(_Record):
+    notes: str = ""
+    etag_version: int = 1
     id: UUID
     name: str
     design: dict[str, JsonValue]

@@ -12,7 +12,7 @@ from concurrent.futures import Executor, Future
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, Protocol, cast
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import structlog
 
@@ -91,11 +91,12 @@ class AnalysisJobRunner:
         self._engine = engine
         self._space_root = space_root if space_root is not None else _REPO_ROOT
         self._load_space = load_space or self._default_load_space
-        self._analyze = analyze_fn or analyze_campaign
+        self._analyze: Callable[..., AnalysisReport] = analyze_fn or analyze_campaign
         self._thread_locks: dict[UUID, threading.Lock] = {}
         self._guard = threading.Lock()
         self._incremental_at: dict[UUID, int] = {}
         self._inflight: set[UUID] = set()
+        self._reserved: dict[UUID, UUID] = {}
 
     def on_campaign_status(self, campaign: CampaignView) -> None:
         """When a campaign enters ``ANALYZING``, schedule a FULL analysis → ``COMPLETED``."""
@@ -120,6 +121,7 @@ class AnalysisJobRunner:
         kind: AnalysisKind,
         *,
         complete_campaign: bool = False,
+        analysis_id: UUID | None = None,
     ) -> Future[UUID] | None:
         """Enqueue analysis; returns ``None`` when the per-campaign lock is already held."""
         with self._guard:
@@ -137,9 +139,29 @@ class AnalysisJobRunner:
             campaign_id,
             kind,
             complete_campaign,
+            analysis_id,
         )
         future.add_done_callback(lambda _f: self._clear_inflight(campaign_id))
         return future
+
+    def enqueue(self, campaign_id: UUID, kind: AnalysisKind) -> UUID:
+        """Return a reserved analysis id immediately, reusing an in-flight API request."""
+        with self._guard:
+            if campaign_id in self._reserved:
+                return self._reserved[campaign_id]
+            if campaign_id in self._inflight:
+                msg = "analysis already running for campaign"
+                raise ConflictError(msg)
+            analysis_id = uuid4()
+            self._reserved[campaign_id] = analysis_id
+            self._inflight.add(campaign_id)
+        try:
+            future = self._executor.submit(self._run, campaign_id, kind, False, analysis_id)
+        except Exception:
+            self._clear_inflight(campaign_id)
+            raise
+        future.add_done_callback(lambda _f: self._clear_inflight(campaign_id))
+        return analysis_id
 
     def request(self, campaign_id: UUID, kind: AnalysisKind) -> UUID:
         """Run analysis synchronously (waits for the executor); raises if already locked."""
@@ -158,6 +180,7 @@ class AnalysisJobRunner:
         campaign_id: UUID,
         kind: AnalysisKind,
         complete_campaign: bool,
+        reserved_id: UUID | None = None,
     ) -> UUID:
         session = self._try_acquire(campaign_id)
         if session is None:
@@ -176,6 +199,7 @@ class AnalysisJobRunner:
                     risk=self._settings.risk,
                     clock=self._clock,
                     load_space=self._load_space,
+                    **({"analysis_id": reserved_id} if reserved_id is not None else {}),
                 )
                 uow.commit()
             analysis_id = report.analysis_id
@@ -203,6 +227,7 @@ class AnalysisJobRunner:
     def _clear_inflight(self, campaign_id: UUID) -> None:
         with self._guard:
             self._inflight.discard(campaign_id)
+            self._reserved.pop(campaign_id, None)
 
     def _emit_analysis_failed(self, campaign_id: UUID, message: str) -> None:
         with self._uow_factory() as uow:

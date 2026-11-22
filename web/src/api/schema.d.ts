@@ -133,7 +133,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Risk Slice */
+    /**
+     * Risk Slice
+     * @description Load or compute the slice in a worker thread with a bounded deadline.
+     */
     get: operations['risk_slice_api_v1_campaigns__campaign_id__risk_slice_get'];
     put?: never;
     post?: never;
@@ -189,6 +192,26 @@ export interface paths {
     put?: never;
     /** Cancel Campaign */
     post: operations['cancel_campaign_api_v1_campaigns__campaign_id__cancel_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/campaigns/{campaign_id}:export': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Export Campaign
+     * @description Export via the shared job status/content endpoints without blocking HTTP.
+     */
+    post: operations['export_campaign_api_v1_campaigns__campaign_id__export_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -298,7 +321,11 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    patch?: never;
+    /**
+     * Patch Experiment Notes
+     * @description Save threats notes with optimistic concurrency.
+     */
+    patch: operations['patch_experiment_notes_api_v1_experiments__experiment_id__patch'];
     trace?: never;
   };
   '/api/v1/experiments/{experiment_id}/comparison': {
@@ -834,6 +861,14 @@ export interface components {
         [key: string]: components['schemas']['JsonValue'];
       };
     };
+    /**
+     * ExperimentNotes
+     * @description Editable threats-to-validity notes (T-112b).
+     */
+    ExperimentNotes: {
+      /** Notes */
+      notes: string;
+    };
     /** ExperimentOut */
     ExperimentOut: {
       /** Cells */
@@ -865,6 +900,11 @@ export interface components {
       } | null;
       /** Status */
       status: string;
+      /**
+       * Version
+       * @default 1
+       */
+      version: number;
     };
     /**
      * FailureClass
@@ -1105,8 +1145,12 @@ export interface components {
       id: string;
       /** Kind */
       kind: string;
+      /** Report Id */
+      report_id?: string | null;
       /** Status */
       status: string;
+      /** Status Url */
+      status_url?: string | null;
       /**
        * Target Id
        * Format: uuid
@@ -2235,6 +2279,7 @@ export interface operations {
         y: string;
         anchor?: string;
         resolution?: number;
+        anchor_values?: string | null;
       };
       header?: never;
       path: {
@@ -2593,6 +2638,87 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['CampaignOut'];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Precondition Failed */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+    };
+  };
+  export_campaign_api_v1_campaigns__campaign_id__export_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        campaign_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ReportJobOut'];
         };
       };
       /** @description Unauthorized */
@@ -3156,6 +3282,93 @@ export interface operations {
       cookie?: never;
     };
     requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ExperimentOut'];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Precondition Failed */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+    };
+  };
+  patch_experiment_notes_api_v1_experiments__experiment_id__patch: {
+    parameters: {
+      query?: never;
+      header?: {
+        'If-Match'?: string | null;
+      };
+      path: {
+        experiment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ExperimentNotes'];
+      };
+    };
     responses: {
       /** @description Successful Response */
       200: {

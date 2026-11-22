@@ -10,7 +10,7 @@ import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, BinaryIO, Protocol
 
 import numpy as np
 import numpy.typing as npt
@@ -258,7 +258,7 @@ def save_slices(path: Path, slices: Sequence[RiskSlice]) -> None:
     np.savez_compressed(path, **payload)
 
 
-def load_slices(path: Path) -> list[RiskSlice]:
+def load_slices(path: Path | BinaryIO) -> list[RiskSlice]:
     """Load slices previously written by :func:`save_slices`."""
     with np.load(path, allow_pickle=False) as data:
         meta = json.loads(str(data["meta"]))

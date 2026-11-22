@@ -6,13 +6,16 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+from tests.api.test_campaigns_crud import client as client  # noqa: PLC0414 - shared fixture
 
 from roboprobe.core.types import CampaignStatus
+from roboprobe.store.records import ExperimentRecord, WorkerRecord
 
 pytestmark = pytest.mark.unit
 
@@ -210,3 +213,59 @@ def test_campaign_start_accepted(m7_client: TestClient) -> None:
 def test_experiments_list(m7_client: TestClient) -> None:
     resp = m7_client.get("/api/v1/experiments")
     assert resp.status_code == 200
+
+
+def test_experiment_comparison_uses_saved_report_results(
+    m7_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    experiment_id = uuid4()
+    results = {
+        "experiment_id": str(experiment_id),
+        "metrics": ["MET-01"],
+        "strategies": {"S-RANDOM": {"MET-01": {"median": 0.4}}},
+        "tests": [],
+    }
+    monkeypatch.setattr(_Experiments, "get", lambda *_: SimpleNamespace(results=results))
+    response = m7_client.get(f"/api/v1/experiments/{experiment_id}/comparison")
+    assert response.status_code == 200
+    assert response.json() == results
+
+
+def test_experiment_notes_require_current_etag(client: TestClient) -> None:
+    experiment_id = uuid4()
+    services = client.app.state.services
+    with services.uow_factory() as uow:
+        uow.experiments.add(
+            ExperimentRecord(id=experiment_id, name="Trial", design={}, status="CREATED")
+        )
+        uow.commit()
+    url = f"/api/v1/experiments/{experiment_id}"
+    first = client.get(url)
+    assert first.status_code == 200
+    stale = first.headers["ETag"]
+    saved = client.patch(url, headers={"If-Match": stale}, json={"notes": "Saved"})
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["notes"] == "Saved"
+    assert saved.headers["ETag"] != stale
+    rejected = client.patch(url, headers={"If-Match": stale}, json={"notes": "Stale"})
+    assert rejected.status_code == 412
+    assert client.get(url).json()["notes"] == "Saved"
+
+
+def test_worker_list_redacts_hostname(client: TestClient) -> None:
+    host = "private-lab-host"
+    with client.app.state.services.uow_factory() as uow:
+        uow.workers.register(
+            WorkerRecord(
+                id=f"{host}:1234:0",
+                backend="kinematic2d",
+                status="IDLE",
+                capabilities={},
+                version="1",
+            )
+        )
+        uow.commit()
+    response = client.get("/api/v1/workers")
+    assert response.status_code == 200
+    assert host not in response.text
+    assert response.json()["items"][0]["id"].startswith("worker-")

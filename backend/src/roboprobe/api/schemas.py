@@ -24,6 +24,7 @@ __all__ = [
     "CampaignProgress",
     "ExperimentComparisonOut",
     "ExperimentCreate",
+    "ExperimentNotes",
     "ExperimentOut",
     "FailureModeOut",
     "FailureModePatch",
@@ -269,6 +270,13 @@ class ExperimentCreate(BaseModel):
     design: dict[str, JsonValue]
 
 
+class ExperimentNotes(BaseModel):
+    """Editable threats-to-validity notes (T-112b)."""
+
+    model_config = ConfigDict(extra="forbid")
+    notes: str
+
+
 class ExperimentOut(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -280,6 +288,7 @@ class ExperimentOut(BaseModel):
     created_at: datetime | None = None
     finished_at: datetime | None = None
     notes: str | None = None
+    version: int = 1
     progress: dict[str, int] | None = None
     cells: list[JsonValue] | None = None
 
@@ -308,6 +317,8 @@ class ReportJobOut(BaseModel):
     kind: str
     target_id: UUID
     artifact_id: UUID | None = None
+    report_id: UUID | None = None
+    status_url: str | None = None
 
 
 class ArtifactOut(BaseModel):

@@ -21,6 +21,7 @@ from sqlalchemy.engine import Engine
 from roboprobe.backends.registry import ENTRY_POINT_GROUP, get_backend
 from roboprobe.bootstrap._infra import Infrastructure, UowFactory, build_infrastructure
 from roboprobe.bootstrap.idempotency import SqlAlchemyIdempotencyStore
+from roboprobe.bootstrap.report_jobs import SqlReportJobs
 from roboprobe.core.clock import SystemClock
 from roboprobe.core.errors import NotFoundError
 from roboprobe.core.metrics_registry import Metrics, create_metrics
@@ -83,18 +84,17 @@ def build_api(settings: RoboProbeSettings) -> ApiServices:
     metrics = create_metrics(enabled=settings.observability.metrics_enabled)
     uow_factory = cast("Callable[[], UnitOfWorkPort]", infra.uow_factory)
     campaigns = CampaignService(uow_factory)
+    root = discover_repo_root()
 
     def load_space(space_id: str, version: str) -> ScenarioSpace:
         with infra.uow_factory() as uow:
             row = uow.spaces.get(space_id, version)
-            if row is None:
-                msg = "registered scenario space not found"
-                raise NotFoundError(msg)
-            return ScenarioSpace.from_text(
-                yaml.safe_dump(row.definition),
-                source="registered space",
-                base_dir=discover_repo_root(),
-            )
+        if row is None:
+            msg = "registered scenario space not found"
+            raise NotFoundError(msg)
+        return ScenarioSpace.from_text(
+            yaml.safe_dump(row.definition), source="registered campaign space", base_dir=root
+        )
 
     pool = ThreadPoolExecutor(max_workers=settings.runner.analysis.max_workers)
     analysis = AnalysisJobRunner(
@@ -105,7 +105,7 @@ def build_api(settings: RoboProbeSettings) -> ApiServices:
         SystemClock(),
         campaigns=campaigns,
         engine=infra.engine,
-        space_root=discover_repo_root(),
+        space_root=root,
         load_space=load_space,
     )
     return ApiServices(
@@ -115,9 +115,10 @@ def build_api(settings: RoboProbeSettings) -> ApiServices:
         campaigns=campaigns,
         analysis=analysis,
         report_jobs=ReportJobStore(
-            ThreadPoolExecutor(max_workers=settings.runner.analysis.max_workers)
+            ThreadPoolExecutor(max_workers=settings.runner.analysis.max_workers),
+            persistence=SqlReportJobs(session_factory(infra.engine)),
         ),
-        space_root=discover_repo_root(),
+        space_root=root,
         idempotency=SqlAlchemyIdempotencyStore(session_factory(infra.engine)),
         confirmations=ConfirmationService(
             uow_factory,
@@ -146,6 +147,7 @@ def create_api_app(settings: RoboProbeSettings | None = None) -> Any:  # noqa: A
     app = create_app(resolved)
     app.state.services = services
     app.state.metrics = services.metrics
+    app.state.recover_reports = services.report_jobs.recover
     return app
 
 

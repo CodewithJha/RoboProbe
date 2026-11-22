@@ -7,6 +7,7 @@ Implements: T-081, T-082, T-084
 
 from __future__ import annotations
 
+from hashlib import sha256
 from typing import Any
 from uuid import UUID
 
@@ -213,6 +214,8 @@ def risk_out(record: Any, *, campaign_id: UUID) -> RiskOut:
 def experiment_out(record: Any) -> ExperimentOut:
     return ExperimentOut(
         id=record.id,
+        notes=getattr(record, "notes", None),
+        version=getattr(record, "etag_version", 1),
         name=record.name,
         status=record.status,
         design=dict(record.design),
@@ -233,8 +236,12 @@ def artifact_out(record: Any) -> ArtifactOut:
 
 
 def worker_out(record: Any) -> WorkerOut:
+    parts = record.id.rsplit(":", 2)
+    worker_id = record.id
+    if len(parts) == 3 and parts[1].isdigit() and parts[2].isdigit():
+        worker_id = f"worker-{sha256(worker_id.encode()).hexdigest()[:16]}"
     return WorkerOut(
-        id=record.id,
+        id=worker_id,
         backend=record.backend,
         status=record.status,
         version=record.version,

@@ -202,3 +202,36 @@ def test_analyzing_failure_still_completes_campaign() -> None:
         assert updated is not None
         assert updated.status is CampaignStatus.COMPLETED
         assert updated.status_reason == "analysis ERROR"
+
+
+def test_enqueue_returns_reserved_id_without_waiting_and_reuses_pending() -> None:
+    uow = InMemoryUnitOfWork()
+    cid = _seed(uow, status=CampaignStatus.RUNNING)
+    started = threading.Event()
+    release = threading.Event()
+
+    def analyze(campaign_id: UUID, _uow: object, _store: object, **kwargs: Any) -> AnalysisReport:
+        started.set()
+        release.wait(timeout=5)
+        return AnalysisReport(
+            analysis_id=kwargs["analysis_id"],
+            campaign_id=campaign_id,
+            kind=AnalysisKind.FULL,
+            status="OK",
+            analysis_schema_version=1,
+            n_runs=0,
+            n_fail=0,
+            mode_codes=[],
+            warnings=[],
+            summary={},
+            duration_s=0,
+        )
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        runner = _runner(uow, analyze_fn=analyze, executor=pool)
+        try:
+            reserved = runner.enqueue(cid, AnalysisKind.FULL)
+            assert started.wait(timeout=2)
+            assert runner.enqueue(cid, AnalysisKind.FULL) == reserved
+        finally:
+            release.set()
