@@ -207,9 +207,19 @@
             "title": "Name",
             "type": "string"
           },
+          "pins": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Pins",
+            "type": "object"
+          },
           "repeats": {
             "title": "Repeats",
             "type": "integer"
+          },
+          "space": {
+            "$ref": "#/components/schemas/SpaceRef"
           },
           "started_at": {
             "anyOf": [
@@ -441,6 +451,31 @@
             "title": "Name",
             "type": "string"
           },
+          "notes": {
+            "title": "Notes",
+            "type": "string"
+          },
+          "progress": {
+            "properties": {
+              "completed": {
+                "title": "Completed",
+                "type": "integer"
+              },
+              "total": {
+                "title": "Total",
+                "type": "integer"
+              }
+            },
+            "title": "Progress",
+            "type": "object"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Cells",
+            "type": "array"
+          },
           "results": {
             "anyOf": [
               {
@@ -519,6 +554,18 @@
           "label": {
             "title": "Label",
             "type": "string"
+          },
+          "medoid_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Medoid Run Id"
           },
           "primary_class": {
             "title": "Primary Class",
@@ -1087,6 +1134,57 @@
             "title": "Grid",
             "type": "object"
           },
+          "log_x": {
+            "title": "Log X",
+            "type": "boolean"
+          },
+          "log_y": {
+            "title": "Log Y",
+            "type": "boolean"
+          },
+          "p_fail": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "title": "P Fail",
+            "type": "array"
+          },
+          "points": {
+            "items": {
+              "properties": {
+                "verdict": {
+                  "title": "Verdict",
+                  "type": "string"
+                },
+                "x": {
+                  "title": "X",
+                  "type": "number"
+                },
+                "y": {
+                  "title": "Y",
+                  "type": "number"
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ],
+              "type": "object"
+            },
+            "title": "Points",
+            "type": "array"
+          },
+          "region": {
+            "items": {
+              "items": {},
+              "type": "array"
+            },
+            "title": "Region",
+            "type": "array"
+          },
           "resolution": {
             "title": "Resolution",
             "type": "integer"
@@ -1095,9 +1193,23 @@
             "title": "X Param",
             "type": "string"
           },
+          "x_values": {
+            "items": {
+              "type": "number"
+            },
+            "title": "X Values",
+            "type": "array"
+          },
           "y_param": {
             "title": "Y Param",
             "type": "string"
+          },
+          "y_values": {
+            "items": {
+              "type": "number"
+            },
+            "title": "Y Values",
+            "type": "array"
           }
         },
         "required": [
