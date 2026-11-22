@@ -96,12 +96,20 @@ Routes (React Router): `/` Bench · `/campaigns/new` · `/campaigns/:id` (tabs: 
 
 Margin rail icons: Bench, Campaigns, Trials, Spaces, Workbench, Settings; theme toggle at the bottom.
 
+The Bench heading stays in place while campaign skeletons load. From the recent campaigns
+table, Tab reaches each campaign link and Enter opens its console.
+
 ### 3.2 New campaign wizard — FR-DSH-001, US-002 (4 steps, all defaults pre-filled)
 
 1. **Space** — pick space + version; table of parameters with range sliders to *pin* values (FR-SCN-007); live dimension count.
 2. **Robot & backend** — SUT profile, backend (disabled if no worker online, with explanation), repeats.
 3. **Strategy** — card per strategy with a one-sentence plain-language description ("Learns where failures hide and probes there"), budget, batch size (default = online workers), seed (random default, editable). Advanced accordion: strategy params with validation from `/meta`.
 4. **Review** — YAML preview (copyable — equals the CLI config), estimated duration = budget × typical episode time / workers, "Start now" checkbox.
+
+Save the preview and pass it to `roboprobe campaign create -f campaign.yaml`. The wizard
+blocks repeated submissions while creation is pending and reuses the same idempotency key
+for an unchanged retry. A server validation error returns to the affected step and describes
+the invalid field for assistive technology.
 
 ### 3.3 Campaign console (live) — FR-DSH-002, US-003, US-012, US-013
 

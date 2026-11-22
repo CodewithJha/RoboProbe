@@ -31,12 +31,31 @@ export function Component() {
   const paused = useCampaigns({ status: 'PAUSED' });
   const workers = useWorkers();
   const meta = useMeta();
+  const header = (
+    <header className={styles['header']}>
+      <div>
+        <p className="page-label">Field Notebook / Overview</p>
+        <h1>Bench</h1>
+        <p className="page-description">
+          Your testing campaigns, their discoveries, and the workers behind them.
+        </p>
+      </div>
+      <Link className={styles['primary']} to="/campaigns/new">
+        New campaign
+      </Link>
+    </header>
+  );
 
   if (campaigns.isPending)
     return (
-      <section aria-busy="true" className={styles['loading']}>
-        <h1>Bench</h1>
+      <section aria-busy="true" className={[styles['page'], styles['loading']].join(' ')}>
+        {header}
         <p role="status">Opening your campaigns…</p>
+        <div className={styles['skeleton']} aria-hidden="true">
+          <div />
+          <div />
+          <div />
+        </div>
       </section>
     );
   if (campaigns.isError) return <ProblemView error={campaigns.error} />;
@@ -56,18 +75,7 @@ export function Component() {
   });
   return (
     <section className={styles['page']}>
-      <header className={styles['header']}>
-        <div>
-          <p className="page-label">Field Notebook / Overview</p>
-          <h1>Bench</h1>
-          <p className="page-description">
-            Your testing campaigns, their discoveries, and the workers behind them.
-          </p>
-        </div>
-        <Link className={styles['primary']} to="/campaigns/new">
-          New campaign
-        </Link>
-      </header>
+      {header}
       <section className={styles['workbench']} aria-label="Workbench summary">
         <h2>Workbench</h2>
         {workers.isPending ? (

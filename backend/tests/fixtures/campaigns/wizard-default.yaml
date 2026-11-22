@@ -1,0 +1,15 @@
+backend: kinematic2d
+batch_size: 1
+budget: 200
+pins: {}
+repeats: 1
+schema_version: 1
+space:
+  id: warehouse_v1
+  version: 09cf763f2e0d
+start: true
+strategy:
+  id: S-RANDOM
+  params: {}
+  seed: 20261119
+sut_profile_id: k2d_default

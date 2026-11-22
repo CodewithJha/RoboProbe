@@ -200,6 +200,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 ### Changed
 
 - Risk atlas off-axis controls now query and update the share URL after edits settle (T-111b).
+- The Bench reserves space while campaigns load. The campaign wizard prevents repeated
+  submission, links validation errors to their fields, and exports YAML accepted by
+  `roboprobe campaign create -f`.
 - `.env.example` and `roboprobe.example.toml` now list every setting (commented out, with defaults and
   descriptions) instead of a hand-picked subset.
 - Docs: fixed Markdown that rendered incorrectly (paragraphs swallowed into tables, unescaped `|` in table code spans,

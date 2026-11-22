@@ -1,6 +1,6 @@
 import { parameters } from '../../lib/spaceParameters';
 import { isOnline, limit } from '../../lib/workers';
-import { useRef, useState, type SubmitEvent } from 'react';
+import { useId, useRef, useState, type SubmitEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ProblemError } from '../../api/client';
 import {
@@ -25,6 +25,11 @@ import styles from './wizard/Wizard.module.css';
 import { StrategyOptions } from './wizard/StrategyOptions';
 
 const steps = ['Space', 'Robot & backend', 'Strategy', 'Review'] as const;
+interface WizardIssue {
+  pointer: string;
+  detail: string;
+}
+
 function freshSeed() {
   return crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
 }
@@ -50,10 +55,12 @@ export function Component() {
   const [options, setOptions] = useState<Record<string, Json>>({});
   const [name, setName] = useState('');
   const [start, setStart] = useState(true);
-  const [messages, setMessages] = useState<string[]>([]);
+  const [issues, setIssues] = useState<WizardIssue[]>([]);
   const [copyStatus, setCopyStatus] = useState('');
+  const issueId = useId();
   const title = useRef<HTMLHeadingElement>(null);
   const requestKey = useRef<{ payload: string; id: string } | null>(null);
+  const submitting = useRef(false);
   const allSpaces = spaces.data?.pages.flatMap((page) => page.items) ?? [];
   const spaceKey = (item: (typeof allSpaces)[number]) => JSON.stringify([item.id, item.version]);
   const space = allSpaces.find((item) => spaceKey(item) === selectedSpace) ?? allSpaces[0];
@@ -102,21 +109,33 @@ export function Component() {
     setStep(next);
     requestAnimationFrame(() => title.current?.focus());
   }
+  function fieldIssue(pointer: string) {
+    const index = issues.findIndex((issue) => {
+      const field = issue.pointer.replace(/^\/body(?=\/|$)/, '');
+      return field === pointer || field.startsWith(`${pointer}/`);
+    });
+    return index < 0
+      ? {}
+      : { 'aria-invalid': true, 'aria-describedby': `${issueId}-${String(index)}` };
+  }
   function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    setMessages([]);
+    if (submitting.current) return;
+    setIssues([]);
     if (step === 0 && (!space || !definition.data)) {
-      setMessages(['Choose an available scenario space version.']);
+      setIssues([{ pointer: '/space', detail: 'Choose an available scenario space version.' }]);
       return;
     }
     if (step === 1 && (!backend || !profile || workerCount(backend.id) === 0)) {
-      setMessages(['Select a compatible robot profile and an online backend.']);
+      setIssues([
+        { pointer: '/backend', detail: 'Select a compatible robot profile and an online backend.' },
+      ]);
       return;
     }
     if (step >= 2) {
       const errors = validateRequest(payload, strategy);
       if (errors.length) {
-        setMessages(errors.map((item) => `${item.pointer || '/'}: ${item.detail}`));
+        setIssues(errors);
         goTo(errorStep(errors[0]?.pointer ?? ''));
         return;
       }
@@ -128,6 +147,7 @@ export function Component() {
     const serialized = JSON.stringify(payload);
     if (requestKey.current?.payload !== serialized)
       requestKey.current = { payload: serialized, id: crypto.randomUUID() };
+    submitting.current = true;
     create.mutate(
       { body: payload, idempotencyKey: requestKey.current.id },
       {
@@ -136,9 +156,12 @@ export function Component() {
         },
         onError: (error) => {
           if (error instanceof ProblemError && error.errors.length) {
-            setMessages(error.errors.map((field) => `${field.pointer}: ${field.detail}`));
+            setIssues([...error.errors]);
             goTo(errorStep(error.errors[0]?.pointer ?? ''));
-          } else setMessages([error.message]);
+          } else setIssues([{ pointer: '', detail: error.message }]);
+        },
+        onSettled: () => {
+          submitting.current = false;
         },
       },
     );
@@ -158,10 +181,12 @@ export function Component() {
         <h2 ref={title} tabIndex={-1}>
           {steps[step]}
         </h2>
-        {messages.length ? (
+        {issues.length ? (
           <ul role="alert">
-            {messages.map((message, i) => (
-              <li key={i}>{message}</li>
+            {issues.map((issue, i) => (
+              <li id={`${issueId}-${String(i)}`} key={`${issue.pointer}-${String(i)}`}>
+                {issue.detail}
+              </li>
             ))}
           </ul>
         ) : null}
@@ -170,6 +195,7 @@ export function Component() {
             <label>
               Scenario space and version
               <select
+                {...fieldIssue('/space')}
                 value={space ? spaceKey(space) : ''}
                 onChange={(event) => {
                   setSpace(event.target.value);
@@ -213,6 +239,7 @@ export function Component() {
                 </legend>
                 <label className={styles['inline']}>
                   <input
+                    {...fieldIssue(`/pins/${param.id}`)}
                     type="checkbox"
                     checked={Object.hasOwn(pins, param.id)}
                     onChange={(event) => {
@@ -232,6 +259,7 @@ export function Component() {
                     <label>
                       {param.name} value
                       <select
+                        {...fieldIssue(`/pins/${param.id}`)}
                         value={String(pins[param.id])}
                         onChange={(event) => {
                           setPins({ ...pins, [param.id]: event.target.value });
@@ -246,6 +274,7 @@ export function Component() {
                     <label>
                       {param.name} value <output>{String(pins[param.id])}</output>
                       <input
+                        {...fieldIssue(`/pins/${param.id}`)}
                         type="range"
                         min={param.low}
                         max={param.high}
@@ -273,6 +302,7 @@ export function Component() {
             <label>
               Backend
               <select
+                {...fieldIssue('/backend')}
                 required
                 value={backend?.id ?? ''}
                 onChange={(event) => {
@@ -303,6 +333,7 @@ export function Component() {
             <label>
               Robot profile
               <select
+                {...fieldIssue('/sut_profile_id')}
                 required
                 value={profile?.id ?? ''}
                 onChange={(event) => {
@@ -329,6 +360,7 @@ export function Component() {
             <label>
               Repeats
               <input
+                {...fieldIssue('/repeats')}
                 type="number"
                 min={1}
                 value={repeats || ''}
@@ -348,6 +380,7 @@ export function Component() {
                 {strategyList.map((item) => (
                   <label key={item.id} className={styles['card']}>
                     <input
+                      {...fieldIssue('/strategy/id')}
                       type="radio"
                       name="strategy"
                       checked={strategy?.id === item.id}
@@ -368,6 +401,7 @@ export function Component() {
             <label>
               Budget
               <input
+                {...fieldIssue('/budget')}
                 type="number"
                 min={1}
                 max={maxBudget}
@@ -381,6 +415,7 @@ export function Component() {
             <label>
               Batch size
               <input
+                {...fieldIssue('/batch_size')}
                 type="number"
                 min={1}
                 max={maxBatch}
@@ -394,6 +429,7 @@ export function Component() {
             <label>
               Seed
               <input
+                {...fieldIssue('/strategy/seed')}
                 type="number"
                 min={0}
                 max={Number.MAX_SAFE_INTEGER}
@@ -418,6 +454,7 @@ export function Component() {
                 schema={strategy.schema}
                 values={options}
                 onChange={setOptions}
+                fieldIssue={fieldIssue}
               />
             ) : null}
           </>
@@ -427,6 +464,7 @@ export function Component() {
             <label>
               Campaign name (optional)
               <input
+                {...fieldIssue('/name')}
                 value={name}
                 maxLength={120}
                 onChange={(event) => {
@@ -436,6 +474,7 @@ export function Component() {
             </label>
             <label className={styles['inline']}>
               <input
+                {...fieldIssue('/start')}
                 type="checkbox"
                 checked={start}
                 onChange={(event) => {
@@ -477,7 +516,7 @@ export function Component() {
               type="button"
               disabled={create.isPending}
               onClick={() => {
-                setMessages([]);
+                setIssues([]);
                 goTo(step - 1);
               }}
             >
