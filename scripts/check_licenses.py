@@ -151,6 +151,7 @@ def find_disallowed(
     packages: Iterable[PackageLicense], allowed: frozenset[str]
 ) -> list[PackageLicense]:
     """Packages whose licence is not satisfiable from the allow-list, sorted for stable output."""
+
     def effective_license(pkg: PackageLicense) -> str:
         return PACKAGE_LICENSE_OVERRIDES.get(pkg.name, pkg.license)
 
