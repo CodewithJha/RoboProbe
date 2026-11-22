@@ -35,7 +35,16 @@ export default async function globalSetup(config: FullConfig) {
   const baseURL = config.projects[0]?.use.baseURL;
   if (!baseURL) throw new Error('The Playwright project must declare a base URL.');
   const browserURL = new URL(baseURL);
+  if (
+    browserURL.protocol !== 'http:' ||
+    !['localhost', '127.0.0.1'].includes(browserURL.hostname)
+  ) {
+    throw new Error('E2E_BASE_URL must use HTTP on localhost or 127.0.0.1.');
+  }
   const project = process.env['E2E_COMPOSE_PROJECT'] ?? `roboprobe-e2e-${String(process.pid)}`;
+  if (!/^roboprobe-e2e-[a-z0-9-]+$/.test(project)) {
+    throw new Error('E2E_COMPOSE_PROJECT must be a dedicated roboprobe-e2e-* project.');
+  }
   const secretDir = await mkdtemp(join(tmpdir(), 'roboprobe-e2e-'));
   const apiToken = randomBytes(32).toString('hex');
   const databasePasswordFile = join(secretDir, 'db_password');

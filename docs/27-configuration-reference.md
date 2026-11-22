@@ -366,9 +366,10 @@ Set `ROBOPROBE_API_TOKEN_FILE` to override the source file for the shared API an
 `api_token` secret. Compose defaults to `secrets/api_token` at the repository root.
 
 Playwright uses `docker/e2e.env` for its isolated test stack. `E2E_BASE_URL` defaults to
-`http://localhost:8080` and can set a different loopback port. `E2E_COMPOSE_PROJECT` can
-override the default `roboprobe-e2e-<process-id>` project name. Use a dedicated name for each
-concurrent run. The harness generates its own database password and API token for each run.
+`http://localhost:8080` and accepts an HTTP URL on `localhost` or `127.0.0.1` with another
+port. `E2E_COMPOSE_PROJECT` defaults to `roboprobe-e2e-<process-id>`. Use a dedicated
+`roboprobe-e2e-*` name for each concurrent run. The harness generates its own database password
+and API token for each run.
 
 ## 5. Example `roboprobe.toml`
 
