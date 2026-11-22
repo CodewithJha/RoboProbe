@@ -2,36 +2,233 @@
   "items": [
     {
       "campaign_id": "01a1ee56-5e00-7001-9e37-79b97f4a7c15",
+      "characteristic": [
+        "env.floor_friction",
+        "robot.max_speed",
+        "sensor.lidar_noise_std"
+      ],
       "code": "FM-01",
+      "duplicate_of": null,
+      "first_seen_ordinal": null,
       "id": "01a1ee56-5e00-712f-83a9-128da928dcdb",
       "interaction": null,
       "label": "F-LOC | floor_friction low · noise high · speed low",
+      "label_is_user": false,
       "medoid_run_id": "01a1ee56-5e00-7012-9fe6-8f0af33cb97a",
+      "minimal_run_id": "01a1ee56-5e00-711b-a753-900fb7572b37",
+      "param_ranges": {
+        "comms.cmd_delay_ms": {
+          "q05": 148.3441754558375,
+          "q95": 371.5071072305135,
+          "space_coverage": 0.55790732943669,
+          "unit": "ms"
+        },
+        "env.floor_friction": {
+          "q05": 0.160945484505363,
+          "q95": 0.2843721787144939,
+          "space_coverage": 0.13714077134347874,
+          "unit": "-"
+        },
+        "env.illuminance": {
+          "q05": 7.0043876683557595,
+          "q95": 111.46717407640934,
+          "space_coverage": 0.5222777706120358,
+          "unit": "lux"
+        },
+        "obstacle.clearance": {
+          "q05": 0.18424894667094838,
+          "q95": 1.1395822035322776,
+          "space_coverage": 0.796111047384441,
+          "unit": "m"
+        },
+        "robot.max_speed": {
+          "q05": 0.15251085931184977,
+          "q95": 0.3332866520280624,
+          "space_coverage": 0.4519394817905315,
+          "unit": "m/s"
+        },
+        "sensor.lidar_noise_std": {
+          "q05": 0.08007849215545566,
+          "q95": 0.09756790915033826,
+          "space_coverage": 0.174894169948826,
+          "unit": "m"
+        }
+      },
       "primary_class": "F-LOC",
+      "provisional": false,
+      "reproducibility": null,
+      "rules": [],
       "size": 5,
-      "status": "open"
+      "status": "open",
+      "version": 1
     },
     {
       "campaign_id": "01a1ee56-5e00-7001-9e37-79b97f4a7c15",
+      "characteristic": [
+        "obstacle.clearance"
+      ],
       "code": "FM-02",
+      "duplicate_of": null,
+      "first_seen_ordinal": null,
       "id": "01a1ee56-5e00-7130-a1e0-8c47287358f0",
       "interaction": null,
       "label": "F-STUCK | clearance low",
+      "label_is_user": false,
       "medoid_run_id": "01a1ee56-5e00-70fd-9cd3-4c52cc9ca0c1",
+      "minimal_run_id": "01a1ee56-5e00-7053-8bfc-772445263acf",
+      "param_ranges": {
+        "comms.cmd_delay_ms": {
+          "q05": 54.714218842127075,
+          "q95": 387.37920363290266,
+          "space_coverage": 0.8316624619769389,
+          "unit": "ms"
+        },
+        "env.floor_friction": {
+          "q05": 0.15963738742287345,
+          "q95": 0.9265370958891677,
+          "space_coverage": 0.8521107871847713,
+          "unit": "-"
+        },
+        "env.illuminance": {
+          "q05": 14.05478355828065,
+          "q95": 768.707524012695,
+          "space_coverage": 0.7552865339716288,
+          "unit": "lux"
+        },
+        "obstacle.clearance": {
+          "q05": 0.06145312171648056,
+          "q95": 0.4578995847241656,
+          "space_coverage": 0.3303720525064042,
+          "unit": "m"
+        },
+        "robot.max_speed": {
+          "q05": 0.1580532426918443,
+          "q95": 0.45785854524385894,
+          "space_coverage": 0.7495132563800367,
+          "unit": "m/s"
+        },
+        "sensor.lidar_noise_std": {
+          "q05": 0.001886514557960944,
+          "q95": 0.08304292574110615,
+          "space_coverage": 0.811564111831452,
+          "unit": "m"
+        }
+      },
       "primary_class": "F-STUCK",
+      "provisional": false,
+      "reproducibility": null,
+      "rules": [
+        {
+          "conditions": [
+            {
+              "op": "<",
+              "param": "obstacle.clearance",
+              "threshold_physical": 0.5156778395175934,
+              "threshold_unit": 0.4297315329313278,
+              "unit": "m"
+            }
+          ],
+          "mode_code": "FM-02",
+          "precision": 1.0,
+          "primary_class": "F-STUCK",
+          "support": 1,
+          "text": "IF obstacle.clearance < 0.52 m THEN FAIL (precision 1.00, support 1 runs, class F-STUCK)"
+        }
+      ],
       "size": 24,
-      "status": "open"
+      "status": "open",
+      "version": 1
     },
     {
       "campaign_id": "01a1ee56-5e00-7001-9e37-79b97f4a7c15",
+      "characteristic": [
+        "obstacle.clearance"
+      ],
       "code": "FM-03",
+      "duplicate_of": null,
+      "first_seen_ordinal": null,
       "id": "01a1ee56-5e00-7131-8018-0600a7bdd505",
       "interaction": null,
       "label": "F-TIMEOUT | clearance low",
+      "label_is_user": false,
       "medoid_run_id": "01a1ee56-5e00-70ad-ab7d-425b0555da31",
+      "minimal_run_id": "01a1ee56-5e00-70ad-ab7d-425b0555da31",
+      "param_ranges": {
+        "comms.cmd_delay_ms": {
+          "q05": 81.85399781939898,
+          "q95": 365.52556226382313,
+          "space_coverage": 0.7091789111110604,
+          "unit": "ms"
+        },
+        "env.floor_friction": {
+          "q05": 0.30386161872990225,
+          "q95": 0.7602082085681416,
+          "space_coverage": 0.5070517664869327,
+          "unit": "-"
+        },
+        "env.illuminance": {
+          "q05": 5.8238471878810465,
+          "q95": 581.2520513792145,
+          "space_coverage": 0.8688085472206137,
+          "unit": "lux"
+        },
+        "obstacle.clearance": {
+          "q05": 0.49298992485201815,
+          "q95": 1.077818675856805,
+          "space_coverage": 0.48735729250398896,
+          "unit": "m"
+        },
+        "robot.max_speed": {
+          "q05": 0.10753984391008822,
+          "q95": 0.3426483834308577,
+          "space_coverage": 0.5877713488019236,
+          "unit": "m/s"
+        },
+        "sensor.lidar_noise_std": {
+          "q05": 0.0356604761134639,
+          "q95": 0.0980804276072158,
+          "space_coverage": 0.624199514937519,
+          "unit": "m"
+        }
+      },
       "primary_class": "F-TIMEOUT",
+      "provisional": false,
+      "reproducibility": null,
+      "rules": [
+        {
+          "conditions": [
+            {
+              "op": "≥",
+              "param": "obstacle.clearance",
+              "threshold_physical": 0.5156778395175934,
+              "threshold_unit": 0.4297315329313278,
+              "unit": "m"
+            },
+            {
+              "op": "<",
+              "param": "robot.max_speed",
+              "threshold_physical": 0.1735861212015152,
+              "threshold_unit": 0.183965303003788,
+              "unit": "m/s"
+            },
+            {
+              "op": "<",
+              "param": "env.floor_friction",
+              "threshold_physical": 0.7514090597629547,
+              "threshold_unit": 0.7237878441810608,
+              "unit": "-"
+            }
+          ],
+          "mode_code": "FM-03",
+          "precision": 1.0,
+          "primary_class": "F-TIMEOUT",
+          "support": 1,
+          "text": "IF obstacle.clearance > 0.52 m AND robot.max_speed < 0.17 m/s AND env.floor_friction < 0.75 THEN FAIL (precision 1.00, support 1 runs, class F-TIMEOUT)"
+        }
+      ],
       "size": 6,
-      "status": "open"
+      "status": "open",
+      "version": 1
     }
   ],
   "next_cursor": null
