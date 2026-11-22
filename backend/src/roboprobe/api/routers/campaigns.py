@@ -343,6 +343,9 @@ async def add_manual_runs(
         msg = "campaign not found"
         raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
     settings = get_services(request).settings
+    if body.repeats <= 0:
+        msg = "repeats must be positive"
+        raise ValidationError(msg)
     if body.repeats > settings.runner.max_manual_repeats:
         msg = "repeats exceeds runner.max_manual_repeats"
         raise ValidationError(msg)
