@@ -112,7 +112,7 @@ test.skip('queues replay with the selected seed option and highlights the return
   expect(await request?.json()).toEqual({ repeats: 2, fresh_seeds: true });
 });
 
-test.skip('shows the recorded infrastructure error and omits oracle scores for invalid runs', async () => {
+test('shows the recorded infrastructure error and omits oracle scores for invalid runs', async () => {
   open({
     ...run,
     verdict: 'INVALID',
@@ -122,7 +122,7 @@ test.skip('shows the recorded infrastructure error and omits oracle scores for i
   expect(screen.queryByRole('meter')).not.toBeInTheDocument();
 });
 
-test.skip('renders passing verdict with oracle robustness', async () => {
+test('renders passing verdict with oracle robustness', async () => {
   open({ ...run, verdict: 'PASS', primary_failure: null, robustness: 0.5 });
   expect(await screen.findByRole('meter', { name: 'Robustness' })).toHaveAttribute(
     'aria-valuenow',

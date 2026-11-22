@@ -74,7 +74,7 @@ const ROUTES = [
   ['/campaigns/c1/atlas', 'Risk atlas'],
   ['/campaigns/c1/insights', 'Insights'],
   ['/campaigns/c1/settings', 'Settings'],
-  ['/runs/r1', 'Run 1'],
+  ['/runs/r1', 'Run entry'],
   ['/trials', 'Trials'],
   ['/trials/e1', 'Experiment'],
   ['/spaces', 'Spaces'],

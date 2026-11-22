@@ -321,7 +321,7 @@ function LoadedRun({ run }: { run: Schema['RunOut'] }) {
     <article className={styles['page']}>
       <header>
         <Link to={`/campaigns/${run.campaign_id}`}>Campaign console</Link>
-        <h1>Run {run.ordinal}</h1>
+        <h1>Run entry</h1>
         <p className={styles['verdict']}>
           {verdict ? (
             <>
