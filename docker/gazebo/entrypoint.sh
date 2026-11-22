@@ -20,6 +20,7 @@ case "${ROBOPROBE_BACKENDS__GAZEBO_NAV2__SOFTWARE_RENDERING,,}" in
 esac
 
 case "${1:-}" in
+  prefetch-fuel) exec bash /opt/roboprobe/prefetch_fuel.sh /opt/roboprobe/fuel-models.txt ;;
   ros2|gz) exec "$@" ;;
   *) exec /opt/roboprobe/venv/bin/roboprobe "$@" ;;
 esac

@@ -69,7 +69,8 @@ On a native Linux Docker host, grant the backend container user (UID/GID 10001) 
 Scale kinematic workers with `docker compose up -d --scale worker-k2d=6`.
 Start the Gazebo worker with `make up PROFILES="core gazebo"`. Compose gives it an init
 process, a read-only root filesystem, and the same artifact and database access as the
-kinematic worker. Its temporary workdirs stay under `/tmp`.
+kinematic worker. Its temporary workdirs stay under `/tmp`, and its Fuel model cache
+persists in the `gazebo-fuel` volume.
 
 ### 4.1 Compose skeleton (illustrative; the real file is created in T-005)
 
@@ -152,8 +153,17 @@ Build locally with
 `.dockerignore` allow-lists the build context, so `.env`, `secrets/` and `data/` never reach a layer.
 
 The Gazebo image reads its architecture-specific ROS versions from `docker/gazebo/apt-pins.txt`.
-It also preloads the versioned warehouse Fuel models listed in `docker/gazebo/fuel-models.txt`.
-The standard warehouse can start from the image's cache without downloading models at runtime.
+For warehouse runs permitted by the upstream model licenses, populate the persistent cache
+with the pinned versions from `docker/gazebo/fuel-models.txt` before starting the worker:
+
+```bash
+docker compose -f docker/compose.yaml --profile core --profile gazebo build worker-gazebo
+docker compose -f docker/compose.yaml --profile core --profile gazebo run \
+  --rm --no-deps worker-gazebo prefetch-fuel
+```
+
+The stock Warehouse v5 model uses the Creative Commons BY-NC-ND 4.0 license. The image
+ships the version list and download helper. The pinned models stay in the local Fuel volume.
 The worker records the apt versions, ROS distribution, Gazebo and Nav2 versions in each Gazebo
 run manifest. Set `backends.gazebo_nav2.software_rendering` to force Mesa software rendering on
 a host without usable GPU access.

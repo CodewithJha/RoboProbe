@@ -111,6 +111,9 @@ services:
       <<: *backend-environment
       ROBOPROBE_BACKENDS__GAZEBO_NAV2__IMAGE: *gazebo-image
     shm_size: ${ROBOPROBE_GZ_SHM_SIZE:-1gb}
+    volumes:
+      - ../data/artifacts:/data/artifacts
+      - gazebo-fuel:/data/gazebo-fuel
     init: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
@@ -234,4 +237,5 @@ secrets:
     file: ${ROBOPROBE_API_TOKEN_FILE:-../secrets/api_token}
 
 volumes:
+  gazebo-fuel:
   pgdata: {}

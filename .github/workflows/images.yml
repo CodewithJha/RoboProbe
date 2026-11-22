@@ -86,10 +86,11 @@ jobs:
           docker run --rm --init --read-only --tmpfs /tmp "$GAZEBO_IMAGE" ros2 pkg list | grep -Fx roboprobe_ros
           docker run --rm --init --read-only --tmpfs /tmp "$GAZEBO_IMAGE" worker --help
           test "$(docker image inspect "$GAZEBO_IMAGE" --format '{{.Config.User}}')" = 10001:10001
+          printf '%s\n' '<sdf version="1.9"><world name="runtime_smoke"/></sdf>' >"$RUNNER_TEMP/world.sdf"
           timeout 90s docker run --rm --network none --read-only --tmpfs /tmp \
             -e GZ_IP=127.0.0.1 -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__SOFTWARE_RENDERING=true \
-            "$GAZEBO_IMAGE" gz sim -s -r --iterations 1 --headless-rendering \
-            /opt/ros/jazzy/share/nav2_minimal_tb4_sim/worlds/warehouse.sdf
+            -v "$RUNNER_TEMP/world.sdf:/smoke.sdf:ro" \
+            "$GAZEBO_IMAGE" gz sim -s -r --iterations 1 --headless-rendering /smoke.sdf
           docker compose -f docker/compose.yaml --profile core --profile gazebo config --format json |
             python3 -c '
           import json

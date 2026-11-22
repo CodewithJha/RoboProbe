@@ -17,7 +17,7 @@ RUN arch="$(dpkg --print-architecture)" \
       /tmp/apt-pins.txt > /tmp/ros-pins \
  && apt-get update \
  && xargs apt-get install -y --no-install-recommends \
-      python3-numpy python3-scipy python3-yaml ros-jazzy-rosbag2 libegl1 libgl1-mesa-dri \
+      python3-numpy python3-scipy python3-yaml ros-jazzy-rosbag2 ros-jazzy-xacro libegl1 libgl1-mesa-dri \
       < /tmp/ros-pins \
  && rm -rf /var/lib/apt/lists/* \
  && source /opt/ros/jazzy/setup.bash \
@@ -31,11 +31,6 @@ RUN --mount=type=bind,from=uv,source=/uv,target=/tmp/uv \
     --mount=type=cache,target=/root/.cache/uv \
     /tmp/uv pip install --system --break-system-packages --python /usr/bin/python3 \
       'pyarrow>=17,<26' 'pydantic>=2.7'
-
-FROM simulator AS warehouse-fuel
-COPY docker/gazebo/fuel-models.txt docker/gazebo/prefetch_fuel.sh /tmp/
-RUN source /opt/ros/jazzy/setup.bash \
- && GZ_FUEL_CACHE_PATH=/opt/roboprobe/fuel bash /tmp/prefetch_fuel.sh /tmp/fuel-models.txt
 
 FROM simulator AS builder
 COPY --from=uv /uv /usr/local/bin/uv
@@ -83,17 +78,17 @@ LABEL org.opencontainers.image.title="roboprobe-gazebo" \
 RUN groupadd --system --gid "${APP_GID}" roboprobe \
  && useradd --system --uid "${APP_UID}" --gid roboprobe --home-dir /tmp/roboprobe \
       --no-create-home --shell /usr/sbin/nologin roboprobe \
- && install -d -o roboprobe -g roboprobe /data/artifacts /data/workdirs \
+ && install -d -o roboprobe -g roboprobe /data/artifacts /data/gazebo-fuel \
  && install -d /app \
  && ln -s /data /app/data
 
 COPY --from=builder /opt/roboprobe/venv /opt/roboprobe/venv
 COPY --from=builder /opt/roboprobe/ros_ws/install /opt/roboprobe/ros_ws/install
-COPY --from=warehouse-fuel /opt/roboprobe/fuel /opt/roboprobe/fuel
 COPY configs /app/configs
 COPY tasks /app/tasks
 COPY ros_ws/src/roboprobe_ros/config /app/ros_ws/src/roboprobe_ros/config
 COPY --chmod=755 docker/gazebo/entrypoint.sh /usr/local/bin/roboprobe-gazebo
+COPY docker/gazebo/fuel-models.txt docker/gazebo/prefetch_fuel.sh /opt/roboprobe/
 COPY docker/gazebo/cyclonedds.xml /opt/roboprobe/cyclonedds.xml
 
 ENV ROBOPROBE_GIT_SHA=${REVISION} \
@@ -104,7 +99,7 @@ ENV ROBOPROBE_GIT_SHA=${REVISION} \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     ROBOPROBE_STORAGE__WORKDIR_ROOT=/tmp/roboprobe-workdirs \
-    GZ_FUEL_CACHE_PATH=/opt/roboprobe/fuel \
+    GZ_FUEL_CACHE_PATH=/data/gazebo-fuel \
     ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST \
     CYCLONEDDS_URI=file:///opt/roboprobe/cyclonedds.xml
 
