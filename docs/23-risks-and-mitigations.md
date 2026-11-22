@@ -4,7 +4,7 @@
 
 | ID | Risk | L | I | Score | Mitigation | Contingency / trigger | Owner task |
 |----|------|---|---|-------|-----------|------------------------|-----------|
-| R-01 | Gazebo + Nav2 too slow/unstable headless on the laptop (RTF < 0.5, crashes) | 3 | 5 | 15 | Early spike T-090; headless; software rendering fallback; 1 worker | Switch to TB3 model (lighter sensors); reduce sim time budget; run EXP-04 on free-tier VM overnight | T-090 |
+| R-01 | Gazebo + Nav2 too slow/unstable headless on the laptop (RTF < 0.5, crashes) | 3 | 5 | 15 | [T-090](evidence/T-090-gazebo-spike.md) validated headless software navigation. Use 1 worker and a 150 s startup timeout on the measured VM. | Cold starts exceeded 40 s and both overlapping goals ran below 0.5 RTF. Pre-stage world assets and remeasure before raising concurrency. | T-090 |
 | R-02 | Intelligent strategy does not beat random on the real stack | 2 | 5 | 10 | Validate on k2d + analytic first; ablations; robustness signal | Report honestly (negative result is still a result); analyse why (noise, dimension) | T-105, T-120 |
 | R-03 | Too few/too many failures (space too easy/hard) | 3 | 4 | 12 | Calibrate ranges with OFAT + 50 random runs before experiments | Adjust ranges (new space version), never silently | T-034, T-105 |
 | R-04 | ROS/Gazebo version churn breaks image (Jazzy updates, Lyrical migration) | 2 | 3 | 6 | Digest-pinned images; nightly sim test; adapter isolation | Stay on last good digest; migrate via new ADR | T-095 |
