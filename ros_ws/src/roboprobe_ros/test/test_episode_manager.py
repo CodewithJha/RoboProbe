@@ -19,6 +19,7 @@ from rclpy.action import ActionServer, CancelResponse
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 from rclpy.parameter import Parameter
+from rclpy.qos import DurabilityPolicy, QoSProfile
 from rclpy.task import Future
 from roboprobe_ros.episode_manager import EpisodeManager, main
 from rosgraph_msgs.msg import Clock
@@ -109,7 +110,8 @@ def _serve(node: Node, case: str, events: list[str | tuple[str, bool]]) -> Actio
 
     if case != "wall_timeout":
         node.create_timer(0.03, step)
-    amcl = node.create_publisher(PoseWithCovarianceStamped, "/amcl_pose", 10)
+    amcl_qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+    amcl = node.create_publisher(PoseWithCovarianceStamped, "/amcl_pose", amcl_qos)
 
     def localize(pose: PoseWithCovarianceStamped) -> None:
         events.append("pose")
