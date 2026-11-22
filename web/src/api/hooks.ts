@@ -1,6 +1,7 @@
 /** Resource hooks; keys follow the API hierarchy (T-085c, FR-DSH-008). */
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, requireData, type Schema } from './client';
+import { api, apiUrl, ProblemError, requireData, type Schema } from './client';
+import { getToken } from '../lib/token';
 import type { operations } from './schema';
 
 export type Campaign = Schema['CampaignOut'];
@@ -365,6 +366,24 @@ export function useCreateReport() {
   return useMutation({
     mutationFn: async (body: Schema['ReportCreate']) =>
       requireData(await api.POST('/api/v1/reports', { body })),
+  });
+}
+export function useValidateSpace() {
+  return useMutation({
+    mutationFn: async (yaml: string) => {
+      const headers = new Headers({ 'Content-Type': 'application/yaml' });
+      const token = getToken();
+      if (token) headers.set('Authorization', `Bearer ${token}`);
+      const response = await fetch(apiUrl('/spaces/validate'), {
+        method: 'POST',
+        headers,
+        body: yaml,
+      });
+      const payload = (await response.json()) as Schema['SpaceValidationResult'] | undefined;
+      if (!response.ok) throw new ProblemError(response.status, payload);
+      if (!payload) throw new Error('Validation returned an empty response');
+      return payload;
+    },
   });
 }
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useRuntimeConfig, useSseStatus, useTheme } from './contexts';
 import { RailHost } from './MarginRailSlot';
+import { GlobalShortcuts } from './shortcuts';
 import './shell.css';
 const NAVIGATION = [
   { to: '/', label: 'Bench', icon: 'M3 4h18v16H3zM3 9h18M8 9v11' },
@@ -85,6 +86,7 @@ export function Shell() {
         <main id="main-content" tabIndex={-1}>
           <Outlet />
         </main>
+        <GlobalShortcuts />
       </div>
     </RailHost>
   );

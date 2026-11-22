@@ -126,6 +126,14 @@ describe('KeyboardManager', () => {
     expect(handler).toHaveBeenCalledOnce();
   });
 
+  it('notifies dialog subscribers when shortcuts change', () => {
+    const listener = vi.fn();
+    const off = manager.subscribeList(listener);
+    manager.register({ keys: 'x', handler: vi.fn(), description: 'Extra' });
+    expect(listener).toHaveBeenCalled();
+    off();
+  });
+
   it('unregisters and lists shortcuts for the ? dialog', () => {
     const off = manager.register({ keys: ' g  b ', handler: vi.fn(), description: 'Bench' });
     manager.register({ keys: 'r', handler: vi.fn(), scope: 'feature', description: 'Replay' });
