@@ -55,7 +55,7 @@ def test_completed_launch_uses_terminal_file_and_trace(
             f"workdir:={workdir}",
         ]
         assert env["ROS_DOMAIN_ID"] == "30"
-        assert env["GZ_PARTITION"].endswith(episode_request.run_id.hex)
+        assert env["GZ_PARTITION"].startswith("rp_") and env["GZ_PARTITION"].endswith("_0")
         assert env["ROS_AUTOMATIC_DISCOVERY_RANGE"] == "LOCALHOST"
         assert wall_timeout_s == 43
         assert not (workdir / "episode_done.json").exists()
@@ -68,6 +68,7 @@ def test_completed_launch_uses_terminal_file_and_trace(
     monkeypatch.setattr(EpisodeProcess, "run", run_process)
     (episode_request.workdir / "episode_done.json").write_text("stale", encoding="utf-8")
     settings = RoboProbeSettings(
+        storage={"workdir_root": episode_request.workdir},
         backends={"gazebo_nav2": {"startup_timeout_s": 20, "wall_margin_s": 3}}
     )
     result = GazeboNav2Backend(settings).run_episode(
@@ -110,7 +111,8 @@ def test_infra_classifications(
         return ProcessExit(state, returncode)
 
     monkeypatch.setattr(EpisodeProcess, "run", run_process)
-    result = GazeboNav2Backend(RoboProbeSettings()).run_episode(
+    settings = RoboProbeSettings(storage={"workdir_root": episode_request.workdir})
+    result = GazeboNav2Backend(settings).run_episode(
         episode_request, MaterializedScenario(payload={"time_limit_s": 20})
     )
     assert result.infra_error == expected
