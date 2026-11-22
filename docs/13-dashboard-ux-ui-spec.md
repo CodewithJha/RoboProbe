@@ -241,7 +241,7 @@ web/src/
 | `ConditionStrip` | `values: number[]` (unit), `labels`, `highlight?: number[]`, `size: "xs"\|"sm"\|"md"` | `d` bars; highlighted (characteristic) params drawn in ink, others muted; tooltip shows physical values |
 | `SpecimenTag` | `kind: run\|mode`, `id`, `verdict`, `label`, `strip?` | punched-hole motif, mono id, verdict notch, click navigates |
 | `RobustnessBar` | `value: number` (−1…1) | centred zero line; negative fill `--risk-failure`, positive `--risk-safe` |
-| `RiskHeatmap` | `slice: RiskSlice`, `logX?`, `logY?`, `onCellClick` | Plotly heatmap + scatter overlay + 0.5 contour; hatched uncertain band via SVG pattern overlay |
+| `RiskHeatmap` | `slice: RiskSlice`, `logX?`, `logY?`, `onCellClick`, `size?` | Lazy Plotly heatmap, evaluated points and 0.5 contour; responsive SVG uncertainty hatches, static thumbnails and a keyboard-accessible data table |
 | `TrajectoryPlot` | `trace`, `map`, `obstacles`, `cursorT` | SVG, pan/zoom, synced cursor |
 | `Spine` | `runs: {ordinal, verdict}[]` | vertical tick timeline in margin rail; virtualised |
 

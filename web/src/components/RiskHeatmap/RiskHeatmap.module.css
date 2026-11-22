@@ -3,9 +3,21 @@
 }
 
 .plot {
-  display: block;
+  position: relative;
   width: 100%;
-  height: auto;
+  aspect-ratio: 5 / 3;
+}
+
+.chart,
+.hatches {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hatches {
+  pointer-events: none;
 }
 
 .table {
