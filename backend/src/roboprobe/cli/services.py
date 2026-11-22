@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib
 import threading
+from queue import SimpleQueue
 from typing import Annotated
 
 import typer
@@ -17,10 +18,11 @@ from roboprobe.bootstrap import build_cli_services, build_orchestrator, build_wo
 from roboprobe.cli._context import get_state
 from roboprobe.cli.space import REPO_ROOT
 from roboprobe.core.clock import SystemClock
-from roboprobe.core.errors import ValidationError
+from roboprobe.core.errors import RoboProbeError, ValidationError
 from roboprobe.core.metrics_registry import create_metrics
 from roboprobe.runner.heartbeat import HeartbeatService
 from roboprobe.runner.orchestrator import Orchestrator
+from roboprobe.runner.worker import WorkerProcess
 from roboprobe.scenario.space import ScenarioSpace
 
 __all__ = ["api_app", "orchestrator_app", "worker_app"]
@@ -101,6 +103,15 @@ def worker_cmd(
     threads: list[threading.Thread] = []
     heartbeats: list[HeartbeatService] = []
     workers = []
+    worker_errors: SimpleQueue[RoboProbeError] = SimpleQueue()
+
+    def serve_worker(worker: WorkerProcess) -> None:
+        try:
+            worker.serve_forever(stop)
+        except RoboProbeError as exc:
+            worker_errors.put(exc)
+            stop.set()
+
     try:
         for slot in range(concurrency):
             slot_settings = settings.worker.model_copy(
@@ -127,8 +138,8 @@ def worker_cmd(
             heartbeat.start(serve_probe=health)
             threads.append(
                 threading.Thread(
-                    target=worker.serve_forever,
-                    args=(stop,),
+                    target=serve_worker,
+                    args=(worker,),
                     name=f"worker-{slot}",
                     daemon=True,
                 )
@@ -138,6 +149,8 @@ def worker_cmd(
         state.output.data({"service": "worker", "backend": backend, "concurrency": concurrency})
         for thread in threads:
             thread.join()
+        if not worker_errors.empty():
+            raise worker_errors.get()
     finally:
         stop.set()
         for worker in workers:

@@ -196,7 +196,9 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `backends.gazebo_nav2.rmw` | str | `rmw_cyclonedds_cpp` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__RMW` | ROS 2 middleware implementation. |
 | `backends.gazebo_nav2.domain_id_base` | int | `30` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__DOMAIN_ID_BASE` | First `ROS_DOMAIN_ID`; each worker slot adds its index. |
 | `backends.gazebo_nav2.startup_timeout_s` | float | `60.0` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__STARTUP_TIMEOUT_S` | Time allowed for Nav2 to become ACTIVE [s]. |
-| `backends.gazebo_nav2.teardown_grace_s` | float | `10.0` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__TEARDOWN_GRACE_S` | SIGTERM-to-SIGKILL grace on episode teardown [s]. |
+| `backends.gazebo_nav2.wall_margin_s` | float | `30.0` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__WALL_MARGIN_S` | Extra wall time after estimated startup and navigation [s]. |
+| `backends.gazebo_nav2.teardown_grace_s` | float | `10.0` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__TEARDOWN_GRACE_S` | Time from SIGINT to SIGTERM on episode teardown [s]. |
+| `backends.gazebo_nav2.teardown_term_wait_s` | float | `5.0` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__TEARDOWN_TERM_WAIT_S` | Time from SIGTERM to SIGKILL after an episode [s]. |
 | `backends.gazebo_nav2.sample_hz` | float | `20.0` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__SAMPLE_HZ` | Trace sampling rate [Hz]. |
 | `backends.gazebo_nav2.record_bag` | enum: `never` / `failures` / `always` | `failures` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__RECORD_BAG` | When to record rosbag2 MCAP: never, failures, always. |
 | `backends.gazebo_nav2.max_parallel_per_host` | int | `1` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__MAX_PARALLEL_PER_HOST` | Gazebo episodes allowed in parallel on one host. |

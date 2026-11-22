@@ -51,6 +51,7 @@ __all__ = [
     "StoreError",
     "StrategyError",
     "ValidationError",
+    "WorkerUnhealthy",
     "is_transient",
 ]
 
@@ -242,6 +243,10 @@ class PluginError(RoboProbeError):
     """A plugin could not be discovered, validated or instantiated."""
 
     default_code = ErrorCode.PLUGIN_ERROR
+
+
+class WorkerUnhealthy(BackendError):  # noqa: N818 - named by the worker lifecycle contract
+    """The worker must exit because its backend cannot safely start another episode."""
 
 
 def is_transient(exc: BaseException) -> bool:

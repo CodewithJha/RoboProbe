@@ -10,7 +10,7 @@ from tests.contract.test_backend_contract import FakeBackend
 from tests.fakes.store import InMemoryRunQueue, InMemoryUnitOfWork
 
 from roboprobe.core.clock import FakeClock
-from roboprobe.core.errors import ConflictError
+from roboprobe.core.errors import ConflictError, WorkerUnhealthy
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.settings.oracles import OracleThresholds
 from roboprobe.core.types import CampaignStatus, RunStatus, TaskSpec, Verdict
@@ -113,7 +113,8 @@ def test_claimed_run_ends_done_with_verdict(tmp_path: Path, task: TaskSpec) -> N
         assert run.verdict in {Verdict.PASS, Verdict.FAIL, Verdict.INVALID}
 
 
-def test_backend_exception_maps_to_invalid(tmp_path: Path, task: TaskSpec) -> None:
+@pytest.mark.parametrize("fatal", [False, True])
+def test_backend_exception_maps_to_invalid(tmp_path: Path, task: TaskSpec, fatal: bool) -> None:
     settings = _settings(tmp_path)
     uow = InMemoryUnitOfWork()
     _seed(uow, settings)
@@ -125,7 +126,8 @@ def test_backend_exception_maps_to_invalid(tmp_path: Path, task: TaskSpec) -> No
 
     class Boom(FakeBackend):
         def run_episode(self, req, materialized, on_progress=None):
-            raise RuntimeError("boom")
+            error = WorkerUnhealthy if fatal else RuntimeError
+            raise error("boom")
 
     worker = WorkerProcess(
         backend=Boom(settings),
@@ -142,14 +144,20 @@ def test_backend_exception_maps_to_invalid(tmp_path: Path, task: TaskSpec) -> No
     )
     claimed = worker.claim()
     assert claimed is not None
-    worker.execute(claimed)
+    if fatal:
+        with pytest.raises(WorkerUnhealthy):
+            worker.execute(claimed)
+    else:
+        worker.execute(claimed)
     with uow:
         run = uow.runs.get(claimed.run_id)
         assert run is not None
         assert run.status is RunStatus.ERROR
         assert run.verdict is Verdict.INVALID
-        assert run.infra_error is not None and "infra_error" in run.infra_error
-    # Worker continues: second claim returns None (queue empty).
+        assert run.infra_error == (
+            "gazebo_orphan_processes" if fatal else "infra_error:RuntimeError"
+        )
+    assert worker.is_draining is fatal
     assert worker.claim() is None
 
 

@@ -208,6 +208,7 @@ class GazeboMaterializer:
         repo_root: Path | None = None,
         wall_timeout_s: float | None = None,
         spawn_tolerance_m: float | None = None,
+        sim_time_budget_s: float | None = None,
     ) -> None:
         """Validate configuration and retain host asset location for deterministic generation."""
         if sut.backend != _BACKEND:
@@ -231,6 +232,7 @@ class GazeboMaterializer:
         self._spawn_tolerance_m = (
             InfraThresholds().spawn_tolerance_m if spawn_tolerance_m is None else spawn_tolerance_m
         )
+        self._sim_time_budget_s = sim_time_budget_s
 
     def materialize(
         self, scenario: Scenario, workdir: Path, seeds: EpisodeSeeds
@@ -273,6 +275,8 @@ class GazeboMaterializer:
         params = self._nav2(topics, speed)
         map_yaml, map_image = _map_assets(self._root, self._task.map)
         time_limit = time_limit_s(self._task, speed, polyline_length_m(nominal))
+        if self._sim_time_budget_s is not None:
+            time_limit = min(time_limit, self._sim_time_budget_s)
         simulator_seed = derive_seed(seeds.run, SIMULATOR) & _GAZEBO_CLI_MAX_SEED
         files = {
             "world.sdf": world.content,

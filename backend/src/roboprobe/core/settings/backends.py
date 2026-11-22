@@ -88,8 +88,16 @@ class GazeboNav2Settings(SettingsSection):
     startup_timeout_s: float = Field(
         default=60.0, gt=0, description="Time allowed for Nav2 to become ACTIVE [s]."
     )
+    wall_margin_s: float = Field(
+        default=30.0,
+        ge=0,
+        description="Extra wall time after estimated startup and navigation [s].",
+    )
     teardown_grace_s: float = Field(
-        default=10.0, gt=0, description="SIGTERM-to-SIGKILL grace on episode teardown [s]."
+        default=10.0, gt=0, description="Time from SIGINT to SIGTERM on episode teardown [s]."
+    )
+    teardown_term_wait_s: float = Field(
+        default=5.0, ge=0, description="Time from SIGTERM to SIGKILL after an episode [s]."
     )
     sample_hz: float = Field(default=20.0, gt=0, description="Trace sampling rate [Hz].")
     record_bag: RecordBagPolicy = Field(

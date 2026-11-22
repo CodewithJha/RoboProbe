@@ -13,6 +13,7 @@ import shutil
 import signal
 import threading
 from collections.abc import Callable, Mapping
+from contextlib import suppress
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -23,7 +24,7 @@ import structlog
 
 from roboprobe import __version__
 from roboprobe.core.clock import Clock
-from roboprobe.core.errors import ConflictError
+from roboprobe.core.errors import ConflictError, WorkerUnhealthy
 from roboprobe.core.metrics_registry import Metrics, create_metrics
 from roboprobe.core.settings.storage import StorageSettings
 from roboprobe.core.settings.worker import WorkerSettings
@@ -191,6 +192,9 @@ class WorkerProcess:
                 continue
             try:
                 self.execute(claimed)
+            except WorkerUnhealthy:
+                external.set()
+                raise
             except Exception:
                 log.exception(
                     "run.execute_error",
@@ -304,6 +308,13 @@ class WorkerProcess:
                     verdict=outcome.verdict.value,
                     worker_id=self.worker_id,
                 )
+        except WorkerUnhealthy:
+            self.request_stop()
+            with suppress(ConflictError):
+                self._queue.fail(run.run_id, "gazebo_orphan_processes")
+            elapsed = self._clock.monotonic() - started
+            self._observe_finished(run.backend, "INVALID", "F-INFRA", elapsed)
+            raise
         except ConflictError:
             log.info("run.lost", run_id=str(run.run_id), worker_id=self.worker_id)
             return
