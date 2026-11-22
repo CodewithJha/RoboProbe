@@ -45,15 +45,18 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Calibrate analytic EXP-02 (reduced seeds)
         working-directory: backend
+        env:
+          CALIBRATION_SEEDS: ${{ inputs.seeds || '10' }}
         run: >
           uv run python ../scripts/calibrate_benchmarks.py
-          --seeds "${{ github.event.inputs.seeds || '10' }}"
+          --seeds "$CALIBRATION_SEEDS"
           --budget 150
           --out /tmp/benchmark-current.json
       - name: Compare against weekly baseline
         id: compare
         working-directory: backend
         run: |
+          set -o pipefail
           set +e
           uv run python ../scripts/compare_benchmark.py \
             tests/benchmark/baselines/full_weekly.json \

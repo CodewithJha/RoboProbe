@@ -1,0 +1,27 @@
+backend: benchmark
+batch_size: 4
+budget: 8
+description: Hypotheses H1-H2. Primary metric MET-03. Alpha 0.05. Paired branin_falsify
+  arm is exp02_branin.yaml (schema v1 holds one space).
+id: exp02_pipeline_smoke
+metrics:
+- MET-01
+- MET-02
+- MET-03
+- MET-09
+name: EXP-02 pipeline smoke, reduced design
+schema_version: 1
+seeds:
+  count: 1
+  root: 20261119
+space:
+  id: multi_mode_6d
+strategies:
+- id: S-RANDOM
+- id: S-PROBE
+  params:
+    epsilon: 0.05
+sut_profile_id: k2d_default
+tags:
+- H1
+- H2
