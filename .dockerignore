@@ -4,6 +4,8 @@
 !backend/pyproject.toml
 !backend/uv.lock
 !backend/src/
+!backend/alembic/
+!backend/alembic.ini
 !schemas/
 !configs/
 !tasks/

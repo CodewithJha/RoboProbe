@@ -10,11 +10,15 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Playwright E2E harness and journeys (T-117, T-118, T-114): compose-backed global setup with
   seeded warehouse campaign, axe helper and page objects, journey specs, `e2e.yml`, Lighthouse
   nightly gate, and `size-limit` bundle budget in `build-web`.
+- Reproducible headless Gazebo and Nav2 warehouse measurements with a one-worker laptop recommendation (T-090).
+- Nightly API load test (T-106) checks endpoint p95 with a 10,000-run PostgreSQL seed and uploads the Locust CSV and runs-list query plan.
 - Dashboard polish (T-113a/b, T-115): Spaces list with YAML view and validation,
   Workbench worker table, Settings (session token, theme, number locale, SSE reconnect),
   report export with sandboxed preview route, and global keyboard shortcuts dialog.
 - Web production image (T-116): nginx-unprivileged SPA, runtime `/config.json`, CSP and
   security headers, and the compose `app` profile `web` service.
+- Opt-in experiment API launch atomically creates the planned campaign matrix and runs it
+  through the orchestrator and workers (T-084a).
 - Casebook and Insights (T-110a/b): filter and edit analyzed failure modes, replay or export
   representative scenarios, and compare SHAP importance with GP rankings and cross-validation.
 - Analysis and reporting API follow-through (T-082b/c, T-084a): cached, anchored risk

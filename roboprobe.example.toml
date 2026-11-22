@@ -65,6 +65,10 @@
 # trace_max_hz = 50.0
 # Concurrent API report/export jobs.
 # report_workers = 1
+# Concurrent API experiment jobs.
+# experiment_workers = 1
+# Maximum planned strategy/seed cells per API experiment.
+# experiment_max_cells = 128
 # Cached risk slices per API process.
 # slice_cache_size = 32
 # Risk slice computation timeout [s].

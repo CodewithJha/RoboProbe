@@ -59,6 +59,7 @@ EVENTS: frozenset[str] = frozenset(
         "orchestrator.campaign_started",
         "orchestrator.campaign_failed",
         "orchestrator.fail_status_error",
+        "experiment.launch_failed",
     }
 )
 """Event catalogue (docs/34 §6). Extend, never rename; a test fails on unknown event names."""
