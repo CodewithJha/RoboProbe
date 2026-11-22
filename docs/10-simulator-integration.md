@@ -90,6 +90,7 @@ Materialisation writes into `workdir/<run_id>/`:
 | `perturb_params.yaml` | `PerturbationConfig` | P3 model constants, P4, P8, P6, per-node seeds |
 | `bridge.yaml` | template | lidar to `/scan_raw`, depth to `…/points_raw`, ground-truth pose topic |
 | `episode.yaml` | `EpisodeConfig` | start, goal, time limit, sample rate, record_bag |
+| `topics.yaml`, `map.yaml`, `map.pgm`, `perception_model.yaml` | `GazeboMaterializer` | Workdir-local copies of the configured topics, map and perception inputs |
 | `manifest.json` | `ManifestBuilder` | all hashes and versions (21 §4) |
 
 | Param | Mechanism | Detail |
@@ -120,12 +121,31 @@ for each processed cloud. The installed OAK-D simulation publishes 320×240 poin
 
 Friction and lighting are world properties ⇒ a fresh world load per run (no warm reset in MVP; see §8).
 
+The generated `episode.yaml` stores planar start and goal poses as `{x, y, yaw}`, the world and
+robot names, map filename, robot footprint, and the resolved pallet pose and dimensions. The
+footprint comes from the Nav2 local costmap profile and contains `vertices_m` or `radius_m`.
+`time_limit_s` is derived from the task’s nominal path and P1. `wall_timeout_factor` expresses
+the worker’s wall-time budget as a multiple of that limit. Startup, teardown and spawn tolerances
+come from the typed backend and oracle settings.
+
+The perturbation file uses `illuminance_lux`, `perception_model_file`, `lidar.sigma_m`,
+`lidar.dropout_p`, `cmd_delay_ms` and `rate_hz`. `seeds` contains distinct derived streams
+named `sensor_perturber`, `perception_degrader` and `cmd_delay`. The lidar also reads its seed
+from the top-level `seed` field. The bridge keeps the stock clock, joint state, TF, IMU and odometry
+routes while using the verified topic catalog for the perturbation and ground-truth edges.
+The Gazebo CLI uses the low 31 bits of the simulator seed to fit Harmonic's signed integer
+argument. ROS node seeds retain their full derived precision.
+
 **SUT profiles** (`configs/sut_profiles/<id>.yaml`, schema `schemas/sut_profile.schema.json`, loader
 `roboprobe.scenario.sut_profile.load_sut_profile`, T-016) select the robot stack: for `gazebo_nav2` the base
 `base_nav2_params`, the `speed_param_paths` that receive P1 and a nested `nav2_overrides` overlay; for `kinematic2d` the
 `model_file` and per-constant `gain_overrides`. `config_hash` = sha256 of the canonical JSON of backend + validated
 config, so only behaviour-relevant edits change it (docs/33 comparability rule). Values awaiting verification are
 listed under `provisional` and rejected by strict loading.
+
+The standard Gazebo SUT profile uses the worker’s `backends.gazebo_nav2.base_nav2_params` setting
+as its base. A profile that names a different parameter file uses that file before merging
+`nav2_overrides` and applying the episode speed and topic routing.
 
 ## 5. Episode lifecycle (Gazebo)
 
