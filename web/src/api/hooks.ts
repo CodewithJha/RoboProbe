@@ -379,7 +379,7 @@ export function useRunTrace(id: string, hz?: number, columns?: string) {
         }),
       );
       if (typeof data === 'string') throw new Error('The server returned a non-JSON trace.');
-      return data as Schema['TraceOut'];
+      return data;
     },
   });
 }
