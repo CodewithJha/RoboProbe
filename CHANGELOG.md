@@ -253,6 +253,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Fixed
 
+- Keep reference Parquet manifests current and allow import of reviewed failure-mode assignments.
+
 - Bound Gaussian-process prediction batches so a full Risk Atlas can be generated on a laptop.
 
 - Campaign reports render legacy risk slices, and authenticated dashboard sessions can preview

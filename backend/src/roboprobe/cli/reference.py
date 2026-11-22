@@ -44,9 +44,12 @@ def reference_label(
     ctx: typer.Context,
     source: Annotated[Path, typer.Argument(help="Reference parquet to label.")],
     output: Annotated[Path | None, typer.Option("--output", help="Defaults to in-place.")] = None,
+    reviewed_labels: Annotated[
+        Path | None, typer.Option("--reviewed-labels", help="JSON reviewed mode assignments.")
+    ] = None,
 ) -> None:
-    """Label failing reference rows with nearest GT mode (docs/19 §3)."""
+    """Label failing reference rows from review or calibrated modes (docs/19 §3)."""
     state = get_state(ctx)
     settings: RoboProbeSettings = state.bootstrap()
-    dest, labelled = label_parquet(settings, source, output=output)
+    dest, labelled = label_parquet(settings, source, output=output, reviewed_labels=reviewed_labels)
     state.output.data({"path": str(dest), "labelled_failures": labelled})
