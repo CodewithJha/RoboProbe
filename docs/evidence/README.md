@@ -3,6 +3,7 @@
 Results and records produced during implementation and evaluation (kept in git when small, otherwise linked artefact hashes):
 
 - [T-090 Gazebo spike](T-090-gazebo-spike.md) — feasibility measurements for real-time factor, startup, CPU and memory.
+- [T-091 ROS topics verification](T-091/README.md) — `topics.yaml`, TB4 geometry, Nav2 parameter paths.
 - `T-061-benchmark-calibration.md` — frozen selector thresholds/hyper-parameters.
 - `T-131-mutation.md` — mutation-testing kill-rate baseline.
 - `exp01/` … `exp07/` — experiment reports (19).

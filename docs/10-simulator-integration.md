@@ -73,8 +73,8 @@ flowchart LR
 
 Exact topic names, message types (Jazzy Nav2 publishes `geometry_msgs/TwistStamped` when
 `enable_stamped_cmd_vel` is true), bridge entries and the TB4 lidar/camera frames MUST be verified
-against the installed packages in task T-091 and recorded in `ros_ws/src/roboprobe_ros/config/topics.yaml`
-— the code reads topic names from that file, never from literals.
+recorded in `ros_ws/src/roboprobe_ros/config/topics.yaml` (validated by `schemas/ros_topics.schema.json`,
+T-091 evidence in `docs/evidence/T-091`) — the code reads topic names from that file, never from literals.
 
 ## 4. Applying each parameter (materialisation, `GazeboMaterializer`)
 

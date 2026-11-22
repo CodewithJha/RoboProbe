@@ -33,6 +33,7 @@ SCHEMA_NAMES = (
     "sut_profile",
     "manifest",
     "analysis_report",
+    "ros_topics",
 )
 SCHEMA_BASE_URI = "https://github.com/CodewithJha/RoboProbe/schemas/"
 

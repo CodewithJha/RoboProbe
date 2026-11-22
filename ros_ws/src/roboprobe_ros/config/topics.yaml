@@ -1,0 +1,53 @@
+# Verified against Jazzy Nav2 1.3.14 + nav2_minimal_tb4_sim (T-091). Pin: spikes/T-090 Dockerfile.
+# Implements: FR-SIM-003
+schema_version: 1
+stamped_cmd_vel: false
+topics:
+  scan_raw:
+    name: /scan
+    type: sensor_msgs/msg/LaserScan
+    qos: sensor_data
+  scan:
+    name: /scan
+    type: sensor_msgs/msg/LaserScan
+    qos: sensor_data
+  depth_points_raw:
+    name: /rgbd_camera/depth_image
+    type: sensor_msgs/msg/Image
+    qos: sensor_data
+  depth_points:
+    name: /rgbd_camera/depth/points
+    type: sensor_msgs/msg/PointCloud2
+    qos: sensor_data
+  cmd_vel_nav:
+    name: /cmd_vel
+    type: geometry_msgs/msg/Twist
+    qos: default
+  cmd_vel:
+    name: /cmd_vel
+    type: geometry_msgs/msg/Twist
+    qos: default
+  odom:
+    name: /odom
+    type: nav_msgs/msg/Odometry
+    qos: default
+  amcl_pose:
+    name: /amcl_pose
+    type: geometry_msgs/msg/PoseWithCovarianceStamped
+    qos: default
+  ground_truth_pose:
+    name: /ground_truth/pose
+    type: geometry_msgs/msg/PoseStamped
+    qos: sensor_data
+  bt_log:
+    name: /behavior_tree_log
+    type: nav2_msgs/msg/BehaviorTreeLog
+    qos: default
+frames:
+  map: map
+  odom: odom
+  base_link: base_link
+  laser: rplidar_link
+geometry:
+  lidar_plane_height_m: 0.194
+  dropped_pallet_height_m: 0.144

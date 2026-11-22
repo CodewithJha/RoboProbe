@@ -33,7 +33,7 @@ pytestmark = pytest.mark.unit
 
 REPO = Path(__file__).resolve().parents[4]
 WAREHOUSE = REPO / "configs" / "scenario_spaces" / "warehouse_v1.yaml"
-_SPACE_VERSION = "09cf763f2e0d"
+_SPACE_VERSION = "4326a28381df"
 
 runner = CliRunner()
 

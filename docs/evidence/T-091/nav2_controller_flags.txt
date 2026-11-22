@@ -1,0 +1,4 @@
+# T-090 spike measurements (authoritative for stamped cmd vel on TB4 Jazzy)
+enable_stamped_cmd_vel=False
+use_sim_time=True
+# Gazebo DiffDrive bridge still accepts geometry_msgs/msg/TwistStamped on /cmd_vel (tb4_bridge.yaml)

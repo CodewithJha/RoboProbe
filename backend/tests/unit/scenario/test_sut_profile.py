@@ -216,9 +216,9 @@ def test_provisional_rejected_only_when_strict(tmp_path: Path) -> None:
     assert error_paths(exc) == ["/provisional/0"]
 
 
-def test_shipped_nav2_profile_is_provisional_until_t091() -> None:
-    with pytest.raises(errors.ValidationError):
-        load_sut_profile(PROFILES_DIR / "tb4_nav2_default.yaml", strict=True)
+def test_shipped_nav2_profile_speed_paths_verified_t091() -> None:
+    profile = load_sut_profile(PROFILES_DIR / "tb4_nav2_default.yaml", strict=True)
+    assert profile.id == "tb4_nav2_default"
     assert load_sut_profile(PROFILES_DIR / "k2d_default.yaml", strict=True).id == "k2d_default"
 
 
