@@ -7,7 +7,7 @@
 #     -t roboprobe-web:dev .
 
 ARG NODE_IMAGE=node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
-ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:1.27-alpine@sha256:65e3e85dbaed8ba248841d9d58a899b6197106c23cb0ff1a132b7bfe0547e4c0
+ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:alpine3.24@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
 
 # hadolint ignore=DL3006
 FROM ${NODE_IMAGE} AS build
@@ -23,10 +23,8 @@ RUN pnpm build
 # hadolint ignore=DL3006
 FROM ${NGINX_IMAGE} AS runtime
 USER root
-RUN apk add --no-cache wget
 COPY docker/web/nginx.conf /etc/nginx/nginx.conf
-COPY docker/web/40-config-json.sh /docker-entrypoint.d/40-config-json.sh
-RUN chmod +x /docker-entrypoint.d/40-config-json.sh
+COPY --chmod=755 docker/web/40-config-json.sh /docker-entrypoint.d/40-config-json.sh
 COPY --from=build /app/web/dist /usr/share/nginx/html
 USER 101
 
