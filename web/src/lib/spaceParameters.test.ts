@@ -1,6 +1,5 @@
 import { expect, test } from 'vitest';
 import { parameters } from './spaceParameters';
-
 test('parses enabled parameters from a space definition', () => {
   expect(
     parameters({
