@@ -49,8 +49,7 @@ export function ThreatsNotes({ experiment }: { experiment: Schema['ExperimentOut
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          if (etag && draft !== saved && !conflict)
-            save.mutate({ notes: draft, version: etag });
+          if (etag && draft !== saved && !conflict) save.mutate({ notes: draft, version: etag });
         }}
       >
         <label>

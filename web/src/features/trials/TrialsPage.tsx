@@ -12,9 +12,9 @@ export function Component() {
         const design = experiment.design;
         const listed = cells(experiment);
         const completed =
-          experiment.progress?.completed ??
+          experiment.progress?.['completed'] ??
           listed.filter((cell) => cell.status === 'COMPLETED').length;
-        const total = experiment.progress?.total ?? listed.length;
+        const total = experiment.progress?.['total'] ?? listed.length;
         return {
           id: experiment.id,
           name: experiment.name,

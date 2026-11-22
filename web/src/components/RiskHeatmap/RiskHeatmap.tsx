@@ -63,8 +63,10 @@ export function RiskHeatmap({
   const [tableOpen, setTableOpen] = useState(false);
   const fullX = slice.x_values ?? [];
   const fullY = slice.y_values ?? [];
-  const xIndices = size === 'thumb' ? thumbnailIndices(fullX.length) : fullX.map((_: number, i: number) => i);
-  const yIndices = size === 'thumb' ? thumbnailIndices(fullY.length) : fullY.map((_: number, i: number) => i);
+  const xIndices =
+    size === 'thumb' ? thumbnailIndices(fullX.length) : fullX.map((_: number, i: number) => i);
+  const yIndices =
+    size === 'thumb' ? thumbnailIndices(fullY.length) : fullY.map((_: number, i: number) => i);
   const xs = xIndices.map((i) => fullX[i] ?? 0);
   const ys = yIndices.map((i) => fullY[i] ?? 0);
   const probabilities = yIndices.map((row) =>
@@ -90,7 +92,7 @@ export function RiskHeatmap({
         {ys.map((y, row) =>
           xs.map((x, column) => {
             const probability = probabilities[row]?.[column];
-            if (probability === undefined) return null;
+            if (probability == null) return null;
             const left = xAxis.bounds[column] ?? 0;
             const right = xAxis.bounds[column + 1] ?? WIDTH;
             const bottom = HEIGHT - (yAxis.bounds[row] ?? 0);
@@ -98,9 +100,8 @@ export function RiskHeatmap({
             const uncertain = Number(regions[row]?.[column]) === 1;
             const above = probabilities[row + 1]?.[column];
             const next = probabilities[row]?.[column + 1];
-            const crosses = (neighbor?: number) =>
-              neighbor !== undefined &&
-              neighbor < HALF_PROBABILITY !== probability < HALF_PROBABILITY;
+            const crosses = (neighbor?: number | null) =>
+              neighbor != null && neighbor < HALF_PROBABILITY !== probability < HALF_PROBABILITY;
             return (
               <g key={`${String(column)}:${String(row)}`}>
                 {/* The equivalent focusable control is in the data table. */}
@@ -152,9 +153,9 @@ export function RiskHeatmap({
         )}
         {size === 'full' &&
           slice.points?.map((point, index) => {
-            const x = point.x;
-            const y = point.y;
-            const verdict = point.verdict;
+            const x = point['x'];
+            const y = point['y'];
+            const verdict = point['verdict'];
             if (
               typeof x !== 'number' ||
               typeof y !== 'number' ||
@@ -221,12 +222,12 @@ export function RiskHeatmap({
                         {xs.map((x, column) => {
                           const probability = probabilities[row]?.[column];
                           const percentage =
-                            probability === undefined
+                            probability == null
                               ? 'Unavailable'
                               : `${(probability * 100).toFixed(1)}%`;
                           return (
                             <td key={column}>
-                              {onCellClick && probability !== undefined ? (
+                              {onCellClick && probability != null ? (
                                 <button
                                   type="button"
                                   onClick={() => {

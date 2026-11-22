@@ -762,7 +762,7 @@ export interface components {
       };
       /** Repeats */
       repeats: number;
-      space?: components['schemas']['SpaceRef'];
+      space?: components['schemas']['SpaceRef'] | null;
       /** Started At */
       started_at?: string | null;
       status: components['schemas']['CampaignStatus'];
@@ -833,6 +833,8 @@ export interface components {
     };
     /** ExperimentOut */
     ExperimentOut: {
+      /** Cells */
+      cells?: components['schemas']['JsonValue'][] | null;
       /** Created At */
       created_at?: string | null;
       /** Design */
@@ -849,16 +851,11 @@ export interface components {
       /** Name */
       name: string;
       /** Notes */
-      notes?: string;
+      notes?: string | null;
       /** Progress */
       progress?: {
-        /** Completed */
-        completed?: number;
-        /** Total */
-        total?: number;
-      };
-      /** Cells */
-      cells?: components['schemas']['JsonValue'][];
+        [key: string]: number;
+      } | null;
       /** Results */
       results?: {
         [key: string]: components['schemas']['JsonValue'];
@@ -1107,32 +1104,29 @@ export interface components {
         [key: string]: components['schemas']['JsonValue'];
       };
       /** Log X */
-      log_x?: boolean;
+      log_x?: boolean | null;
       /** Log Y */
-      log_y?: boolean;
+      log_y?: boolean | null;
       /** P Fail */
-      p_fail?: number[][];
+      p_fail?: (number | null)[][] | null;
       /** Points */
-      points?: {
-        /** Verdict */
-        verdict?: string;
-        /** X */
-        x: number;
-        /** Y */
-        y: number;
-      }[];
+      points?:
+        | {
+            [key: string]: components['schemas']['JsonValue'];
+          }[]
+        | null;
       /** Region */
-      region?: unknown[][];
+      region?: components['schemas']['JsonValue'][][] | null;
       /** Resolution */
       resolution: number;
       /** X Param */
       x_param: string;
       /** X Values */
-      x_values?: number[];
+      x_values?: number[] | null;
       /** Y Param */
       y_param: string;
       /** Y Values */
-      y_values?: number[];
+      y_values?: number[] | null;
     };
     /** RunOut */
     RunOut: {

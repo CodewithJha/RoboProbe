@@ -219,7 +219,14 @@
             "type": "integer"
           },
           "space": {
-            "$ref": "#/components/schemas/SpaceRef"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SpaceRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "started_at": {
             "anyOf": [
@@ -411,6 +418,20 @@
       "ExperimentOut": {
         "additionalProperties": false,
         "properties": {
+          "cells": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cells"
+          },
           "created_at": {
             "anyOf": [
               {
@@ -452,29 +473,29 @@
             "type": "string"
           },
           "notes": {
-            "title": "Notes",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
           },
           "progress": {
-            "properties": {
-              "completed": {
-                "title": "Completed",
-                "type": "integer"
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
               },
-              "total": {
-                "title": "Total",
-                "type": "integer"
+              {
+                "type": "null"
               }
-            },
-            "title": "Progress",
-            "type": "object"
-          },
-          "cells": {
-            "items": {
-              "$ref": "#/components/schemas/JsonValue"
-            },
-            "title": "Cells",
-            "type": "array"
+            ],
+            "title": "Progress"
           },
           "results": {
             "anyOf": [
@@ -1135,55 +1156,84 @@
             "type": "object"
           },
           "log_x": {
-            "title": "Log X",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log X"
           },
           "log_y": {
-            "title": "Log Y",
-            "type": "boolean"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log Y"
           },
           "p_fail": {
-            "items": {
-              "items": {
-                "type": "number"
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "type": "array"
+                },
+                "type": "array"
               },
-              "type": "array"
-            },
-            "title": "P Fail",
-            "type": "array"
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P Fail"
           },
           "points": {
-            "items": {
-              "properties": {
-                "verdict": {
-                  "title": "Verdict",
-                  "type": "string"
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "object"
                 },
-                "x": {
-                  "title": "X",
-                  "type": "number"
-                },
-                "y": {
-                  "title": "Y",
-                  "type": "number"
-                }
+                "type": "array"
               },
-              "required": [
-                "x",
-                "y"
-              ],
-              "type": "object"
-            },
-            "title": "Points",
-            "type": "array"
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
           },
           "region": {
-            "items": {
-              "items": {},
-              "type": "array"
-            },
-            "title": "Region",
-            "type": "array"
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
           },
           "resolution": {
             "title": "Resolution",
@@ -1194,22 +1244,36 @@
             "type": "string"
           },
           "x_values": {
-            "items": {
-              "type": "number"
-            },
-            "title": "X Values",
-            "type": "array"
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "X Values"
           },
           "y_param": {
             "title": "Y Param",
             "type": "string"
           },
           "y_values": {
-            "items": {
-              "type": "number"
-            },
-            "title": "Y Values",
-            "type": "array"
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Y Values"
           }
         },
         "required": [
