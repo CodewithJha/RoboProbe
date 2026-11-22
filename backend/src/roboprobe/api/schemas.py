@@ -8,7 +8,7 @@ Implements: T-081, T-082, T-084
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal, Self
+from typing import Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -195,10 +195,14 @@ class FailureModeOut(BaseModel):
     interaction: dict[str, JsonValue] | None = None
 
 
+_MODE_LABEL_MAX_LENGTH = 80
+_MODE_STATUSES = frozenset({"open", "accepted", "fixed", "duplicate"})
+
+
 class FailureModePatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    label: str | None = Field(default=None, min_length=1, max_length=80)
-    status: Literal["open", "accepted", "fixed", "duplicate"] | None = None
+    label: str | None = None
+    status: str | None = None
     duplicate_of: str | None = None
 
     @field_validator("label")
@@ -206,13 +210,16 @@ class FailureModePatch(BaseModel):
     def _label(cls, value: str | None) -> str | None:
         if value is not None:
             value = value.strip()
-            if not value or any(ord(char) < 32 or ord(char) == 127 for char in value):
-                msg = "label must be printable and nonempty"
+            if not 1 <= len(value) <= _MODE_LABEL_MAX_LENGTH or not value.isprintable():
+                msg = f"label must use 1 to {_MODE_LABEL_MAX_LENGTH} characters"
                 raise ValueError(msg)
         return value
 
     @model_validator(mode="after")
     def _duplicate(self) -> Self:
+        if self.status is not None and self.status not in _MODE_STATUSES:
+            msg = "unknown failure mode status"
+            raise ValueError(msg)
         if self.status == "duplicate" and not self.duplicate_of:
             msg = "duplicate status requires duplicate_of"
             raise ValueError(msg)
