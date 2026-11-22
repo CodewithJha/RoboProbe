@@ -34,9 +34,13 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            python3-numpy python3-scipy python3-yaml python3-pytest ros-jazzy-launch-testing
+            python3-numpy python3-scipy python3-yaml python3-pytest \
+            ros-jazzy-launch-testing ros-jazzy-rmw-cyclonedds-cpp
       - name: Build and test
         working-directory: ros_ws
+        env:
+          ROS_AUTOMATIC_DISCOVERY_RANGE: LOCALHOST
+          RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
         run: |
           source /opt/ros/jazzy/setup.bash
           colcon build --packages-select roboprobe_ros

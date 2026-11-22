@@ -166,6 +166,7 @@ class TestSensorPerturber(TestCase):
                 lambda: (
                     scan_input.get_subscription_count() == len(_NODES)
                     and all(sub.get_publisher_count() == 1 for sub in subscribers)
+                    and all(stats)
                 ),
                 timeout=15.0,
             )
@@ -198,9 +199,7 @@ class TestSensorPerturber(TestCase):
             expected = {"count": _N_BEAMS, "dropped": dropped}
             _wait(
                 executor,
-                lambda: all(
-                    any(json.loads(msg.data) == expected for msg in group) for group in stats
-                ),
+                lambda: all(json.loads(group[-1].data) == expected for group in stats),
                 timeout=5.0,
             )
 
@@ -221,23 +220,25 @@ class TestSensorPerturber(TestCase):
             executor.shutdown()
             node.destroy_node()
 
-    def test_rejects_same_resolved_input_and_output(self) -> None:
-        """Refuse to subscribe to the node's own outgoing scan topic."""
-        with TemporaryDirectory(prefix="roboprobe-lidar-invalid-") as directory:
+    def test_rejects_invalid_episode_configuration(self) -> None:
+        """Reject feedback, nonnumeric noise and negative episode seeds."""
+        with TemporaryDirectory(prefix="roboprobe-lidar-") as directory, _ros_context() as context:
             root = Path(directory)
-            topics = _write_config(root / "topics.yaml", _topics_data(_RAW))
-            params = _write_config(
-                root / "perturb_params.yaml",
-                {"seed": 1, "lidar": {"sigma_m": 0, "dropout_p": 0}},
+            output = _test_topic("invalid", "scan")
+            cases = (
+                (_RAW, 0, 1, "different ROS topics"),
+                (output, "wide", 1, "finite number"),
+                (output, 0, -1, "nonnegative integer"),
             )
-            with _ros_context() as context, pytest.raises(ValueError, match="different ROS topics"):
-                SensorPerturber(
-                    context=context,
-                    parameter_overrides=[
-                        Parameter("topics_file", value=topics),
-                        Parameter("perturb_file", value=params),
-                    ],
-                )
+            for scan, sigma, seed, error in cases:
+                params = {"seed": seed, "lidar": {"sigma_m": sigma, "dropout_p": 0}}
+                files = {
+                    "topics_file": _write_config(root / "topics.yaml", _topics_data(scan)),
+                    "perturb_file": _write_config(root / "perturb_params.yaml", params),
+                }
+                overrides = [Parameter(key, value=path) for key, path in files.items()]
+                with pytest.raises(ValueError, match=error):
+                    SensorPerturber(context=context, parameter_overrides=overrides)
 
 
 @launch_testing.post_shutdown_test()
