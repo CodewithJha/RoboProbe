@@ -1,0 +1,5 @@
+# Playwright stack overrides (T-117): publish API on loopback for readiness polling from the runner.
+services:
+  api:
+    ports:
+      - "127.0.0.1:${ROBOPROBE_API_PORT:-8000}:8000"
