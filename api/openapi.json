@@ -675,6 +675,7 @@
         "properties": {
           "repeats": {
             "default": 1,
+            "exclusiveMinimum": 0.0,
             "title": "Repeats",
             "type": "integer"
           },
