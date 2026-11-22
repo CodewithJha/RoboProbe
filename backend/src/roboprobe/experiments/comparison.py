@@ -43,6 +43,7 @@ class _Run(Protocol):
     @property
     def tags(self) -> Sequence[object] | None: ...
 
+
 class _Page(Protocol):
     @property
     def items(self) -> Sequence[_Run]: ...
