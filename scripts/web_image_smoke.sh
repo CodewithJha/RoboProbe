@@ -123,6 +123,10 @@ grep -q '^: ping' "$scratch/events"
 
 WEB_SMOKE_URL="$base" WEB_SMOKE_TOKEN_FILE="$scratch/api_token" node web/scripts/check-production-csp.mjs
 
+if [[ ${WEB_SMOKE_DEMO:-0} == 1 ]]; then
+    COMPOSE_PROJECT_NAME="$project" PROFILES=app scripts/demo.sh
+fi
+
 # EventSource sends its bearer in the query. Even an upstream outage must keep it out of logs.
 "${compose[@]}" stop --timeout 1 api
 status="$(curl --silent --show-error --max-time 5 --get --data-urlencode "token@$scratch/api_token" \
