@@ -147,15 +147,7 @@ def _check_api(
             {**response_schema, "components": spec["components"]},
             format_checker=FormatChecker(),
         ).validate(body)
-        if name == "modes":
-            expected_items = _web_fixture(name)["items"]
-            assert body["next_cursor"] == _web_fixture(name)["next_cursor"]
-            assert len(body["items"]) == len(expected_items)
-            for actual, expected in zip(body["items"], expected_items, strict=True):
-                for key, value in expected.items():
-                    assert actual[key] == value, f"modes.{key}"
-        else:
-            assert body == _web_fixture(name), f"{name}.json differs from the restored seed API"
+        assert body == _web_fixture(name), f"{name}.json differs from the restored seed API"
 
     resolution = risk["resolution"]
     probabilities = risk["grid"]["p_fail"]
