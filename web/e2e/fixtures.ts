@@ -20,12 +20,11 @@ export const test = base.extend<{ consoleErrors: string[] }>({
   page: async ({ page, baseURL }, provide) => {
     const token = process.env['E2E_API_TOKEN'];
     if (!baseURL || !token) throw new Error('The Compose setup did not supply an E2E API session.');
-    await page.addInitScript(
-      ({ origin, bearer }) => {
-        if (location.origin === origin) sessionStorage.setItem('roboprobe.api-token', bearer);
-      },
-      { origin: new URL(baseURL).origin, bearer: token },
-    );
+    const config = await page.goto(new URL('/config.json', baseURL).href);
+    expect(config?.ok(), 'same-origin runtime config').toBe(true);
+    await page.evaluate((bearer) => {
+      sessionStorage.setItem('roboprobe.api-token', bearer);
+    }, token);
     await provide(page);
   },
   consoleErrors: [

@@ -4,11 +4,14 @@ import config from './e2e.config.json' with { type: 'json' };
 
 export async function expectNoA11yViolations(
   page: Page,
-  options?: { include?: string; disableRules?: string[] },
+  options?: { include?: string; exclude?: string; disableRules?: string[] },
 ): Promise<void> {
   let builder = new AxeBuilder({ page });
   if (options?.include) {
     builder = builder.include(options.include);
+  }
+  if (options?.exclude) {
+    builder = builder.exclude(options.exclude);
   }
   if (options?.disableRules?.length) {
     builder = builder.disableRules(options.disableRules);
