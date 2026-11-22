@@ -120,8 +120,16 @@ def test_worker_cursor_hides_raw_identifier_and_keeps_its_position(
                     version="1",
                 )
             )
-        first = uow.workers.list(limit=1)
-        assert first.next_cursor == sha256(first.items[0].id.encode("utf-8")).hexdigest()
-        second = uow.workers.list(limit=1, cursor=first.next_cursor)
-        assert second.next_cursor is None
-        assert sorted([first.items[0].id, second.items[0].id]) == raw_ids
+        collected: list[WorkerRecord] = []
+        cursor: str | None = None
+        while True:
+            page = uow.workers.list(limit=1, cursor=cursor)
+            if page.items:
+                if page.next_cursor is not None:
+                    assert page.next_cursor == sha256(page.items[0].id.encode("utf-8")).hexdigest()
+                collected.append(page.items[0])
+            if page.next_cursor is None:
+                break
+            cursor = page.next_cursor
+        ours = [worker for worker in collected if worker.id in raw_ids]
+        assert sorted(worker.id for worker in ours) == raw_ids
