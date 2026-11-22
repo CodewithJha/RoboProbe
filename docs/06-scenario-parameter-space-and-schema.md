@@ -10,7 +10,7 @@
 | World | Nav2 `nav2_minimal_tb4_sim/worlds/warehouse.sdf` (Gazebo); `warehouse_k2d.json` 2-D occupancy clone (kinematic2d) |
 | Map | Pre-built occupancy map of the warehouse shipped in `ros_ws/src/roboprobe_ros/maps/warehouse.yaml` (generated once with `slam_toolbox`, T-092) |
 | Start ("Dock A") | spawn pose from the Nav2 warehouse example: `x = 2.12, y = −21.3, yaw = 1.57` (verified in T-091) |
-| Goal ("Station B") | defined in `tasks/warehouse_delivery_v1.yaml` ~12–15 m away through one aisle (exact coordinates fixed in T-092 after map inspection) |
+| Goal ("Station B") | `x = 2.12, y = −8.3, yaw = 1.57` (~13 m north through the centre aisle; verified T-092 on the k2d grid) |
 | Nominal path | Polyline computed once from Nav2 planner on the empty map; stored with the task; used to place injected obstacles |
 | Injected obstacle | "Dropped pallet": 0.8 × 0.6 m box whose **top is below the 2-D lidar scan plane** (height derived from TB4 URDF in T-091) so it is detectable only by the depth camera ⇒ perception and lighting matter |
 | Success | reach goal within 0.25 m position / 0.5 rad yaw tolerance before time limit, without any oracle failure |
@@ -300,7 +300,7 @@ id: warehouse_delivery_v1
 world: {gazebo: nav2_minimal_tb4_sim/worlds/warehouse.sdf, kinematic2d: worlds/warehouse_k2d.json}
 map: maps/warehouse.yaml
 start: {x: 2.12, y: -21.3, yaw: 1.57}
-goal:  {x: TBD_T092, y: TBD_T092, yaw: 1.57}   # filled by T-092; CI fails if TBD remains
+goal:  {x: 2.12, y: -8.3, yaw: 1.57}
 goal_tolerance: {xy: 0.25, yaw: 0.5}
 nominal_path: paths/warehouse_delivery_v1.csv
 injected_obstacles:

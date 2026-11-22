@@ -235,6 +235,12 @@
 # Target real-time factor of the simulation.
 # real_time_factor = 1.0
 
+[scenario.map_alignment]
+# Minimum occupied-cell IoU between kinematic2d and Gazebo maps.
+# min_iou = 0.95
+# Allowed relative difference between backend nominal path lengths.
+# path_length_tolerance_ratio = 0.02
+
 [scenario]
 # Sampler draws before rejection sampling of constrained spaces gives up.
 # constraint_max_attempts = 1000

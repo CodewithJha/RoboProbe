@@ -15,7 +15,7 @@ export class WizardPage {
   async createK2dCampaign(): Promise<string> {
     await this.page
       .getByLabel(/Scenario space/)
-      .selectOption({ label: 'warehouse_v1 · 09cf763f2e0d' });
+      .selectOption({ label: 'warehouse_v1 · 98c8f6e8ce35' });
     await this.page.getByRole('button', { name: 'Continue' }).click();
     await this.page.getByLabel('Backend').selectOption('kinematic2d');
     await this.page.getByLabel('Robot profile').selectOption('k2d_default');

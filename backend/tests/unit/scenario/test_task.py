@@ -61,19 +61,14 @@ def issue_paths(exc: pytest.ExceptionInfo[errors.ValidationError]) -> list[str]:
 # --------------------------------------------------------------------------- shipped task
 
 
-def test_warehouse_task_loads_non_strict() -> None:
-    task = load_task(WAREHOUSE_TASK, strict=False)
+def test_warehouse_task_loads_strict() -> None:
+    task = load_task(WAREHOUSE_TASK, strict=True)
     assert task.id == "warehouse_delivery_v1"
     assert task.start == Pose2D(x=2.12, y=-21.3, yaw=1.57)
+    assert task.goal == Pose2D(x=2.12, y=-8.3, yaw=1.57)
     assert task.time_limit.cap_s == 120
     assert task.injected_obstacles[0].placement.along == "obstacle.along_path"
-    assert set(task.provisional) == {"goal", "nominal_path"}
-
-
-def test_warehouse_task_is_rejected_in_strict_mode_while_provisional() -> None:
-    with pytest.raises(errors.ValidationError, match="provisional") as exc:
-        load_task(WAREHOUSE_TASK, strict=True)
-    assert issue_paths(exc) == ["/goal", "/nominal_path"]
+    assert not task.provisional
 
 
 def test_warehouse_nominal_path_matches_task() -> None:
@@ -97,12 +92,11 @@ def test_placeholders_rejected_in_both_modes_with_pointer(tmp_path: Path) -> Non
         assert "backlog task T-092" in str(exc.value)
 
 
-def test_doc_06_example_is_rejected_because_of_placeholders(tmp_path: Path) -> None:
+def test_doc_06_example_loads_after_t092(tmp_path: Path) -> None:
     text = (REPO_ROOT / "docs" / "06-scenario-parameter-space-and-schema.md").read_text("utf-8")
     block = text.split("## 7.", 1)[1].split("```yaml\n", 1)[1].split("```", 1)[0]
-    with pytest.raises(errors.ValidationError) as exc:
-        load_task(write_task(tmp_path, block), strict=False)
-    assert issue_paths(exc) == ["/goal/x", "/goal/y"]
+    task = load_task(write_task(tmp_path, block), strict=True)
+    assert task.goal.y == pytest.approx(-8.3)
 
 
 def test_schema_violation_reports_pointer(tmp_path: Path) -> None:
@@ -247,8 +241,9 @@ def test_check_script_passes_on_repository_tasks() -> None:
     assert result.returncode == 0, result.stderr
 
 
-def test_check_script_strict_flags_provisional() -> None:
-    result = run_check("--strict", WAREHOUSE_TASK)
+def test_check_script_strict_flags_provisional(tmp_path: Path) -> None:
+    path = write_task(tmp_path, task_document(provisional=["goal"]))
+    result = run_check("--strict", path)
     assert result.returncode == 1
     assert "provisional" in result.stderr
 
