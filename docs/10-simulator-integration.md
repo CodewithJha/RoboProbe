@@ -99,6 +99,11 @@ Materialisation writes into `workdir/<run_id>/`:
 | P6 delay | `perturb_params.yaml` | FIFO latency in `cmd_delay` |
 | P8 dropout | `perturb_params.yaml` | Bernoulli beam drop in `sensor_perturber` |
 
+`sensor_perturber` preserves scan metadata and existing non-finite values.
+Give the sensor-data topics `scan_raw` and `scan` separate resolved names to prevent feedback.
+The node publishes cumulative JSON counters as `std_msgs/msg/String` once per second on
+`/roboprobe/perturber_stats`. `count` includes processed beams. `dropped` counts new `+inf` returns.
+
 Friction and lighting are world properties ⇒ a fresh world load per run (no warm reset in MVP; see §8).
 
 **SUT profiles** (`configs/sut_profiles/<id>.yaml`, schema `schemas/sut_profile.schema.json`, loader
