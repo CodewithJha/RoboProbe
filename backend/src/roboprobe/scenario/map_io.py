@@ -5,10 +5,8 @@ Implements: FR-SIM-003, FR-SCN-002, T-092.
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -16,6 +14,7 @@ import yaml
 
 from roboprobe.core import errors
 from roboprobe.geometry import OccupancyGrid
+from roboprobe.geometry.ros_map import decode_ros_pgm
 
 __all__ = [
     "OccupancyIoU",
@@ -25,7 +24,6 @@ __all__ = [
     "write_ros_map",
 ]
 
-_PGM_MAGIC = re.compile(rb"P5\s*\n(?:#[^\n]*\n)*(?P<dims>\d+)\s+(?P<rows>\d+)\s+(?P<maxval>\d+)\s")
 _MAX_PIXEL = 255
 _ORIGIN_LEN = 3
 
@@ -37,31 +35,6 @@ class OccupancyIoU:
     iou: float
     agreement: float
     samples: int
-
-
-def _read_pgm(path: Path) -> npt.NDArray[np.uint8]:
-    raw = path.read_bytes()
-    match = _PGM_MAGIC.match(raw)
-    if match is None or int(match.group("maxval")) != _MAX_PIXEL:
-        msg = f"{path}: not an 8-bit binary P5 PGM"
-        raise errors.ValidationError(msg, context={"path": str(path)})
-    start = match.end()
-    width = int(match.group("dims"))
-    rows = int(match.group("rows"))
-    pixels = np.frombuffer(raw, dtype=np.uint8, offset=start)
-    if width < 1 or rows < 1 or pixels.size != width * rows:
-        msg = f"{path}: PGM pixel payload size does not match its dimensions"
-        raise errors.ValidationError(msg, context={"path": str(path), "expected": width * rows})
-    return pixels.reshape(rows, width)
-
-
-def _threshold_occupied(
-    meta: dict[str, Any], values: npt.NDArray[np.uint8]
-) -> npt.NDArray[np.bool_]:
-    gray = values.astype(np.float64) / _MAX_PIXEL
-    probability = gray if int(meta.get("negate", 0)) else 1.0 - gray
-    # Only cells below the free threshold are traversable, including for a trinary map.
-    return probability >= float(meta["free_thresh"])
 
 
 def load_ros_map(yaml_path: Path) -> OccupancyGrid:
@@ -83,15 +56,21 @@ def load_ros_map(yaml_path: Path) -> OccupancyGrid:
     if not image_path.is_relative_to(yaml_path.parent.resolve()):
         msg = f"{yaml_path}: image must stay inside the map directory"
         raise errors.ValidationError(msg)
-    values = _read_pgm(image_path)
     resolution = float(meta["resolution"])
     origin = meta["origin"]
     if not isinstance(origin, list) or len(origin) != _ORIGIN_LEN or origin[2] != 0:
         msg = f"{yaml_path}: origin must be [x, y, 0]"
         raise errors.ValidationError(msg, context={"path": str(yaml_path)})
-    # PGM is top-first. OccupancyGrid row zero is the lowest world y.
-    occupied = np.flipud(_threshold_occupied(meta, values))
-    return OccupancyGrid(occupied, resolution, origin=(float(origin[0]), float(origin[1])))
+    try:
+        return decode_ros_pgm(
+            image_path.read_bytes(),
+            resolution=resolution,
+            origin=(float(origin[0]), float(origin[1])),
+            free_thresh=float(meta["free_thresh"]),
+            negate=bool(int(meta.get("negate", 0))),
+        )
+    except ValueError as exc:
+        raise errors.ValidationError(str(exc), context={"path": str(image_path)}) from exc
 
 
 def write_ros_map(  # noqa: PLR0913
