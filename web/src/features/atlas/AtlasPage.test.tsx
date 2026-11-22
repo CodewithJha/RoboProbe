@@ -1,18 +1,41 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { afterAll, beforeAll, expect, it, vi } from 'vitest';
-import { apiUrl } from '../../api/client';
+import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest';
+import { apiUrl, type Schema } from '../../api/client';
 import { AppProviders } from '../../app/providers';
+import { Component as ConsolePage } from '../console/ConsolePage';
 import { Component } from './AtlasPage';
 
+const campaign: Schema['CampaignOut'] = {
+  id: 'c1',
+  status: 'RUNNING',
+  name: 'Warehouse sweep',
+  strategy: { id: 'S-RANDOM', seed: 42 },
+  backend: 'kinematic2d',
+  budget: 20,
+  batch_size: 1,
+  repeats: 1,
+  modes_found: 1,
+  space: { id: 's1', version: 'v1' },
+  pins: {},
+};
+const medoidRun: Schema['RunOut'] = {
+  id: 'r1',
+  campaign_id: 'c1',
+  ordinal: 1,
+  repeat_index: 0,
+  seed: 42,
+  phase: 'falsify',
+  status: 'DONE',
+  verdict: 'PASS',
+  scenario: { values: { speed: 1, light: 5, distance: 5 } },
+};
 const queue = vi.fn();
 const requestSlice = vi.fn();
 const server = setupServer(
-  http.get(apiUrl('/campaigns/c1'), () =>
-    HttpResponse.json({ space: { id: 's1', version: 'v1' }, pins: {} }),
-  ),
+  http.get(apiUrl('/campaigns/c1'), () => HttpResponse.json(campaign)),
   http.get(apiUrl('/spaces/s1/versions/v1'), () =>
     HttpResponse.json({
       definition: {
@@ -36,9 +59,7 @@ const server = setupServer(
       robustness_score: 0.4,
     }),
   ),
-  http.get(apiUrl('/runs/r1'), () =>
-    HttpResponse.json({ scenario: { values: { speed: 1, distance: 5, light: 200 } } }),
-  ),
+  http.get(apiUrl('/runs/r1'), () => HttpResponse.json(medoidRun)),
   http.get(apiUrl('/campaigns/c1/risk/slice'), ({ request }) => {
     const params = new URL(request.url).searchParams;
     const x = params.get('x');
@@ -71,6 +92,12 @@ const server = setupServer(
 );
 beforeAll(() => {
   server.listen();
+});
+afterEach(() => {
+  server.resetHandlers();
+  queue.mockClear();
+  requestSlice.mockClear();
+  vi.unstubAllGlobals();
 });
 afterAll(() => {
   server.close();
@@ -105,4 +132,66 @@ it('restores a shared pair and medoid, then queues the physical point with the a
   });
   await screen.findByText('Risk data table');
   expect(requestSlice).toHaveBeenCalledWith('speed', 'light', 'nominal', null);
+});
+
+it('restores custom anchor values and shows the queued probe in Console after its live event', async () => {
+  const source = Object.assign(new EventTarget(), { close: vi.fn() });
+  vi.stubGlobal('EventSource', function TestEventSource() {
+    return source;
+  });
+  const probeRun: Schema['RunOut'] = {
+    ...medoidRun,
+    id: 'r2',
+    ordinal: 2,
+    phase: 'manual',
+    scenario: { values: { speed: 2, light: 6, distance: 7 } },
+  };
+  let runs = [medoidRun];
+  server.use(
+    http.get(apiUrl('/campaigns/c1/progress'), () =>
+      HttpResponse.json({ campaign_id: 'c1', counts: { done: runs.length } }),
+    ),
+    http.get(apiUrl('/campaigns/c1/runs'), () => HttpResponse.json({ items: runs })),
+  );
+  const search = new URLSearchParams({
+    x: 'speed',
+    y: 'light',
+    anchor: 'mode:FM-01',
+    anchor_values: JSON.stringify({ distance: 7 }),
+  });
+  const router = createMemoryRouter(
+    [
+      { path: '/campaigns/:id/atlas', Component },
+      { path: '/campaigns/:id/console', Component: ConsolePage },
+    ],
+    { initialEntries: [`/campaigns/c1/atlas?${search}`] },
+  );
+  render(
+    <AppProviders>
+      <RouterProvider router={router} />
+    </AppProviders>,
+  );
+
+  expect(await screen.findByRole('slider', { name: 'distance' })).toHaveValue('7');
+  fireEvent.click(await screen.findByText('Risk data table'));
+  expect(requestSlice).toHaveBeenCalledWith('speed', 'light', 'mode:FM-01', '{"distance":7}');
+  fireEvent.click(await screen.findByRole('button', { name: /Probe speed 2, light 6/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Queue manual run' }));
+  const consoleLink = await screen.findByRole('link', { name: 'Open campaign console' });
+  expect(queue).toHaveBeenCalledWith({ values: { speed: 2, light: 6, distance: 7 }, repeats: 1 });
+  fireEvent.click(consoleLink);
+
+  expect(await screen.findByRole('link', { name: 'Run #1' })).toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: 'Run #2' })).not.toBeInTheDocument();
+  runs = [probeRun, medoidRun];
+  act(() => {
+    source.dispatchEvent(
+      new MessageEvent('run.finished', {
+        data: JSON.stringify({ campaign_id: 'c1', run_id: 'r2' }),
+        lastEventId: '1',
+      }),
+    );
+  });
+  expect(await screen.findByRole('link', { name: 'Run #2' })).toHaveAttribute('href', '/runs/r2');
+  expect(await screen.findByText('2 / 20 runs')).toBeInTheDocument();
 });
