@@ -66,6 +66,16 @@ class SqlFailureModeRepo:
             ).all()
         )
 
+    def counts_for_campaigns(self, campaign_ids: Sequence[UUID]) -> dict[UUID, int]:
+        """Count modes for a whole page in one query (T-081b)."""
+        return dict(
+            self._s.execute(
+                select(FailureModeRow.campaign_id, func.count())
+                .where(FailureModeRow.campaign_id.in_(campaign_ids))
+                .group_by(FailureModeRow.campaign_id)
+            ).all()
+        )
+
     def list_for_campaign(self, campaign_id: UUID) -> tuple[FailureModeRecord, ...]:
         rows = self._s.scalars(
             select(FailureModeRow)

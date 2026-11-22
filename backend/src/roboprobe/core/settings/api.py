@@ -101,13 +101,6 @@ class ApiSettings(SettingsSection):
         allow_inf_nan=False,
         description="Maximum JSON trace sampling target [Hz].",
     )
-    report_workers: int = Field(default=1, gt=0, description="Concurrent API report/export jobs.")
-    slice_cache_size: int = Field(
-        default=32, gt=0, description="Cached risk slices per API process."
-    )
-    slice_timeout_s: float = Field(
-        default=30.0, gt=0, description="Risk slice computation timeout [s]."
-    )
     max_upload_mb: int = Field(default=10, gt=0, description="Maximum request body size [MB].")
     page_limit_default: int = Field(default=50, gt=0, description="Default page size [items].")
     page_limit_max: int = Field(default=500, gt=0, description="Maximum page size [items].")

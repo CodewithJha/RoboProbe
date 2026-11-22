@@ -78,7 +78,7 @@ def create_app(settings: RoboProbeSettings | None = None) -> FastAPI:
                     }
                 },
             }
-            for status in (401, 404, 409, 412, 422, 500)
+            for status in (401, 404, 409, 412, 500)
         },
         lifespan=lifespan,
         docs_url=f"{resolved.api.base_path}/docs",
