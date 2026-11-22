@@ -22,6 +22,7 @@ DOCKER      ?= docker
 PROFILES    ?= core
 SECRETS_DIR ?= secrets
 DB_PASSWORD_FILE := $(SECRETS_DIR)/db_password
+API_TOKEN_FILE := $(SECRETS_DIR)/api_token
 COMPOSE_FILE ?= docker/compose.yaml
 # Created up front so Docker does not create the bind-mount source as root (compose.yaml mounts it).
 ARTIFACTS_DIR ?= data/artifacts
@@ -41,7 +42,7 @@ help: ## List available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
-setup: $(DB_PASSWORD_FILE) ## Install backend + web deps and git hooks; create the local DB secret
+setup: $(DB_PASSWORD_FILE) $(API_TOKEN_FILE) ## Install backend + web deps and git hooks; create local secrets
 	$(UV) sync --locked --all-extras --directory $(BACKEND_DIR)
 	$(PNPM_WEB) install --frozen-lockfile
 	$(UV_RUN) pre-commit install --install-hooks
@@ -96,12 +97,12 @@ config-docs-check: ## Fail (with a diff) if generated configuration docs/templat
 openapi: ## Regenerate api/openapi.json from the FastAPI app (T-084b)
 	$(UV_RUN) python $(SCRIPTS_DIR)/export_openapi.py
 
-$(DB_PASSWORD_FILE): ## Generate a random local DB password (git-ignored; never overwritten)
+$(DB_PASSWORD_FILE) $(API_TOKEN_FILE): ## Generate a local secret (git-ignored; never overwritten)
 	@mkdir -p $(SECRETS_DIR) && chmod 700 $(SECRETS_DIR)
 	@umask 022 && $(PYTHON) -c 'import secrets; print(secrets.token_urlsafe(32))' > $@
 	@echo "created $@"
 
-up: $(DB_PASSWORD_FILE) ## Start the stack (PROFILES, default core); fails if the migrate job fails
+up: $(DB_PASSWORD_FILE) $(if $(filter app,$(PROFILES)),$(API_TOKEN_FILE)) ## Start the stack (PROFILES, default core); fail if migrate fails
 	@mkdir -p $(ARTIFACTS_DIR)
 	$(COMPOSE_UP) up -d $(UP_FLAGS)
 	$(COMPOSE_UP) wait migrate
@@ -125,7 +126,7 @@ backup: ## pg_dump custom format plus artefact archive (doc 29 §7)
 restore: ## Restore BACKUP=path (set FORCE=1 to overwrite a non-empty database)
 	scripts/restore.sh $(if $(FORCE),--force,) "$(BACKUP)"
 
-observability: $(DB_PASSWORD_FILE) ## Prometheus, Grafana and Jaeger (profile observability)
+observability: $(DB_PASSWORD_FILE) $(API_TOKEN_FILE) ## Prometheus, Grafana and Jaeger (profile observability)
 	@mkdir -p $(ARTIFACTS_DIR)
 	$(COMPOSE) --profile observability up -d --wait prometheus grafana otel-collector jaeger
 

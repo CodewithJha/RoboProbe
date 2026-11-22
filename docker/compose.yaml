@@ -18,6 +18,7 @@ x-backend: &backend
     # In-network DSN without a password: the `db_password` secret is merged in by the settings
     # loader from /run/secrets (docs/27 §2), so the password never appears in env or URLs.
     ROBOPROBE_DATABASE__URL: postgresql+psycopg://${ROBOPROBE_DB_USER:-roboprobe}@postgres:5432/${ROBOPROBE_DB_NAME:-roboprobe}
+    ROBOPROBE_STORAGE__WORKDIR_ROOT: ${ROBOPROBE_STORAGE__WORKDIR_ROOT:-/tmp/roboprobe-workdirs}
   secrets: [db_password]
   volumes: ["../data/artifacts:/data/artifacts"]
   read_only: true
@@ -27,7 +28,7 @@ x-backend: &backend
 services:
   postgres:
     image: postgres:17@sha256:b60e90042aa6b8dbecd58e224b3e36114dbf8ad754465264c2476ad58a86e45c
-    profiles: [core, dev]
+    profiles: [core, dev, app]
     environment:
       POSTGRES_DB: ${ROBOPROBE_DB_NAME:-roboprobe}
       POSTGRES_USER: ${ROBOPROBE_DB_USER:-roboprobe}
@@ -35,7 +36,7 @@ services:
     secrets: [db_password]
     volumes: ["pgdata:/var/lib/postgresql/data"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -54,7 +55,7 @@ services:
 
   migrate:
     <<: *backend
-    profiles: [core]
+    profiles: [core, app]
     command: ["db", "upgrade"]
     restart: "no"
     depends_on: {postgres: {condition: service_healthy}}
@@ -63,7 +64,7 @@ services:
   # ROBOPROBE_WORKER__HEALTH_PORT. Each container has its own network namespace.
   orchestrator:
     <<: *backend
-    profiles: [core]
+    profiles: [core, app]
     command: ["orchestrator"]
     healthcheck:
       test:
@@ -102,8 +103,8 @@ services:
 
   worker-k2d:
     <<: *backend
-    profiles: [core]
-    command: ["worker", "--backend", "kinematic2d"]
+    profiles: [core, app]
+    command: ["worker", "--backend", "kinematic2d", "--health"]
     deploy:
       replicas: ${ROBOPROBE_K2D_REPLICAS:-2}
     healthcheck:
@@ -179,6 +180,25 @@ services:
     tmpfs: [/tmp]
     restart: unless-stopped
 
+  api:
+    <<: *backend
+    profiles: [app]
+    command: ["api", "--host", "0.0.0.0", "--port", "8000"]
+    secrets: [db_password, api_token]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; from roboprobe.core.settings import load_settings; token=load_settings().api.token; assert token is not None; req=urllib.request.Request('http://127.0.0.1:8000/health/ready', headers={'Authorization': 'Bearer ' + token.get_secret_value()}); urllib.request.urlopen(req, timeout=3)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    depends_on: {migrate: {condition: service_completed_successfully}}
+
   web:
     image: ghcr.io/codewithjha/roboprobe-web:${ROBOPROBE_IMAGE_TAG:-dev}
     profiles: [app]
@@ -216,7 +236,7 @@ secrets:
   grafana_admin_password:
     file: ${ROBOPROBE_GRAFANA_ADMIN_PASSWORD_FILE:-observability/dev-secrets/grafana_admin_password}
   api_token:
-    file: ${ROBOPROBE_API_TOKEN_FILE:-observability/dev-secrets/api_token}
+    file: ${ROBOPROBE_API_TOKEN_FILE:-../secrets/api_token}
 
 volumes:
   pgdata: {}

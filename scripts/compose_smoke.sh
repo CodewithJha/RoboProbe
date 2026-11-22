@@ -29,7 +29,7 @@ replicas = str((worker.get("deploy") or {}).get("replicas", ""))
 if "ROBOPROBE_K2D_REPLICAS" not in replicas:
     raise SystemExit("worker-k2d replicas must come from ROBOPROBE_K2D_REPLICAS")
 command = worker.get("command")
-if command != ["worker", "--backend", "kinematic2d"]:
+if command != ["worker", "--backend", "kinematic2d", "--health"]:
     raise SystemExit(f"unexpected worker-k2d command: {command!r}")
 print("compose file ok")
 PY

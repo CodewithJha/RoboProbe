@@ -106,19 +106,20 @@ class HeartbeatService:
             uow.commit()
         self._beat_once()
 
-    def start(self) -> None:
+    def start(self, *, serve_probe: bool = True) -> None:
         """Start the heartbeat thread and optional health server."""
         self._stop.clear()
         self._thread = threading.Thread(
             target=self._loop, name=f"heartbeat-{self._worker.worker_id}", daemon=True
         )
         self._thread.start()
-        self._health = serve_health(
-            self._settings.health_host,
-            self._settings.health_port,
-            [Check(name="heartbeat", probe=self._health_probe)],
-            self._metrics,
-        )
+        if serve_probe:
+            self._health = serve_health(
+                self._settings.health_host,
+                self._settings.health_port,
+                [Check(name="heartbeat", probe=self._health_probe)],
+                self._metrics,
+            )
 
     def stop(self) -> None:
         """Stop the heartbeat thread and health server."""

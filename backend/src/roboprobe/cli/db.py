@@ -16,11 +16,13 @@ from alembic.config import Config
 
 from roboprobe.cli._context import get_state
 from roboprobe.core.settings import RoboProbeSettings
-from roboprobe.paths import backend_root
+from roboprobe.scenario.repo_root import discover_repo_root
 
 __all__ = ["app", "upgrade_head"]
 
 app = typer.Typer(name="db", help="Database migrations.", no_args_is_help=True)
+
+_BACKEND_ROOT = discover_repo_root() / "backend"
 
 
 def _engine_mod() -> ModuleType:
@@ -28,12 +30,9 @@ def _engine_mod() -> ModuleType:
 
 
 def _alembic_config() -> Config:
-    root = backend_root()
-    cfg = Config(str(root / "alembic.ini"))
-    cfg.set_main_option("script_location", str(root / "alembic"))
-    src = root / "src"
-    if src.is_dir():
-        cfg.set_main_option("prepend_sys_path", str(src))
+    cfg = Config(str(_BACKEND_ROOT / "alembic.ini"))
+    cfg.set_main_option("script_location", str(_BACKEND_ROOT / "alembic"))
+    cfg.set_main_option("prepend_sys_path", str(_BACKEND_ROOT / "src"))
     return cfg
 
 

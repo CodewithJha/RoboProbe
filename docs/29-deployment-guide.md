@@ -34,7 +34,7 @@ flowchart LR
 
 ## 2. Prerequisites
 
-Docker Engine ≥ 24 + Compose v2; 16 GB RAM (8 GB without Gazebo); 25 GB disk; ports 8000/8080 free; for T2: network path to Postgres (WireGuard or `ssh -L`), never expose Postgres to the internet.
+Docker Engine ≥ 24 + Compose v2, 16 GB RAM (8 GB without Gazebo), 25 GB disk, and host port 8080 free. A T2 deployment needs a private network path to Postgres, such as WireGuard or `ssh -L`.
 
 ## 3. Install / upgrade (T1)
 
@@ -42,13 +42,19 @@ Docker Engine ≥ 24 + Compose v2; 16 GB RAM (8 GB without Gazebo); 25 GB disk; 
 git clone https://github.com/CodewithJha/RoboProbe.git && cd RoboProbe
 git checkout v1.0.0                       # or main
 cp .env.example .env
-make secrets/db_password                  # random DB password (git-ignored, never overwritten)
+make secrets/db_password secrets/api_token
+mkdir -p data/artifacts
+# On native Linux, give the container user write access before starting Compose.
+sudo chown 10001:10001 data/artifacts
 export ROBOPROBE_IMAGE_TAG=v1.0.0
-docker compose -f docker/compose.yaml --profile core pull
-docker compose -f docker/compose.yaml --profile core up -d     # == make up
-docker compose -f docker/compose.yaml ps                         # all healthy
-curl -fsS http://127.0.0.1:8000/health/ready
+docker compose -f docker/compose.yaml --profile app pull
+docker compose -f docker/compose.yaml --profile app up -d --wait
+docker compose -f docker/compose.yaml --profile app ps
+curl -fsS http://127.0.0.1:8080/config.json
 ```
+
+Open `http://127.0.0.1:8080` and enter the API token in dashboard Settings.
+Browser API and SSE requests use the same origin as the dashboard.
 
 Gazebo workers: `docker compose -f docker/compose.yaml --profile core --profile gazebo up -d`.
 Upgrade: change `ROBOPROBE_IMAGE_TAG`, `pull`, `up -d` (the `migrate` service applies migrations first; API/orchestrator wait for it).
@@ -57,7 +63,8 @@ Upgrade: change `ROBOPROBE_IMAGE_TAG`, `pull`, `up -d` (the `migrate` service ap
 
 - All settings via `.env` / environment (27). Production-like (`ROBOPROBE_ENV=lab|prod`) enables: token required if API not on loopback, JSON logs, stricter CORS.
 - Secrets: Docker secrets (`secrets/` directory, git-ignored) mounted at `/run/secrets`.
-- Web runtime config generated at container start from `ROBOPROBE_WEB_*` env.
+- Web runtime config comes from the `ROBOPROBE_WEB_*` environment at container start. The dashboard
+  serves a same-origin CSP. Its `style-src` allows inline styles for Plotly.
 
 ## 5. Scaling
 
