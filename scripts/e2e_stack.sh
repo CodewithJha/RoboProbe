@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 ACTION="${1:-}"
-COMPOSE_FILE="${COMPOSE_FILE:-docker/compose.yaml}"
+COMPOSE_FILE="${COMPOSE_FILE:-docker/compose.yaml:docker/e2e.compose.yaml}"
 E2E_ENV="${E2E_ENV:-docker/e2e.env}"
 ARTIFACTS_DIR="${E2E_ARTIFACT_ROOT:-data/artifacts}"
 SECRETS_DIR="${SECRETS_DIR:-secrets}"
