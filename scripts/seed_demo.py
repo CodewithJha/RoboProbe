@@ -43,11 +43,53 @@ import sys
 import tarfile
 import tempfile
 import time
+import uuid
 from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Final
+from typing import Final, NotRequired, TypedDict, cast, override
 from uuid import UUID
+
+import numpy as np
+import uuid_utils
+import zstandard
+from sqlalchemy import MetaData, Table, exists, inspect, select, text
+from sqlalchemy.engine import make_url
+
+from roboprobe.analysis import pipeline as analysis_pipeline
+from roboprobe.analysis.base import AnalysisKind
+from roboprobe.analysis.ports import AnalysisArtifactStore, AnalysisUnitOfWork
+from roboprobe.bootstrap import build_cli_services
+from roboprobe.bootstrap._infra import build_infrastructure
+from roboprobe.cli import experiment as experiment_module
+from roboprobe.cli.campaign import _ensure_sut, create_campaign_from_config, run_inline
+from roboprobe.cli.db import upgrade_head
+from roboprobe.cli.experiment import _resolve_key, _UowWriter
+from roboprobe.cli.space import register_space
+from roboprobe.core.clock import FakeClock, SystemClock
+from roboprobe.core.errors import ModelFitError
+from roboprobe.core.settings import RoboProbeSettings, load_settings
+from roboprobe.core.settings.selection import GpDefaults
+from roboprobe.core.types import CampaignStatus, JsonValue
+from roboprobe.experiments.planner import CampaignSpec, ExperimentDesign
+from roboprobe.experiments.runner import ExperimentRunner
+from roboprobe.risk import RiskMapper, VolumeEstimator, robustness_score
+from roboprobe.risk.mapper import RiskSlice
+from roboprobe.runner import worker as worker_module
+from roboprobe.runner.manifest import ManifestBuilder
+from roboprobe.runner.ports import UowFactory
+from roboprobe.scenario.repo_root import discover_repo_root
+from roboprobe.scenario.space import ScenarioSpace
+from roboprobe.scenario.sut_profile import load_sut_profile
+from roboprobe.selection.surrogate import RobustnessGP
+from roboprobe.store import ids as store_ids
+from roboprobe.store.artifacts import LocalArtifactStore
+from roboprobe.store.engine import create_engine_from_settings
+from roboprobe.store.ids import new_uuid
+from roboprobe.store.mapping import artifact_record
+from roboprobe.store.orm import ArtifactRow
+from roboprobe.store.records import AnalysisRecord, ArtifactRecord, CampaignRecord, RiskMapRecord
+from roboprobe.store.uow import SqlAlchemyUnitOfWork
 
 REPO_ROOT: Final = Path(__file__).resolve().parents[1]
 FIXTURE_DIR: Final = REPO_ROOT / "backend" / "tests" / "fixtures" / "db"
@@ -82,10 +124,6 @@ def install_deterministic_uuid7() -> None:
     ORM column defaults, repositories and artefact references without touching the
     application code.
     """
-    import uuid
-
-    import uuid_utils
-
     counter = itertools.count()
     rand_multiplier = 0x9E3779B97F4A7C15
     rand_mask = (1 << 62) - 1
@@ -95,9 +133,7 @@ def install_deterministic_uuid7() -> None:
         timestamp_ms = _FIXED_UUID7_MS + n // 0x1000
         rand_a = n % 0x1000
         rand_b = (n * rand_multiplier) & rand_mask
-        value = (
-            (timestamp_ms << 80) | (0x7 << 76) | (rand_a << 64) | (0b10 << 62) | rand_b
-        )
+        value = (timestamp_ms << 80) | (0x7 << 76) | (rand_a << 64) | (0b10 << 62) | rand_b
         return uuid.UUID(int=value)
 
     uuid_utils.uuid7 = uuid7  # type: ignore[assignment]
@@ -111,8 +147,6 @@ def install_fixture_manifest_builder() -> None:
     the same schema and provenance fields but pins those volatile values so the
     manifest hash, ``artifacts.rel_path`` and the archive stay consistent.
     """
-    from roboprobe.runner import worker as worker_module
-    from roboprobe.runner.manifest import ManifestBuilder
 
     class _FixtureManifestBuilder(ManifestBuilder):
         def with_host(
@@ -150,7 +184,7 @@ def install_fixture_manifest_builder() -> None:
                 uv_lock_sha256="0" * 64,
             )
 
-    worker_module.ManifestBuilder = _FixtureManifestBuilder  # type: ignore[assignment]
+    worker_module.ManifestBuilder = _FixtureManifestBuilder  # type: ignore[attr-defined]
 
 
 def normalise_dump(text: str) -> str:
@@ -161,9 +195,7 @@ def normalise_dump(text: str) -> str:
     """
     text = re.sub(r"^\\(?:un)?restrict .*$\n?", "", text, flags=re.MULTILINE)
 
-    sql_pattern = re.compile(
-        r"'(?P<value>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?)\+00'"
-    )
+    sql_pattern = re.compile(r"'(?P<value>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?)\+00'")
     json_pattern = re.compile(
         r'"(?P<value>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?)(?:Z|\+00:00)"'
     )
@@ -188,9 +220,7 @@ def normalise_dump(text: str) -> str:
     # value to a stable placeholder (both SQL literals and JSON strings).
     worker_pattern = re.compile(r"""(['"])([A-Za-z0-9][A-Za-z0-9._-]*:\d+:\d+)\1""")
     workers = sorted({m.group(2) for m in worker_pattern.finditer(text)})
-    worker_map = {
-        value: f"seed-worker:1000:{index}" for index, value in enumerate(workers)
-    }
+    worker_map = {value: f"seed-worker:1000:{index}" for index, value in enumerate(workers)}
 
     def worker_repl(match: re.Match[str]) -> str:
         quote = match.group(1)
@@ -200,9 +230,7 @@ def normalise_dump(text: str) -> str:
     for table in ("runs", "oracle_results"):
         prefix = f"INSERT INTO public.{table} "
         pattern = re.compile(rf"^(?:{re.escape(prefix)}[^\n]*\n)+", re.MULTILINE)
-        text = pattern.sub(
-            lambda match: "".join(sorted(match[0].splitlines(keepends=True))), text
-        )
+        text = pattern.sub(lambda match: "".join(sorted(match[0].splitlines(keepends=True))), text)
     return text
 
 
@@ -215,8 +243,7 @@ def _settings(
     workdir_root: Path,
     artifact_root: Path,
     benchmark_function: str | None = None,
-) -> Any:
-    from roboprobe.core.settings import load_settings
+) -> RoboProbeSettings:
 
     overrides: dict[str, object] = {
         "database.url": database_url,
@@ -242,15 +269,13 @@ def _settings(
     return load_settings(overrides)
 
 
-def _upgrade_schema(settings: Any) -> None:
+def _upgrade_schema(settings: RoboProbeSettings) -> None:
     """Apply pending migrations (safe on a fresh database; no destructive reset)."""
-    from roboprobe.cli.db import upgrade_head
-
     upgrade_head(settings)
 
 
 def _finalise_fixture_rows(
-    settings: Any,
+    settings: RoboProbeSettings,
     campaign_ids: Sequence[UUID],
     experiment_ids: Sequence[UUID] = (),
 ) -> None:
@@ -262,9 +287,6 @@ def _finalise_fixture_rows(
 
     Content-addressed artefacts and real run outcomes are untouched.
     """
-    from roboprobe.store.engine import create_engine_from_settings
-    from sqlalchemy import text
-
     ids = list(campaign_ids)
     eids = list(experiment_ids)
     if not ids:
@@ -338,15 +360,11 @@ def _finalise_fixture_rows(
                 params,
             )
             connection.execute(
-                text(
-                    "UPDATE artifacts SET created_at = :base WHERE campaign_id = ANY(:ids)"
-                ),
+                text("UPDATE artifacts SET created_at = :base WHERE campaign_id = ANY(:ids)"),
                 params,
             )
             connection.execute(
-                text(
-                    "UPDATE strategy_states SET updated_at = :base WHERE campaign_id = ANY(:ids)"
-                ),
+                text("UPDATE strategy_states SET updated_at = :base WHERE campaign_id = ANY(:ids)"),
                 params,
             )
             if eids:
@@ -370,11 +388,8 @@ def _finalise_fixture_rows(
         engine.dispose()
 
 
-def _database_is_empty(settings: Any) -> bool:
+def _database_is_empty(settings: RoboProbeSettings) -> bool:
     """Refuse to seed any database that already has application data."""
-    from roboprobe.store.engine import create_engine_from_settings
-    from sqlalchemy import MetaData, Table, exists, inspect, select
-
     engine = create_engine_from_settings(settings.database)
     try:
         with engine.connect() as connection:
@@ -390,29 +405,17 @@ def _database_is_empty(settings: Any) -> bool:
         engine.dispose()
 
 
-def _write_campaign_config(
-    path: Path,
-    *,
-    name: str,
-    space: str,
-    backend: str,
-    budget: int,
-    seed: int,
-    batch_size: int,
-    strategy: str = "S-RANDOM",
-) -> None:
+def _write_large_campaign_config(path: Path, seed: int) -> None:
     payload = {
         "schema_version": 1,
-        "name": name,
-        "space": {"id": space},
-        "sut_profile_id": "benchmark_default"
-        if backend == "benchmark"
-        else "k2d_default",
-        "backend": backend,
-        "strategy": {"id": strategy, "seed": seed},
-        "budget": budget,
+        "name": _LARGE_CAMPAIGN_NAME,
+        "space": {"id": "multi_mode_6d"},
+        "sut_profile_id": "benchmark_default",
+        "backend": "benchmark",
+        "strategy": {"id": "S-RANDOM", "seed": seed},
+        "budget": LARGE_RUNS,
         "repeats": 1,
-        "batch_size": batch_size,
+        "batch_size": _LARGE_BATCH_SIZE,
         "start": True,
     }
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
@@ -421,7 +424,33 @@ def _write_campaign_config(
 # --------------------------------------------------------------------------------------
 # Dataset generation
 # --------------------------------------------------------------------------------------
-class _FixtureExperimentWriter:
+class SmallSeedResult(TypedDict):
+    """Identifiers and counts produced by the small fixture generator."""
+
+    campaign_id: UUID
+    runs: int
+    modes: list[str]
+    analysis_id: UUID
+    risk_map_id: UUID
+    experiment_id: UUID
+    comparison_metrics: JsonValue
+    medoid_run_ids: list[UUID]
+    campaign_seconds: float
+    analysis_seconds: float
+    artifact_bytes: NotRequired[int]
+    sql_sha256: NotRequired[str]
+    sql_bytes: NotRequired[int]
+
+
+class LargeSeedResult(TypedDict):
+    """Identifiers and counts produced by the benchmark generator."""
+
+    campaign_id: UUID
+    runs: int
+    seconds: float
+
+
+class _FixtureExperimentWriter(_UowWriter):
     """``_UowWriter`` variant for fixture generation.
 
     * injects ``schema_version`` into the stored design (the comparison route
@@ -430,57 +459,24 @@ class _FixtureExperimentWriter:
       64-bit derived seed (sklearn estimators require a uint32 ``random_state``).
     """
 
-    def __init__(self, inner: Any, requested_seed: int) -> None:
-        self._inner = inner
+    def __init__(self, make_uow: UowFactory, requested_seed: int) -> None:
+        super().__init__(make_uow, SystemClock())
         self._requested_seed = requested_seed
 
-    def add_experiment(self, *, name: str, design: dict[str, Any], status: str) -> UUID:
-        enriched = {"schema_version": 1, **design}
-        return self._inner.add_experiment(name=name, design=enriched, status=status)  # type: ignore[no-any-return]
+    @override
+    def add_experiment(self, *, name: str, design: dict[str, JsonValue], status: str) -> UUID:
+        enriched: dict[str, JsonValue] = {"schema_version": 1, **design}
+        return super().add_experiment(name=name, design=enriched, status=status)
 
-    def add_campaign(self, spec: Any, experiment_id: UUID) -> UUID:
+    @override
+    def add_campaign(self, spec: CampaignSpec, experiment_id: UUID) -> UUID:
         pinned = spec.model_copy(update={"seed": self._requested_seed})
-        return self._inner.add_campaign(pinned, experiment_id)  # type: ignore[no-any-return]
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._inner, name)
+        return super().add_campaign(pinned, experiment_id)
 
 
-def seed_small(
-    settings: Any, seed: int, strategy: str = "S-RANDOM"
-) -> dict[str, object]:
-    """Create the small dataset and return its identifiers and counts.
-
-    The 60-run kinematic2d campaign **is** the experiment campaign: the design has a
-    single strategy and one seed, so the fixture contains exactly one campaign and one
-    experiment with a populated comparison.  A second tiny experiment would have added
-    extra campaigns/runs and violated the doc 18 §5 shape.
-    """
-    import importlib
-
-    from roboprobe.analysis import pipeline as analysis_pipeline
-    from roboprobe.analysis.base import AnalysisKind
-    from roboprobe.bootstrap import build_cli_services
-    from roboprobe.bootstrap._infra import build_infrastructure
-    from roboprobe.cli.campaign import _ensure_sut, run_inline
-    from roboprobe.cli.experiment import _resolve_key, _UowWriter
-    from roboprobe.cli.space import register_space
-    from roboprobe.core.clock import FakeClock
-    from roboprobe.core.types import CampaignStatus
-    from roboprobe.experiments.planner import ExperimentDesign
-    from roboprobe.experiments.runner import ExperimentRunner
-    from roboprobe.scenario.repo_root import discover_repo_root
-    from roboprobe.scenario.space import ScenarioSpace
-    from roboprobe.scenario.sut_profile import load_sut_profile
-    from roboprobe.store.ids import new_uuid
-
-    # ``pipeline`` and the experiment writer bind ``uuid4`` at import time; patch the
-    # module attributes so analysis/mode/campaign ids follow the deterministic sequence.
-    analysis_pipeline.uuid4 = new_uuid  # type: ignore[assignment]
-    experiment_module = importlib.import_module("roboprobe.cli.experiment")
-    experiment_module.uuid4 = new_uuid  # type: ignore[assignment]
-
-    root = discover_repo_root()
+def _run_small_experiment(
+    settings: RoboProbeSettings, seed: int, strategy: str, root: Path
+) -> tuple[UUID, UUID, dict[str, JsonValue], float]:
     register_space(
         root / "configs" / "scenario_spaces" / "warehouse_v1.yaml",
         settings,
@@ -489,9 +485,7 @@ def seed_small(
     space = ScenarioSpace.from_yaml(
         root / "configs" / "scenario_spaces" / "warehouse_v1.yaml", base_dir=root
     )
-    profile = load_sut_profile(
-        root / "configs" / "sut_profiles" / "k2d_default.yaml", strict=False
-    )
+    profile = load_sut_profile(root / "configs" / "sut_profiles" / "k2d_default.yaml", strict=False)
     key = _resolve_key(space, profile.config_hash, "kinematic2d")
 
     design = ExperimentDesign.model_validate(
@@ -513,15 +507,13 @@ def seed_small(
     services = build_cli_services(settings)
     _ensure_sut(services, "k2d_default", "kinematic2d")
     clock = FakeClock(_FIXED_TIMESTAMP)
-    writer = _FixtureExperimentWriter(_UowWriter(services.make_uow, clock), seed)
+    writer = _FixtureExperimentWriter(cast(UowFactory, services.make_uow), seed)
 
     def drive(campaign_id: UUID) -> CampaignStatus:
         services.campaigns.start(campaign_id)
         return run_inline(campaign_id, settings, workers=1)
 
-    runner = ExperimentRunner(
-        writer, settings.experiments, clock, drive, new_uuid=new_uuid
-    )
+    runner = ExperimentRunner(writer, settings.experiments, clock, drive, new_uuid=new_uuid)
     started = time.monotonic()
     try:
         experiment_id, comparison = runner.start(design, key)
@@ -532,7 +524,29 @@ def seed_small(
     if len(campaigns) != 1:
         msg = f"small experiment must own exactly one campaign, found {len(campaigns)}"
         raise RuntimeError(msg)
-    campaign_id = campaigns[0].id
+    campaign_id = cast("CampaignRecord", campaigns[0]).id
+    return campaign_id, experiment_id, comparison, elapsed
+
+
+def seed_small(
+    settings: RoboProbeSettings, seed: int, strategy: str = "S-RANDOM"
+) -> SmallSeedResult:
+    """Create the small dataset and return its identifiers and counts.
+
+    The 60-run kinematic2d campaign **is** the experiment campaign: the design has a
+    single strategy and one seed, so the fixture contains exactly one campaign and one
+    experiment with a populated comparison.  A second tiny experiment would have added
+    extra campaigns/runs and violated the doc 18 §5 shape.
+    """
+    # ``pipeline`` and the experiment writer bind ``uuid4`` at import time; patch the
+    # module attributes so analysis/mode/campaign ids follow the deterministic sequence.
+    analysis_pipeline.uuid4 = new_uuid  # type: ignore[attr-defined]
+    experiment_module.uuid4 = new_uuid  # type: ignore[attr-defined]
+
+    root = discover_repo_root()
+    campaign_id, experiment_id, comparison, elapsed = _run_small_experiment(
+        settings, seed, strategy, root
+    )
 
     def load_space(space_id: str, version: str) -> ScenarioSpace:
         return ScenarioSpace.from_yaml(
@@ -545,8 +559,8 @@ def seed_small(
         with infra.uow_factory() as uow:
             report = analysis_pipeline.analyze_campaign(
                 campaign_id,
-                uow,
-                infra.artifact_store,
+                cast("AnalysisUnitOfWork", uow),
+                cast("AnalysisArtifactStore", infra.artifact_store),
                 kind=AnalysisKind.FULL,
                 settings=settings.analysis,
                 risk=settings.risk,
@@ -573,16 +587,12 @@ def seed_small(
                 uow,
                 infra.artifact_store,
                 settings,
-                campaign_id,
-                analysis_id=analysis.id,
-                summary=analysis.summary or {},
-                seed=seed,
+                analysis,
+                seed,
             )
             uow.commit()
             mode_codes = [m.code for m in modes]
-            medoid_run_ids = [
-                m.medoid_run_id for m in modes if m.medoid_run_id is not None
-            ]
+            medoid_run_ids = [m.medoid_run_id for m in modes if m.medoid_run_id is not None]
     finally:
         infra.close()
 
@@ -600,12 +610,8 @@ def seed_small(
     }
 
 
-def seed_large(settings: Any, seed: int) -> dict[str, object]:
+def seed_large(settings: RoboProbeSettings, seed: int) -> LargeSeedResult:
     """Create the 10 000-run analytic performance dataset."""
-    from roboprobe.cli.campaign import create_campaign_from_config, run_inline
-    from roboprobe.cli.space import register_space
-    from roboprobe.scenario.repo_root import discover_repo_root
-
     runner_settings = settings.runner.model_copy(
         update={
             "max_batch_size": _LARGE_BATCH_SIZE,
@@ -621,15 +627,7 @@ def seed_large(settings: Any, seed: int) -> dict[str, object]:
     )
     with tempfile.TemporaryDirectory(prefix="roboprobe-seed-") as tmp:
         config = Path(tmp) / "large.yaml"
-        _write_campaign_config(
-            config,
-            name=_LARGE_CAMPAIGN_NAME,
-            space="multi_mode_6d",
-            backend="benchmark",
-            budget=LARGE_RUNS,
-            seed=seed,
-            batch_size=_LARGE_BATCH_SIZE,
-        )
+        _write_large_campaign_config(config, seed)
         started = time.monotonic()
         campaign_id = create_campaign_from_config(config, settings)
         status = run_inline(campaign_id, settings, workers=_LARGE_WORKERS)
@@ -645,13 +643,10 @@ def seed_large(settings: Any, seed: int) -> dict[str, object]:
 
 
 def _persist_risk_map(
-    uow: Any,
-    artifact_store: Any,
-    settings: Any,
-    campaign_id: UUID,
-    *,
-    analysis_id: UUID,
-    summary: dict[str, Any],
+    uow: SqlAlchemyUnitOfWork,
+    artifact_store: LocalArtifactStore,
+    settings: RoboProbeSettings,
+    analysis: AnalysisRecord,
     seed: int,
 ) -> UUID:
     """Compute risk slices, store them as JSON and insert the missing ``risk_maps`` row.
@@ -660,17 +655,7 @@ def _persist_risk_map(
     them; the API expects a JSON artefact.  This helper closes that gap for fixtures
     without changing production analysis behaviour (documented assumption in the PR).
     """
-    import numpy as np
-    from roboprobe.core.clock import SystemClock
-    from roboprobe.core.errors import ModelFitError
-    from roboprobe.core.settings.selection import GpDefaults
-    from roboprobe.risk import RiskMapper, VolumeEstimator, robustness_score
-    from roboprobe.scenario.repo_root import discover_repo_root
-    from roboprobe.scenario.space import ScenarioSpace
-    from roboprobe.selection.surrogate import RobustnessGP
-    from roboprobe.store import ids as store_ids
-    from roboprobe.store.records import ArtifactRecord, RiskMapRecord
-
+    campaign_id = analysis.campaign_id
     root = discover_repo_root()
     campaign = uow.campaigns.get(campaign_id)
     if campaign is None:
@@ -714,13 +699,9 @@ def _persist_risk_map(
     slices = mapper.all_pair_slices(
         space.nominal_values(), resolution=settings.risk.slice_resolution
     )
-    volumes = VolumeEstimator().estimate(
-        mapper, n=settings.risk.volume_samples, seed=seed
-    )
+    volumes = VolumeEstimator().estimate(mapper, n=settings.risk.volume_samples, seed=seed)
     payload = [_slice_payload(item) for item in slices]
-    with tempfile.NamedTemporaryFile(
-        "w", suffix=".json", delete=False, encoding="utf-8"
-    ) as handle:
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as handle:
         json.dump(payload, handle, sort_keys=True)
         tmp_path = Path(handle.name)
     try:
@@ -728,9 +709,9 @@ def _persist_risk_map(
     finally:
         tmp_path.unlink(missing_ok=True)
 
-    summary_volumes = summary.get("volumes") if isinstance(summary, dict) else None
+    summary_volumes = (analysis.summary or {}).get("volumes")
     if isinstance(summary_volumes, dict) and "safe" in summary_volumes:
-        volume_json: dict[str, Any] = dict(summary_volumes)
+        volume_json: dict[str, JsonValue] = dict(summary_volumes)
     else:
         volume_json = {
             "safe": volumes.safe,
@@ -762,7 +743,7 @@ def _persist_risk_map(
         RiskMapRecord(
             id=risk_id,
             campaign_id=campaign_id,
-            analysis_id=analysis_id,
+            analysis_id=analysis.id,
             n_obs=len(xs),
             thresholds=settings.risk.thresholds.model_dump(),
             volumes=volume_json,
@@ -773,7 +754,7 @@ def _persist_risk_map(
     return risk_id
 
 
-def _slice_payload(item: Any) -> dict[str, Any]:
+def _slice_payload(item: RiskSlice) -> dict[str, JsonValue]:
     return {
         "x_param": item.x_param,
         "y_param": item.y_param,
@@ -794,22 +775,18 @@ def _slice_payload(item: Any) -> dict[str, Any]:
 # Artefact pruning / tarball
 # --------------------------------------------------------------------------------------
 def prune_artifacts(
-    settings: Any,
+    settings: RoboProbeSettings,
     campaign_id: UUID,
     medoid_run_ids: Sequence[UUID],
 ) -> list[str]:
     """Keep campaign-level artefacts and the medoid runs' files; delete the rest."""
-    from roboprobe.bootstrap._infra import build_infrastructure
-
     keep_runs = set(medoid_run_ids)
     artifact_root = Path(settings.storage.artifact_root)
     infra = build_infrastructure(settings)
     try:
         with infra.uow_factory() as uow:
             rows = _list_all_artifacts(uow)
-            kept_rows = [
-                row for row in rows if row.run_id is None or row.run_id in keep_runs
-            ]
+            kept_rows = [row for row in rows if row.run_id is None or row.run_id in keep_runs]
             dropped_rows = [row for row in rows if row not in kept_rows]
             kept_paths = {row.rel_path for row in kept_rows}
             for row in dropped_rows:
@@ -824,22 +801,15 @@ def prune_artifacts(
     return sorted(kept_paths)
 
 
-def _list_all_artifacts(uow: Any) -> list[Any]:
-    from roboprobe.store.mapping import artifact_record
-    from roboprobe.store.orm import ArtifactRow
-    from sqlalchemy import select
-
-    session = uow._session
+def _list_all_artifacts(uow: SqlAlchemyUnitOfWork) -> list[ArtifactRecord]:
+    # The fixture needs all artifacts, including campaign-level rows.
+    session = uow._require()
     rows = session.scalars(select(ArtifactRow).order_by(ArtifactRow.created_at)).all()
     return [artifact_record(row) for row in rows]
 
 
-def write_artifact_tarball(
-    artifact_root: Path, rel_paths: Iterable[str], out: Path
-) -> int:
+def write_artifact_tarball(artifact_root: Path, rel_paths: Iterable[str], out: Path) -> int:
     """Write a deterministic ``.tar.zst`` with ``rel_paths`` under ``artifact_root``."""
-    import zstandard
-
     paths = sorted(set(rel_paths))
     out.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(suffix=".tar", delete=False) as handle:
@@ -859,9 +829,9 @@ def write_artifact_tarball(
                 info.gname = ""
                 with source.open("rb") as stream:
                     archive.addfile(info, stream)
-        with tar_path.open("rb") as source, out.open("wb") as dest:
+        with tar_path.open("rb") as tar_stream, out.open("wb") as dest:
             compressor = zstandard.ZstdCompressor(level=19, write_checksum=False)
-            compressor.copy_stream(source, dest)
+            compressor.copy_stream(tar_stream, dest)
     finally:
         tar_path.unlink(missing_ok=True)
     return out.stat().st_size
@@ -871,7 +841,6 @@ def write_artifact_tarball(
 # SQL export
 # --------------------------------------------------------------------------------------
 def _dsn(database_url: str) -> str:
-    from sqlalchemy.engine import make_url
 
     url = make_url(database_url)
     if url.get_backend_name() != "postgresql":
@@ -880,9 +849,7 @@ def _dsn(database_url: str) -> str:
     return url.set(drivername="postgresql").render_as_string(hide_password=False)
 
 
-def export_sql(
-    database_url: str, out: Path, dump_cmd: str, dump_dbname: str | None = None
-) -> str:
+def export_sql(database_url: str, out: Path, dump_cmd: str, dump_dbname: str | None = None) -> str:
     """Run ``pg_dump --data-only --column-inserts`` and write a normalised fixture."""
     command = [
         *shlex.split(dump_cmd),
@@ -897,7 +864,8 @@ def export_sql(
         dump_dbname or _dsn(database_url),
     ]
     try:
-        result = subprocess.run(command, check=True, capture_output=True, text=True)
+        # Execute the configured pg_dump wrapper directly with argv.
+        result = subprocess.run(command, check=True, capture_output=True, text=True)  # noqa: S603
     except subprocess.CalledProcessError as exc:
         # Never echo ``command``/``exc``: the DSN contains credentials.
         msg = f"pg_dump failed (exit {exc.returncode}); check the database and dump command"
@@ -910,20 +878,18 @@ def export_sql(
     body = normalise_dump(result.stdout)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(header + body.rstrip() + "\n", encoding="utf-8")
-    digest = hashlib.sha256(out.read_bytes()).hexdigest()
-    return digest
+    return hashlib.sha256(out.read_bytes()).hexdigest()
 
 
 # --------------------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------------------
 def build_parser() -> argparse.ArgumentParser:
+    """Define arguments for dataset generation and export."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--size", choices=("small", "large"), required=True)
     parser.add_argument("--seed", type=int, default=DEFAULT_SEED)
-    parser.add_argument(
-        "--strategy", default="S-RANDOM", help="Small-dataset strategy id."
-    )
+    parser.add_argument("--strategy", default="S-RANDOM", help="Small-dataset strategy id.")
     parser.add_argument("--database-url", required=True)
     parser.add_argument("--workdir-root", type=Path, default=None)
     parser.add_argument("--artifact-root", type=Path, default=None)
@@ -934,13 +900,12 @@ def build_parser() -> argparse.ArgumentParser:
         default="pg_dump",
         help="pg_dump executable (may include a wrapper, e.g. 'docker exec pg pg_dump').",
     )
-    parser.add_argument(
-        "--dump-dbname", help="Database name as seen by a pg_dump wrapper."
-    )
+    parser.add_argument("--dump-dbname", help="Database name as seen by a pg_dump wrapper.")
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Generate the requested dataset and print its summary."""
     args = build_parser().parse_args(argv)
     install_deterministic_uuid7()
     install_fixture_manifest_builder()
@@ -961,27 +926,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     _upgrade_schema(settings)
 
     if args.size == "small":
-        summary = seed_small(settings, args.seed, strategy=args.strategy)
-        campaign_id = UUID(str(summary["campaign_id"]))
-        medoids = [UUID(str(item)) for item in summary["medoid_run_ids"]]
-        rel_paths = prune_artifacts(settings, campaign_id, medoids)
-        _finalise_fixture_rows(
-            settings, [campaign_id], [UUID(str(summary["experiment_id"]))]
-        )
+        small = seed_small(settings, args.seed, strategy=args.strategy)
+        campaign_id = small["campaign_id"]
+        rel_paths = prune_artifacts(settings, campaign_id, small["medoid_run_ids"])
+        _finalise_fixture_rows(settings, [campaign_id], [small["experiment_id"]])
         if args.export_artifacts is not None:
-            size = write_artifact_tarball(
-                artifact_root, rel_paths, args.export_artifacts
-            )
-            summary["artifact_bytes"] = size
+            size = write_artifact_tarball(artifact_root, rel_paths, args.export_artifacts)
+            small["artifact_bytes"] = size
             if size > MAX_ARTIFACT_BYTES:
                 msg = f"artifact tarball is {size} bytes (> {MAX_ARTIFACT_BYTES})"
                 raise RuntimeError(msg)
         if args.export_sql is not None:
-            digest = export_sql(
-                args.database_url, args.export_sql, args.dump_cmd, args.dump_dbname
-            )
-            summary["sql_sha256"] = digest
-            summary["sql_bytes"] = args.export_sql.stat().st_size
+            digest = export_sql(args.database_url, args.export_sql, args.dump_cmd, args.dump_dbname)
+            small["sql_sha256"] = digest
+            small["sql_bytes"] = args.export_sql.stat().st_size
+        summary: SmallSeedResult | LargeSeedResult = small
     else:
         summary = seed_large(settings, args.seed)
 
