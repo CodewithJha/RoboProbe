@@ -9,6 +9,8 @@ from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.runner.campaign_factory import CampaignFactory
 from roboprobe.runner.campaign_spec import CampaignCreate
 from roboprobe.scenario.space import ScenarioSpace
+from roboprobe.selection.base import StrategyContext
+from roboprobe.selection.registry import create
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[4]
@@ -77,3 +79,27 @@ def test_pinned_parameter_need_not_be_supported(space: ScenarioSpace) -> None:
         space=space,
         supported_params=frozenset(p.id for p in space.params if p.id != parameter.id),
     )
+
+
+def test_selection_defaults_are_complete_and_restored(space: ScenarioSpace) -> None:
+
+    settings = RoboProbeSettings(
+        selection={"probe": {"epsilon": 0.2}, "gp": {"max_points": 47}, "acq": {"num_restarts": 3}},
+        scenario={"constraint_max_attempts": 23},
+    )
+    prepared = CampaignFactory(settings).prepare(
+        request(strategy={"id": "S-PROBE", "params": {"epsilon": 0.4}}),
+        space=space,
+        supported_params=frozenset(p.id for p in space.params),
+    )
+    params = prepared.strategy.params
+    assert params["epsilon"] == 0.4
+    assert params["lambda_div"] == settings.selection.probe.lambda_div
+    assert params["max_attempts"] == 23
+    strategy = create(
+        "S-PROBE", StrategyContext(space=space, budget=10, seed=42, batch_size=1, params=params)
+    )
+    assert strategy.ctx.selection.gp.max_points == 47
+    assert strategy.ctx.selection.acq.num_restarts == 3
+    assert strategy.ctx.scenario.constraint_max_attempts == 23
+    assert "_resolved_settings" not in strategy.ctx.params

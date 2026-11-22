@@ -12,6 +12,8 @@ from pydantic import BaseModel, ConfigDict
 from pydantic import ValidationError as PydanticValidationError
 
 from roboprobe.core import errors
+from roboprobe.core.settings.scenario import ScenarioSettings
+from roboprobe.core.settings.selection import SelectionDefaults
 from roboprobe.selection.base import PLUGIN_API_VERSION, Strategy, StrategyContext
 from roboprobe.selection.baselines.grid import GridStrategy
 from roboprobe.selection.baselines.lhs import LHSStrategy
@@ -140,6 +142,16 @@ def get(strategy_id: str) -> type[Strategy]:
 
 def create(strategy_id: str, ctx: StrategyContext) -> Strategy:
     """Instantiate the strategy named ``strategy_id``."""
+    params = dict(ctx.params)
+    snapshot = params.pop("_resolved_settings", None)
+    if snapshot is not None:
+        ctx = ctx.model_copy(
+            update={
+                "params": params,
+                "selection": SelectionDefaults.model_validate(snapshot["selection"]),
+                "scenario": ScenarioSettings.model_validate(snapshot["scenario"]),
+            }
+        )
     return get(strategy_id)(ctx)
 
 

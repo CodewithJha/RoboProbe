@@ -178,6 +178,8 @@ class CampaignLoop:
             seed=self._strategy.ctx.seed,
             batch_size=self._strategy.ctx.batch_size,
             params=dict(self._strategy.ctx.params),
+            selection=self._strategy.ctx.selection,
+            scenario=self._strategy.ctx.scenario,
         )
         return SobolStrategy(ctx).propose(history, pending, q)
 

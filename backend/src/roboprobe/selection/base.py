@@ -47,6 +47,8 @@ class StrategyContext(BaseModel):
     seed: int = Field(ge=0)
     batch_size: int = Field(gt=0)
     params: dict[str, Any] = Field(default_factory=dict)
+    selection: SelectionDefaults = Field(default_factory=SelectionDefaults)
+    scenario: ScenarioSettings = Field(default_factory=ScenarioSettings)
 
 
 class StrategyParams(BaseModel):
@@ -79,8 +81,8 @@ class Strategy(ABC):
         """
         self.ctx = ctx
         self.params = self.Params.model_validate(ctx.params)
-        selection = SelectionDefaults()
-        scenario = ScenarioSettings()
+        selection = ctx.selection
+        scenario = ctx.scenario
         configured = self.params if isinstance(self.params, StrategyParams) else StrategyParams()
         self._allow_repeats = bool(getattr(self.params, "allow_repeats", configured.allow_repeats))
         override_attempts = getattr(self.params, "max_attempts", None)

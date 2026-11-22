@@ -1,5 +1,5 @@
 {
   "name": "k2d_episode_short",
-  "median_s": 0.12,
-  "note": "kinematic2d episode wall on CI CPU; fail if >20% slower (T-053)."
+  "median_s": 0.21,
+  "note": "kinematic2d episode wall on CI CPU after T-034 sensor-informed replanning; fail if >20% slower (T-053)."
 }

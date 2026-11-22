@@ -39,7 +39,7 @@ def create_campaign(
     campaigns: CampaignService,
     space_root: Path | None = None,
 ) -> UUID:
-    """Validate and insert a campaign; optionally start it."""
+    """Stage validated creation and optional start in the caller-owned transaction."""
     root = discover_repo_root() if space_root is None else space_root
     if body.budget > settings.runner.max_budget:
         msg = f"budget {body.budget} exceeds runner.max_budget {settings.runner.max_budget}"
@@ -112,9 +112,7 @@ def create_campaign(
         )
     )
     if body.start:
-        # Lifecycle uses a separate transaction and must see the inserted campaign.
-        uow.commit()
-        campaigns.start(cid)
+        campaigns.start_in_uow(cid, uow)
     return UUID(str(cid))
 
 

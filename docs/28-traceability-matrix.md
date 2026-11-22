@@ -46,6 +46,12 @@ Trace transport verification (T-081e, #150; FR-DSH-005, FR-STO-002, NFR-SEC-003)
 `tests/api/test_trace_artifacts.py` covers clearance minima, flag transitions, rate caps, column
 selection, Parquet/attachment headers, unknown ids, and malicious stored paths (TM-04).
 
+Creation durability and scale follow-up (#147–#149):
+`tests/integration/store/test_atomic_creation.py` verifies rollback and transaction-scoped key locks;
+`test_campaign_http_queries.py` verifies campaign/run HTTP filters, bounded query counts and the
+200 ms p95 target at 10,000 runs. `tests/unit/runner/test_campaign_space_loader.py` covers stored
+uploaded spaces and pins; factory tests verify effective selection snapshot restoration.
+
 ## 2. Non-functional requirements → verification
 
 | NFR | Design | Verification | Gate |

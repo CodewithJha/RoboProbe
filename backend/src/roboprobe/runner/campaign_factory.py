@@ -54,7 +54,31 @@ class CampaignFactory:
             if unknown:
                 msg = f"unknown strategy parameters: {', '.join(sorted(unknown))}"
                 raise ValidationError(msg)
-            params = strategy.Params.model_validate(request.strategy.params).model_dump(mode="json")
+            defaults = settings.selection.probe.model_dump(mode="json")
+            if request.strategy.id == "S-CEM":
+                defaults.update(settings.selection.cem.model_dump(mode="json"))
+            defaults.update(
+                {
+                    key: value
+                    for key, value in settings.selection.model_dump(mode="json").items()
+                    if key in strategy.Params.model_fields and value is not None
+                }
+            )
+            defaults.update(
+                {
+                    "max_attempts": settings.scenario.constraint_max_attempts,
+                    "dedupe_tol": settings.selection.acq.dedupe_tol,
+                }
+            )
+            values = {key: defaults[key] for key in strategy.Params.model_fields if key in defaults}
+            values.update(
+                {key: value for key, value in request.strategy.params.items() if value is not None}
+            )
+            params = strategy.Params.model_validate(values).model_dump(mode="json")
+            params["_resolved_settings"] = {
+                "selection": settings.selection.model_dump(mode="json"),
+                "scenario": settings.scenario.model_dump(mode="json"),
+            }
             oracles = OracleThresholds.model_validate(
                 _merge(settings.oracles.model_dump(mode="json"), request.oracle_overrides)
             ).model_dump(mode="json")
