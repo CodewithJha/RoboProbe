@@ -11,6 +11,7 @@ from tests.contract.test_backend_contract import _request
 
 from roboprobe.backends.gazebo_nav2.backend import GazeboNav2Backend, InfraReason
 from roboprobe.core.settings import load_settings
+from roboprobe.scenario.sut_profile import config_hash
 
 pytestmark = pytest.mark.sim
 
@@ -23,16 +24,32 @@ def test_simulator_loss_during_navigation_is_infrastructure_failure(
         pytest.skip("requires a sourced Jazzy worker image and --backend gazebo_nav2")
 
     settings = load_settings()
+    settings = settings.model_copy(
+        update={"worker": settings.worker.model_copy(update={"poll_interval_s": 0.1})}
+    )
     backend = GazeboNav2Backend(settings)
     backend.prepare()
     episode = _request(tmp_path, settings, backend_name="gazebo_nav2")
+    # Give the test enough time to interrupt the live controller on a shared CI host.
+    profile = episode.sut_profile
+    config = {
+        **profile.config,
+        "nav2_overrides": {"bt_navigator": {"ros__parameters": {"default_server_timeout": 1000}}},
+    }
+    episode = episode.model_copy(
+        update={
+            "sut_profile": profile.model_copy(
+                update={"config": config, "config_hash": config_hash(profile.backend, config)}
+            )
+        }
+    )
     generated = backend.materialize(episode)
     log = episode.workdir / "episode.log"
     killed = False
 
     def kill_gazebo(_: float) -> None:
         nonlocal killed
-        if killed or "Begin navigating from current location" not in log.read_text(
+        if killed or "Received a goal, begin computing control effort" not in log.read_text(
             encoding="utf-8", errors="replace"
         ):
             return
