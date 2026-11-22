@@ -1,12 +1,13 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppProviders } from './providers';
 import { appRoutes } from './router';
 import { DEFAULT_CONFIG, setConfig } from '../lib/config';
 import { ProblemError } from '../api/client';
 import { RouteError } from './ProblemView';
 afterEach(() => {
+  vi.unstubAllGlobals();
   localStorage.clear();
   setConfig(DEFAULT_CONFIG);
   document.documentElement.removeAttribute('data-theme');
@@ -30,7 +31,6 @@ const ROUTES = [
   ['/campaigns/c1/atlas', 'Risk atlas'],
   ['/campaigns/c1/insights', 'Insights'],
   ['/campaigns/c1/settings', 'Settings'],
-  ['/runs/r1', 'Run entry'],
   ['/trials', 'Trials'],
   ['/trials/e1', 'Experiment'],
   ['/spaces', 'Spaces'],
@@ -44,6 +44,27 @@ describe('notebook routes', () => {
   it.each(ROUTES)('renders %s', async (path, heading) => {
     mount(path);
     expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument();
+  });
+  it('loads a run entry through the notebook route', async () => {
+    vi.stubGlobal('fetch', (request: Request) => {
+      const path = new URL(request.url).pathname;
+      if (path.endsWith('/runs/r1'))
+        return Response.json({
+          id: 'r1',
+          campaign_id: 'c1',
+          ordinal: 3,
+          repeat_index: 0,
+          status: 'DONE',
+          phase: 'explore',
+          seed: 7,
+          verdict: 'PASS',
+          scenario: { hash: 'fixture-hash', values: {} },
+        });
+      if (path.endsWith('/artifacts')) return Response.json([]);
+      return Response.json({}, { status: 404 });
+    });
+    mount('/runs/r1');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Run 3' })).toBeInTheDocument();
   });
   it('renders unknown routes and provides a way back', async () => {
     mount('/missing');

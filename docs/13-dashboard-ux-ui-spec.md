@@ -131,6 +131,9 @@ Alert banner when `alert` SSE event arrives (e.g. INFRA_UNHEALTHY auto-pause).
 - **Parameter panel:** each parameter with value, unit, position within range (mini track) and delta from nominal.
 - **Top-down trajectory plot:** map underlay, ground-truth path (ink), estimated path (dashed accent), pallet rectangle, failure marker ✕ at `first_violation_t`, robot footprint ghosts every 2 s.
 - **Synced timelines:** clearance `d(t)` with `d_safe` line, localisation error with `e_max`, `cmd_v` vs `meas_v`, Nav2 status band. Hovering any chart moves a shared cursor and the robot ghost on the map.
+- The trajectory reads the recorded world artifact. The obstacle outline and robot footprint use
+  geometry recorded in new kinematic2d runs. Older world artifacts still render their occupancy grid.
+  Thresholds come from the run's saved oracle configuration when available.
 - **Oracle table:** each oracle, robustness bar (−1…1 with zero line), violated?, first violation time, details.
 - **Provenance drawer:** manifest JSON (pretty), artefact list with SHA-256.
 
