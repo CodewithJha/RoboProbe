@@ -6,7 +6,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 ACTION="${1:-}"
-COMPOSE_FILE="${COMPOSE_FILE:-docker/compose.yaml:docker/e2e.compose.yaml}"
+COMPOSE_BASE="${COMPOSE_BASE:-docker/compose.yaml}"
+COMPOSE_OVERRIDE="${COMPOSE_OVERRIDE:-docker/e2e.compose.yaml}"
 E2E_ENV="${E2E_ENV:-docker/e2e.env}"
 ARTIFACTS_DIR="${E2E_ARTIFACT_ROOT:-data/artifacts}"
 SECRETS_DIR="${SECRETS_DIR:-secrets}"
@@ -18,7 +19,12 @@ WEB_URL="${E2E_BASE_URL:-http://127.0.0.1:8080}"
 READY_TIMEOUT_S="${E2E_READY_TIMEOUT_S:-180}"
 
 compose() {
-  local -a args=(docker compose -f "$COMPOSE_FILE" --env-file "$E2E_ENV")
+  local -a args=(
+    docker compose
+    -f "$COMPOSE_BASE"
+    -f "$COMPOSE_OVERRIDE"
+    --env-file "$E2E_ENV"
+  )
   if [[ -f .env ]]; then
     args+=(--env-file .env)
   fi
