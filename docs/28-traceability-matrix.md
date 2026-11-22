@@ -51,6 +51,9 @@ Gazebo velocity relay verification (T-093d, #195, FR-SIM-003):
 against a fake simulation clock and verifies both velocity message types, FIFO ordering,
 reported latency, zero-delay delivery and process shutdown.
 
+Ground-truth geometry (T-094a, #196, FR-SIM-003 and FR-ORC-001) compares clearance
+between the ROS monitor and kinematic2d on the same map, footprint and poses.
+
 Trace transport verification (T-081e, #150; FR-DSH-005, FR-STO-002, NFR-SEC-003):
 `tests/api/test_trace_artifacts.py` covers clearance minima, flag transitions, rate caps, column
 selection, Parquet/attachment headers, unknown ids, and malicious stored paths (TM-04).

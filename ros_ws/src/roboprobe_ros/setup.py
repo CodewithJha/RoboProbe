@@ -25,6 +25,7 @@ setup(
         "console_scripts": [
             "cmd_delay = roboprobe_ros.cmd_delay:main",
             "perception_degrader = roboprobe_ros.perception_degrader:main",
+            "ground_truth_monitor = roboprobe_ros.ground_truth_node:main",
             "sensor_perturber = roboprobe_ros.sensor_perturber:main",
         ],
     },
