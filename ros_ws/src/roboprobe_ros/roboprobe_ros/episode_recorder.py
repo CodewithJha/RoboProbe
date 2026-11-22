@@ -5,6 +5,7 @@ Implements: FR-RUN-004, FR-SIM-003, FR-SIM-005
 
 from __future__ import annotations
 
+import json
 import math
 import signal
 import subprocess
@@ -27,9 +28,10 @@ from geometry_msgs.msg import (
 )
 from nav2_msgs.msg import BehaviorTreeLog
 from nav_msgs.msg import Odometry
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, JsonValue
 from rclpy.executors import ExternalShutdownException
 from rclpy.parameter import Parameter
+from rclpy.qos import qos_profile_system_default
 from std_msgs.msg import Float64, String
 from std_srvs.srv import SetBool, Trigger
 
@@ -48,6 +50,7 @@ _TRACE_MIN_HZ = 10.0  # FR-RUN-004
 _TRACE_MAX_GAP_S = 0.2  # FR-RUN-004
 _NAV_STATUS_TOPIC = "/roboprobe/nav_status"
 _COMMAND_DELAY_TOPIC = "/roboprobe/cmd_delay_actual"
+_LIDAR_STATS_TOPIC = "/roboprobe/perturber_stats"
 _RECOVERY_NODES = frozenset(
     {
         "BackUp",
@@ -152,6 +155,7 @@ class EpisodeRecorder(RoboProbeNode):
             self._nav_status = NavStatus.IDLE
             self._recoveries = 0
             self._max_delay_s = 0.0
+            self._lidar_stats: dict[str, JsonValue] | None = None
             self._subscribe()
             self.create_service(Trigger, "/episode_recorder/start", self._start)
             self.create_service(SetBool, "/episode_recorder/stop", self._stop)
@@ -189,6 +193,9 @@ class EpisodeRecorder(RoboProbeNode):
             Float64, _COMMAND_DELAY_TOPIC, self._cache_delay, _CONTROL_QUEUE_DEPTH
         )
         self.create_subscription(
+            String, _LIDAR_STATS_TOPIC, self._cache_lidar_stats, qos_profile_system_default
+        )
+        self.create_subscription(
             BehaviorTreeLog, self.topic("bt_log"), self._cache_bt, self.qos("bt_log")
         )
 
@@ -202,6 +209,16 @@ class EpisodeRecorder(RoboProbeNode):
     def _cache_delay(self, message: Float64) -> None:
         if self._start_ns is not None and math.isfinite(message.data):
             self._max_delay_s = max(self._max_delay_s, message.data)
+
+    def _cache_lidar_stats(self, message: String) -> None:
+        try:
+            stats = json.loads(message.data)
+        except json.JSONDecodeError:
+            return
+        if isinstance(stats, dict):
+            count, dropped = stats.get("count"), stats.get("dropped")
+            if type(count) is int and type(dropped) is int and 0 <= dropped <= count:
+                self._lidar_stats = {"count": count, "dropped": dropped}
 
     def _cache_bt(self, message: BehaviorTreeLog) -> None:
         if self._start_ns is not None:
@@ -324,6 +341,7 @@ class EpisodeRecorder(RoboProbeNode):
                 "sample_hz": self._config.sample_hz,
                 "n_recoveries": self._recoveries,
                 "cmd_delay_max_s": self._max_delay_s,
+                "lidar_perturber_stats": self._lidar_stats,
             },
         )
         problems = validate_trace(trace, min_hz=_TRACE_MIN_HZ, max_gap_s=_TRACE_MAX_GAP_S)

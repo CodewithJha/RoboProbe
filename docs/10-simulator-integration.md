@@ -177,7 +177,8 @@ The manager writes `episode_done.json` beside `episode.yaml` after the recorder 
   `sample_hz` using ROS simulation time. It writes `trace.parquet` beside `episode.yaml`, then
   validates it using the vendored Trace v1 reader. `/episode_recorder/stop` (`SetBool`) receives
   the manager's completeness flag. Interrupted recordings and invalid sampling carry
-  `complete=false` in trace metadata.
+  `complete=false` in trace metadata. The trace also records the latest lidar drop counters,
+  maximum observed command delay and recovery count for the episode.
 - Optional rosbag2 (MCAP storage) of `/scan`, `/cmd_vel`, `/amcl_pose`, `/tf`, ground truth when `record_bag` (default: failures only — the worker re-records on confirmatory replays, since a run's verdict is unknown in advance; option `record_bag: always`).
 
 ## 7. kinematic2d backend (development & evaluation test double)

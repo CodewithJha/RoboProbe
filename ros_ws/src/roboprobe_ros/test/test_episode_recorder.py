@@ -117,13 +117,14 @@ def test_simulation_trace_and_bag(  # noqa: PLR0915 - keep DDS setup and teardow
     cmd_pub = source.create_publisher(Twist, recorder.topic("cmd_vel"), recorder.qos("cmd_vel"))
     nav_pub = source.create_publisher(String, "/roboprobe/nav_status", _QUEUE_DEPTH)
     delay_pub = source.create_publisher(Float64, "/roboprobe/cmd_delay_actual", _QUEUE_DEPTH)
+    lidar_stats_pub = source.create_publisher(String, "/roboprobe/perturber_stats", _QUEUE_DEPTH)
     bt_pub = source.create_publisher(
         BehaviorTreeLog, recorder.topic("bt_log"), recorder.qos("bt_log")
     )
     clock_pub = source.create_publisher(Clock, "/clock", qos_profile_sensor_data)
     start = source.create_client(Trigger, "/episode_recorder/start")
     stop = source.create_client(SetBool, "/episode_recorder/stop")
-    data_pubs = (gt_pub, amcl_pub, odom_pub, cmd_pub, nav_pub, delay_pub, bt_pub)
+    data_pubs = (gt_pub, amcl_pub, odom_pub, cmd_pub, nav_pub, delay_pub, lidar_stats_pub, bt_pub)
 
     def clock_at(step: int) -> None:
         instant = _NS_PER_S + step * (_NS_PER_S // _RATE_HZ)
@@ -170,6 +171,8 @@ def test_simulation_trace_and_bag(  # noqa: PLR0915 - keep DDS setup and teardow
         cmd_pub.publish(command)
         nav_pub.publish(String(data="ACTIVE"))
         delay_pub.publish(Float64(data=0.065))
+        lidar_stats_pub.publish(String(data="{"))
+        lidar_stats_pub.publish(String(data='{"count": 12, "dropped": 2}'))
         recovery = BehaviorTreeStatusChange(
             node_name="Spin", previous_status="IDLE", current_status="RUNNING"
         )
@@ -200,6 +203,7 @@ def test_simulation_trace_and_bag(  # noqa: PLR0915 - keep DDS setup and teardow
     assert trace.meta["complete"] is (complete and not problems)
     assert trace.meta["n_recoveries"] == 1
     assert trace.meta["cmd_delay_max_s"] == pytest.approx(0.065)
+    assert trace.meta["lidar_perturber_stats"] == {"count": 12, "dropped": 2}
     assert (trace.goal_x, trace.goal_y) == pytest.approx((4.0, 5.0))
     assert trace.gt_x[0] == pytest.approx(2.0)
     assert trace.est_x[0] == pytest.approx(2.1)
