@@ -23,13 +23,37 @@ __all__ = ["router"]
 router = APIRouter(tags=["modes"])
 
 
+def _is_provisional(analysis: Any) -> bool:
+    summary = getattr(analysis, "summary", None) or {}
+    clustering = summary.get("clustering")
+    return isinstance(clustering, dict) and clustering.get("provisional") is True
+
+
+def _first_seen_ordinal(uow: Any, mode: Any) -> int | None:
+    run_id = getattr(mode, "first_seen_run", None)
+    run = uow.runs.get(run_id) if run_id is not None else None
+    return None if run is None else int(run.ordinal)
+
+
 @router.get("/campaigns/{campaign_id}/modes")
 def list_modes(campaign_id: UUID, uow: Any = Depends(get_uow)) -> Page[FailureModeOut]:
     if uow.campaigns.get(campaign_id) is None:
         msg = "campaign not found"
         raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
     modes = uow.modes.list_for_campaign(campaign_id)
-    return Page(items=[failure_mode_out(m) for m in modes])
+    provisional = {
+        row.id: _is_provisional(row) for row in uow.analyses.list_for_campaign(campaign_id)
+    }
+    return Page(
+        items=[
+            failure_mode_out(
+                m,
+                provisional=provisional.get(getattr(m, "analysis_id", None), False),
+                first_seen_ordinal=_first_seen_ordinal(uow, m),
+            )
+            for m in modes
+        ]
+    )
 
 
 @router.get("/modes/{mode_id}")
@@ -39,10 +63,14 @@ def get_mode(mode_id: UUID, response: Response, uow: Any = Depends(get_uow)) -> 
         msg = "failure mode not found"
         raise NotFoundError(msg, context={"mode_id": str(mode_id)})
     response.headers["ETag"] = format_etag(getattr(row, "etag_version", 1))
-    return failure_mode_out(row)
+    analysis_id = getattr(row, "analysis_id", None)
+    analysis = uow.analyses.get(analysis_id) if analysis_id is not None else None
+    return failure_mode_out(
+        row, provisional=_is_provisional(analysis), first_seen_ordinal=_first_seen_ordinal(uow, row)
+    )
 
 
-@router.patch("/modes/{mode_id}")
+@router.patch("/modes/{mode_id}", response_model=FailureModeOut)
 def patch_mode(
     mode_id: UUID,
     body: FailureModePatch,
@@ -77,7 +105,13 @@ def patch_mode(
     if updated is None:
         msg = "failure mode not found"
         raise NotFoundError(msg, context={"mode_id": str(mode_id)})
-    payload = failure_mode_out(updated)
+    analysis_id = getattr(updated, "analysis_id", None)
+    analysis = uow.analyses.get(analysis_id) if analysis_id is not None else None
+    payload = failure_mode_out(
+        updated,
+        provisional=_is_provisional(analysis),
+        first_seen_ordinal=_first_seen_ordinal(uow, updated),
+    )
     return JSONResponse(
         content=payload.model_dump(mode="json"),
         headers={"ETag": format_etag(int(etag) + 1)},

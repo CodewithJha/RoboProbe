@@ -183,6 +183,9 @@ class FailureModeOut(BaseModel):
     code: str
     label: str
     label_is_user: bool = False
+    provisional: bool = False
+    first_seen_ordinal: int | None = None
+    reproducibility: float | None = None
     version: int = 1
     duplicate_of: str | None = None
     param_ranges: dict[str, JsonValue] = Field(default_factory=dict)

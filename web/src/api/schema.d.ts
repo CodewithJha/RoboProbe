@@ -939,6 +939,8 @@ export interface components {
       code: string;
       /** Duplicate Of */
       duplicate_of?: string | null;
+      /** First Seen Ordinal */
+      first_seen_ordinal?: number | null;
       /**
        * Id
        * Format: uuid
@@ -965,6 +967,13 @@ export interface components {
       };
       /** Primary Class */
       primary_class: string;
+      /**
+       * Provisional
+       * @default false
+       */
+      provisional: boolean;
+      /** Reproducibility */
+      reproducibility?: number | null;
       /** Rules */
       rules?: components['schemas']['JsonValue'][];
       /** Size */
@@ -3724,7 +3733,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': unknown;
+          'application/json': components['schemas']['FailureModeOut'];
         };
       };
       /** @description Unauthorized */

@@ -17,6 +17,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   verdict shapes; centered robustness meters; keyboard-selectable virtual run spines; sortable
   virtual statistics tables; and actionable empty states.
 
+- Casebook and Insights (T-110a/b): filter and edit analyzed failure modes, replay or export
+  representative scenarios, and compare SHAP importance with GP rankings and cross-validation.
+
 - Run inspection (T-089a/b/c): replay and artifact export, provenance and oracle results,
   and a zoomable trajectory with linked clearance, localization, velocity, and navigation timelines.
 

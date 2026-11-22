@@ -181,13 +181,18 @@ def sut_out(record: Any) -> SutProfileOut:
     )
 
 
-def failure_mode_out(record: Any) -> FailureModeOut:
+def failure_mode_out(
+    record: Any, *, provisional: bool = False, first_seen_ordinal: int | None = None
+) -> FailureModeOut:
     return FailureModeOut(
         id=record.id,
         campaign_id=record.campaign_id,
         code=record.code,
         label=record.label,
         label_is_user=getattr(record, "label_is_user", False),
+        provisional=provisional,
+        first_seen_ordinal=first_seen_ordinal,
+        reproducibility=getattr(record, "reproducibility", None),
         version=getattr(record, "etag_version", 1),
         duplicate_of=getattr(record, "duplicate_of", None),
         param_ranges=dict(getattr(record, "param_ranges", {})),

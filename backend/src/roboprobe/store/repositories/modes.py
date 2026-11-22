@@ -129,7 +129,7 @@ class SqlFailureModeRepo:
             row.reproducibility = mode.reproducibility
             row.status = row.status if row.status != "open" else mode.status
             row.etag_version += 1
-            row.first_seen_run = mode.first_seen_run
+            row.first_seen_run = row.first_seen_run or mode.first_seen_run
             row.analysis_id = mode.analysis_id
             row.label = label
         self._s.flush()

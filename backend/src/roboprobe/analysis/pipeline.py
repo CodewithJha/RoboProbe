@@ -428,6 +428,7 @@ def _to_analysis_run(row: AnalysisRunRow) -> AnalysisRun:
     values = {str(k): cast(ParamValue, v) for k, v in dict(row.scenario_values or {}).items()}
     return AnalysisRun(
         id=row.id,
+        ordinal=getattr(row, "ordinal", None),
         verdict=verdict,
         phase=phase,
         primary_failure=primary,
@@ -698,6 +699,7 @@ def _mode_records(
         if ctx.clustering is not None
         else {}
     )
+    ordinals = {run.id: run.ordinal for run in ctx.runs if run.ordinal is not None}
     for summary in ctx.modes:
         mode_id = ctx.mode_ids[summary.code]
         class_mix = {k.value: float(v) for k, v in summary.class_mix.items()}
@@ -716,6 +718,11 @@ def _mode_records(
                 characteristic=tuple(sorted(summary.characteristic)),
                 medoid_run_id=summary.medoid_run_id,
                 minimal_run_id=summary.minimal_run_id,
+                first_seen_run=min(
+                    (run_id for run_id in summary.member_run_ids if run_id in ordinals),
+                    key=ordinals.__getitem__,
+                    default=None,
+                ),
                 rules=rules_by_code.get(summary.code, []),
                 analysis_id=ctx.analysis_id,
             )

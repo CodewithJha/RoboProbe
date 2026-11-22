@@ -577,6 +577,17 @@
             ],
             "title": "Duplicate Of"
           },
+          "first_seen_ordinal": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen Ordinal"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -639,6 +650,22 @@
           "primary_class": {
             "title": "Primary Class",
             "type": "string"
+          },
+          "provisional": {
+            "default": false,
+            "title": "Provisional",
+            "type": "boolean"
+          },
+          "reproducibility": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reproducibility"
           },
           "rules": {
             "items": {
@@ -5661,7 +5688,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/FailureModeOut"
+                }
               }
             },
             "description": "Successful Response"
