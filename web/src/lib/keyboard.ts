@@ -22,6 +22,7 @@ export interface Shortcut {
   readonly keys: string;
   readonly handler: (event: KeyboardEvent) => void;
   readonly scope?: ShortcutScope;
+  readonly when?: (event: KeyboardEvent) => boolean;
   /** Human-readable action shown in the `?` dialog. */
   readonly description: string;
 }
@@ -129,7 +130,7 @@ export class KeyboardManager {
     this.reset();
     for (const keys of candidates) {
       const shortcut = this.shortcuts.get(keys);
-      if (shortcut !== undefined) {
+      if (shortcut !== undefined && (shortcut.when?.(event) ?? true)) {
         event.preventDefault();
         shortcut.handler(event);
         return;

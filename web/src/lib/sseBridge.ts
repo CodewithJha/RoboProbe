@@ -30,6 +30,7 @@ export function applyServerEvent(client: QueryClient, event: SseEvent): void {
     );
     void client.invalidateQueries({ queryKey: ['campaigns', cid, 'progress'] });
     void client.invalidateQueries({ queryKey: ['campaigns'], exact: true });
+    void client.invalidateQueries({ queryKey: ['campaigns', 'list'] });
   } else if (event.type === 'run.finished' || event.type === 'run.started') {
     const run = event.data['run'];
     if (
@@ -78,6 +79,9 @@ export function applyServerEvent(client: QueryClient, event: SseEvent): void {
     const runId = event.data['run_id'];
     if (typeof runId === 'string') void client.invalidateQueries({ queryKey: ['runs', runId] });
   } else if (event.type === 'mode.discovered' || event.type === 'analysis.finished') {
+    if (cid && event.type === 'mode.discovered') {
+      void client.invalidateQueries({ queryKey: ['campaigns', cid, 'progress'] });
+    }
     if (cid)
       for (const resource of EVENT_QUERIES[event.type])
         void client.invalidateQueries({ queryKey: ['campaigns', cid, resource] });

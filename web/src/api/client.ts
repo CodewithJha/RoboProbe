@@ -56,13 +56,11 @@ export const api = createClient<paths>({
 api.use({
   async onRequest({ request }) {
     const schemaUrl = new URL(request.url);
-    // Construct an explicit init when redirecting to the runtime API origin. Request
-    // instances are not portable as init dictionaries, particularly for method/body.
     const target = new Request(`${apiUrl(schemaUrl.pathname)}${schemaUrl.search}`, {
       method: request.method,
       headers: request.headers,
       signal: request.signal,
-      ...(request.body === null ? {} : { body: await request.arrayBuffer() }),
+      ...(request.body ? { body: await request.arrayBuffer() } : {}),
     });
     const token = getToken();
     if (token) target.headers.set('Authorization', `Bearer ${token}`);
