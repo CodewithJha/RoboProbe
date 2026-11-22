@@ -231,6 +231,8 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 
 | Key | Type | Default | Env var | Description |
 |-----|------|---------|---------|-------------|
+| `scenario.map_alignment.min_iou` | float | `0.95` | `ROBOPROBE_SCENARIO__MAP_ALIGNMENT__MIN_IOU` | Minimum occupied-cell IoU between kinematic2d and Gazebo maps. |
+| `scenario.map_alignment.path_length_tolerance_ratio` | float | `0.02` | `ROBOPROBE_SCENARIO__MAP_ALIGNMENT__PATH_LENGTH_TOLERANCE_RATIO` | Allowed relative difference between backend nominal path lengths. |
 | `scenario.constraint_max_attempts` | int | `1000` | `ROBOPROBE_SCENARIO__CONSTRAINT_MAX_ATTEMPTS` | Sampler draws before rejection sampling of constrained spaces gives up. |
 | `scenario.constraint_max_literal_exponent` | int | `8` | `ROBOPROBE_SCENARIO__CONSTRAINT_MAX_LITERAL_EXPONENT` | Largest absolute integer exponent allowed in a constraint (TM-03). |
 | `scenario.yaml_max_aliases` | int | `32` | `ROBOPROBE_SCENARIO__YAML_MAX_ALIASES` | Maximum YAML alias expansions in one uploaded document (TM-02). |

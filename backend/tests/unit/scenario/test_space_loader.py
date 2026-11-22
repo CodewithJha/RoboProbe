@@ -117,11 +117,9 @@ def test_task_reference_resolves_against_base_dir(monkeypatch: pytest.MonkeyPatc
     assert ScenarioSpace.from_yaml(WAREHOUSE).version == load_warehouse().version
 
 
-def test_strict_task_rejects_provisional_values() -> None:
-    with pytest.raises(errors.ValidationError, match="provisional") as exc:
-        ScenarioSpace.from_yaml(WAREHOUSE, base_dir=REPO_ROOT, strict_task=True)
-    assert exc.value.code is errors.ErrorCode.SPACE_INVALID
-    assert issue_paths(exc) == ["/task"]
+def test_strict_task_loads_after_t092() -> None:
+    space = ScenarioSpace.from_yaml(WAREHOUSE, base_dir=REPO_ROOT, strict_task=True)
+    assert space.task.goal.y == pytest.approx(-8.3)
 
 
 def test_unknown_parameter_lookup() -> None:

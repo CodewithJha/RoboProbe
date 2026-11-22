@@ -1,10 +1,9 @@
 # Task under test for scenario space warehouse_v1 (docs/06 §1, §7). Schema: schemas/task.schema.json.
 #
-# PROVISIONAL values (listed under `provisional`, rejected by the strict loader and by
-# `scripts/check_no_tbd.py --strict`):
-#   goal                - ~13 m north of Dock A through the first aisle, chosen before the kinematic2d
-#                         world (T-032) and the Gazebo map inspection (T-092) exist. T-092 fixes it.
-#   nominal_path        - straight provisional polyline; T-092 regenerates it with the Nav2 planner.
+# Map and nominal path verified in T-092: A* on `configs/backends/warehouse_k2d.json`;
+# Gazebo reference map vendored at `configs/maps/warehouse_v1.*` (Nav2 bringup warehouse).
+# Cross-map IoU ≥ 0.95 against the live sim map is deferred to the owner's GPU host ([#331]).
+#
 #   injected_obstacles  - resolved in T-091 (0.144 m EUR pallet, below the 0.194 m lidar plane).
 schema_version: 1
 id: warehouse_delivery_v1
@@ -18,4 +17,3 @@ nominal_path: paths/warehouse_delivery_v1.csv
 injected_obstacles:
   - {model: dropped_pallet, size: [0.8, 0.6, 0.144], placement: {along: obstacle.along_path, lateral: obstacle.clearance, side: left}}
 time_limit: {factor: 2.5, offset_s: 10, cap_s: 120}
-provisional: [goal, nominal_path]

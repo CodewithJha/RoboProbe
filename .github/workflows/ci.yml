@@ -48,6 +48,12 @@ jobs:
             echo "::error::Resolve TBD_T091 before merging (T-091)"
             exit 1
           fi
+      - name: No TBD_T092 placeholders remain (T-092)
+        run: |
+          if grep -R "TBD_T092" tasks configs; then
+            echo "::error::Resolve TBD_T092 in tasks/configs before merging (T-092)"
+            exit 1
+          fi
       - name: mypy --strict, tsc
         run: make typecheck
       - name: Every test has a tier marker
