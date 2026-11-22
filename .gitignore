@@ -41,6 +41,8 @@ pnpm-debug.log*
 yarn-error.log*
 playwright-report/
 test-results/
+web/e2e-results/
+web/e2e-artifacts/
 
 # --- ROS 2 / colcon ---
 ros_ws/build/

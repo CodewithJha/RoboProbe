@@ -7,6 +7,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Playwright E2E harness and journeys (T-117, T-118, T-114): compose-backed global setup with
+  seeded warehouse campaign, axe helper and page objects, journey specs, `e2e.yml`, Lighthouse
+  nightly gate, and `size-limit` bundle budget in `build-web`.
 - Dashboard polish (T-113a/b, T-115): Spaces list with YAML view and validation,
   Workbench worker table, Settings (session token, theme, number locale, SSE reconnect),
   report export with sandboxed preview route, and global keyboard shortcuts dialog.

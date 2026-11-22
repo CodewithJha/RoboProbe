@@ -1,0 +1,8 @@
+[
+  {
+    "name": "Initial dashboard JS (gzip)",
+    "path": "dist/assets/index-*.js",
+    "limit": "350 KB",
+    "gzip": true
+  }
+]
