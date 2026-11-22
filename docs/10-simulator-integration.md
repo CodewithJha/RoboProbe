@@ -130,6 +130,8 @@ The perturbation file uses `illuminance_lux`, `perception_model_file`, `lidar.si
 named `sensor_perturber`, `perception_degrader` and `cmd_delay`. The lidar also reads its seed
 from the top-level `seed` field. The bridge keeps the stock clock, joint state, TF, IMU and odometry
 routes while using the verified topic catalog for the perturbation and ground-truth edges.
+The Gazebo CLI uses the low 31 bits of the simulator seed to fit Harmonic's signed integer
+argument. ROS node seeds retain their full derived precision.
 
 **SUT profiles** (`configs/sut_profiles/<id>.yaml`, schema `schemas/sut_profile.schema.json`, loader
 `roboprobe.scenario.sut_profile.load_sut_profile`, T-016) select the robot stack: for `gazebo_nav2` the base

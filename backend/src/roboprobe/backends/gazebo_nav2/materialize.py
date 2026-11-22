@@ -38,6 +38,8 @@ _MAP_IMAGE = "map.pgm"
 _PERCEPTION_FILE = "perception_model.yaml"
 _WORLD_ROBOT = "turtlebot4"
 _MIN_PACKAGE_PATH_PARTS = 2
+# Gazebo Harmonic's CLI passes the seed through a signed C int.
+_GAZEBO_CLI_MAX_SEED = (1 << 31) - 1
 _GZ_TO_ROS = "GZ_TO_ROS"
 _ROS_TO_GZ = "ROS_TO_GZ"
 _STOCK_BRIDGES = (
@@ -271,7 +273,7 @@ class GazeboMaterializer:
         params = self._nav2(topics, speed)
         map_yaml, map_image = _map_assets(self._root, self._task.map)
         time_limit = time_limit_s(self._task, speed, polyline_length_m(nominal))
-        simulator_seed = derive_seed(seeds.run, SIMULATOR)
+        simulator_seed = derive_seed(seeds.run, SIMULATOR) & _GAZEBO_CLI_MAX_SEED
         files = {
             "world.sdf": world.content,
             "nav2_params.yaml": params.content.encode(),

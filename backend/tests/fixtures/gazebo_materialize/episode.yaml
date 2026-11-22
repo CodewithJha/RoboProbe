@@ -17,7 +17,7 @@ pallets:
 record_bag: always
 robot_name: turtlebot4
 sample_hz: 15.0
-simulator_seed: 2047656344537034507
+simulator_seed: 775188235
 spawn_tolerance_m: 0.25
 start:
   x: 0.0

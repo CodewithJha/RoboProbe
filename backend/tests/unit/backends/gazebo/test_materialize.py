@@ -172,6 +172,9 @@ def test_materializes_golden_launch_files(
         yaml.safe_load(episode.files["map.yaml"].read_text(encoding="utf-8"))["image"] == "map.pgm"
     )
     assert episode.payload["time_limit_s"] == 55.0
+    captured = yaml.safe_load(episode.files["episode.yaml"].read_bytes())
+    assert captured["simulator_seed"] == episode.payload["simulator_seed"]
+    assert 0 <= captured["simulator_seed"] <= (1 << 31) - 1
 
 
 def _changed_yaml_keys(left: object, right: object, prefix: str) -> set[str]:
