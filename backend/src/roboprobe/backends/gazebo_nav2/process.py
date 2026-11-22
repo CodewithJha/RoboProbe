@@ -81,8 +81,10 @@ def _orphan_pids(partition: str | None) -> list[int]:
                 continue
             name = (process.info["name"] or "").split(maxsplit=1)
             arguments = process.info["cmdline"] or []
+            # Harmonic's Ruby front end identifies itself with a multiword process title.
+            title = arguments[0].split(maxsplit=1) if arguments else []
             if (
-                any(Path(part).name in _MANAGED_PROGRAMS for part in (*name, *arguments))
+                any(Path(part).name in _MANAGED_PROGRAMS for part in (*name, *title, *arguments))
                 and process.environ().get(_PARTITION) == partition
             ):
                 matches.append(process.pid)
