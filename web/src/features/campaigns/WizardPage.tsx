@@ -1,3 +1,4 @@
+import { parameters } from '../../lib/spaceParameters';
 import { isOnline, limit } from '../../lib/workers';
 import { useRef, useState, type SubmitEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -14,7 +15,6 @@ import { useRuntimeConfig } from '../../app/contexts';
 import {
   backends,
   errorStep,
-  parameters,
   strategies,
   toYaml,
   validateRequest,
@@ -331,7 +331,7 @@ export function Component() {
               <input
                 type="number"
                 min={1}
-                value={repeats}
+                value={repeats || ''}
                 required
                 onChange={(event) => {
                   setRepeats(event.target.valueAsNumber || 0);

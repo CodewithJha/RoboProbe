@@ -6,6 +6,7 @@ export interface RuntimeConfig {
   sseUrl: string;
   defaultTheme: ThemePreference;
   featureFlags: { trials: boolean; reports: boolean };
+  consoleReplayRepeats: number;
   wizardDefaultBudget: number;
   wizardDefaultRepeats: number;
   wizardSliderSteps: number;
@@ -24,6 +25,7 @@ export const DEFAULT_CONFIG: RuntimeConfig = {
   sseUrl: `${import.meta.env.VITE_API_BASE_URL}/events`,
   defaultTheme: 'system',
   featureFlags: { trials: true, reports: true },
+  consoleReplayRepeats: 1,
   wizardDefaultBudget: 200,
   wizardDefaultRepeats: 1,
   wizardSliderSteps: 1000,
@@ -71,6 +73,7 @@ export function parseConfig(raw: unknown): RuntimeConfig {
     throw new Error('Invalid featureFlags');
   config.featureFlags = { trials: flags['trials'], reports: flags['reports'] };
   const tunables = [
+    'consoleReplayRepeats',
     'wizardDefaultBudget',
     'wizardDefaultRepeats',
     'wizardSliderSteps',

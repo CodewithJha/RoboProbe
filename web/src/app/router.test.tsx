@@ -1,13 +1,56 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { AppProviders } from './providers';
 import { appRoutes } from './router';
 import { DEFAULT_CONFIG, setConfig } from '../lib/config';
-import { ProblemError } from '../api/client';
+import { apiUrl, ProblemError } from '../api/client';
 import { RouteError } from './ProblemView';
+const server = setupServer(
+  ...['/campaigns', '/spaces', '/sut-profiles', '/workers'].map((path) =>
+    http.get(apiUrl(path), () => HttpResponse.json({ items: [] })),
+  ),
+  http.get(apiUrl('/meta'), () => HttpResponse.json({})),
+  http.get(apiUrl('/campaigns/c1'), () =>
+    HttpResponse.json({
+      id: 'c1',
+      name: 'Example campaign',
+      backend: 'kinematic2d',
+      strategy: { id: 'S-PROBE', seed: 42 },
+      status: 'CREATED',
+      budget: 10,
+    }),
+  ),
+  http.get(apiUrl('/campaigns/c1/progress'), () =>
+    HttpResponse.json({ campaign_id: 'c1', counts: {} }),
+  ),
+  http.get(apiUrl('/campaigns/c1/runs'), () => HttpResponse.json({ items: [] })),
+  http.get(apiUrl('/runs/r1'), () =>
+    HttpResponse.json({
+      id: 'r1',
+      campaign_id: 'c1',
+      ordinal: 1,
+      repeat_index: 0,
+      status: 'DONE',
+      phase: 'explore',
+      seed: 1,
+      verdict: 'PASS',
+      scenario: { hash: 'abc', values: {} },
+      oracles: [],
+    }),
+  ),
+  http.get(apiUrl('/runs/r1/artifacts'), () => HttpResponse.json([])),
+  http.get(apiUrl('/runs/r1/trace'), () => HttpResponse.json({ t: [], columns: {} })),
+);
+beforeAll(() => {
+  server.listen();
+});
+afterAll(() => {
+  server.close();
+});
 afterEach(() => {
-  vi.unstubAllGlobals();
   localStorage.clear();
   setConfig(DEFAULT_CONFIG);
   document.documentElement.removeAttribute('data-theme');
@@ -25,12 +68,13 @@ const ROUTES = [
   ['/', 'Bench'],
   ['/campaigns', 'Campaigns'],
   ['/campaigns/new', 'New campaign'],
-  ['/campaigns/c1', 'Campaign console'],
+  ['/campaigns/c1', 'Example campaign'],
   ['/campaigns/c1/runs', 'Run entries'],
   ['/campaigns/c1/casebook', 'Casebook'],
   ['/campaigns/c1/atlas', 'Risk atlas'],
   ['/campaigns/c1/insights', 'Insights'],
   ['/campaigns/c1/settings', 'Settings'],
+  ['/runs/r1', 'Run entry'],
   ['/trials', 'Trials'],
   ['/trials/e1', 'Experiment'],
   ['/spaces', 'Spaces'],
@@ -44,27 +88,6 @@ describe('notebook routes', () => {
   it.each(ROUTES)('renders %s', async (path, heading) => {
     mount(path);
     expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument();
-  });
-  it('loads a run entry through the notebook route', async () => {
-    vi.stubGlobal('fetch', (request: Request) => {
-      const path = new URL(request.url).pathname;
-      if (path.endsWith('/runs/r1'))
-        return Response.json({
-          id: 'r1',
-          campaign_id: 'c1',
-          ordinal: 3,
-          repeat_index: 0,
-          status: 'DONE',
-          phase: 'explore',
-          seed: 7,
-          verdict: 'PASS',
-          scenario: { hash: 'fixture-hash', values: {} },
-        });
-      if (path.endsWith('/artifacts')) return Response.json([]);
-      return Response.json({}, { status: 404 });
-    });
-    mount('/runs/r1');
-    expect(await screen.findByRole('heading', { level: 1, name: 'Run 3' })).toBeInTheDocument();
   });
   it('renders unknown routes and provides a way back', async () => {
     mount('/missing');
