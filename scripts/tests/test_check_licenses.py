@@ -86,6 +86,15 @@ class MainTest(unittest.TestCase):
         code, _ = self._run("--pip-licenses", str(pip), "--pnpm-licenses", str(pnpm))
         self.assertEqual(code, check_licenses.EXIT_OK)
 
+    def test_mapbox_unknown_override_passes(self) -> None:
+        """Mapbox bundles with missing npm metadata use reviewed SPDX overrides."""
+        pnpm = self._write(
+            "pnpm.json",
+            {"Unknown": [{"name": "mapbox-gl", "versions": ["1.13.3"]}]},
+        )
+        code, _ = self._run("--pnpm-licenses", str(pnpm))
+        self.assertEqual(code, check_licenses.EXIT_OK)
+
     def test_gpl_dependency_fails(self) -> None:
         """A GPL dependency is reported with ecosystem, name and licence."""
         pnpm = self._write("pnpm.json", {"GPL-3.0": [{"name": "copyleft", "versions": ["1.0.0"]}]})
