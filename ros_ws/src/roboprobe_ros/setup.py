@@ -30,6 +30,7 @@ setup(
             "cmd_delay = roboprobe_ros.cmd_delay:main",
             "episode_manager = roboprobe_ros.episode_manager:main",
             "perception_degrader = roboprobe_ros.perception_degrader:main",
+            "ground_truth_monitor = roboprobe_ros.ground_truth_node:main",
             "sensor_perturber = roboprobe_ros.sensor_perturber:main",
         ],
     },
