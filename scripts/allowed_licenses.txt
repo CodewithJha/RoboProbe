@@ -20,6 +20,7 @@ Unlicense
 Zlib
 # Public-domain dedication (FSF free, GPL-compatible); appears in bundled-component expressions.
 CC0-1.0
+CC-BY-4.0
 
 # --- Weak copyleft (SPDX); dynamic linking/import only, no modification of the dependency ---
 LGPL-2.1-only
