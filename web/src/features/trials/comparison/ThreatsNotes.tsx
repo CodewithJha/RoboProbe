@@ -16,7 +16,6 @@ export function ThreatsNotes({ experiment }: { experiment: Schema['ExperimentOut
       version: string;
     }): Promise<Schema['ExperimentOut']> =>
       requireData<Schema['ExperimentOut']>(
-        // @ts-expect-error experiment PATCH is not yet in the generated client
         await api.PATCH('/api/v1/experiments/{experiment_id}', {
           params: { path: { experiment_id: experiment.id } },
           headers: { 'If-Match': version },
