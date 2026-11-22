@@ -112,3 +112,46 @@ test('sends the row version with a status change', async () => {
     ).toBe('W/"3"');
   });
 });
+
+test('shows evidence, filters cases, and queues confirmation for the selected mode', async () => {
+  const evidence = {
+    ...items[0],
+    medoid_run_id: 'medoid-a',
+    minimal_run_id: 'minimal-a',
+    characteristic: ['speed'],
+    param_ranges: { speed: { unit: 'm/s', q05: 0.2, q95: 0.5, space_coverage: 0.4 } },
+    rules: [
+      {
+        conditions: [{ param: 'speed', op: '≥', threshold_physical: 0.2 }],
+        precision: 0.8,
+        support: 9,
+      },
+    ],
+    reproducibility: 0.75,
+  };
+  const fetcher = vi.fn((request: Request) =>
+    request.method === 'POST'
+      ? Response.json({ run_ids: ['queued'] }, { status: 202 })
+      : Response.json({ items: [evidence, ...items.slice(1)] }),
+  );
+  setup(fetcher);
+  const card = (await screen.findAllByRole('article'))[0];
+  if (!card) throw new Error('Case card is missing');
+  expect(within(card).getByRole('link', { name: 'Medoid run' })).toHaveAttribute(
+    'href',
+    '/runs/medoid-a',
+  );
+  expect(within(card).getByText(/Precision 0.8/)).toBeVisible();
+  expect(within(card).getByText('Reproducibility 0.75')).toBeVisible();
+  fireEvent.change(screen.getByRole('combobox', { name: 'Failure class' }), {
+    target: { value: 'F-COL' },
+  });
+  expect(screen.getAllByRole('article')).toHaveLength(1);
+  fireEvent.click(within(card).getByRole('button', { name: 'Confirm interaction' }));
+  expect(await within(card).findByText('Confirmation pending')).toBeVisible();
+  expect(
+    fetcher.mock.calls.some(([request]) =>
+      new URL(request.url).pathname.endsWith('/mode-a:confirm-interaction'),
+    ),
+  ).toBe(true);
+});
