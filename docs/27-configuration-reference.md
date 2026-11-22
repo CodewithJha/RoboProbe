@@ -383,6 +383,10 @@ also fails if a configured group lacks samples or reports failed requests.
 | `perturb_file` | Empty | YAML parameters written into the episode working directory |
 | `seed` | `0` | Initial PCG64 state for the node's random stream |
 
+The lidar node reads a nonnegative episode `seed` from the `perturb_file`.
+`lidar.sigma_m` is the finite, nonnegative Gaussian standard deviation in metres.
+`lidar.dropout_p` is the probability of dropping a beam, in the inclusive range `[0, 1]`.
+
 ## 5. Example `roboprobe.toml`
 
 ```toml

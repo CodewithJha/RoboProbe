@@ -79,11 +79,13 @@ Upgrade: change `ROBOPROBE_IMAGE_TAG`, `pull`, `up -d` (the `migrate` service ap
 
 Because workers are stateless and pull from the queue, horizontal scaling needs **no code change** — only more worker processes with the same `DATABASE_URL`.
 
-Each worker process has its own database pool. The default `database.pool_size=5` served the
-one-, two-, four-, and eight-worker campaign pilot, with sampled database peaks of 5, 7, 11,
-and 11 connections respectively. Account for the API, orchestrator, and administrative
-connections before raising per-process pool sizes. Observe `pg_stat_activity` and claim latency
-on the deployment workload when tuning. [T-130 scalability evidence](evidence/T-130-scalability.md)
+Each worker process has its own database pool. Begin with `database.pool_size=5`. In the
+10,000-run benchmark, one, two, four, and eight worker processes saw sampled database peaks of
+5, 7, 11, and 19 connections respectively. Reserve capacity for the API and administrative
+connections on top of the deployed worker and orchestrator workload. Review `pg_stat_activity`,
+pool wait time, and queue claim latency before increasing the per-process size. The full
+eight-worker run reached 3.77× speedup against a 6× gate.
+[T-130 scalability evidence](evidence/T-130-scalability.md)
 
 ## 6. Remote worker (T2) setup
 
