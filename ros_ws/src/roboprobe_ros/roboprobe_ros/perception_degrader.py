@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Final
 
 import numpy as np
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2
 
@@ -15,8 +16,6 @@ from roboprobe_ros._vendor.perturbation.perception import PerceptionModel
 from roboprobe_ros.base import RoboProbeNode
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-
     from rclpy.context import Context
     from rclpy.parameter import Parameter
 
@@ -89,11 +88,16 @@ class PerceptionDegrader(RoboProbeNode):
         )
 
 
-def main(args: Sequence[str] | None = None) -> None:
+def main(args: list[str] | None = None) -> None:
     """Run the perception relay until ROS shuts down."""
-    with rclpy.init(args=args):
+    rclpy.init(args=args)
+    try:
         node = PerceptionDegrader()
         try:
             rclpy.spin(node)
         finally:
             node.destroy_node()
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+    finally:
+        rclpy.try_shutdown()

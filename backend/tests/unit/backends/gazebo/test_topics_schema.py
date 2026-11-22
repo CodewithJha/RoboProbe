@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import xml.etree.ElementTree as ET
 from functools import cache
 from pathlib import Path
 
@@ -10,6 +11,8 @@ import pytest
 from jsonschema import Draft202012Validator
 
 from roboprobe.scenario._documents import load_yaml_document
+from roboprobe.scenario.space import ScenarioSpace
+from roboprobe.scenario.task import load_task
 
 pytestmark = pytest.mark.unit
 
@@ -36,3 +39,32 @@ def test_topics_yaml_matches_schema() -> None:
     geometry = document["geometry"]
     margin = geometry["lidar_plane_height_m"] - geometry["dropped_pallet_height_m"]
     assert margin >= 0.05, "pallet top must sit at least 5 cm below the lidar plane (OQ-2)"
+    names = [topic["name"] for topic in document["topics"].values()]
+    assert len(names) == len(set(names))
+
+    task = load_task(REPO_ROOT / "tasks/measured/warehouse_delivery_measured_v1.yaml", strict=False)
+    pallet = REPO_ROOT / "ros_ws/src/roboprobe_ros/models/dropped_pallet/model.sdf"
+    model = ET.parse(pallet)  # noqa: S314 - checked-in static SDF, not an external input
+    size = model.findtext("./model/link/collision/geometry/box/size")
+    assert size is not None
+    assert tuple(map(float, size.split())) == task.injected_obstacles[0].size
+    assert task.injected_obstacles[0].size[-1] == geometry["dropped_pallet_height_m"]
+
+
+def test_stamped_velocity_and_depth_match_the_actual_bridge_types() -> None:
+    document = load_yaml_document(TOPICS_FILE.read_bytes(), source=str(TOPICS_FILE))
+    document["stamped_cmd_vel"] = True
+    assert not validator().is_valid(document)
+    for name in ("cmd_vel_nav", "cmd_vel"):
+        document["topics"][name]["type"] = "geometry_msgs/msg/TwistStamped"
+    validator().validate(document)
+    document["topics"]["depth_points_raw"]["type"] = "sensor_msgs/msg/Image"
+    assert not validator().is_valid(document)
+
+
+def test_seeded_measured_task_versions_remain_loadable() -> None:
+    space_file = REPO_ROOT / "configs/scenario_spaces/warehouse_v1.yaml"
+    raw = load_yaml_document(space_file.read_bytes(), source=str(space_file))
+    archived = {**raw, "task": "tasks/measured/warehouse_delivery_measured_v1.yaml"}
+    historical = ScenarioSpace.from_mapping(archived, source="archived space", base_dir=REPO_ROOT)
+    assert historical.version == "2b4d5a96d21a"

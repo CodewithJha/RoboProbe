@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="dropped_pallet">
+    <static>true</static>
+    <link name="pallet">
+      <collision name="pallet_collision">
+        <geometry><box><size>0.8 0.6 0.135</size></box></geometry>
+      </collision>
+      <visual name="pallet_visual">
+        <geometry><box><size>0.8 0.6 0.135</size></box></geometry>
+        <material>
+          <ambient>0.41 0.27 0.15 1</ambient>
+          <diffuse>0.41 0.27 0.15 1</diffuse>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

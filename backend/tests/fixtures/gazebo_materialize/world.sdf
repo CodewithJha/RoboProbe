@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<sdf version="1.7">
+  <world name="warehouse">
+    <physics name="test" type="ode"><real_time_factor>1</real_time_factor></physics>
+    <scene><ambient>0.4 0.3 0.2 1</ambient></scene>
+    <light name="sun" type="directional"><diffuse>0.5 0.4 0.3 1</diffuse></light>
+    <light name="lamp" type="point"><diffuse>0.5 0.5 0.5 0.8</diffuse></light>
+    <model name="ground_plane">
+      <link name="link">
+        <collision name="collision"><geometry><plane/></geometry><surface><friction><ode><mu>0.5</mu><mu2>0.5</mu2></ode></friction></surface></collision>
+      </link>
+    </model>
+  <include><uri>model://dropped_pallet</uri><name>dropped_pallet_0</name><pose>5 0.5 0.0675 0 0 0</pose></include></world>
+</sdf>

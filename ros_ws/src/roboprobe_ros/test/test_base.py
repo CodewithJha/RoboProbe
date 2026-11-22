@@ -5,14 +5,16 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy.testing as npt
 import pytest
 import rclpy
+from ament_index_python.packages import get_package_share_directory
 from rclpy.context import Context
 from rclpy.parameter import Parameter
-from rclpy.qos import QoSReliabilityPolicy
+from rclpy.qos import DurabilityPolicy, QoSReliabilityPolicy
 from roboprobe_ros._vendor.geometry import CircleFootprint
 from roboprobe_ros._vendor.geometry.grid import OccupancyGrid
 from roboprobe_ros._vendor.perturbation.delay import CommandDelayBuffer
@@ -20,7 +22,6 @@ from roboprobe_ros.base import RoboProbeNode
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
-    from pathlib import Path
 
 
 @pytest.fixture
@@ -41,6 +42,7 @@ def test_installed_topics_and_vendored_kernels(ros_context: Context) -> None:
         assert node.topic("scan_raw").startswith("/")
         assert node.qos("scan_raw").reliability is QoSReliabilityPolicy.BEST_EFFORT
         assert node.qos("cmd_vel").reliability is QoSReliabilityPolicy.RELIABLE
+        assert node.qos("amcl_pose").durability is DurabilityPolicy.TRANSIENT_LOCAL
         assert node.topic("initial_pose") == "/initialpose"
         assert node.frame("map") == "map"
         assert CircleFootprint.__module__.startswith("roboprobe_ros._vendor.")
@@ -48,6 +50,14 @@ def test_installed_topics_and_vendored_kernels(ros_context: Context) -> None:
         assert CommandDelayBuffer.__module__.startswith("roboprobe_ros._vendor.")
     finally:
         node.destroy_node()
+
+
+def test_packaged_pallet_model_is_available() -> None:
+    """The simulator finds both SDFormat model files in the installed package."""
+    share = Path(get_package_share_directory("roboprobe_ros"))
+    model = share / "models" / "dropped_pallet"
+    assert (model / "model.config").is_file()
+    assert (model / "model.sdf").is_file()
 
 
 def test_episode_overrides_and_log(

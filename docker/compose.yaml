@@ -190,8 +190,8 @@ services:
         ]
       interval: 5s
       timeout: 5s
-      retries: 12
-      start_period: 20s
+      retries: 24
+      start_period: 45s
     depends_on: {migrate: {condition: service_completed_successfully}}
 
   web:

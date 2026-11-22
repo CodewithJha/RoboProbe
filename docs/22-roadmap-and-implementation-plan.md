@@ -191,7 +191,7 @@ Columns: ID · title · size · depends on · implements · key docs · acceptan
 | ID | Task | Size | Deps | Implements | Docs | Acceptance |
 |----|------|------|------|-----------|------|-----------|
 | T-090 | **Spike:** headless TB4 + Nav2 warehouse in Docker on owner's laptop; measure RTF, startup, CPU; record findings | S | T-005 | R-01 | 10 | `docs/evidence/T-090-gazebo-spike.md` |
-| T-091 | Verify & record topics/frames/param names, lidar plane height, pallet height → `topics.yaml`, task file | S | T-090 | FR-SIM-003 | 10 §3, 06 §7 | no `TBD_T091` left |
+| T-091 | Verify & record topics/frames/param names, lidar plane height, pallet height → `topics.yaml`, task file | S | T-090 | FR-SIM-003 | 10 §3, 06 §7 | [Live ROS and Gazebo evidence](evidence/T-091/README.md) |
 | T-092 | Map + goal pose + nominal path for `warehouse_delivery_v1` | S | T-091 | FR-SIM-003 | 06 §1 | [Warehouse map alignment](evidence/T-092.md) |
 | T-093 | `roboprobe_ros` nodes: sensor_perturber, perception_degrader, cmd_delay | M | T-031, T-091 | FR-SIM-003 | 10 §3–4 | node unit tests (launch_testing) |
 | T-094 | ground_truth_monitor, episode_recorder, episode_manager, episode.launch.py | L | T-093 | FR-SIM-003 | 10 §5–6 | single episode produces trace |

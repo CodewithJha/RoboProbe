@@ -1,0 +1,10 @@
+[INFO] [1795376140.303689011] [ros_gz_sim]: Entity creation successful.
+
+Requesting state for world [warehouse]...
+
+Warning [Utils.cc:132] [/sdf/model[@name="turtlebot4"]/link[@name="rplidar_link"]/sensor[@name="rplidar"]/gz_frame_id:<data-string>:L1399]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+Model: [223]
+  - Name: dropped_pallet_135
+  - Pose [ XYZ (m) ] [ RPY (rad) ]:
+    [2.700000 -19.300000 0.067500]
+    [0.000000 -0.000000 0.000000]
