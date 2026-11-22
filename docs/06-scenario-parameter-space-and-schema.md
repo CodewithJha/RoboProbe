@@ -304,7 +304,7 @@ goal:  {x: TBD_T092, y: TBD_T092, yaw: 1.57}   # filled by T-092; CI fails if TB
 goal_tolerance: {xy: 0.25, yaw: 0.5}
 nominal_path: paths/warehouse_delivery_v1.csv
 injected_obstacles:
-  - {model: dropped_pallet, size: [0.8, 0.6, 0.144], placement: {along: obstacle.along_path, lateral: obstacle.clearance, side: left}}
+  - {model: dropped_pallet, size: [0.8, 0.6, 0.135], placement: {along: obstacle.along_path, lateral: obstacle.clearance, side: left}}
 time_limit: {factor: 2.5, offset_s: 10, cap_s: 120}
 ```
 

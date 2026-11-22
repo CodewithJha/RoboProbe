@@ -153,9 +153,9 @@ def test_json_pointer_escapes_rfc_6901() -> None:
 
 
 def test_find_placeholders_walks_nested_documents() -> None:
-    document = {"a": ["TBD_T091", {"b": "TBD_T092"}], "c": "TBD", "d": 1}
-    assert find_placeholders(document) == [("/a/0", "TBD_T091"), ("/a/1/b", "TBD_T092")]
-    assert find_placeholders({"x/y": "TBD_T091"}) == [("/x~1y", "TBD_T091")]
+    document = {"a": ["TBD_T001", {"b": "TBD_T092"}], "c": "TBD", "d": 1}
+    assert find_placeholders(document) == [("/a/0", "TBD_T001"), ("/a/1/b", "TBD_T092")]
+    assert find_placeholders({"x/y": "TBD_T001"}) == [("/x~1y", "TBD_T001")]
 
 
 # --------------------------------------------------------------------------- nominal path

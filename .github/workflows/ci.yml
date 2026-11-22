@@ -41,13 +41,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: ruff, ruff format, import-linter, ESLint, Prettier
         run: make lint
-      - name: No TBD_T091 placeholders remain (T-091)
-        run: |
-          paths=(tasks configs ros_ws schemas docs/06-scenario-parameter-space-and-schema.md)
-          if grep -R "TBD_T091" "${paths[@]}"; then
-            echo "::error::Resolve TBD_T091 before merging (T-091)"
-            exit 1
-          fi
+      - name: Check for unresolved ROS interface placeholders
+        run: '! git grep -n "TBD_T[0]91" -- .'
       - name: mypy --strict, tsc
         run: make typecheck
       - name: Every test has a tier marker

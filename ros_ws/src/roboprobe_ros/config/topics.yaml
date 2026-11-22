@@ -4,7 +4,7 @@ schema_version: 1
 stamped_cmd_vel: false
 topics:
   scan_raw:
-    name: /scan
+    name: /scan_raw
     type: sensor_msgs/msg/LaserScan
     qos: sensor_data
   scan:
@@ -12,15 +12,15 @@ topics:
     type: sensor_msgs/msg/LaserScan
     qos: sensor_data
   depth_points_raw:
-    name: /rgbd_camera/depth_image
-    type: sensor_msgs/msg/Image
+    name: /rgbd_camera/points_raw
+    type: sensor_msgs/msg/PointCloud2
     qos: sensor_data
   depth_points:
-    name: /rgbd_camera/depth/points
+    name: /rgbd_camera/points
     type: sensor_msgs/msg/PointCloud2
     qos: sensor_data
   cmd_vel_nav:
-    name: /cmd_vel
+    name: /roboprobe/cmd_vel_nav
     type: geometry_msgs/msg/Twist
     qos: default
   cmd_vel:
@@ -34,11 +34,11 @@ topics:
   amcl_pose:
     name: /amcl_pose
     type: geometry_msgs/msg/PoseWithCovarianceStamped
-    qos: default
+    qos: transient_local
   ground_truth_pose:
-    name: /ground_truth/pose
+    name: /ground_truth_pose
     type: geometry_msgs/msg/PoseStamped
-    qos: sensor_data
+    qos: default
   bt_log:
     name: /behavior_tree_log
     type: nav2_msgs/msg/BehaviorTreeLog
@@ -49,5 +49,5 @@ frames:
   base_link: base_link
   laser: rplidar_link
 geometry:
-  lidar_plane_height_m: 0.194
-  dropped_pallet_height_m: 0.144
+  lidar_plane_height_m: 0.188
+  dropped_pallet_height_m: 0.135

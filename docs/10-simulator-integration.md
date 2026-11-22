@@ -38,7 +38,7 @@ flowchart LR
     subgraph RP["roboprobe_ros nodes"]
         SP["sensor_perturber<br/>/scan_raw to /scan"]
         PD["perception_degrader<br/>depth points raw to degraded"]
-        CD["cmd_delay<br/>/cmd_vel_nav to /cmd_vel"]
+        CD["cmd_delay<br/>filtered velocity to /cmd_vel"]
         GT["ground_truth_monitor<br/>pose, min distance"]
         REC["episode_recorder<br/>20 Hz Parquet"]
         EM["episode_manager<br/>init pose, goal, status"]
@@ -49,6 +49,7 @@ flowchart LR
         PS["planner_server"]
         BT["bt_navigator"]
         VS["velocity_smoother"]
+        CM["collision_monitor"]
         COST["costmaps<br/>scan + depth layers"]
     end
     GZ <--> BR
@@ -63,7 +64,8 @@ flowchart LR
     BT --> PS
     BT --> CS
     CS --> VS
-    VS -->|"/cmd_vel_nav"| CD
+    VS -->|"/cmd_vel_smoothed"| CM
+    CM -->|"/roboprobe/cmd_vel_nav"| CD
     CD -->|"/cmd_vel"| BR
     GT --> REC
     AMCL -->|"/amcl_pose"| REC
@@ -71,10 +73,11 @@ flowchart LR
     EM --> REC
 ```
 
-Exact topic names, message types (Jazzy Nav2 publishes `geometry_msgs/TwistStamped` when
-`enable_stamped_cmd_vel` is true), bridge entries and the TB4 lidar/camera frames MUST be verified
-recorded in `ros_ws/src/roboprobe_ros/config/topics.yaml` (validated by `schemas/ros_topics.schema.json`,
-T-091 evidence in `docs/evidence/T-091`) — the code reads topic names from that file, never from literals.
+Load ROS topic names, types, QoS and frame IDs from the [verified topic contract](../ros_ws/src/roboprobe_ros/config/topics.yaml).
+The default Jazzy profile uses `geometry_msgs/msg/Twist`. A stamped profile must enable
+`enable_stamped_cmd_vel` across Nav2's velocity pipeline and use `geometry_msgs/msg/TwistStamped`
+on both sides of the delay node. The bridge converts either type to Gazebo's `gz.msgs.Twist`.
+[T-091 captures and wiring](evidence/T-091/README.md)
 
 ## 4. Applying each parameter (materialisation, `GazeboMaterializer`)
 
