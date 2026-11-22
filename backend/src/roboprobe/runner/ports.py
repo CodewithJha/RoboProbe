@@ -24,6 +24,7 @@ from roboprobe.core.types import (
     SutProfile,
     TaskSpec,
     Trace,
+    Verdict,
 )
 
 __all__ = [
@@ -122,6 +123,8 @@ class ClaimedRunView(Protocol):
     worker_id: str
     wall_timeout_s: float
     sim_time_budget_s: float
+    phase: str
+    source_verdict: Verdict | None
 
 
 class WorkerView(Protocol):

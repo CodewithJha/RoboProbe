@@ -269,3 +269,5 @@ class ClaimedRun(_Record):
     worker_id: str
     wall_timeout_s: float
     sim_time_budget_s: float
+    phase: str = "baseline"
+    source_verdict: Verdict | None = None
