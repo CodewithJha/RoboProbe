@@ -27,8 +27,10 @@ from roboprobe.experiments.planner import ComparabilityKey, load_design
 from roboprobe.experiments.runner import ExperimentRunner
 from roboprobe.oracles import __version__ as oracle_set_version
 from roboprobe.reporting.ports import ReportArtifactStore, ReportUnitOfWork
+from roboprobe.runner.catalog import SutProfileService
+from roboprobe.scenario._documents import read_document
 from roboprobe.scenario.space import ScenarioSpace
-from roboprobe.scenario.sut_profile import load_sut_profile
+from roboprobe.scenario.sut_profile import load_sut_profile_text
 
 __all__ = ["app"]
 
@@ -75,7 +77,12 @@ def experiment_run(
     if not sut_path.is_file():
         msg = f"SUT profile not found: {sut_path}"
         raise NotFoundError(msg, context={"sut_profile_id": sut_id})
-    profile = load_sut_profile(sut_path, strict=False)
+    profile_source = str(sut_path)
+    profile_document = read_document(sut_path)
+    profile = load_sut_profile_text(profile_document, source=profile_source)
+    if profile.id != sut_id:
+        msg = f"SUT profile id {profile.id!r} does not match file name {sut_id!r}"
+        raise ValidationError(msg, context={"sut_profile_id": sut_id})
     key = _resolve_key(space, profile.config_hash, design.backend)
     services = build_cli_services(settings)
     clock = SystemClock()
@@ -83,7 +90,11 @@ def experiment_run(
 
     def drive(campaign_id: UUID) -> CampaignStatus:
         services.campaigns.start(campaign_id)
-        return run_inline(campaign_id, settings, workers=workers)
+        worker_settings = settings.worker.model_copy(
+            update={"id_prefix": f"{settings.worker.id_prefix}:{campaign_id.hex}"}
+        )
+        campaign_settings = settings.model_copy(update={"worker": worker_settings})
+        return run_inline(campaign_id, campaign_settings, workers=workers, serve_probe=False)
 
     runner = ExperimentRunner(
         writer,
@@ -93,6 +104,8 @@ def experiment_run(
         new_uuid=uuid4,
     )
     try:
+        profiles = SutProfileService(services.uow_factory)
+        profiles.create_bytes(profile_document, source=profile_source)
         eid, comparison = runner.start(design, key, experiment_id=resume, raw_parquet=raw_out)
     finally:
         services.close()

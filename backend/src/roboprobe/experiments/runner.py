@@ -22,18 +22,29 @@ from roboprobe.core.clock import Clock
 from roboprobe.core.errors import NotFoundError, ValidationError
 from roboprobe.core.seeding import ANALYSIS, derive_seed
 from roboprobe.core.settings.experiments import ExperimentSettings
-from roboprobe.core.types import CampaignStatus, JsonValue
+from roboprobe.core.types import CampaignStatus, JsonValue, Verdict
 from roboprobe.experiments.planner import CampaignSpec, ComparabilityKey, ExperimentDesign, plan
-from roboprobe.metrics.campaign_metrics import CampaignRun, failure_discovery_rate, first_failure
+from roboprobe.metrics.campaign_metrics import (
+    CampaignRun,
+    comparison_runs,
+    failure_discovery_rate,
+    first_failure,
+    is_comparison_run,
+)
+from roboprobe.metrics.discovery_metrics import discovery_auc
 from roboprobe.metrics.statistics import compare
+from roboprobe.selection.benchmarks import MODE_CANONICAL, label_mode
 
 __all__ = [
     "EXPERIMENT_TERMINAL",
+    "N_MULTIMODE_TARGETS",
     "CampaignDriver",
     "ExperimentRunner",
     "ExperimentWriter",
+    "analytic_mode_labels",
     "build_comparison",
     "export_raw_parquet",
+    "is_analytic_multimode",
 ]
 
 EXPERIMENT_TERMINAL = frozenset({"COMPLETED", "FAILED", "CANCELLED"})
@@ -41,9 +52,13 @@ _CAMPAIGN_DONE = frozenset(
     {CampaignStatus.COMPLETED, CampaignStatus.FAILED, CampaignStatus.CANCELLED}
 )
 _MET_01 = "MET-01"
+_MET_02 = "MET-02"
 _MET_03 = "MET-03"
+_MET_09 = "MET-09"
 _DEFAULT_METRICS = (_MET_01, _MET_03)
+_MULTIMODE_METRICS = (_MET_02, _MET_09)
 VARIANT_TAG_PREFIX = "variant:"
+N_MULTIMODE_TARGETS = len(MODE_CANONICAL)
 
 
 class ExperimentWriter(Protocol):
@@ -84,6 +99,48 @@ class _CampaignRow:
     experiment_rep: int | None
 
 
+def is_analytic_multimode(design: Mapping[str, JsonValue]) -> bool:
+    """Select only the unpinned experiment with an available analytical ground truth."""
+    space = design.get("space")
+    return (
+        design.get("backend") == "benchmark"
+        and isinstance(space, dict)
+        and space.get("id") == "multi_mode_6d"
+        and not design.get("pins")
+    )
+
+
+def analytic_mode_labels(runs: Sequence[CampaignRun]) -> list[str | None]:
+    """Label observed failures with the benchmark's noise-free mode classifier."""
+    return [
+        label_mode(run.x_unit) if run.verdict is Verdict.FAIL else None
+        for run in comparison_runs(runs)
+    ]
+
+
+def _available_metrics(metrics: Sequence[str], *, analytic_multimode: bool) -> tuple[str, ...]:
+    requested = tuple(metrics) or _DEFAULT_METRICS
+    supported = _DEFAULT_METRICS + (_MULTIMODE_METRICS if analytic_multimode else ())
+    for metric in requested:
+        if metric not in supported:
+            msg = f"unsupported experiment metric {metric}"
+            raise ValidationError(msg, context={"metric": metric})
+    return requested
+
+
+def _metric_value(metric: str, runs: Sequence[CampaignRun], budget: int) -> float:
+    if metric == _MET_01:
+        fdr, _fdr_h = failure_discovery_rate(runs)
+        return float(fdr)
+    if metric == _MET_03:
+        first = first_failure(runs, budget=budget)
+        return float(first.n1 + 1 if first.censored else first.n1)
+    labels = analytic_mode_labels(runs)
+    if metric == _MET_02:
+        return float(len({label for label in labels if label is not None}))
+    return discovery_auc(labels, N_MULTIMODE_TARGETS, budget=budget)
+
+
 def build_comparison(  # noqa: PLR0913 - comparison inputs are independent axes
     experiment_id: UUID,
     campaigns: Sequence[_CampaignRow],
@@ -92,9 +149,10 @@ def build_comparison(  # noqa: PLR0913 - comparison inputs are independent axes
     metrics: Sequence[str],
     settings: ExperimentSettings,
     rng: np.random.Generator,
+    analytic_multimode: bool = False,
 ) -> dict[str, JsonValue]:
     """Assemble docs/12 §3.5 ``ExperimentComparison`` from finished campaigns."""
-    metric_ids = tuple(metrics) if metrics else _DEFAULT_METRICS
+    metric_ids = _available_metrics(metrics, analytic_multimode=analytic_multimode)
     by_label: dict[str, list[_CampaignRow]] = {}
     for camp in campaigns:
         by_label.setdefault(camp.strategy_label, []).append(camp)
@@ -106,19 +164,10 @@ def build_comparison(  # noqa: PLR0913 - comparison inputs are independent axes
     for metric in metric_ids:
         samples: dict[str, list[float]] = {}
         for label, rows in by_label.items():
-            values: list[float] = []
-            for row in sorted(rows, key=lambda r: r.experiment_rep or 0):
-                runs = runs_by_campaign.get(row.id, ())
-                if metric == _MET_01:
-                    fdr, _fdr_h = failure_discovery_rate(runs)
-                    values.append(float(fdr))
-                elif metric == _MET_03:
-                    ff = first_failure(runs, budget=row.budget)
-                    values.append(float(ff.n1 + 1 if ff.censored else ff.n1))
-                else:
-                    msg = f"unsupported experiment metric {metric}"
-                    raise ValidationError(msg, context={"metric": metric})
-            samples[label] = values
+            samples[label] = [
+                _metric_value(metric, runs_by_campaign.get(row.id, ()), row.budget)
+                for row in sorted(rows, key=lambda r: r.experiment_rep or 0)
+            ]
         reference = next(iter(samples))
         for label in samples:
             if "PROBE" in label:
@@ -163,6 +212,8 @@ def export_raw_parquet(
     ordinal: list[int] = []
     verdict: list[str] = []
     wall: list[float] = []
+    coordinates: list[tuple[float, ...]] = []
+    comparison: list[bool] = []
     for camp in campaigns:
         for index, run in enumerate(runs_by_campaign.get(camp.id, ())):
             strategy.append(camp.strategy_label)
@@ -170,6 +221,8 @@ def export_raw_parquet(
             ordinal.append(index)
             verdict.append(run.verdict.value)
             wall.append(float(run.wall_time_s))
+            coordinates.append(run.x_unit)
+            comparison.append(is_comparison_run(run))
     table = pa.table(
         {
             "strategy": strategy,
@@ -177,6 +230,8 @@ def export_raw_parquet(
             "ordinal": ordinal,
             "verdict": verdict,
             "wall_time_s": wall,
+            "x_unit": pa.array(coordinates, type=pa.list_(pa.float64())),
+            "is_comparison_run": pa.array(comparison, type=pa.bool_()),
         }
     )
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -254,6 +309,9 @@ class ExperimentRunner:
         Returns:
             ``(experiment_id, ExperimentComparison)``.
         """
+        design_doc = design.model_dump(mode="json")
+        analytic_multimode = is_analytic_multimode(design_doc)
+        _available_metrics(design.metrics, analytic_multimode=analytic_multimode)
         specs = plan(design, default_seeds=self._settings.default_seeds, key=key)
         if experiment_id is None:
             experiment_id = self._create(design, specs)
@@ -283,6 +341,7 @@ class ExperimentRunner:
             metrics=design.metrics,
             settings=self._settings,
             rng=rng,
+            analytic_multimode=analytic_multimode,
         )
         self._writer.set_experiment_results(experiment_id, comparison)
         self._writer.set_experiment_status(experiment_id, "COMPLETED", finished=True)
@@ -309,6 +368,7 @@ class ExperimentRunner:
             "backend": design.backend,
             "space": {"id": design.space.id, "version": design.space.version},
             "budget": design.budget,
+            "pins": dict(design.pins),
             "seeds": {"root": design.seeds.root, "count": design.seeds.count},
             "strategies": [
                 {"id": s.id, "label": s.label, "params": dict(s.params)} for s in design.strategies

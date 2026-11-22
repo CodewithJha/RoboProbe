@@ -17,7 +17,7 @@
 | PR-07 Risk atlas | FR-RSK-001…003 | 09 §5 | T-055, T-076 | analytic risk tests |
 | PR-08 Replay & regression | FR-REP-001/002, FR-SCN-008 | 21 §3–4, 06 §6, 14 §7 | T-026, T-043, T-044 | bit-identical replay, export round-trip |
 | PR-09 Dashboard | FR-DSH-001…005, FR-DSH-008 | 13 | T-085…T-089, T-110, T-111 | Vitest, Playwright, axe |
-| PR-10 Experiments & report | FR-EXP-001/002, FR-DSH-007 | 19, 09 §7, 05 §12 | T-078, T-079, T-100…T-105 | metric unit tests, report render |
+| PR-10 Experiments & report | FR-EXP-001/002/003, FR-DSH-007 | 19, 09 §7, 05 §12 | T-078, T-079, T-100…T-105 | metric unit tests, analytical mode evidence, report render |
 | PR-11 Built-in simulator | FR-SIM-001/002 | 10 §7, ADR-0003 | T-030…T-035, T-103 | determinism, speed, calibration |
 | PR-12 Typed configuration | NFR-CFG-001…003 | 27, ADR-0015 | T-003 | precedence tests, config-docs drift check |
 | PR-13 Deployability | NFR-DEP-001…003 | 17, 20, 29 | T-005, T-006, T-047, T-095 | compose smoke test, images workflow |

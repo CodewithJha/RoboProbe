@@ -38,6 +38,13 @@ Notation: campaign runs `1..B` in proposal order; valid runs `V` (verdict ≠ IN
 
 Reference set `REF` (k2d): 20 000 scrambled-Sobol scenarios, seed 20261119, each run once (deterministic backend), stored as artefact with hash; GT modes = HDBSCAN clusters of `REF_fail` reviewed manually and mapped to GT-A…GT-D (+ any emergent mode, recorded).
 
+The EXP-02 `multi_mode_6d` arm labels observed failures with the benchmark's noise-free
+canonical modes A–D ([07 §9](07-intelligent-test-selection-algorithms.md)).
+An observed failure outside all four modes does not increase MET-02 or the MET-09 discovery
+curve. The raw experiment Parquet includes the unit-cube vector and a comparison-run flag so a
+reader can recompute these results. The Branin and warehouse variants require their own reviewed
+mode assignments before the comparison can accept MET-02 or MET-09.
+
 ## 4. Experiment matrix
 
 | ID | Backend | Space | Strategies | Seeds | Budget | Est. compute | Purpose |

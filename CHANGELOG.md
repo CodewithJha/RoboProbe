@@ -89,6 +89,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   Nightly `api-fuzz.yml` runs Schemathesis against the served API.
 - Experiment configs EXP-01…EXP-07 (T-104): `configs/experiments/` plus the d=8 and
   doubled-lidar-noise warehouse spaces. Each file records the frozen S-PROBE pre-registration hash.
+- The experiment CLI registers its SUT profile on a fresh database and isolates inline campaign
+  heartbeats. The analytical multi-mode arm reports canonical mode counts and discovery AUC
+  from observed failures (T-105a).
 - API foundation (T-080a–d): FastAPI `create_app` with CORS/GZip, `/health/live|ready`, `/api/v1/meta`,
   `/metrics`, RFC 9457 `problem+json` (`docs/errors.md`), optional bearer auth (constant-time; required
   off-loopback), cursor pagination + ETag/`If-Match` helpers, Idempotency-Key store + Alembic
