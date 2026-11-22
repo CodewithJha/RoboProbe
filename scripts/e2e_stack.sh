@@ -97,6 +97,7 @@ case "$ACTION" in
     compose wait migrate
     wait_loopback_postgres
     seed_database
+    chmod -R a+rwX "$ARTIFACTS_DIR"
     compose up -d --wait orchestrator worker-k2d api web
     wait_http "$READY_URL" "$READY_TIMEOUT_S"
     wait_http "$WEB_URL/" 60
