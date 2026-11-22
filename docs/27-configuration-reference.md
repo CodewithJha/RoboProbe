@@ -85,6 +85,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `env` | enum: `local` / `ci` / `lab` / `prod` | `local` | `ROBOPROBE_ENV` | Deployment environment. |
 | `database.url` | SecretStr | `postgresql+psycopg://roboprobe@localhost:5432/roboprobe` | `ROBOPROBE_DATABASE__URL` (alias `ROBOPROBE_DATABASE_URL`) | SQLAlchemy DSN of the RoboProbe database. Keep the password out of the URL and use `password_file` or the `db_password` secret file instead. |
 | `database.password_file` | Path? | – | `ROBOPROBE_DATABASE__PASSWORD_FILE` | File holding the database password; merged into `url` [path]. |
+| `database.sslmode` | enum: `disable` / `allow` / `prefer` / `require` / `verify-ca` / `verify-full`? | – | `ROBOPROBE_DATABASE__SSLMODE` | PostgreSQL TLS policy; overrides an sslmode in the DSN when set. |
 | `database.pool_size` | int | `5` | `ROBOPROBE_DATABASE__POOL_SIZE` | Connection pool size per process. |
 | `database.statement_timeout_ms` | int | `30000` | `ROBOPROBE_DATABASE__STATEMENT_TIMEOUT_MS` | Server-side statement timeout [ms]. |
 | `database.notify_channel` | str | `roboprobe_events` | `ROBOPROBE_DATABASE__NOTIFY_CHANNEL` | PostgreSQL LISTEN/NOTIFY channel for live events. |
