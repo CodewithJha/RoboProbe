@@ -848,7 +848,10 @@ export interface components {
             /** Name */
             name: string;
             notes?: string;
-            progress?: number;
+            progress?: {
+                completed?: number;
+                total?: number;
+            };
             /** Results */
             results?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -1092,7 +1095,12 @@ export interface components {
             x_values?: number[];
             y_values?: number[];
             p_fail?: (number | undefined)[][];
-            region?: (string | undefined)[][];
+            points?: {
+                verdict?: string;
+                x: number;
+                y: number;
+            }[];
+            region?: (number | string | undefined)[][];
             /** Resolution */
             resolution: number;
             /** X Param */

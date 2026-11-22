@@ -159,9 +159,9 @@ export function RiskHeatmap({
         )}
         {size === 'full' &&
           slice.points?.map((point, index) => {
-            const x = point['x'];
-            const y = point['y'];
-            const verdict = point['verdict'];
+            const x = point.x;
+            const y = point.y;
+            const verdict = point.verdict;
             if (
               typeof x !== 'number' ||
               typeof y !== 'number' ||

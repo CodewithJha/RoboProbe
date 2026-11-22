@@ -8,9 +8,15 @@ export function ThreatsNotes({ experiment }: { experiment: Schema['ExperimentOut
   const [etag, setEtag] = useState(() => getEtag(`/api/v1/experiments/${experiment.id}`));
   const cache = useQueryClient();
   const save = useMutation({
-    mutationFn: async ({ notes, version }: { notes: string; version: string }) =>
+    mutationFn: async ({
+      notes,
+      version,
+    }: {
+      notes: string;
+      version: string;
+    }): Promise<Schema['ExperimentOut']> =>
       requireData(
-        // @ts-expect-error experiment PATCH contract is ahead of generated client types
+        // @ts-expect-error experiment PATCH is not yet in the generated client
         await api.PATCH('/api/v1/experiments/{experiment_id}', {
           params: { path: { experiment_id: experiment.id } },
           headers: { 'If-Match': version },
@@ -43,7 +49,8 @@ export function ThreatsNotes({ experiment }: { experiment: Schema['ExperimentOut
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          if (etag && draft !== saved && !conflict) save.mutate({ notes: draft, version: etag });
+          if (etag && draft !== saved && !conflict)
+            save.mutate({ notes: draft, version: etag ?? '' });
         }}
       >
         <label>

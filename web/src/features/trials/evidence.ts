@@ -47,17 +47,24 @@ export function summaries(data: Schema['ExperimentComparisonOut']) {
   );
 }
 
+function row(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
 export function cells(experiment: Schema['ExperimentOut']) {
   return (experiment.cells ?? []).flatMap((value) => {
-    const id = value['campaign_id'];
+    const entry = row(value);
+    const id = entry['campaign_id'];
     return typeof id === 'string' && id
       ? [
           {
             id,
-            strategy: text(value['strategy_id']),
-            seed: number(value['seed']),
-            budget: number(value['budget']),
-            status: text(value['status']),
+            strategy: text(entry['strategy_id']),
+            seed: number(entry['seed']),
+            budget: number(entry['budget']),
+            status: text(entry['status']),
           },
         ]
       : [];
