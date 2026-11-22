@@ -13,7 +13,7 @@ SECRETS_DIR="${SECRETS_DIR:-secrets}"
 DB_PASSWORD_FILE="${SECRETS_DIR}/db_password"
 API_TOKEN_FILE="${SECRETS_DIR}/api_token"
 LOG_DIR="${E2E_LOG_DIR:-web/e2e-artifacts}"
-READY_URL="${E2E_READY_URL:-http://127.0.0.1:8000/api/v1/health/ready}"
+READY_URL="${E2E_READY_URL:-http://127.0.0.1:8000/api/v1/health/live}"
 WEB_URL="${E2E_BASE_URL:-http://127.0.0.1:8080}"
 READY_TIMEOUT_S="${E2E_READY_TIMEOUT_S:-180}"
 
@@ -29,11 +29,12 @@ compose() {
 ensure_secret() {
   mkdir -p "$SECRETS_DIR" && chmod 700 "$SECRETS_DIR"
   umask 022
-  for file in "$DB_PASSWORD_FILE" "$API_TOKEN_FILE"; do
-    if [[ ! -s $file ]]; then
-      python3 -c 'import secrets; print(secrets.token_urlsafe(32))' >"$file"
-    fi
-  done
+  if [[ ! -s $DB_PASSWORD_FILE ]]; then
+    python3 -c 'import secrets; print(secrets.token_urlsafe(32))' >"$DB_PASSWORD_FILE"
+  fi
+  if [[ ! -s $API_TOKEN_FILE ]]; then
+    printf 'e2e-ci-token' >"$API_TOKEN_FILE"
+  fi
 }
 
 wait_http() {
