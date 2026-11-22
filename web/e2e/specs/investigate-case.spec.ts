@@ -20,4 +20,6 @@ test('casebook medoid → replay ×3 → export report', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Exported report' })).toBeVisible({
     timeout: e2e.timeoutsMs.campaignRun,
   });
+  const preview = page.frameLocator('iframe[title="Report preview"]');
+  await expect(preview.getByRole('heading', { name: 'Campaign report', exact: true })).toBeVisible();
 });

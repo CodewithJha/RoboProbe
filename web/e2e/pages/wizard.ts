@@ -16,6 +16,7 @@ export class WizardPage {
   async createK2dCampaign(): Promise<string> {
     const { id, version } = seed.campaign.space;
     await this.page.getByLabel(/Scenario space/).selectOption(JSON.stringify([id, version]));
+    await this.page.getByRole('status').filter({ hasText: /\d+ free parameters/ }).waitFor();
     await this.page.getByRole('button', { name: 'Continue' }).click();
     await this.page.getByLabel('Backend').selectOption('kinematic2d');
     await this.page.getByLabel('Robot profile').selectOption('k2d_default');
