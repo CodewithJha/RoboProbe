@@ -20,6 +20,7 @@ setup(
         ),
     ],
     install_requires=["setuptools"],
+    entry_points={"console_scripts": ["cmd_delay = roboprobe_ros.cmd_delay:main"]},
     extras_require={"recorder": ["pyarrow>=17"]},
     zip_safe=False,
     maintainer="CodewithJha",

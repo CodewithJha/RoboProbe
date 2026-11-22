@@ -99,6 +99,12 @@ Materialisation writes into `workdir/<run_id>/`:
 | P6 delay | `perturb_params.yaml` | FIFO latency in `cmd_delay` |
 | P8 dropout | `perturb_params.yaml` | Bernoulli beam drop in `sensor_perturber` |
 
+The `cmd_delay` node reads `cmd_delay_ms` and the Nav2 controller's `rate_hz` from
+`perturb_params.yaml`. It keeps messages in order on the simulation clock and publishes the
+observed latency in **seconds** as `std_msgs/msg/Float64` on `/roboprobe/cmd_delay_actual`.
+The `stamped_cmd_vel` flag in `topics.yaml` selects the ROS message type. Zero delay forwards
+the message in its subscription callback with a reported latency of zero.
+
 Friction and lighting are world properties ⇒ a fresh world load per run (no warm reset in MVP; see §8).
 
 **SUT profiles** (`configs/sut_profiles/<id>.yaml`, schema `schemas/sut_profile.schema.json`, loader
