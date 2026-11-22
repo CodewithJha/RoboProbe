@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/CodewithJha/RoboProbe/schemas/ros_topics.schema.json",
+  "title": "RoboProbe Gazebo/ROS topic map",
+  "description": "Verified topic and frame names for the TB4 Nav2 warehouse stack (docs/10 §3); loaded by roboprobe_ros nodes and GazeboNav2Backend.",
+  "type": "object",
+  "required": ["schema_version", "topics", "frames", "stamped_cmd_vel"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "topics": {
+      "type": "object",
+      "required": [
+        "scan_raw",
+        "scan",
+        "depth_points_raw",
+        "depth_points",
+        "cmd_vel_nav",
+        "cmd_vel",
+        "odom",
+        "amcl_pose",
+        "ground_truth_pose",
+        "bt_log"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "scan_raw": { "$ref": "#/$defs/ros_topic" },
+        "scan": { "$ref": "#/$defs/ros_topic" },
+        "depth_points_raw": { "$ref": "#/$defs/ros_topic" },
+        "depth_points": { "$ref": "#/$defs/ros_topic" },
+        "cmd_vel_nav": { "$ref": "#/$defs/ros_topic" },
+        "cmd_vel": { "$ref": "#/$defs/ros_topic" },
+        "odom": { "$ref": "#/$defs/ros_topic" },
+        "amcl_pose": { "$ref": "#/$defs/ros_topic" },
+        "ground_truth_pose": { "$ref": "#/$defs/ros_topic" },
+        "bt_log": { "$ref": "#/$defs/ros_topic" }
+      }
+    },
+    "frames": {
+      "type": "object",
+      "required": ["map", "odom", "base_link", "laser"],
+      "additionalProperties": false,
+      "properties": {
+        "map": { "type": "string", "minLength": 1 },
+        "odom": { "type": "string", "minLength": 1 },
+        "base_link": { "type": "string", "minLength": 1 },
+        "laser": { "type": "string", "minLength": 1 }
+      }
+    },
+    "stamped_cmd_vel": {
+      "type": "boolean",
+      "description": "When true, Nav2 publishes geometry_msgs/TwistStamped on cmd_vel topics (Jazzy TB4 default is false; T-090)."
+    },
+    "geometry": {
+      "type": "object",
+      "required": ["lidar_plane_height_m", "dropped_pallet_height_m"],
+      "additionalProperties": false,
+      "properties": {
+        "lidar_plane_height_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "2-D lidar scan plane height above ground (minimal TB4 URDF, spawn z=0.01 m)."
+        },
+        "dropped_pallet_height_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "EUR pallet box height so the top sits below the lidar plane (docs/06 §1)."
+        }
+      }
+    }
+  },
+  "$defs": {
+    "ros_topic": {
+      "type": "object",
+      "required": ["name", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^/[A-Za-z0-9_][A-Za-z0-9_/]*$"
+        },
+        "type": {
+          "type": "string",
+          "pattern": "^[a-z0-9_]+/msg/[A-Za-z0-9_]+$"
+        },
+        "qos": {
+          "enum": ["default", "sensor_data", "system_default"]
+        }
+      }
+    }
+  }
+}

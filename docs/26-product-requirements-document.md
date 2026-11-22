@@ -198,10 +198,10 @@ A1–A4 from SRS §2.6; the owner can dedicate several nights of laptop time to 
 | ID | Question | Owner | Due | Default if unresolved |
 |----|----------|-------|-----|------------------------|
 | OQ-1 | Exact goal pose / route in warehouse world | Agent (T-092) | M9 | pick longest single-aisle route ≥ 12 m |
-| OQ-2 | TB4 lidar plane height ⇒ pallet height | Agent (T-091) | M9 | from URDF; pallet top 5 cm below plane |
+| OQ-2 | TB4 lidar plane height ⇒ pallet height | Agent (T-091) | M9 | **Resolved:** 0.194 m plane, 0.144 m pallet (`topics.yaml` geometry) |
 | OQ-3 | Laptop specs ⇒ Gazebo parallelism | Owner (T-090) | M2 | 1 worker |
 | OQ-4 | Is S-CEM needed for the evaluation? | Owner | M5 | skip unless time allows |
-| OQ-5 | Nav2 default controller for TB4 on Jazzy (MPPI vs others) and its speed param keys | Agent (T-091) | M9 | read from installed `nav2_params.yaml` |
+| OQ-5 | Nav2 default controller for TB4 on Jazzy (MPPI vs others) and its speed param keys | Agent (T-091) | M9 | **Resolved:** MPPI `FollowPath.vx_max` + `velocity_smoother.max_velocity[0]` |
 | OQ-6 | Should OFAT include pairwise sweeps as a stronger predefined baseline? | Owner | M4 | no; add as `S-OFAT2` only if requested |
 
 ## 13. Launch & communication
