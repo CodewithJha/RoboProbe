@@ -12,7 +12,7 @@ import numpy as np
 from roboprobe.core.seeding import ANALYSIS, derive_seed
 from roboprobe.core.settings.experiments import ExperimentSettings
 from roboprobe.core.types import JsonValue, Verdict
-from roboprobe.experiments.runner import _CampaignRow, build_comparison
+from roboprobe.experiments.runner import _CampaignRow, build_comparison, is_analytic_multimode
 from roboprobe.metrics.campaign_metrics import CampaignRun
 
 __all__ = ["ComparisonRuns", "ExperimentSnapshot", "read_campaign_runs", "resolve_comparison"]
@@ -129,6 +129,7 @@ def resolve_comparison(
             metrics=metrics,
             settings=settings,
             rng=np.random.default_rng(derive_seed(seed, ANALYSIS, "compare")),
+            analytic_multimode=is_analytic_multimode(design),
         )
     payload: Mapping[str, JsonValue] = results or {}
     return {
