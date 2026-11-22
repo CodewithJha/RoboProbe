@@ -79,7 +79,11 @@ def test_shipped_profiles_load(path: Path) -> None:
 
 
 def test_shipped_defaults_exist() -> None:
-    assert {p.stem for p in PROFILES_DIR.glob("*.yaml")} >= {"k2d_default", "tb4_nav2_default"}
+    assert {p.stem for p in PROFILES_DIR.glob("*.yaml")} >= {
+        "benchmark_default",
+        "k2d_default",
+        "tb4_nav2_default",
+    }
 
 
 def test_k2d_profile_is_normalised(tmp_path: Path) -> None:
@@ -238,4 +242,5 @@ def test_supported_backends_agree_with_schema_and_settings() -> None:
     schema = json.loads(SCHEMA_FILE.read_text(encoding="utf-8"))
     enum = set(schema["properties"]["backend"]["enum"])
     conditional = {branch["if"]["properties"]["backend"]["const"] for branch in schema["allOf"]}
-    assert enum == conditional == set(PROFILE_CONFIGS) == set(BackendsSettings.model_fields)
+    assert enum == conditional == set(PROFILE_CONFIGS)
+    assert enum - {"benchmark"} == set(BackendsSettings.model_fields)

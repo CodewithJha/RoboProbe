@@ -191,6 +191,8 @@ The same streaming `api.max_upload_mb` limit applies. The backend-specific confi
 and defaults are filled before calculating `config_hash`, using the same loader as file-based
 profiles. A new id returns 201, an identical repost returns 200, and an existing id with a
 different hash returns 422 `VALIDATION_ERROR`; use a new id to compare changed configurations.
+The `benchmark` backend accepts an empty `config` object. Analytic function settings come from
+`selection.benchmarks`.
 Space uploads resolve task paths relative to the configured API `space_root` and cannot escape it.
 
 ### 3.8 Campaign and manual-run creation

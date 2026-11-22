@@ -11,6 +11,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   representative scenarios, and compare SHAP importance with GP rankings and cross-validation.
 - Trials comparison charts for recorded mode discoveries, per-cell metric samples, and
   censored time to first failure, plus HTML report export (T-112b, #181).
+- Shared seed datasets (T-107, #159): a PostgreSQL fixture with 60 warehouse runs, three
+  failure modes, medoid traces and seven API responses, plus a 10,000-run benchmark generator.
 - Trace and artifact transport (T-081e): event-preserving JSON downsampling, original
   Parquet downloads, confined streamed attachments with digest ETags, and rejected-path logs.
 - Dashboard foundation (T-085b/c/d): Field Notebook navigation, lazy feature routes,

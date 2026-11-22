@@ -43,13 +43,17 @@ class VerdictEngine:
         oracles: Sequence[Oracle],
         *,
         infra: InfraCheck | None = None,
+        direct_rho: bool = False,
     ) -> None:
         """``oracles`` are evaluated only when InfraCheck passes."""
         self._oracles = tuple(oracles)
+        self._direct_rho = direct_rho
         self._infra = infra or InfraCheck(oracles[0].thresholds if oracles else OracleThresholds())
 
     def judge(self, result: EpisodeView, task: TaskSpec) -> RunOutcome:
         """INVALID if infra fails; else FAIL iff min failure-oracle r < 0."""
+        if self._direct_rho:
+            return self._judge_direct_rho(result, task)
         metrics = compute_run_metrics(result.trace, task, thresholds=self._infra.thresholds)
         infra_res = self._infra.evaluate(result.trace, task, infra_error=result.infra_error)
         if infra_res is not None:
@@ -85,4 +89,32 @@ class VerdictEngine:
             primary_failure=primary.failure_class,
             oracle_results=results,
             metrics=metrics,
+        )
+
+    def _judge_direct_rho(self, result: EpisodeView, task: TaskSpec) -> RunOutcome:
+        # Analytic backends emit placeholder traces, so physical checks do not apply.
+        error = result.infra_error
+        if error is None:
+            raw = getattr(result, "backend_meta", {}).get("rho")
+            try:
+                rho = float(raw) if isinstance(raw, str) else float("nan")
+            except ValueError:
+                rho = float("nan")
+            if -1.0 <= rho <= 1.0:
+                return RunOutcome(
+                    verdict=Verdict.FAIL if rho < 0 else Verdict.PASS,
+                    robustness=rho,
+                    primary_failure=None,
+                    oracle_results=(),
+                    metrics={},
+                )
+            error = "invalid direct robustness"
+
+        infra_result = self._infra.evaluate(result.trace, task, infra_error=error)
+        return RunOutcome(
+            verdict=Verdict.INVALID,
+            robustness=None,
+            primary_failure=FailureClass.INFRA,
+            oracle_results=(infra_result,) if infra_result is not None else (),
+            metrics={},
         )

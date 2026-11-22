@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from tests.factories import make_trace
 from tests.fixtures.traces.make_golden_traces import TRACES
 from tests.unit.oracles.conftest import FakeEpisode, make_task
 
@@ -74,3 +75,40 @@ def test_warnings_do_not_fail() -> None:
     osc = next(r for r in out.oracle_results if r.oracle_id == "O-OSC")
     assert osc.violated
     assert osc.severity == "warning"
+
+
+@pytest.mark.parametrize(
+    ("raw", "infra_error", "expected", "robustness"),
+    [
+        ("0.42", None, Verdict.PASS, 0.42),
+        ("-0.19", None, Verdict.FAIL, -0.19),
+        ("0", None, Verdict.PASS, 0.0),
+        ("0.42", "backend offline", Verdict.INVALID, None),
+        ("nan", None, Verdict.INVALID, None),
+        ("1.2", None, Verdict.INVALID, None),
+        ("no value", None, Verdict.INVALID, None),
+        (None, None, Verdict.INVALID, None),
+    ],
+)
+def test_analytic_backend_verdict_uses_declared_rho(
+    raw: str | None,
+    infra_error: str | None,
+    expected: Verdict,
+    robustness: float | None,
+) -> None:
+    class AnalyticEpisode:
+        trace = make_trace(n=2)
+        backend_meta: dict[str, str] = {"rho": raw} if raw is not None else {}
+
+        def __init__(self) -> None:
+            self.infra_error = infra_error
+
+    result = AnalyticEpisode()
+    engine = VerdictEngine(create_all(OracleThresholds()), direct_rho=True)
+    out = engine.judge(result, make_task())
+    assert out.verdict is expected
+    assert out.robustness == robustness
+    assert (
+        VerdictEngine(create_all(OracleThresholds())).judge(result, make_task()).verdict
+        is Verdict.INVALID
+    )

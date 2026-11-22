@@ -102,6 +102,40 @@ Component tests for ConditionStrip, RiskHeatmap, RobustnessBar (rendering & a11y
 - Hypothesis profiles (`tests/conftest.py`): `dev` (default), `ci` (200 examples), `nightly` (2000), selected with `HYPOTHESIS_PROFILE`.
 - Integration DB (`tests/integration/conftest.py`): `postgres_url` uses `ROBOPROBE_TEST_DATABASE_URL` if set (CI service container), else a session-scoped `postgres:17` Testcontainers container, else skips with the reason; `pg_connection` rolls back each test's transaction.
 
+### Shared demo dataset (T-107)
+
+Use a dedicated disposable PostgreSQL 17 database. The generator migrates an empty database
+and refuses to seed one with application rows. Use the locked backend environment and PostgreSQL
+17 client tools when regenerating checked-in fixtures.
+
+```bash
+backend/.venv/bin/python scripts/seed_demo.py --size small --seed 20261119 \
+  --database-url "$SEED_DATABASE_URL" --artifact-root "$SEED_ARTIFACT_ROOT" \
+  --export-sql backend/tests/fixtures/db/seed_small.sql \
+  --export-artifacts backend/tests/fixtures/db/seed_small_artifacts.tar.zst
+```
+
+The 60-run warehouse campaign is also the experiment campaign. Generation uses the normal
+simulation, analysis and comparison services, then canonicalizes fixture metadata and omits
+transient event history. The archive carries the three medoid traces and the blobs referenced
+by the seed. For a byte comparison, run the command against two fresh databases with separate
+working directories. The large generator accepts `--size large` and writes 10,000 analytic
+benchmark runs into a separate empty database.
+
+Point the API at a seeded database and artifact root, then export the real responses using the
+campaign, medoid and experiment IDs emitted by the generator.
+
+```bash
+backend/.venv/bin/python scripts/export_web_fixtures.py --base-url http://127.0.0.1:8000 \
+  --campaign-id "$CAMPAIGN_ID" --run-id "$MEDOID_RUN_ID" \
+  --experiment-id "$EXPERIMENT_ID" --risk-resolution 8
+```
+
+To load the checked-in SQL and artifact archive, migrate another empty database to head, then
+run `backend/.venv/bin/python backend/tests/fixtures/db/load_seed.py --database-url "$SEED_DATABASE_URL" --artifact-root "$SEED_ARTIFACT_ROOT"`.
+`backend/tests/integration/test_seed_data.py` checks the restore, artifact digests and seven
+API responses against the committed OpenAPI schema and fixture JSON.
+
 ## 6. Non-functional testing
 
 | NFR | Method |
