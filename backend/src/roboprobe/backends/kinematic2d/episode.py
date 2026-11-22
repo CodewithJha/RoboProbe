@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 
 from roboprobe.backends.kinematic2d.controller import path_arclength, pure_pursuit
-from roboprobe.backends.kinematic2d.costmap import inflate, overlay_sensor_hits
+from roboprobe.backends.kinematic2d.costmap import inflate, sensor_hit_occupancy
 from roboprobe.backends.kinematic2d.localization import Localizer, scan_match_gain
 from roboprobe.backends.kinematic2d.model import Kinematic2DModel
 from roboprobe.backends.kinematic2d.planner import plan_path
@@ -75,11 +75,6 @@ def _at_goal(x: float, y: float, yaw: float, task: TaskSpec) -> bool:
         return False
     err = (yaw - task.goal.yaw + math.pi) % (2.0 * math.pi) - math.pi
     return abs(err) <= tol.yaw
-
-
-def _global_inflated(world: OccupancyGrid, radius_m: float) -> OccupancyGrid:
-    cells = math.ceil(radius_m / world.resolution)
-    return OccupancyGrid(inflate(world.occupied, cells), world.resolution, world.origin)
 
 
 def _circle_clearance(
@@ -180,7 +175,7 @@ def _run(  # noqa: PLR0913,PLR0917,PLR0915
     pallet = _pallet(task, path, scenario_values)
     radius = model.robot.footprint_radius_m
     inflate_r = radius + model.costmap.inflation_m
-    inflated_static = _global_inflated(world, inflate_r)
+    inflated_static = inflate(world.occupied, math.ceil(inflate_r / world.resolution))
     delay_s = _f(scenario_values, PARAM_DELAY_MS, 20.0) / _MS_PER_S
     delay: CommandDelayBuffer[tuple[float, float]] = CommandDelayBuffer(delay_s)
     start = task.start
@@ -232,7 +227,8 @@ def _run(  # noqa: PLR0913,PLR0917,PLR0915
             lidar_cells = (
                 cm.lidar_hit_inflation_cells if noise >= cm.lidar_overlay_min_noise_std_m else 0
             )
-            plan_grid = overlay_sensor_hits(
+            plan_occupied = sensor_hit_occupancy(
+                world,
                 inflated_static,
                 pose,
                 lidar_ranges if lidar_cells else np.full_like(lidar_ranges, np.nan),
@@ -243,9 +239,10 @@ def _run(  # noqa: PLR0913,PLR0917,PLR0915
                 depth_inflation_cells=cm.depth_hit_inflation_cells,
             )
             planned = plan_path(
-                plan_grid,
+                world,
                 (localizer.x, localizer.y),
                 (task.goal.x, task.goal.y),
+                occupied=plan_occupied,
             )
             planned_s = path_arclength(planned) if planned is not None else planned_s
             last_plan_t = t

@@ -12,7 +12,6 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   outputDir: 'e2e-results',
   globalSetup: './e2e/global-setup.ts',
-  globalTeardown: './e2e/global-teardown.ts',
   timeout: 180_000,
   expect: { timeout: 15_000 },
   use: {

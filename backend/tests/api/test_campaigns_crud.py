@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -58,6 +59,29 @@ def test_create_returns_location_and_snapshot(client: TestClient) -> None:
     assert response.status_code == 201, response.text
     assert response.headers["location"] == f"{API}/{response.json()['id']}"
     assert "allow_repeats" in response.json()["strategy"]["params"]
+
+
+def test_campaign_create_rejects_drifted_registered_space(client: TestClient) -> None:
+    spaces = "/api/v1/spaces"
+    config = discover_repo_root() / "configs/scenario_spaces/warehouse_v1.yaml"
+    registered = client.post(
+        spaces, content=config.read_bytes(), headers={"Content-Type": "application/yaml"}
+    )
+    assert registered.status_code == 201, registered.text
+    space = registered.json()
+    previous = "0123456789ab"
+    assert space["version"] != previous
+    with client.app.state.services.uow_factory() as uow:
+        record = uow.spaces.get(space["id"], space["version"])
+        assert record is not None
+        uow.spaces.add(replace(record, version=previous))
+        uow.commit()
+
+    assert client.get(f"{spaces}/{space['id']}/versions/{previous}").json()["version"] == previous
+    response = client.post(API, json=body(space={"id": space["id"], "version": previous}))
+    assert response.status_code == 422, response.text
+    assert response.json()["errors"][0]["pointer"] == "/space/version"
+    assert not client.get(API).json()["items"]
 
 
 def test_start_true_commits_before_lifecycle(client: TestClient) -> None:

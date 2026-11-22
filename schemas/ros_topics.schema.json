@@ -34,6 +34,7 @@
         "cmd_vel": { "$ref": "#/$defs/ros_topic" },
         "odom": { "$ref": "#/$defs/ros_topic" },
         "amcl_pose": { "$ref": "#/$defs/ros_topic" },
+        "initial_pose": { "$ref": "#/$defs/ros_topic" },
         "ground_truth_pose": { "$ref": "#/$defs/ros_topic" },
         "bt_log": { "$ref": "#/$defs/ros_topic" }
       }

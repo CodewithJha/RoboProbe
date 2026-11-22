@@ -7,7 +7,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
-- Warehouse map export, Gazebo reference map, nominal path artefacts, and map alignment tooling (T-092).
+- The verified warehouse occupancy map, aligned kinematic map, and Nav2 nominal path for cross-backend pallet placement (T-092).
 - Verified TB4 Nav2 topic map (`ros_ws/src/roboprobe_ros/config/topics.yaml`), JSON Schema, and evidence capture script (T-091).
 - Playwright E2E harness and journeys (T-117, T-118, T-114): compose-backed global setup with
   seeded warehouse campaign, axe helper and page objects, journey specs, `e2e.yml`, Lighthouse
@@ -18,12 +18,16 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Dashboard polish (T-113a/b, T-115): Spaces list with YAML view and validation,
   Workbench worker table, Settings (session token, theme, number locale, SSE reconnect),
   report export with sandboxed preview route, and global keyboard shortcuts dialog.
+- Jazzy command relay (T-093d) applies FIFO velocity delays on the simulation clock and
+  publishes observed delay for the episode recorder.
 - Web production image (T-116): read-only nginx-unprivileged SPA, runtime `/config.json`,
   CSP and security headers, and a Compose `app` profile that starts the authenticated API,
   workers and dashboard with same-origin SSE.
 - RoboProbe ROS package (T-093a) loads episode parameters and topic QoS, provides seeded
   node utilities, and checks vendored numerical modules against the backend source.
 - Jazzy lidar relay (T-093b) applies seeded Gaussian noise and dropout and publishes beam counters.
+- Jazzy depth relay (T-093c) applies seeded low-light dropout and radial range noise to
+  PointCloud2 frames while preserving their timestamps and frames of reference.
 - Opt-in experiment API launch atomically creates the planned campaign matrix and runs it
   through the orchestrator and workers (T-084a).
 - Casebook and Insights (T-110a/b): filter and edit analyzed failure modes, replay or export
@@ -239,6 +243,10 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Fixed
 
+- Campaign reports render legacy risk slices, and authenticated dashboard sessions can preview
+  and download completed reports.
+- Isolate seeded Playwright and Lighthouse runs, and report stale scenario versions as validation
+  errors during campaign creation (T-117).
 - Embed the API comparison payload in offline experiment reports and surface restart-interrupted
   report jobs as errors (T-084a).
 - Casebook interaction checks, replays, and Atlas manual probes run after campaign completion.

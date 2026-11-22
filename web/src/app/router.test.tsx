@@ -21,6 +21,7 @@ const server = setupServer(
       status: 'COMPLETED',
     }),
   ),
+  http.get(apiUrl('/reports/job1/content'), () => HttpResponse.html('<h1>Campaign report</h1>')),
   http.get(apiUrl('/spaces/warehouse/versions/v1'), () =>
     HttpResponse.json({
       id: 'warehouse',
