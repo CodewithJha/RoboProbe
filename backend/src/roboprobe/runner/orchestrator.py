@@ -34,8 +34,8 @@ from roboprobe.runner.loop import CampaignLoop
 from roboprobe.runner.ports import UowFactory
 from roboprobe.runner.reaper import Reaper
 from roboprobe.runner.scheduler import Scheduler
+from roboprobe.runner.space_loader import load_campaign_space
 from roboprobe.runner.stop_rules import counters_from_runs, evaluate_stop_rules
-from roboprobe.scenario.space import ScenarioSpace
 from roboprobe.selection.base import StrategyContext
 from roboprobe.selection.registry import create as create_strategy
 
@@ -181,8 +181,7 @@ class Orchestrator:
             campaign = uow.campaigns.get(campaign_id)
             if campaign is None:
                 return
-        space_yaml = self.space_root / "configs" / "scenario_spaces" / f"{campaign.space_id}.yaml"
-        space = ScenarioSpace.from_yaml(space_yaml, base_dir=self.space_root)
+            space = load_campaign_space(uow, campaign, root=self.space_root)
         ctx = StrategyContext(
             space=space,
             budget=campaign.budget,

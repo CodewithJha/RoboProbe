@@ -36,6 +36,22 @@ Catalogue API verification (T-081a, #146; FR-API-001, FR-SCN-001, UC-01/UC-10):
 YAML/JSON uploads, semantic validation, JSON pointers, versioning, idempotency, profile conflicts,
 configured task-root confinement, pagination limits and bounded streaming (TM-02/TM-13).
 
+Campaign API verification (T-081b/c/d, #147–#149; FR-API-001, FR-CLI-001):
+`tests/api/test_campaigns_crud.py` covers creation, idempotency, lifecycle states, pins, manual runs
+and ETags; `test_uow_lifecycle.py` covers transaction entry/exit. Shared factory validation is in
+`tests/unit/runner/test_campaign_factory.py`; SQL filter/keyset checks and PostgreSQL pagination
+are in `tests/unit/store/test_run_queries.py` and `tests/integration/store/test_run_queries.py`.
+
+Trace transport verification (T-081e, #150; FR-DSH-005, FR-STO-002, NFR-SEC-003):
+`tests/api/test_trace_artifacts.py` covers clearance minima, flag transitions, rate caps, column
+selection, Parquet/attachment headers, unknown ids, and malicious stored paths (TM-04).
+
+Creation durability and scale follow-up (#147–#149):
+`tests/integration/store/test_atomic_creation.py` verifies rollback and transaction-scoped key locks;
+`test_campaign_http_queries.py` verifies campaign/run HTTP filters, bounded query counts and the
+200 ms p95 target at 10,000 runs. `tests/unit/runner/test_campaign_space_loader.py` covers stored
+uploaded spaces and pins; factory tests verify effective selection snapshot restoration.
+
 ## 2. Non-functional requirements → verification
 
 | NFR | Design | Verification | Gate |

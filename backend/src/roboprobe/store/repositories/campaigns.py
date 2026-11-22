@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from roboprobe.core.errors import ErrorCode, NotFoundError, ValidationError
 from roboprobe.core.types import CampaignStatus
+from roboprobe.store.campaign_queries import query_campaigns
 from roboprobe.store.flush import execute
 from roboprobe.store.mapping import campaign_record
 from roboprobe.store.orm import CampaignRow
@@ -79,6 +80,19 @@ class SqlCampaignRepo:
         nxt = None if extra is None else str(items[-1].id)
         return Page(items=items, next_cursor=nxt)
 
+    def query(
+        self,
+        *,
+        limit: int,
+        cursor: str | None = None,
+        status: str | None = None,
+        strategy: str | None = None,
+        backend: str | None = None,
+    ) -> Page[CampaignRecord]:
+        return query_campaigns(
+            self._s, limit=limit, cursor=cursor, status=status, strategy=strategy, backend=backend
+        )
+
     def list_for_experiment(self, experiment_id: UUID) -> tuple[CampaignRecord, ...]:
         rows = self._s.scalars(
             select(CampaignRow)
@@ -121,11 +135,13 @@ class SqlCampaignRepo:
             values["tags"] = list(tags)
         result = execute(
             self._s,
-            update(CampaignRow).where(CampaignRow.id == campaign_id).values(**values),
+            update(CampaignRow)
+            .where(CampaignRow.id == campaign_id, CampaignRow.etag_version == expected_etag)
+            .values(**values),
         )
         if int(getattr(result, "rowcount", 0) or 0) != 1:
-            msg = "campaign not found"
-            raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
+            msg = "campaign changed concurrently"
+            raise ValidationError(msg, code=ErrorCode.PRECONDITION_FAILED)
         return new_etag
 
     def delete(self, campaign_id: UUID) -> None:

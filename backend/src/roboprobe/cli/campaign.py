@@ -21,6 +21,7 @@ import typer
 import yaml
 
 from roboprobe.bootstrap import build_cli_services, build_orchestrator, build_worker
+from roboprobe.bootstrap.campaigns import campaign_supported_params
 from roboprobe.bootstrap.cli import CliServices
 from roboprobe.cli._context import get_state
 from roboprobe.cli.space import REPO_ROOT, register_space
@@ -29,10 +30,13 @@ from roboprobe.core.errors import NotFoundError, ValidationError
 from roboprobe.core.seeding import random_campaign_seed
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import CampaignStatus, JsonValue, RunStatus, Verdict
+from roboprobe.runner.campaign_factory import CampaignFactory
+from roboprobe.runner.campaign_spec import CampaignCreate
 from roboprobe.runner.heartbeat import HeartbeatService
 from roboprobe.runner.lifecycle import CampaignService
 from roboprobe.runner.loop import CampaignLoop
 from roboprobe.runner.scheduler import Scheduler
+from roboprobe.runner.space_loader import load_campaign_space
 from roboprobe.runner.stop_rules import counters_from_runs, evaluate_stop_rules
 from roboprobe.scenario._documents import load_yaml_document, read_document, validate_document
 from roboprobe.scenario.space import ScenarioSpace
@@ -156,6 +160,12 @@ def create_campaign_from_config(
     services = build_cli_services(settings)
     try:
         _ensure_sut(services, profile_id, backend)
+        request = CampaignCreate.model_validate(
+            {key: value for key, value in doc.items() if key != "schema_version"}
+        )
+        prepared = CampaignFactory(settings).prepare(
+            request, space=space, supported_params=campaign_supported_params(backend, settings)
+        )
         seed = _resolve_seed(strategy, seed_override)
         cid = _ids().new_uuid()
         name = str(doc.get("name") or f"{space_id}-{strategy['id']}")
@@ -169,13 +179,13 @@ def create_campaign_from_config(
                     sut_profile_id=profile_id,
                     backend=backend,
                     strategy_id=str(strategy["id"]),
-                    strategy_params=_as_mapping(strategy.get("params")),
+                    strategy_params=dict(prepared.strategy.params),
                     seed=seed,
                     budget=budget,
                     repeats=int(doc.get("repeats", 1)),  # type: ignore[arg-type]
                     batch_size=batch_size,
                     pins=_as_mapping(doc.get("pins")),
-                    oracle_config=_as_mapping(doc.get("oracle_overrides")),
+                    oracle_config=dict(prepared.oracle_overrides),
                     stop_rules=_as_mapping(doc.get("stop_rules")),
                     status=CampaignStatus.CREATED,
                     tags=_as_str_tuple(doc.get("tags")),
@@ -222,8 +232,7 @@ def run_inline(  # noqa: PLR0912,PLR0915 - inline supervisor wires loop, workers
             if campaign is None:
                 msg = "campaign not found"
                 raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
-        space_yaml = REPO_ROOT / "configs" / "scenario_spaces" / f"{campaign.space_id}.yaml"
-        space = ScenarioSpace.from_yaml(space_yaml, base_dir=REPO_ROOT)
+            space = load_campaign_space(uow, campaign, root=REPO_ROOT)
         ctx = StrategyContext(
             space=space,
             budget=campaign.budget,

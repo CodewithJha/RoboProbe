@@ -186,6 +186,49 @@ profiles. A new id returns 201, an identical repost returns 200, and an existing
 different hash returns 422 `VALIDATION_ERROR`; use a new id to compare changed configurations.
 Space uploads resolve task paths relative to the configured API `space_root` and cannot escape it.
 
+### 3.8 Campaign and manual-run creation
+
+The CLI and API share `runner.CampaignFactory` validation: positive budget/repeats/batch,
+configured caps, valid pins, backend support for unpinned parameters, strategy parameters and
+resolved oracle thresholds. Registered space versions can be used without a matching file name;
+shipped configs remain a convenience when no version is supplied. Config references cannot escape
+`configs/scenario_spaces` or `configs/sut_profiles`.
+
+Successful campaign creation returns `Location`. `Idempotency-Key` replays are persisted in
+`idempotency_keys`; using a key for different content returns 422. A transaction-scoped lock
+serializes matching keys; competing in-flight requests receive 409 and may retry. The campaign,
+optional `start: true` transition/outbox event, and cached response commit atomically in one UoW,
+so a retry after process failure cannot duplicate a committed campaign. Cached rows expire using
+`api.idempotency_ttl_s`. Start responses warn with `NO_WORKERS`
+when no fresh worker is available. Progress reports discovered modes, not the number of failures.
+Manual requests apply campaign pins, normalize and hash values, derive repeat seeds from the
+campaign seed, and respect `runner.max_manual_repeats` and `runner.manual_priority`.
+Run filters are applied in SQL before keyset pagination; sort ties use run id, and null values
+sort first in ascending order (last descending). Cursors must retain their original sort order. Campaign lists filter `status`, `strategy` and
+`backend` before keyset pagination and order by `created_at desc, id desc`; run/mode counters are
+aggregated for the whole page (three SELECTs rather than loading every run).
+
+Campaign creation resolves all plugin parameter defaults and persists complete selection/scenario
+settings under the internal `_resolved_settings` envelope in `strategy_params`. The strategy registry
+restores those immutable settings into `StrategyContext`, so later process defaults do not alter a
+campaign. The envelope is omitted from public plugin parameters. Runners prefer registered space
+definitions and restore campaign pins instead of requiring an uploaded space to exist as a file.
+
+### 3.9 Trace and artifact transport
+
+`GET /api/v1/runs/{id}/trace?hz=10&columns=gt_x,gt_y,contact` returns
+`{t, columns, hz, source_hz, truncated}`. `columns` is a comma-separated subset; time remains
+in `t`. The target rate defaults to `api.trace_default_hz` and is capped at `api.trace_max_hz`.
+Each time bucket retains its minimum clearance; endpoints and both sides of Boolean/status
+transitions are retained as extra samples, so safety events can exceed the target rate.
+`truncated` means samples were reduced or the requested rate was capped. Empty or single-sample
+traces have no measurable `source_hz` (null). Invalid columns/rates return 422.
+
+`Accept: application/vnd.apache.parquet` returns the original stored Parquet. Artifact downloads
+resolve by id through the confined artifact-store path, stream as attachments, set a quoted
+SHA-256 `ETag` and `X-Content-Type-Options: nosniff`, and sanitize filenames. Unsafe or missing
+stored paths return 404 and emit `artifact.path_rejected` without revealing the path.
+
 ## 4. Server-Sent Events
 
 `GET /api/v1/events?campaign_id=<id>` → `text/event-stream`; supports `Last-Event-ID` resume (event ids are `events.id`).

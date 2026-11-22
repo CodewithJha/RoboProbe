@@ -59,6 +59,10 @@
 # token = ...  (secret: set ROBOPROBE_API__TOKEN instead)
 # Origins allowed by CORS (dev server and dashboard).
 # cors_origins = ["http://localhost:5173", "http://localhost:8080"]
+# Default JSON trace sampling target [Hz].
+# trace_default_hz = 10.0
+# Maximum JSON trace sampling target [Hz].
+# trace_max_hz = 50.0
 # Maximum request body size [MB].
 # max_upload_mb = 10
 # Default page size [items].
@@ -104,6 +108,10 @@
 # max_budget = 20000
 # Maximum proposals per batch.
 # max_batch_size = 32
+# Maximum repeats per manual request.
+# max_manual_repeats = 100
+# Queue priority for manual runs.
+# manual_priority = 10
 # Whether INVALID runs consume campaign budget.
 # count_invalid_in_budget = false
 # Campaigns driven concurrently per orchestrator.

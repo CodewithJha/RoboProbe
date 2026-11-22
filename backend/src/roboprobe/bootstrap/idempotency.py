@@ -11,7 +11,7 @@ from datetime import datetime
 from sqlalchemy import delete
 from sqlalchemy.orm import Session, sessionmaker
 
-from roboprobe.api.idempotency import IdempotencyRecord
+from roboprobe.core.idempotency import IdempotencyRecord
 from roboprobe.store.orm import IdempotencyKeyRow
 
 __all__ = ["SqlAlchemyIdempotencyStore"]

@@ -89,6 +89,18 @@ class ApiSettings(SettingsSection):
         default=("http://localhost:5173", "http://localhost:8080"),
         description="Origins allowed by CORS (dev server and dashboard).",
     )
+    trace_default_hz: float = Field(
+        default=10.0,
+        gt=0,
+        allow_inf_nan=False,
+        description="Default JSON trace sampling target [Hz].",
+    )
+    trace_max_hz: float = Field(
+        default=50.0,
+        gt=0,
+        allow_inf_nan=False,
+        description="Maximum JSON trace sampling target [Hz].",
+    )
     max_upload_mb: int = Field(default=10, gt=0, description="Maximum request body size [MB].")
     page_limit_default: int = Field(default=50, gt=0, description="Default page size [items].")
     page_limit_max: int = Field(default=500, gt=0, description="Maximum page size [items].")

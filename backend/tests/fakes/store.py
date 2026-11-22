@@ -11,12 +11,13 @@ from __future__ import annotations
 import copy
 import threading
 from collections.abc import Mapping, Sequence
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from types import TracebackType
 from typing import Any
 from uuid import UUID
 
-from roboprobe.core.errors import ConflictError, NotFoundError, ValidationError
+from roboprobe.core.errors import ConflictError, ErrorCode, NotFoundError, ValidationError
+from roboprobe.core.idempotency import IdempotencyRecord
 from roboprobe.core.types import (
     CampaignStatus,
     FailureClass,
@@ -26,6 +27,7 @@ from roboprobe.core.types import (
     RunStatus,
     Verdict,
 )
+from roboprobe.store.campaign_queries import campaign_cursor, decode_campaign_cursor
 from roboprobe.store.ids import new_uuid
 from roboprobe.store.pagination import Page, clamp_limit, extra_item
 from roboprobe.store.records import (
@@ -65,8 +67,10 @@ _LEGAL: dict[RunStatus, frozenset[RunStatus]] = {
 class _Db:
     def __init__(self) -> None:
         self.spaces: dict[tuple[str, str], SpaceRecord] = {}
+        self.idempotency: dict[str, IdempotencyRecord] = {}
         self.suts: dict[str, SutProfileRecord] = {}
         self.campaigns: dict[UUID, CampaignRecord] = {}
+        self.campaign_versions: dict[UUID, int] = {}
         self.runs: dict[UUID, RunRecord] = {}
         self.oracles: dict[UUID, list[OracleResultRecord]] = {}
         self.strategies: dict[UUID, StrategyStateRecord] = {}
@@ -79,6 +83,26 @@ class _Db:
         self.artifacts: dict[UUID, ArtifactRecord] = {}
         self.events: list[EventRecord] = []
         self.notify: list[tuple[str, str]] = []
+
+
+class _Idempotency:
+    def try_lock(self, key: str) -> bool:
+        return True
+
+    def __init__(self, db: _Db) -> None:
+        self._db = db
+
+    def get(self, key: str) -> IdempotencyRecord | None:
+        return self._db.idempotency.get(key)
+
+    def put(self, record: IdempotencyRecord) -> None:
+        self._db.idempotency[record.key] = record
+
+    def delete_older_than(self, cutoff: datetime) -> int:
+        keys = [key for key, row in self._db.idempotency.items() if row.created_at < cutoff]
+        for key in keys:
+            del self._db.idempotency[key]
+        return len(keys)
 
 
 class _Spaces:
@@ -152,6 +176,63 @@ class _Campaigns:
         items, extra = extra_item(rows, size)
         nxt = None if extra is None else str(items[-1].id)
         return Page(items=items, next_cursor=nxt)
+
+    def query(
+        self,
+        *,
+        limit: int,
+        cursor: str | None = None,
+        status: str | None = None,
+        strategy: str | None = None,
+        backend: str | None = None,
+    ) -> Page[CampaignRecord]:
+        rows = [
+            row
+            for row in self._db.campaigns.values()
+            if (status is None or row.status.value == status)
+            and (strategy is None or row.strategy_id == strategy)
+            and (backend is None or row.backend == backend)
+        ]
+
+        def key(row: CampaignRecord) -> tuple[datetime, UUID]:
+            return row.created_at or datetime.min.replace(tzinfo=UTC), row.id
+
+        rows.sort(key=key, reverse=True)
+        if cursor is not None:
+            boundary = decode_campaign_cursor(cursor)
+            rows = [row for row in rows if key(row) < boundary]
+        selected = tuple(rows[:limit])
+        return Page(
+            items=selected, next_cursor=campaign_cursor(selected[-1]) if len(rows) > limit else None
+        )
+
+    def etag_version(self, campaign_id: UUID) -> int:
+        if campaign_id not in self._db.campaigns:
+            raise NotFoundError("campaign not found")
+        return self._db.campaign_versions.get(campaign_id, 1)
+
+    def patch(
+        self,
+        campaign_id: UUID,
+        *,
+        name: str | None = None,
+        tags: Sequence[str] | None = None,
+        expected_etag: int,
+    ) -> int:
+        if expected_etag != self.etag_version(campaign_id):
+            raise ValidationError("stale campaign", code=ErrorCode.PRECONDITION_FAILED)
+        update = {}
+        if name is not None:
+            update["name"] = name
+        if tags is not None:
+            update["tags"] = tuple(tags)
+        self._db.campaigns[campaign_id] = self._db.campaigns[campaign_id].model_copy(update=update)
+        self._db.campaign_versions[campaign_id] = expected_etag + 1
+        return expected_etag + 1
+
+    def delete(self, campaign_id: UUID) -> None:
+        if self._db.campaigns.pop(campaign_id, None) is None:
+            raise NotFoundError("campaign not found")
 
     def list_for_experiment(self, experiment_id: UUID) -> tuple[CampaignRecord, ...]:
         rows = sorted(
@@ -551,6 +632,7 @@ class InMemoryUnitOfWork:
         return self._tx
 
     def _bind(self, db: _Db) -> None:
+        self.idempotency = _Idempotency(db)
         self.spaces = _Spaces(db)
         self.sut_profiles = _Suts(db)
         self.campaigns = _Campaigns(db)

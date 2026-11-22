@@ -6,8 +6,9 @@ Implements: T-080a
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 from fastapi import Request
 
@@ -31,6 +32,10 @@ class ArtifactStoreProto(Protocol):
     @property
     def root(self) -> object:
         """Artefact filesystem root."""
+        ...
+
+    def path(self, ref: object) -> Path:
+        """Resolve a stored blob inside the artifact root."""
         ...
 
     def open(self, ref: object) -> object:
@@ -73,6 +78,10 @@ def get_uow(request: Request) -> Iterator[object]:
     """Yield a unit of work and close it after the request."""
     services: ServicesProto = request.app.state.services
     uow = services.uow_factory()
+    if callable(getattr(uow, "__enter__", None)):
+        with cast("AbstractContextManager[object]", uow) as entered:
+            yield entered
+        return
     try:
         yield uow
     finally:

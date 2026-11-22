@@ -13,6 +13,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from roboprobe.core.types import CampaignStatus, JsonValue
+from roboprobe.runner.campaign_spec import CampaignCreate, SpaceRef, StrategyRef
 
 __all__ = [
     "ArtifactOut",
@@ -39,6 +40,7 @@ __all__ = [
     "StrategyRef",
     "SutProfileCreate",
     "SutProfileOut",
+    "TraceOut",
     "WorkerOut",
 ]
 
@@ -50,41 +52,6 @@ class Page[T](BaseModel):
 
     items: list[T]
     next_cursor: str | None = None
-
-
-class SpaceRef(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    id: str
-    version: str | None = None
-
-
-class StrategyRef(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    id: str
-    seed: int | None = None
-    params: dict[str, JsonValue] = Field(default_factory=dict)
-
-
-class CampaignCreate(BaseModel):
-    """``CampaignCreate`` (docs/12 §3.1)."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    name: str | None = None
-    space: SpaceRef
-    sut_profile_id: str | None = None
-    backend: str
-    strategy: StrategyRef
-    budget: int
-    repeats: int = 1
-    batch_size: int = 1
-    pins: dict[str, JsonValue] = Field(default_factory=dict)
-    oracle_overrides: dict[str, JsonValue] = Field(default_factory=dict)
-    stop_rules: dict[str, JsonValue] = Field(default_factory=dict)
-    tags: list[str] = Field(default_factory=list)
-    start: bool = False
 
 
 class CampaignPatch(BaseModel):
@@ -107,6 +74,8 @@ class CampaignOut(BaseModel):
     batch_size: int
     counts: dict[str, int] = Field(default_factory=dict)
     modes_found: int = 0
+    first_failure_at: int | None = None
+    warnings: list[dict[str, JsonValue]] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
     created_at: datetime | None = None
     started_at: datetime | None = None
@@ -120,6 +89,17 @@ class CampaignProgress(BaseModel):
     campaign_id: UUID
     counts: dict[str, int]
     discovery_curve: list[dict[str, JsonValue]] = Field(default_factory=list)
+
+
+class TraceOut(BaseModel):
+    """Event-preserving trace samples (T-081e; docs/12 §3.9)."""
+
+    model_config = ConfigDict(extra="forbid")
+    t: list[float]
+    columns: dict[str, list[JsonValue]]
+    hz: float
+    source_hz: float | None
+    truncated: bool
 
 
 class RunOut(BaseModel):
@@ -143,6 +123,7 @@ class RunOut(BaseModel):
     worker_id: str | None = None
     timing: dict[str, datetime | None] = Field(default_factory=dict)
     mode: dict[str, JsonValue] | None = None
+    manifest: dict[str, JsonValue] | None = None
     tags: list[str] = Field(default_factory=list)
 
 

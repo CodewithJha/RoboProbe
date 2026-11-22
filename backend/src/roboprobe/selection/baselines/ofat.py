@@ -10,7 +10,6 @@ from typing import Any, ClassVar
 
 import numpy as np
 
-from roboprobe.core.settings.selection import SelectionDefaults
 from roboprobe.core.types import Observation
 from roboprobe.selection.base import FloatArray, Strategy, StrategyContext
 
@@ -34,7 +33,7 @@ class OFATStrategy(Strategy):
 
     def _design_points(self) -> FloatArray:
         if self._design is None:
-            levels = np.asarray(SelectionDefaults().ofat.levels, dtype=np.float64)
+            levels = np.asarray(self.ctx.selection.ofat.levels, dtype=np.float64)
             nominal = self.ctx.space.to_unit(self.ctx.space.nominal_values())
             rows: list[FloatArray] = []
             for axis in range(self.ctx.space.dim):
