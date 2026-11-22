@@ -48,7 +48,7 @@ def test_warehouse_space_loads_with_six_enabled_parameters() -> None:
         "sensor.lidar_noise_std", "env.floor_friction", "comms.cmd_delay_ms",
     ]  # fmt: skip
     assert space.task.id == "warehouse_delivery_v1"
-    assert space.task_ref == "tasks/warehouse_delivery_aligned_v1.yaml"
+    assert space.task_ref == yaml.safe_load(WAREHOUSE.read_text(encoding="utf-8"))["task"]
     assert space.oracle_thresholds == "default"
     assert len(space.version) == 12
     assert space.param("env.illuminance").scale == "log"
@@ -117,14 +117,9 @@ def test_task_reference_resolves_against_base_dir(monkeypatch: pytest.MonkeyPatc
     assert ScenarioSpace.from_yaml(WAREHOUSE).version == load_warehouse().version
 
 
-def test_strict_task_rejects_provisional_values() -> None:
-    legacy = WAREHOUSE.read_text(encoding="utf-8").replace(
-        "tasks/warehouse_delivery_aligned_v1.yaml", "tasks/warehouse_delivery_v1.yaml"
-    )
-    with pytest.raises(errors.ValidationError, match="provisional") as exc:
-        ScenarioSpace.from_text(legacy, source="legacy.yaml", base_dir=REPO_ROOT, strict_task=True)
-    assert exc.value.code is errors.ErrorCode.SPACE_INVALID
-    assert issue_paths(exc) == ["/task"]
+def test_strict_task_loads_after_t092() -> None:
+    space = ScenarioSpace.from_yaml(WAREHOUSE, base_dir=REPO_ROOT, strict_task=True)
+    assert space.task.goal.y == pytest.approx(-8.3)
 
 
 def test_unknown_parameter_lookup() -> None:

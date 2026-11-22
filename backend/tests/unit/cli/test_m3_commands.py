@@ -33,7 +33,7 @@ pytestmark = pytest.mark.unit
 
 REPO = Path(__file__).resolve().parents[4]
 WAREHOUSE = REPO / "configs" / "scenario_spaces" / "warehouse_v1.yaml"
-_SPACE_VERSION = "4326a28381df"
+_SPACE_VERSION = "98c8f6e8ce35"
 
 runner = CliRunner()
 
@@ -240,13 +240,16 @@ def test_campaign_create_accepts_wizard_default_yaml(
     cli_services: InMemoryUnitOfWork,
 ) -> None:
     source = REPO / "backend/tests/fixtures/campaigns/wizard-default.yaml"
+    config = yaml.safe_load(source.read_text(encoding="utf-8"))
+    config["space"]["version"] = ScenarioSpace.from_yaml(WAREHOUSE, base_dir=REPO).version
+    export = settings_env / source.name
+    export.write_text(yaml.safe_dump(config), encoding="utf-8")
     monkeypatch.setattr("roboprobe.cli.campaign.register_space", lambda *_a, **_k: None)
     _seed_campaign(cli_services)
-    result = runner.invoke(app, ["--json", "campaign", "create", "-f", str(source)])
+    result = runner.invoke(app, ["--json", "campaign", "create", "-f", str(export)])
     assert result.exit_code == ExitCode.OK, result.output
     created = cli_services.campaigns.get(UUID(json.loads(result.stdout)["campaign_id"]))
     assert created is not None
-    config = yaml.safe_load(source.read_text(encoding="utf-8"))
     assert created.backend == config["backend"]
     assert created.space_version == config["space"]["version"]
     assert created.sut_profile_id == config["sut_profile_id"]

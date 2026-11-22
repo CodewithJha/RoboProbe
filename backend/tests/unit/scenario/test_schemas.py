@@ -137,8 +137,10 @@ def test_valid_fixtures_validate(path: Path) -> None:
 
 def test_task_schema_accepts_tbd_placeholders_for_the_loader_guard() -> None:
     task = example("task-06-7")
-    task["goal"]["x"] = "TBD_T042"
+    assert task["goal"]["x"] == 2.12
     assert errors("task", task) == []
+    placeholder_task = dict(task, goal={"x": "TBD_T042", "y": "TBD_T042", "yaw": 1.57})
+    assert errors("task", placeholder_task) == []
 
 
 # --------------------------------------------------------------------------- invalid documents
