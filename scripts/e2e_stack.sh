@@ -73,7 +73,8 @@ case "$ACTION" in
     compose down --remove-orphans -v || true
     compose build postgres migrate orchestrator worker-k2d api web
     compose up -d postgres postgres-port
-    compose up -d --wait migrate
+    compose up -d migrate
+    compose wait migrate
     python3 - <<'PY'
 import socket, sys, time
 
