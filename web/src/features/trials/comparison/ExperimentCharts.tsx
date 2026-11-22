@@ -141,7 +141,6 @@ function EvidenceChart({
         data={traces}
         layout={{
           autosize: true,
-          height: 245,
           paper_bgcolor: 'transparent',
           plot_bgcolor: 'transparent',
           font: { color: theme['--ink'] },
@@ -151,7 +150,7 @@ function EvidenceChart({
           yaxis: { ...yaxis, automargin: true, gridcolor: theme['--grid-line'] },
         }}
         config={config}
-        style={{ width: '100%' }}
+        style={{ width: '100%', height: 245 }}
         useResizeHandler
       />
     </section>
