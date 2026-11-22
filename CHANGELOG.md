@@ -7,6 +7,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Record Gazebo confirmations, manual runs, and replays of failed runs as downloadable MCAP
+  artifacts by default (T-097b).
+
 - Gazebo worker backend with process-group shutdown, cancellation, and typed infrastructure failures (T-096b).
 - Record Gazebo episodes as Trace v1 Parquet on simulation time, with optional MCAP bags (T-094b).
 - The verified warehouse occupancy map, aligned kinematic map, and Nav2 nominal path for cross-backend pallet placement (T-092).

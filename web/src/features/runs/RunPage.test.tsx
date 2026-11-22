@@ -50,17 +50,19 @@ const trace: Schema['TraceOut'] = {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 function Console() {
   return <p>{useLocation().search}</p>;
 }
-function open(details: Schema['RunOut'] = run) {
+function open(details: Schema['RunOut'] = run, artifacts: Schema['ArtifactOut'][] = []) {
   const fetcher = vi.fn((request: Request) => {
     const url = new URL(request.url);
     if (url.pathname.endsWith(':replay'))
       return Response.json({ run_ids: ['new-run'] }, { status: 202 });
     if (url.pathname.endsWith('/trace')) return Response.json(trace);
-    if (url.pathname.endsWith('/artifacts')) return Response.json([]);
+    if (url.pathname.endsWith('/artifacts')) return Response.json(artifacts);
+    if (url.pathname.endsWith('/content')) return new Response('recorded MCAP');
     if (url.pathname.endsWith('/meta')) return Response.json({ limits: { max_manual_repeats: 5 } });
     if (url.pathname.endsWith(id)) return Response.json(details);
     return Response.json({}, { status: 404 });
@@ -128,4 +130,33 @@ test('renders passing verdict with oracle robustness', async () => {
     'aria-valuenow',
     '0.5',
   );
+});
+
+test('opens the stored bag as an MCAP download', async () => {
+  const bag = {
+    id: 'ff2082c5-acdf-4c02-9a9c-b000693095b4',
+    kind: 'bag',
+    media_type: 'application/octet-stream',
+    sha256: 'a'.repeat(64),
+    size_bytes: 13,
+  };
+  const createObjectURL = vi.fn(() => 'blob:roboprobe-bag');
+  vi.stubGlobal(
+    'URL',
+    class extends URL {
+      static override createObjectURL = createObjectURL;
+      static override revokeObjectURL = vi.fn();
+    },
+  );
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+  const fetcher = open(run, [bag]);
+  fireEvent.click(await screen.findByRole('button', { name: 'Open bag' }));
+  await waitFor(() => {
+    expect(click).toHaveBeenCalledOnce();
+  });
+  expect(
+    fetcher.mock.calls.some(([request]) => request.url.endsWith(`/artifacts/${bag.id}/content`)),
+  ).toBe(true);
+  expect(createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+  expect(click.mock.instances[0]).toHaveProperty('download', `${bag.id}.mcap`);
 });

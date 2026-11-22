@@ -115,3 +115,48 @@ def test_infra_classifications(
     )
     assert result.infra_error == expected
     assert result.trace.n_samples == 2
+
+
+@pytest.mark.parametrize("bag", ["complete", "partial", "missing", "split", "symlink", "disabled"])
+def test_bag_artifact_requires_current_finalized_mcap(
+    monkeypatch: pytest.MonkeyPatch, episode_request: EpisodeRequest, bag: str
+) -> None:
+    magic = b"\x89MCAP0\r\n"
+    directory = episode_request.workdir / "bag"
+    directory.mkdir()
+    (directory / "previous_attempt.mcap").write_bytes(magic + b"old" + magic)
+
+    def run_process(_self, *_args, **kw):
+        assert not directory.exists()
+        (kw["workdir"] / "episode_done.json").write_text(
+            json.dumps({"status": "TIMEOUT", **SUMMARY}), encoding="utf-8"
+        )
+        write_trace(
+            make_trace(n=2, nav_status=[NavStatus.ACTIVE] * 2), kw["workdir"] / "trace.parquet"
+        )
+        if bag not in {"disabled", "missing"}:
+            directory.mkdir()
+            output = directory / "bag_0.mcap"
+            if bag == "symlink":
+                target = kw["workdir"] / "other.mcap"
+                target.write_bytes(magic + b"not a recorder output" + magic)
+                output.symlink_to(target)
+            else:
+                output.write_bytes(magic + b"body" + (b"" if bag == "partial" else magic))
+            if bag == "split":
+                (directory / "bag_1.mcap").write_bytes(magic + b"second" + magic)
+        return ProcessExit(ProcessState.EXITED, 0)
+
+    monkeypatch.setattr(EpisodeProcess, "run", run_process)
+    result = GazeboNav2Backend(RoboProbeSettings()).run_episode(
+        episode_request,
+        MaterializedScenario(
+            payload={"time_limit_s": 20, "record_bag": "never" if bag == "disabled" else "always"}
+        ),
+    )
+    if bag == "complete":
+        assert result.infra_error is None
+        assert result.artifacts["bag"] == directory / "bag_0.mcap"
+    else:
+        assert "bag" not in result.artifacts
+        assert result.infra_error == (None if bag == "disabled" else InfraReason.BAG_INVALID)
