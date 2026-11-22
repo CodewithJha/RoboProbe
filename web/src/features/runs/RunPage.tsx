@@ -207,9 +207,7 @@ function Oracles({ run }: { run: Schema['RunOut'] }) {
   if (run.verdict === 'INVALID') {
     const manifest = object(run.manifest);
     const reason =
-      manifest['infra_error'] ??
-      manifest['invalid_reason'] ??
-      run.warnings?.join(', ');
+      manifest['infra_error'] ?? manifest['invalid_reason'] ?? run.warnings?.join(', ');
     return (
       <section>
         <h2>Validity</h2>
