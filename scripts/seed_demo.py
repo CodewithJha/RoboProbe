@@ -64,7 +64,8 @@ from roboprobe.bootstrap._infra import build_infrastructure
 from roboprobe.cli import experiment as experiment_module
 from roboprobe.cli.campaign import _ensure_sut, create_campaign_from_config, run_inline
 from roboprobe.cli.db import upgrade_head
-from roboprobe.cli.experiment import _resolve_key, _UowWriter
+from roboprobe.bootstrap.experiments import SqlExperimentWriter
+from roboprobe.cli.experiment import _resolve_key
 from roboprobe.cli.space import register_space
 from roboprobe.core.clock import FakeClock, SystemClock
 from roboprobe.core.errors import ModelFitError
@@ -450,8 +451,8 @@ class LargeSeedResult(TypedDict):
     seconds: float
 
 
-class _FixtureExperimentWriter(_UowWriter):
-    """``_UowWriter`` variant for fixture generation.
+class _FixtureExperimentWriter(SqlExperimentWriter):
+    """``SqlExperimentWriter`` variant for fixture generation.
 
     * injects ``schema_version`` into the stored design (the comparison route
       validates ``ExperimentDesign`` from it), and
@@ -460,7 +461,7 @@ class _FixtureExperimentWriter(_UowWriter):
     """
 
     def __init__(self, make_uow: UowFactory, requested_seed: int) -> None:
-        super().__init__(make_uow, SystemClock())
+        super().__init__(make_uow)
         self._requested_seed = requested_seed
 
     @override
