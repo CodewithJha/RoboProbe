@@ -141,9 +141,8 @@ function Parameters({
   campaign: Schema['CampaignOut'] | undefined;
 }) {
   const version = object(object(run.manifest)['space']);
-  const spaceId = campaign?.space?.id ?? (typeof version['id'] === 'string' ? version['id'] : '');
-  const spaceVersion =
-    campaign?.space?.version ?? (typeof version['version'] === 'string' ? version['version'] : '');
+  const spaceId = typeof version['id'] === 'string' ? version['id'] : '';
+  const spaceVersion = typeof version['version'] === 'string' ? version['version'] : '';
   const space = useSpace(spaceId, spaceVersion);
   const values = object(run.scenario['values']);
   const parameters = space.data?.definition['parameters'];

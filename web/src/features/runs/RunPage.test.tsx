@@ -113,7 +113,11 @@ test('queues replay with the selected seed option and highlights the returned ru
 });
 
 test('shows the recorded infrastructure error and omits oracle scores for invalid runs', async () => {
-  open({ ...run, verdict: 'INVALID', infra_error: 'Simulator disconnected' });
+  open({
+    ...run,
+    verdict: 'INVALID',
+    manifest: { ...(run.manifest ?? {}), infra_error: 'Simulator disconnected' },
+  });
   expect(await screen.findByText('Simulator disconnected')).toBeInTheDocument();
   expect(screen.queryByRole('meter')).not.toBeInTheDocument();
 });
