@@ -105,6 +105,23 @@ COMPOSE_VARIABLES: Sequence[tuple[str, str, str]] = (
         "Loopback host port for Prometheus (observability profile).",
     ),
     ("ROBOPROBE_JAEGER_PORT", "16686", "Loopback host port for Jaeger (observability profile)."),
+    ("ROBOPROBE_PIDS_LIMIT", "512", "Maximum processes per container."),
+)
+
+# Prefix, service name, memory limit, and CPU quota used by docker/compose.yaml.
+COMPOSE_RESOURCES = (
+    ("DB", "PostgreSQL", "1g", "2"),
+    ("DB_PROXY", "Database port proxy", "64m", "0.5"),
+    ("MIGRATE", "Database migration", "512m", "1"),
+    ("ORCHESTRATOR", "Orchestrator", "2g", "2"),
+    ("WORKER", "Kinematic worker", "2g", "2"),
+    ("GAZEBO", "Gazebo worker", "4g", "4"),
+    ("API", "API", "2g", "4"),
+    ("WEB", "Web", "256m", "1"),
+    ("PROMETHEUS", "Prometheus", "1g", "1"),
+    ("GRAFANA", "Grafana", "512m", "1"),
+    ("OTEL", "OpenTelemetry Collector", "256m", "1"),
+    ("JAEGER", "Jaeger", "512m", "1"),
 )
 
 ENV_HEADER = """\
@@ -295,6 +312,12 @@ def render_env(root: type[BaseModel] = RoboProbeSettings) -> str:
     lines += ["", "# --- Docker Compose (docs/27 §4.13) ---"]
     for name, default, description in COMPOSE_VARIABLES:
         lines += [*_comment(description), f"# {name}={default}"]
+    for prefix, service, memory, cpu in COMPOSE_RESOURCES:
+        lines += [
+            f"# {service} container memory limit and CPU quota.",
+            f"# ROBOPROBE_{prefix}_MEM={memory}",
+            f"# ROBOPROBE_{prefix}_CPUS={cpu}",
+        ]
     return "\n".join(lines) + "\n"
 
 
