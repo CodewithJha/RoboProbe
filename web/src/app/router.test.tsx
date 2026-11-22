@@ -41,6 +41,8 @@ const server = setupServer(
       oracles: [],
     }),
   ),
+  http.get(apiUrl('/runs/r1/artifacts'), () => HttpResponse.json([])),
+  http.get(apiUrl('/runs/r1/trace'), () => HttpResponse.json({ t: [], columns: {} })),
 );
 beforeAll(() => {
   server.listen();
@@ -72,6 +74,7 @@ const ROUTES = [
   ['/campaigns/c1/atlas', 'Risk atlas'],
   ['/campaigns/c1/insights', 'Insights'],
   ['/campaigns/c1/settings', 'Settings'],
+  ['/runs/r1', 'Run 1'],
   ['/trials', 'Trials'],
   ['/trials/e1', 'Experiment'],
   ['/spaces', 'Spaces'],
@@ -82,10 +85,6 @@ const ROUTES = [
   ['/reports/job1', 'Report'],
 ] as const;
 describe('notebook routes', () => {
-  it('renders /runs/r1', async () => {
-    mount('/runs/r1');
-    expect(await screen.findByRole('status', { name: 'Loading run…' })).toBeInTheDocument();
-  });
   it.each(ROUTES)('renders %s', async (path, heading) => {
     mount(path);
     expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument();
