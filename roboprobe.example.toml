@@ -222,8 +222,12 @@
 # domain_id_base = 30
 # Time allowed for Nav2 to become ACTIVE [s].
 # startup_timeout_s = 60.0
-# SIGTERM-to-SIGKILL grace on episode teardown [s].
+# Extra wall time after estimated startup and navigation [s].
+# wall_margin_s = 30.0
+# Time from SIGINT to SIGTERM on episode teardown [s].
 # teardown_grace_s = 10.0
+# Time from SIGTERM to SIGKILL after an episode [s].
+# teardown_term_wait_s = 5.0
 # Trace sampling rate [Hz].
 # sample_hz = 20.0
 # When to record rosbag2 MCAP: never, failures, always.

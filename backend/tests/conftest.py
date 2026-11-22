@@ -53,6 +53,16 @@ settings.register_profile(
 settings.load_profile(os.environ.get(HYPOTHESIS_PROFILE_ENV, DEFAULT_HYPOTHESIS_PROFILE))
 
 
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Select an installed backend when explicitly running simulator contracts."""
+    parser.addoption(
+        "--backend",
+        default=None,
+        choices=["fake", "replay", "kinematic2d", "gazebo_nav2"],
+        help="Backend to select for simulator contract tests.",
+    )
+
+
 def _docker_unavailable_reason() -> str | None:
     """Return why Docker cannot be used, or ``None`` if the daemon answers."""
     import docker  # noqa: PLC0415 - only needed when no database URL override is set

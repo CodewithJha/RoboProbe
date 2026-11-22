@@ -262,8 +262,18 @@ seed; no wall-clock dependence; float64 everywhere ⇒ identical trace hash acro
 
 Each Gazebo episode runs with unique `ROS_DOMAIN_ID` (`backends.gazebo_nav2.domain_id_base + slot`),
 `GZ_PARTITION=rp_<worker>_<slot>`, `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST`, its own process group and
-`workdir`. On teardown: SIGINT → wait `teardown_grace_s` (10) → SIGTERM → wait 5 → SIGKILL group; then
-`pgrep` check; leftover processes ⇒ worker marks itself unhealthy and restarts its container (Docker `restart: unless-stopped`).
+`workdir`. The subprocess uses the smaller of the request's wall budget and the estimated
+startup and navigation time plus `backends.gazebo_nav2.wall_margin_s`. The simulator estimate
+divides the episode's simulation limit by the configured target real-time factor.
+
+The worker sends SIGINT to the launch process group and waits `teardown_grace_s`. It then sends
+SIGTERM, waits `teardown_term_wait_s`, and uses SIGKILL if any process remains. The final audit
+checks for live processes in the group or with the episode's Gazebo partition. An orphan marks
+the run INVALID and makes the worker command exit so Docker can restart the container.
+
+The backend uses `episode_done.json` and the v1 Parquet trace when the launch wrapper returns
+success. It treats launch failures, missing or invalid files, wall-clock deadlines and the shared
+startup/spawn/internal exit codes as infrastructure failures.
 
 ## 10. Adding another simulator (Webots, MuJoCo, Isaac Sim)
 

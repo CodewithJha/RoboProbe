@@ -47,6 +47,7 @@ worker = [
     "pyarrow>=17",
     "pandas>=2.2",
     "lxml>=5.0",
+    "psutil>=6.1",
     "jinja2>=3.1",
 ]
 api = [
@@ -92,6 +93,7 @@ roboprobe = "roboprobe.cli.main:app"
 kinematic2d = "roboprobe.backends.kinematic2d.backend:Kinematic2DBackend"
 replay = "roboprobe.backends.replay.backend:ReplayBackend"
 benchmark = "roboprobe.backends.benchmark.backend:BenchmarkBackend"
+gazebo_nav2 = "roboprobe.backends.gazebo_nav2.backend:GazeboNav2Backend"
 
 [project.urls]
 Homepage = "https://github.com/CodewithJha/RoboProbe"
