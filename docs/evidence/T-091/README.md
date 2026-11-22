@@ -28,7 +28,7 @@ The [topic contract](../../../ros_ws/src/roboprobe_ros/config/topics.yaml) uses 
 |-----------------------|--------------------|-----------|
 | `/scan`, `gz.msgs.LaserScan` | `/scan_raw`, `sensor_msgs/msg/LaserScan` | Gazebo to ROS |
 | `/rgbd_camera/points`, `gz.msgs.PointCloudPacked` | `/rgbd_camera/points_raw`, `sensor_msgs/msg/PointCloud2` | Gazebo to ROS |
-| `/world/warehouse/model/turtlebot4/pose`, `gz.msgs.Pose` | `/ground_truth_pose`, `geometry_msgs/msg/PoseStamped` | Gazebo to ROS |
+| `/model/turtlebot4/pose`, `gz.msgs.Pose` | `/ground_truth_pose`, `geometry_msgs/msg/PoseStamped` | Gazebo to ROS |
 | `/cmd_vel`, `gz.msgs.Twist` | `/cmd_vel`, `geometry_msgs/msg/Twist` | ROS to Gazebo |
 
 Use the model-scoped Gazebo `PosePublisher` with `publish_model_pose=true`, `publish_link_pose=false` and `use_pose_vector_msg=false` for the ground-truth row. The global pose vector also contains other entities. Preserve the stock `/clock`, `/tf`, `/odom`, joint state and IMU bridges. [Gazebo PosePublisher](https://gazebosim.org/api/sim/8/classgz_1_1sim_1_1systems_1_1PosePublisher.html)

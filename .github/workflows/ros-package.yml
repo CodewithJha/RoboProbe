@@ -35,7 +35,7 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends \
             python3-numpy python3-scipy python3-yaml python3-pytest \
-            ros-jazzy-launch-testing ros-jazzy-rmw-cyclonedds-cpp ros-jazzy-nav2-msgs
+            ros-jazzy-launch-testing ros-jazzy-rmw-cyclonedds-cpp ros-jazzy-nav2-msgs ros-jazzy-xacro
       - name: Build and test
         working-directory: ros_ws
         env:
