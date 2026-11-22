@@ -8,6 +8,7 @@ from uuid import uuid4
 
 import pytest
 
+from roboprobe.core.errors import ValidationError
 from roboprobe.core.seeding import LOCALIZATION, PERCEPTION, SENSOR, SIMULATOR, derive_seed
 from roboprobe.runner.manifest import (
     GIT_SHA_ENV,
@@ -23,14 +24,20 @@ pytestmark = pytest.mark.unit
 REPO = Path(__file__).resolve().parents[4]
 
 
-def _k2d_manifest(tmp_path: Path, *, hostname: str = "secret-host.local") -> dict[str, object]:
+def _k2d_manifest(
+    tmp_path: Path,
+    *,
+    hostname: str = "secret-host.local",
+    backend: str = "kinematic2d",
+    ros_versions_file: Path | None = None,
+) -> dict[str, object]:
     material = tmp_path / "world.yaml"
     material.write_text("robots: 1\n", encoding="utf-8")
     run_seed = 1849302231
     return (
         ManifestBuilder()
         .with_ids(run_id=uuid4(), campaign_id=uuid4())
-        .with_backend("kinematic2d")
+        .with_backend(backend, ros_versions_file=ros_versions_file)
         .with_space("warehouse_v1", "3f9a1c2b7d10")
         .with_task("warehouse_delivery_v1", "a" * 64)
         .with_sut_profile("tb4_nav2_default", "b" * 16)
@@ -62,6 +69,32 @@ def test_manifest_validates_against_schema_for_k2d(tmp_path: Path) -> None:
     assert manifest["backend"]["name"] == "kinematic2d"
     assert "oracles" in manifest["config_snapshot"]
     assert "backends.kinematic2d" in manifest["config_snapshot"]
+
+
+def test_gazebo_image_versions_are_included(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    versions = tmp_path / "ros_versions.json"
+    details = {
+        "ros_distro": "jazzy",
+        "gz": "8.15.0",
+        "nav2": "1.3.14",
+        "rmw": "rmw_cyclonedds_cpp",
+        "apt_packages": {"ros-jazzy-navigation2": "1.3.14-1noble.20261109.092250"},
+    }
+    versions.write_text(json.dumps(details), encoding="utf-8")
+    image = "ghcr.io/codewithjha/roboprobe-gazebo:test"
+    monkeypatch.setenv("ROBOPROBE_BACKENDS__GAZEBO_NAV2__IMAGE", image)
+    monkeypatch.delenv("RMW_IMPLEMENTATION", raising=False)
+    manifest = _k2d_manifest(tmp_path, backend="gazebo_nav2", ros_versions_file=versions)
+    assert manifest["backend"] == {"name": "gazebo_nav2", "image": image, **details}
+
+
+def test_invalid_gazebo_image_versions_fail_manifest_validation(tmp_path: Path) -> None:
+    versions = tmp_path / "ros_versions.json"
+    versions.write_text('{"ros_distro": "jazzy"}', encoding="utf-8")
+    with pytest.raises(ValidationError, match="missing its recorded simulator versions"):
+        ManifestBuilder().with_backend("gazebo_nav2", ros_versions_file=versions)
 
 
 def test_no_absolute_paths_or_raw_hostnames(tmp_path: Path) -> None:
