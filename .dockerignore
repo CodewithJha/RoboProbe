@@ -8,6 +8,9 @@
 !configs/
 !tasks/
 !plugins/
+!web/
+!docker/web/
+!docker/web.Dockerfile
 **/__pycache__/
 **/*.py[cod]
 **/.DS_Store
