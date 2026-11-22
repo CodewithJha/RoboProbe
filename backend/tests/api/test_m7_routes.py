@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -14,7 +14,9 @@ import pytest
 from fastapi.testclient import TestClient
 from tests.api.test_campaigns_crud import client as client  # noqa: PLC0414 - shared fixture
 
+from roboprobe.core.clock import FakeClock
 from roboprobe.core.types import CampaignStatus
+from roboprobe.runner.manifest import hash_hostname
 from roboprobe.store.records import ExperimentRecord, WorkerRecord
 
 pytestmark = pytest.mark.unit
@@ -252,20 +254,32 @@ def test_experiment_notes_require_current_etag(client: TestClient) -> None:
     assert client.get(url).json()["notes"] == "Saved"
 
 
-def test_worker_list_redacts_hostname(client: TestClient) -> None:
+def test_worker_list_redacts_hostname(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     host = "private-lab-host"
+    worker_id = f"{host}:1234:0"
+    current_run = uuid4()
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+    monkeypatch.setattr(
+        "roboprobe.api.routers.workers.SystemClock", lambda: FakeClock(now), raising=False
+    )
     with client.app.state.services.uow_factory() as uow:
         uow.workers.register(
             WorkerRecord(
-                id=f"{host}:1234:0",
+                id=worker_id,
                 backend="kinematic2d",
-                status="IDLE",
+                status="BUSY",
                 capabilities={},
                 version="1",
+                current_run_id=current_run,
             )
         )
+        uow.workers.heartbeat(worker_id, at=now - timedelta(seconds=7))
         uow.commit()
     response = client.get("/api/v1/workers")
     assert response.status_code == 200
     assert host not in response.text
-    assert response.json()["items"][0]["id"].startswith("worker-")
+    (worker,) = response.json()["items"]
+    assert worker["id"] == f"worker-{hash_hostname(worker_id)}"
+    assert worker["host_hash"] == hash_hostname(host)
+    assert worker["current_run_id"] == str(current_run)
+    assert worker["heartbeat_age_s"] == 7

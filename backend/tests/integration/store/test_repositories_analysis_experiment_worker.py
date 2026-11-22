@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import UTC, datetime
+from hashlib import sha256
 
 import pytest
 from tests.integration.store._seed import seed_campaign, seed_worker
@@ -15,6 +16,7 @@ from roboprobe.store.records import (
     FailureModeMemberRecord,
     FailureModeRecord,
     RiskMapRecord,
+    WorkerRecord,
 )
 from roboprobe.store.uow import SqlAlchemyUnitOfWork
 
@@ -101,3 +103,25 @@ def test_worker_heartbeat_and_experiment(uow_factory: Callable[[], SqlAlchemyUni
         )
         assert uow.risk_maps.latest(cid) is not None
         assert uow.workers.online("kinematic2d")
+
+
+def test_worker_cursor_hides_raw_identifier_and_keeps_its_position(
+    uow_factory: Callable[[], SqlAlchemyUnitOfWork],
+) -> None:
+    raw_ids = ["office-a.private:101:0", "office-b.private:101:0"]
+    with uow_factory() as uow:
+        for raw_id in raw_ids:
+            uow.workers.register(
+                WorkerRecord(
+                    id=raw_id,
+                    backend="kinematic2d",
+                    status="IDLE",
+                    capabilities={},
+                    version="1",
+                )
+            )
+        first = uow.workers.list(limit=1)
+        assert first.next_cursor == sha256(first.items[0].id.encode("utf-8")).hexdigest()
+        second = uow.workers.list(limit=1, cursor=first.next_cursor)
+        assert second.next_cursor is None
+        assert sorted([first.items[0].id, second.items[0].id]) == raw_ids

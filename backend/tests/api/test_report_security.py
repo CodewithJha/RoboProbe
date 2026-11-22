@@ -7,6 +7,9 @@ from uuid import uuid4
 import pytest
 from fastapi.testclient import TestClient
 
+from roboprobe.bootstrap.api import build_api
+from roboprobe.core.settings import RoboProbeSettings
+
 pytestmark = pytest.mark.unit
 
 
@@ -19,3 +22,15 @@ def test_report_content_has_csp_and_nosniff(api_client: TestClient, tmp_path: Pa
     assert response.status_code == 200
     assert "default-src 'none'" in response.headers["content-security-policy"]
     assert response.headers["x-content-type-options"] == "nosniff"
+
+
+def test_report_pool_honors_api_worker_limit(api_settings: RoboProbeSettings) -> None:
+    report_workers = api_settings.runner.analysis.max_workers + 1
+    settings = api_settings.model_copy(
+        update={"api": api_settings.api.model_copy(update={"report_workers": report_workers})}
+    )
+    services = build_api(settings)
+    try:
+        assert services.report_jobs._executor._max_workers == report_workers
+    finally:
+        services.close()

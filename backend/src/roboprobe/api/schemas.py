@@ -338,4 +338,7 @@ class WorkerOut(BaseModel):
     backend: str
     status: str
     version: str
+    current_run_id: UUID | None = None
     last_heartbeat: datetime | None = None
+    heartbeat_age_s: float | None = None
+    host_hash: str

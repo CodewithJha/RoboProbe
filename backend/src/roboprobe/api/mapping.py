@@ -7,7 +7,7 @@ Implements: T-081, T-082, T-084
 
 from __future__ import annotations
 
-from hashlib import sha256
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -25,6 +25,7 @@ from roboprobe.api.schemas import (
     WorkerOut,
 )
 from roboprobe.core.types import CampaignStatus, RunStatus, Verdict
+from roboprobe.runner.manifest import hash_hostname
 
 __all__ = [
     "artifact_out",
@@ -235,15 +236,21 @@ def artifact_out(record: Any) -> ArtifactOut:
     )
 
 
-def worker_out(record: Any) -> WorkerOut:
-    parts = record.id.rsplit(":", 2)
-    worker_id = record.id
-    if len(parts) == 3 and parts[1].isdigit() and parts[2].isdigit():
-        worker_id = f"worker-{sha256(worker_id.encode()).hexdigest()[:16]}"
+def worker_out(record: Any, *, now: datetime) -> WorkerOut:
+    raw_id = str(record.id)
+    parts = raw_id.rsplit(":", 2)
+    host = parts[0] if len(parts) == 3 and parts[1].isdigit() and parts[2].isdigit() else raw_id
+    last_heartbeat = record.last_heartbeat
+    heartbeat_age = (
+        None if last_heartbeat is None else max(0.0, (now - last_heartbeat).total_seconds())
+    )
     return WorkerOut(
-        id=worker_id,
+        id=f"worker-{hash_hostname(raw_id)}",
         backend=record.backend,
         status=record.status,
         version=record.version,
-        last_heartbeat=record.last_heartbeat,
+        current_run_id=record.current_run_id,
+        last_heartbeat=last_heartbeat,
+        heartbeat_age_s=heartbeat_age,
+        host_hash=hash_hostname(host),
     )

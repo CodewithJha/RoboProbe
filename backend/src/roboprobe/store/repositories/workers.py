@@ -5,9 +5,10 @@
 from __future__ import annotations
 
 from datetime import datetime
+from hashlib import sha256
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -76,12 +77,13 @@ class SqlWorkerRepo:
 
     def list(self, *, limit: int | None = None, cursor: str | None = None) -> Page[WorkerRecord]:
         size = clamp_limit(limit)
-        stmt = select(WorkerRow).order_by(WorkerRow.id)
+        key = func.encode(func.sha256(func.convert_to(WorkerRow.id, "UTF8")), "hex")
+        stmt = select(WorkerRow).order_by(key)
         if cursor is not None:
-            stmt = stmt.where(WorkerRow.id > cursor)
+            stmt = stmt.where(key > cursor)
         rows = self._s.scalars(stmt.limit(size + 1)).all()
         items, extra = extra_item([worker_record(r) for r in rows], size)
-        nxt = None if extra is None else items[-1].id
+        nxt = None if extra is None else sha256(items[-1].id.encode("utf-8")).hexdigest()
         return Page(items=items, next_cursor=nxt)
 
     def online(self, backend: str) -> tuple[WorkerRecord, ...]:

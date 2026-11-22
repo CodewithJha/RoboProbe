@@ -13,6 +13,7 @@ from roboprobe.api.deps import get_uow
 from roboprobe.api.mapping import worker_out
 from roboprobe.api.pagination import Page, clamp_limit
 from roboprobe.api.schemas import WorkerOut
+from roboprobe.core.clock import SystemClock
 
 __all__ = ["router"]
 
@@ -35,4 +36,5 @@ def list_workers(
         ),
         cursor=cursor,
     )
-    return Page(items=[worker_out(w) for w in page.items], next_cursor=page.next_cursor)
+    now = SystemClock().now()
+    return Page(items=[worker_out(w, now=now) for w in page.items], next_cursor=page.next_cursor)

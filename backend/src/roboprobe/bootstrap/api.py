@@ -115,7 +115,7 @@ def build_api(settings: RoboProbeSettings) -> ApiServices:
         campaigns=campaigns,
         analysis=analysis,
         report_jobs=ReportJobStore(
-            ThreadPoolExecutor(max_workers=settings.runner.analysis.max_workers),
+            ThreadPoolExecutor(max_workers=settings.api.report_workers),
             persistence=SqlReportJobs(session_factory(infra.engine)),
         ),
         space_root=root,

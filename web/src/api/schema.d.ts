@@ -1519,6 +1519,12 @@ export interface components {
     WorkerOut: {
       /** Backend */
       backend: string;
+      /** Current Run Id */
+      current_run_id?: string | null;
+      /** Heartbeat Age S */
+      heartbeat_age_s?: number | null;
+      /** Host Hash */
+      host_hash: string;
       /** Id */
       id: string;
       /** Last Heartbeat */
