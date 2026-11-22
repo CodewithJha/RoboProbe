@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 
 from roboprobe.backends.kinematic2d.controller import path_arclength, pure_pursuit
-from roboprobe.backends.kinematic2d.costmap import inflate
+from roboprobe.backends.kinematic2d.costmap import inflate, overlay_sensor_hits
 from roboprobe.backends.kinematic2d.localization import Localizer, scan_match_gain
 from roboprobe.backends.kinematic2d.model import Kinematic2DModel
 from roboprobe.backends.kinematic2d.planner import plan_path
@@ -226,10 +226,26 @@ def _run(  # noqa: PLR0913,PLR0917,PLR0915
         t = step_i * dt
         pose = (state.x, state.y, state.yaw)
         if t - last_plan_t >= replan_period:
-            lidar.scan(pose, rng_sensor, noise, dropout, pallet)
-            depth.scan(pose, pallet, illuminance, rng_perc)
+            lidar_ranges = lidar.scan(pose, rng_sensor, noise, dropout, pallet)
+            depth_ranges = depth.scan(pose, pallet, illuminance, rng_perc)
+            cm = model.costmap
+            lidar_cells = (
+                cm.lidar_hit_inflation_cells if noise >= cm.lidar_overlay_min_noise_std_m else 0
+            )
+            plan_grid = overlay_sensor_hits(
+                inflated_static,
+                pose,
+                lidar_ranges if lidar_cells else np.full_like(lidar_ranges, np.nan),
+                lidar.beams.angles,
+                depth_ranges,
+                depth.beams.angles,
+                lidar_inflation_cells=lidar_cells,
+                depth_inflation_cells=cm.depth_hit_inflation_cells,
+            )
             planned = plan_path(
-                inflated_static, (localizer.x, localizer.y), (task.goal.x, task.goal.y)
+                plan_grid,
+                (localizer.x, localizer.y),
+                (task.goal.x, task.goal.y),
             )
             planned_s = path_arclength(planned) if planned is not None else planned_s
             last_plan_t = t

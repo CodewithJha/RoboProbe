@@ -38,7 +38,7 @@ Settings = Annotated[RoboProbeSettings, Depends(get_settings)]
 
 _SPACE_BODY: dict[str, Any] = {
     "requestBody": {
-        "required": True,
+        "required": False,
         "description": "Scenario-space document (YAML or JSON; JSON is valid YAML).",
         "content": {
             "application/yaml": {"schema": {"type": "object"}},

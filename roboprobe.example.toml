@@ -182,6 +182,10 @@
 # depth_beams = 60
 # Robot, controller and planner constants (calibrated in T-034) [path].
 # model_file = "configs/backends/kinematic2d_v1.yaml"
+# Perception degradation constants for depth simulation (T-034) [path].
+# perception_model_file = "configs/perception/oakd_k2d_v1.yaml"
+# Designed GT canonical unit-cube points (T-034) [path].
+# calibration_file = "configs/reference/k2d_gt_canonical.yaml"
 
 [backends.gazebo_nav2]
 # Worker image reference recorded in run manifests (informational).
@@ -458,6 +462,10 @@
 # n = 20000
 # Seed of the reference sample.
 # seed = 20261119
+# Scenario space id.
+# space_id = "warehouse_v1"
+# Relative path under artifact root.
+# artifact_relpath = "reference/warehouse_v1_k2d.parquet"
 
 [reporting]
 # Colour theme token set (Field Notebook).

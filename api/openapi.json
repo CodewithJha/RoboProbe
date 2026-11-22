@@ -6520,7 +6520,7 @@
             }
           },
           "description": "Scenario-space document (YAML or JSON; JSON is valid YAML).",
-          "required": true
+          "required": false
         },
         "responses": {
           "201": {
@@ -6648,7 +6648,7 @@
             }
           },
           "description": "Scenario-space document (YAML or JSON; JSON is valid YAML).",
-          "required": true
+          "required": false
         },
         "responses": {
           "200": {
@@ -7053,7 +7053,7 @@
             }
           },
           "description": "SUT profile document (YAML or JSON; JSON is valid YAML).",
-          "required": true
+          "required": false
         },
         "responses": {
           "201": {
