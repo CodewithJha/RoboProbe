@@ -875,12 +875,15 @@ export interface components {
             } | null;
             /** Label */
             label: string;
+            medoid_run_id?: string | null;
             /** Primary Class */
             primary_class: string;
+            rules?: components["schemas"]["JsonValue"][];
             /** Size */
             size: number;
             /** Status */
             status: string;
+            version?: number;
         };
         /** FailureModePatch */
         FailureModePatch: {

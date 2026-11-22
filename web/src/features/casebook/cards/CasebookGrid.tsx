@@ -6,7 +6,11 @@ import { useCampaign, useModes, useReplay, useSpace } from '../../../api/hooks';
 import { number, object } from '../../runs/runData';
 import styles from './CasebookGrid.module.css';
 
-type Mode = Schema['FailureModeOut'];
+type Mode = Schema['FailureModeOut'] & {
+  medoid_run_id?: string | null;
+  rules?: unknown[];
+  version?: number;
+};
 type ModePage = Schema['Page_FailureModeOut_'];
 type Status = NonNullable<Schema['FailureModePatch']['status']>;
 const statuses: Status[] = ['open', 'accepted', 'fixed', 'duplicate'];
@@ -65,7 +69,7 @@ function CaseCard({
       setMessage('');
       return previous;
     },
-    onSuccess: (updated) => {
+    onSuccess: (updated: Mode) => {
       if (updated.id)
         queryClient.setQueryData<ModePage>(
           key,
@@ -104,7 +108,9 @@ function CaseCard({
   });
   const best = (mode.rules ?? [])
     .map(object)
-    .sort((a, b) => (number(b['precision']) ?? 0) - (number(a['precision']) ?? 0))[0];
+    .sort((a: Record<string, unknown>, b: Record<string, unknown>) =>
+      (number(b['precision']) ?? 0) - (number(a['precision']) ?? 0),
+    )[0];
   const conditions = Array.isArray(best?.['conditions'])
     ? (best['conditions'] as unknown[]).map(object)
     : [];
