@@ -4,7 +4,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 
-from scripts.sim_nightly_summary import summarize
+from _load import load_script
+
+summarize = load_script("sim_nightly_summary").summarize
 
 
 class SummaryTest(TestCase):
