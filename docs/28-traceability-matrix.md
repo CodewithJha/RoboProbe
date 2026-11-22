@@ -51,6 +51,12 @@ Shared dashboard verification (T-086a/b, #166/#167; FR-DSH-008, NFR-ACC-001):
 component's own name); `web/src/components/accessibility.test.tsx` checks the shared assembly with
 axe. See `docs/evidence/T-086-components.md` for contracts and virtualisation settings.
 
+Creation durability and scale follow-up (#147–#149):
+`tests/integration/store/test_atomic_creation.py` verifies rollback and transaction-scoped key locks;
+`test_campaign_http_queries.py` verifies campaign/run HTTP filters, bounded query counts and the
+200 ms p95 target at 10,000 runs. `tests/unit/runner/test_campaign_space_loader.py` covers stored
+uploaded spaces and pins; factory tests verify effective selection snapshot restoration.
+
 ## 2. Non-functional requirements → verification
 
 | NFR | Design | Verification | Gate |

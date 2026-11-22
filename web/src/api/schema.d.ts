@@ -1408,6 +1408,9 @@ export interface operations {
       query?: {
         limit?: number | null;
         cursor?: string | null;
+        status?: components['schemas']['CampaignStatus'] | null;
+        strategy?: string | null;
+        backend?: string | null;
       };
       header?: never;
       path?: never;
@@ -4334,7 +4337,7 @@ export interface operations {
       cookie?: never;
     };
     /** @description Scenario-space document (YAML or JSON; JSON is valid YAML). */
-    requestBody: {
+    requestBody?: {
       content: {
         'application/json': Record<string, never>;
         'application/yaml': Record<string, never>;
@@ -4420,7 +4423,7 @@ export interface operations {
       cookie?: never;
     };
     /** @description Scenario-space document (YAML or JSON; JSON is valid YAML). */
-    requestBody: {
+    requestBody?: {
       content: {
         'application/json': Record<string, never>;
         'application/yaml': Record<string, never>;
@@ -4672,7 +4675,7 @@ export interface operations {
       cookie?: never;
     };
     /** @description SUT profile document (YAML or JSON; JSON is valid YAML). */
-    requestBody: {
+    requestBody?: {
       content: {
         'application/json': Record<string, never>;
         'application/yaml': Record<string, never>;

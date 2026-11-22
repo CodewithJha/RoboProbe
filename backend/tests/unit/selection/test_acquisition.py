@@ -21,6 +21,9 @@ from roboprobe.selection.surrogate import RobustnessGP
 pytestmark = [
     pytest.mark.unit,
     pytest.mark.filterwarnings("ignore:.*torch.jit.script.*:FutureWarning"),
+    pytest.mark.filterwarnings(
+        "ignore:Optimization failed in `gen_candidates_scipy`:RuntimeWarning"
+    ),
 ]
 
 D = 2

@@ -1,0 +1,12 @@
+# Kinematic2d-calibrated perception (T-034). Fork of oakd_lowlight_v1 with stronger dark degradation.
+schema_version: 1
+id: oakd_k2d_v1
+constants:
+  l_ref_lux: 300.0
+  l_min_lux: 5.0
+  valid_loss: 0.92
+  sigma_base_m: 0.005
+  sigma_r2_per_m: 0.012
+  sigma_dark_gain: 5.0
+  r_max_bright_m: 3.0
+  r_max_dark_reduction: 0.78

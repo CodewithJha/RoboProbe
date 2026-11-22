@@ -31,12 +31,8 @@ def test_worker_completes_twenty_k2d_runs(uow_factory, session_factory, tmp_path
         worker={"backend": "kinematic2d", "id_prefix": "k2d", "poll_interval_s": 0.01},
         backends={
             "kinematic2d": {
-                "model_file": str(REPO / "configs" / "backends" / "kinematic2d_v1.yaml")
-            },
-            "gazebo_nav2": {
-                "perception_model_file": str(
-                    REPO / "configs" / "perception" / "oakd_lowlight_v1.yaml"
-                )
+                "model_file": str(REPO / "configs/backends/kinematic2d_v1.yaml"),
+                "perception_model_file": str(REPO / "configs/perception/oakd_k2d_v1.yaml"),
             },
         },
     )

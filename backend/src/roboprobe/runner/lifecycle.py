@@ -105,6 +105,11 @@ class CampaignService:
         """Start or resume a campaign (``CREATED``/``PAUSED`` → ``RUNNING``)."""
         return self._apply(campaign_id, CampaignCommand.START)
 
+    def start_in_uow(self, campaign_id: UUID, uow: UnitOfWorkPort) -> CampaignStatus:
+        """Start a newly inserted campaign in its creation transaction (T-081b)."""
+        _previous, status = _apply_in_uow(uow, campaign_id, CampaignCommand.START)
+        return status
+
     def pause(self, campaign_id: UUID, *, reason: str | None = None) -> CampaignStatus:
         """Pause a running campaign (idempotent on ``PAUSED``)."""
         return self._apply(campaign_id, CampaignCommand.PAUSE, reason=reason)
@@ -138,23 +143,9 @@ class CampaignService:
         cancel_runs: bool = False,
     ) -> CampaignStatus:
         with self._uow_factory() as uow:
-            campaign = _require(uow, campaign_id)
-            previous = campaign.status
-            new_status = transition(previous, command)
-            if new_status is previous and reason is None:
-                # Idempotent no-op: still return current status without events.
-                return previous
-            uow.campaigns.set_status(campaign_id, new_status, reason=reason)
-            cancelled = 0
-            if cancel_runs:
-                cancelled = uow.runs.cancel_pending(campaign_id)
-            payload: dict[str, JsonValue] = {
-                "campaign_id": str(campaign_id),
-                "status": new_status.value,
-                "counts": {"cancelled_pending": cancelled},
-                "modes_found": 0,
-            }
-            uow.events.append(TOPIC_CAMPAIGN_UPDATED, payload, campaign_id=campaign_id)
+            previous, new_status = _apply_in_uow(
+                uow, campaign_id, command, reason=reason, cancel_runs=cancel_runs
+            )
             uow.commit()
         log.info(
             "campaign.state_changed",
@@ -173,3 +164,31 @@ def _require(uow: UnitOfWorkPort, campaign_id: UUID) -> CampaignView:
         msg = "campaign not found"
         raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
     return campaign
+
+
+def _apply_in_uow(
+    uow: UnitOfWorkPort,
+    campaign_id: UUID,
+    command: CampaignCommand,
+    *,
+    reason: str | None = None,
+    cancel_runs: bool = False,
+) -> tuple[CampaignStatus, CampaignStatus]:
+    campaign = _require(uow, campaign_id)
+    previous = campaign.status
+    new_status = transition(previous, command)
+    if new_status is previous and reason is None:
+        # Idempotent no-op: still return current status without events.
+        return previous, previous
+    uow.campaigns.set_status(campaign_id, new_status, reason=reason)
+    cancelled = 0
+    if cancel_runs:
+        cancelled = uow.runs.cancel_pending(campaign_id)
+    payload: dict[str, JsonValue] = {
+        "campaign_id": str(campaign_id),
+        "status": new_status.value,
+        "counts": {"cancelled_pending": cancelled},
+        "modes_found": 0,
+    }
+    uow.events.append(TOPIC_CAMPAIGN_UPDATED, payload, campaign_id=campaign_id)
+    return previous, new_status

@@ -59,6 +59,13 @@ class CostmapModel(_Section):
     inflation_m: float = Field(ge=0)
     size_m: float = Field(gt=0)
     resolution_m: float = Field(gt=0)
+    lidar_hit_inflation_cells: int = Field(default=1, ge=0)
+    depth_hit_inflation_cells: int = Field(default=0, ge=0)
+    lidar_overlay_min_noise_std_m: float = Field(
+        default=0.04,
+        ge=0.0,
+        description="P4 below this skips marking phantom lidar obstacles on the global plan.",
+    )
 
 
 class PlannerModel(_Section):
@@ -73,6 +80,13 @@ class ControllerModel(_Section):
     lookahead_m: float = Field(gt=0)
     proximity_m: float = Field(gt=0)
     curvature_gain_m: float = Field(ge=0)
+
+
+class FrictionModel(_Section):
+    """Traction model constants (docs/06 §3.5); calibrated with the rest of the model (T-034)."""
+
+    mu_base: float = Field(default=0.15, gt=0)
+    yaw_slip_exponent: float = Field(default=1.5, gt=0)
 
 
 class WorldModel(_Section):
@@ -106,6 +120,7 @@ class Kinematic2DModel(_Section):
     costmap: CostmapModel
     planner: PlannerModel
     controller: ControllerModel
+    friction: FrictionModel = Field(default_factory=FrictionModel)
     world: WorldModel
 
     @classmethod
