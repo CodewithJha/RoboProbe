@@ -89,9 +89,39 @@ eight-worker run reached 3.77× speedup against a 6× gate.
 
 ## 6. Remote worker (T2) setup
 
-1. On host A, expose Postgres only on the WireGuard interface (`ports: ["10.8.0.1:5432:5432"]`, `dev` profile override) or use `ssh -N -L 5432:localhost:5432 hostA` from host B.
-2. On host B: copy `.env` with `ROBOPROBE_DATABASE__URL` pointing at the tunnel and a unique `ROBOPROBE_WORKER__ID_PREFIX`; artefact sink: `storage.backend=local` + periodic `rsync -a data/artifacts/ hostA:RoboProbe/data/artifacts/`, or the MinIO adapter.
-3. `docker compose --profile gazebo up -d worker-gazebo`. Worker appears in Workbench.
+On the database host, bind PostgreSQL to the private WireGuard address and enable TLS with
+a certificate whose DNS name matches the worker's DSN. Restrict TCP 5432 to the worker's
+private address in the firewall. Set a corresponding `hostssl` rule in `pg_hba.conf`
+using the RoboProbe database and login, the worker address, and SCRAM authentication.
+
+On the worker host, mount the same writable artifact filesystem used by the main app.
+Copy the database CA certificate and place the worker login's password in a protected
+file. Ensure the shared artifact directory is writable by container UID 10001 and
+the secret files are readable by that UID. Set these variables with the actual
+private endpoints and paths.
+
+```sh
+export ROBOPROBE_IMAGE_TAG=your-published-tag
+export ROBOPROBE_REMOTE_DATABASE_URL='postgresql+psycopg://roboprobe@db.lab.internal:5432/roboprobe'
+export ROBOPROBE_REMOTE_WORKER_ID=lab-worker-01
+export ROBOPROBE_REMOTE_ARTIFACT_ROOT=/mnt/roboprobe/artifacts
+export ROBOPROBE_REMOTE_CA_FILE=/etc/roboprobe/postgres-ca.crt
+export ROBOPROBE_REMOTE_PASSWORD_FILE=/etc/roboprobe/db_password
+
+docker compose -f docker/compose.worker.yaml --profile kinematic2d up -d worker-k2d
+```
+
+For the Gazebo worker, use the published Gazebo image and prefill its pinned model
+cache before starting it.
+
+```sh
+docker compose -f docker/compose.worker.yaml --profile gazebo run --rm worker-gazebo prefetch-fuel
+docker compose -f docker/compose.worker.yaml --profile gazebo up -d worker-gazebo
+```
+
+The worker enforces `verify-full` through its typed database configuration. Confirm the
+worker ID and backend from the main dashboard's **Workbench**. The worker host needs the
+private database route and artifact mount. [T-129 TLS verification](evidence/T-129.md)
 
 ## 7. Backup & restore
 

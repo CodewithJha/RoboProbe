@@ -89,3 +89,23 @@ def test_env_beats_secret_files(settings_env: Path, monkeypatch: pytest.MonkeyPa
 def test_missing_secrets_dir_is_fine(settings_env: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ROBOPROBE_SECRETS_DIR", str(settings_env / "absent"))
     assert load_settings().api.token is None
+
+
+def test_database_tls_policy_preserves_other_dsn_fields(
+    settings_env: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Apply typed TLS policy consistently for every database client using the DSN."""
+    password_file = settings_env / "pw"
+    password_file.write_text(PASSWORD)
+    monkeypatch.setenv(
+        "ROBOPROBE_DATABASE__URL",
+        "postgresql+psycopg://rp@db/rp?application_name=remote+worker&sslmode=disable",
+    )
+    monkeypatch.setenv("ROBOPROBE_DATABASE__SSLMODE", "verify-full")
+    settings = load_settings({"database.password_file": str(password_file)})
+    assert settings.database.sslmode == "verify-full"
+    assert settings.database.url.get_secret_value() == (
+        "postgresql+psycopg://rp:p%40ss%3Aw%2Frd-very-secret@db/rp"
+        "?application_name=remote+worker&sslmode=verify-full"
+    )
+    _assert_hidden(repr(settings.database))

@@ -13,6 +13,8 @@
 # url = "postgresql+psycopg://roboprobe@localhost:5432/roboprobe"
 # File holding the database password; merged into `url` [path].
 # password_file =  (unset by default)
+# PostgreSQL TLS policy; overrides an sslmode in the DSN when set.
+# sslmode =  (unset by default)
 # Connection pool size per process.
 # pool_size = 5
 # Server-side statement timeout [ms].
