@@ -94,6 +94,8 @@ Routes (React Router): `/` Bench · `/campaigns/new` · `/campaigns/:id` (tabs: 
 └──┴──────────────────────────────────────────────────────────────────────────┘
 ```
 
+Recent case tags come from the modes of the most recent campaigns. The Bench uses the ordinary campaign and mode endpoints.
+
 Margin rail icons: Bench, Campaigns, Trials, Spaces, Workbench, Settings; theme toggle at the bottom.
 
 ### 3.2 New campaign wizard — FR-DSH-001, US-002 (4 steps, all defaults pre-filled)

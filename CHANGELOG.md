@@ -5,6 +5,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ## [Unreleased]
 
+- Add the Bench overview, paginated campaign list, and four-step campaign wizard with reproducible YAML and idempotent submission (T-087a/b).
+
 ### Added
 
 - Trace and artifact transport (T-081e): event-preserving JSON downsampling, original

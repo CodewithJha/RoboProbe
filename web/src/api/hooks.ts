@@ -12,17 +12,14 @@ export type RunsPage = Schema['Page_RunOut_'];
 const nextPage = (page: { next_cursor?: string | null }): string | undefined =>
   page.next_cursor ?? undefined;
 
-export function useCampaigns() {
+export function useCampaigns(filter?: { status?: Campaign['status']; limit?: number }) {
   return useInfiniteQuery({
-    queryKey: ['campaigns'],
+    queryKey: filter ? ['campaigns', 'list', filter] : ['campaigns'],
     initialPageParam: undefined as string | undefined,
-    queryFn: async ({ pageParam, signal }) =>
-      requireData(
-        await api.GET('/api/v1/campaigns', {
-          signal,
-          params: { query: pageParam ? { cursor: pageParam } : {} },
-        }),
-      ),
+    queryFn: async ({ pageParam, signal }) => {
+      const query = { ...filter, ...(pageParam ? { cursor: pageParam } : {}) };
+      return requireData(await api.GET('/api/v1/campaigns', { signal, params: { query } }));
+    },
     getNextPageParam: nextPage,
   });
 }
@@ -264,14 +261,20 @@ export function useReportJob(id: string) {
       ),
   });
 }
-export function useCreateCampaign() {
+export function useCreateCampaign(idempotencyKey?: string) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (body: Schema['CampaignCreate']) =>
+    mutationFn: async ({
+      body,
+      idempotencyKey: key,
+    }: {
+      body: Schema['CampaignCreate'];
+      idempotencyKey?: string;
+    }) =>
       requireData(
         await api.POST('/api/v1/campaigns', {
           body,
-          headers: { 'Idempotency-Key': crypto.randomUUID() },
+          headers: { 'Idempotency-Key': key ?? idempotencyKey ?? crypto.randomUUID() },
         }),
       ),
     onSuccess: () => client.invalidateQueries({ queryKey: ['campaigns'] }),

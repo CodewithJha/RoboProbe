@@ -30,6 +30,7 @@ export function applyServerEvent(client: QueryClient, event: SseEvent): void {
     );
     void client.invalidateQueries({ queryKey: ['campaigns', cid, 'progress'] });
     void client.invalidateQueries({ queryKey: ['campaigns'], exact: true });
+    void client.invalidateQueries({ queryKey: ['campaigns', 'list'] });
   } else if (event.type === 'run.finished' || event.type === 'run.started') {
     const run = event.data['run'];
     if (

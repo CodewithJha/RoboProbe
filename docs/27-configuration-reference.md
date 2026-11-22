@@ -345,6 +345,11 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `defaultTheme` | `ROBOPROBE_WEB_DEFAULT_THEME` | `system` |
 | `featureFlags` | `ROBOPROBE_WEB_FEATURES` | `trials,reports` |
 
+Optional runtime keys in `config.json` are `benchRecentLimit` (10),
+`benchRecentCaseCampaigns` (3), `wizardDefaultBudget` (200),
+`wizardDefaultRepeats` (1), and `wizardSliderSteps` (1000). Each accepts a positive
+integer. Server metadata further caps the campaign budget and batch size.
+
 Build/dev-time variables (Vite, `web/.env.example`; read in `web/vite.config.ts`, never in components):
 
 | Env | Default | Notes |
