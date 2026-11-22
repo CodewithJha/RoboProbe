@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest';
 import { apiUrl, type Schema } from '../../api/client';
 import { AppProviders } from '../../app/providers';
 import { Component as ConsolePage } from '../console/ConsolePage';
+import { atlasConfig } from './atlasConfig';
 import { Component } from './AtlasPage';
 
 const campaign: Schema['CampaignOut'] = {
@@ -94,6 +95,7 @@ beforeAll(() => {
   server.listen();
 });
 afterEach(() => {
+  vi.useRealTimers();
   server.resetHandlers();
   queue.mockClear();
   requestSlice.mockClear();
@@ -103,7 +105,7 @@ afterAll(() => {
   server.close();
 });
 
-it('restores a shared pair and medoid, then queues the physical point with the anchor values', async () => {
+it('debounces rapid anchor edits, shares the latest values, and queues the physical point', async () => {
   const router = createMemoryRouter([{ path: '/campaigns/:id/atlas', Component }], {
     initialEntries: ['/campaigns/c1/atlas?x=speed&y=light&anchor=mode%3AFM-01'],
   });
@@ -117,10 +119,32 @@ it('restores a shared pair and medoid, then queues the physical point with the a
   expect(within(selected).getByRole('combobox', { name: 'Anchor' })).toHaveValue('mode:FM-01');
   const slider = await screen.findByRole('slider', { name: 'distance' });
   expect(slider).toHaveValue('5');
+  await screen.findByText('Risk data table');
+  requestSlice.mockClear();
+  slider.focus();
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  fireEvent.change(slider, { target: { value: '6' } });
+  await act(() => vi.advanceTimersByTimeAsync(atlasConfig.anchorDebounceMs / 2));
   fireEvent.change(slider, { target: { value: '7' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Apply values' }));
+  expect(slider).toHaveValue('7');
+  await act(() => vi.advanceTimersByTimeAsync(atlasConfig.anchorDebounceMs - 1));
+  expect(requestSlice).not.toHaveBeenCalled();
+  expect(new URLSearchParams(router.state.location.search).has('anchor_values')).toBe(false);
+  await act(async () => vi.advanceTimersByTimeAsync(1));
+  vi.useRealTimers();
+  await waitFor(() => {
+    expect(requestSlice).toHaveBeenCalledExactlyOnceWith(
+      'speed',
+      'light',
+      'mode:FM-01',
+      '{"distance":7}',
+    );
+  });
+  expect(new URLSearchParams(router.state.location.search).get('anchor_values')).toBe(
+    '{"distance":7}',
+  );
+  expect(slider).toHaveFocus();
   fireEvent.click(await screen.findByText('Risk data table'));
-  expect(requestSlice).toHaveBeenCalledWith('speed', 'light', 'mode:FM-01', '{"distance":7}');
   fireEvent.click(await screen.findByRole('button', { name: /Probe speed 2, light 6/ }));
   const submit = await screen.findByRole('button', { name: 'Queue manual run' });
   expect(submit).toBeEnabled();
@@ -132,6 +156,31 @@ it('restores a shared pair and medoid, then queues the physical point with the a
   });
   await screen.findByText('Risk data table');
   expect(requestSlice).toHaveBeenCalledWith('speed', 'light', 'nominal', null);
+});
+
+it('discards a pending anchor edit on navigation, including after returning to the same URL', async () => {
+  const nominal = '/campaigns/c1/atlas?x=speed&y=light&anchor=nominal';
+  const medoid = '/campaigns/c1/atlas?x=speed&y=light&anchor=mode%3AFM-01';
+  const router = createMemoryRouter([{ path: '/campaigns/:id/atlas', Component }], {
+    initialEntries: [nominal, medoid],
+  });
+  render(
+    <AppProviders live={false}>
+      <RouterProvider router={router} />
+    </AppProviders>,
+  );
+
+  const slider = await screen.findByRole('slider', { name: 'distance' });
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  fireEvent.change(slider, { target: { value: '8' } });
+  expect(slider).toHaveValue('8');
+  await act(async () => router.navigate(-1));
+  expect(slider).toHaveValue('2');
+  await act(async () => router.navigate(1));
+  expect(slider).toHaveValue('5');
+  await act(async () => vi.advanceTimersByTimeAsync(atlasConfig.anchorDebounceMs));
+  expect(new URLSearchParams(router.state.location.search).has('anchor_values')).toBe(false);
+  expect(requestSlice).not.toHaveBeenCalledWith('speed', 'light', 'mode:FM-01', '{"distance":8}');
 });
 
 it('restores custom anchor values and shows the queued probe in Console after its live event', async () => {
