@@ -48,6 +48,9 @@ try {
     assert(response?.ok(), `Missing dashboard HTML for ${path}`);
     assert.match(response.headers()['content-security-policy'], /frame-ancestors 'none'/);
     await page.getByRole('navigation', { name: 'Main navigation' }).waitFor();
+    if (path === '/campaigns/new') {
+      await page.getByRole('heading', { name: 'New campaign' }).waitFor();
+    }
     assert.deepEqual(violations, [], `CSP violation at ${path}`);
   }
   console.log(`Chromium rendered ${paths.length} dashboard routes under the production CSP.`);
