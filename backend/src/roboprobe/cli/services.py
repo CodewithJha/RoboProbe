@@ -15,6 +15,7 @@ from typing import Annotated
 import typer
 
 from roboprobe.bootstrap import build_cli_services, build_orchestrator, build_worker
+from roboprobe.bootstrap.worker import worker_slot_count
 from roboprobe.cli._context import get_state
 from roboprobe.cli.space import REPO_ROOT
 from roboprobe.core.clock import SystemClock
@@ -76,7 +77,7 @@ def orchestrator_cmd(ctx: typer.Context) -> None:
 def worker_cmd(
     ctx: typer.Context,
     backend: Annotated[str, typer.Option("--backend", help="Simulator backend id.")],
-    concurrency: Annotated[int, typer.Option("--concurrency", min=1)] = 1,
+    concurrency: Annotated[int | None, typer.Option("--concurrency", min=1)] = None,
     space_id: Annotated[
         str, typer.Option("--space", help="Scenario space whose task the worker judges.")
     ] = "warehouse_v1",
@@ -92,6 +93,8 @@ def worker_cmd(
     settings = settings.model_copy(
         update={"worker": settings.worker.model_copy(update={"backend": backend})}
     )
+    requested = settings.worker.concurrency if concurrency is None else concurrency
+    concurrency = worker_slot_count(settings, requested)
     space = ScenarioSpace.from_yaml(
         REPO_ROOT / "configs" / "scenario_spaces" / f"{space_id}.yaml",
         base_dir=REPO_ROOT,

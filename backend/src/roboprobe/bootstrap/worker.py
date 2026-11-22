@@ -26,7 +26,14 @@ from roboprobe.runner.ports import (
 )
 from roboprobe.runner.worker import WorkerProcess
 
-__all__ = ["build_worker"]
+__all__ = ["build_worker", "worker_slot_count"]
+
+
+def worker_slot_count(settings: RoboProbeSettings, requested: int) -> int:
+    """Cap Gazebo slots at the host's simulator capacity."""
+    if settings.worker.backend == "gazebo_nav2":
+        return min(requested, settings.backends.gazebo_nav2.max_parallel_per_host)
+    return requested
 
 
 def build_worker(
