@@ -1,4 +1,6 @@
 import { parameters } from '../../lib/spaceParameters';
+import { setLastCampaign } from '../../lib/lastCampaign';
+import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useCampaign, useCampaignProgress, useRuns, useSpace } from '../../api/hooks';
 import { ProblemView } from '../../app/ProblemView';
@@ -15,6 +17,9 @@ export function Component() {
   const space = useSpace(campaign.data?.space?.id ?? '', campaign.data?.space?.version ?? '');
   const runs = useRuns(id, { sort: '-ordinal' });
 
+  useEffect(() => {
+    if (id) setLastCampaign(id);
+  }, [id]);
   if (campaign.isError) return <ProblemView error={campaign.error} />;
   if (!campaign.data) return <p role="status">Loading campaign…</p>;
   const counts = progress.data?.counts ?? campaign.data.counts ?? {};

@@ -5,7 +5,9 @@ import { createQueryClient } from '../lib/queryClient';
 import { getConfig, type RuntimeConfig } from '../lib/config';
 import { SseClient } from '../lib/sse';
 import { bindSse } from '../lib/sseBridge';
+import { NumberLocaleProvider } from '../lib/numberLocale';
 import { RuntimeContext, SseContext } from './contexts';
+import { SearchFocusProvider } from './SearchFocusContext';
 import { ThemeProvider } from './ThemeProvider';
 export function AppProviders({
   children,
@@ -31,11 +33,15 @@ export function AppProviders({
   return (
     <RuntimeContext value={config}>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider config={config}>
-          <TooltipProvider>
-            <SseContext value={source}>{children}</SseContext>
-          </TooltipProvider>
-        </ThemeProvider>
+        <SearchFocusProvider>
+          <ThemeProvider config={config}>
+            <NumberLocaleProvider>
+              <TooltipProvider>
+                <SseContext value={source}>{children}</SseContext>
+              </TooltipProvider>
+            </NumberLocaleProvider>
+          </ThemeProvider>
+        </SearchFocusProvider>
       </QueryClientProvider>
     </RuntimeContext>
   );

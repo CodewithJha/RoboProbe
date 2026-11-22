@@ -2,6 +2,8 @@ import { useRef, type KeyboardEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { type Campaign, useCampaignCommand } from '../../../api/hooks';
 import { ProblemView } from '../../../app/ProblemView';
+import { ExportReportButton } from '../../reports/ExportReportButton';
+import { useRuntimeConfig } from '../../../app/contexts';
 
 const actions = {
   CREATED: ['start', 'cancel'],
@@ -17,6 +19,7 @@ const labels = { start: 'Start', pause: 'Pause', cancel: 'Cancel campaign', resu
 type Command = keyof typeof labels;
 
 export function CampaignHeader({ campaign }: { campaign: Campaign }) {
+  const { featureFlags } = useRuntimeConfig();
   const dialog = useRef<HTMLDialogElement>(null);
   const keepButton = useRef<HTMLButtonElement>(null);
   const confirmButton = useRef<HTMLButtonElement>(null);
@@ -58,6 +61,9 @@ export function CampaignHeader({ campaign }: { campaign: Campaign }) {
           {labels[action]}
         </button>
       ))}
+      {featureFlags.reports ? (
+        <ExportReportButton kind="campaign" id={campaign.id} label="Export report" />
+      ) : null}
       {command.isPending ? <p role="status">Updating campaign…</p> : null}
       {command.isError ? <ProblemView error={command.error} /> : null}
       <dialog ref={dialog} aria-label="Cancel campaign confirmation">

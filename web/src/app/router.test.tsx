@@ -13,6 +13,24 @@ const server = setupServer(
     http.get(apiUrl(path), () => HttpResponse.json({ items: [] })),
   ),
   http.get(apiUrl('/meta'), () => HttpResponse.json({})),
+  http.get(apiUrl('/reports/job1'), () =>
+    HttpResponse.json({
+      id: 'job1',
+      kind: 'campaign',
+      target_id: 'c1',
+      status: 'COMPLETED',
+    }),
+  ),
+  http.get(apiUrl('/spaces/warehouse/versions/v1'), () =>
+    HttpResponse.json({
+      id: 'warehouse',
+      version: 'v1',
+      name: 'warehouse',
+      description: '',
+      schema_version: 1,
+      definition: { parameters: [] },
+    }),
+  ),
   http.get(apiUrl('/campaigns/c1'), () =>
     HttpResponse.json({
       id: 'c1',
@@ -77,12 +95,12 @@ const ROUTES = [
   ['/runs/r1', 'Run entry'],
   ['/trials', 'Trials'],
   ['/trials/e1', 'Experiment'],
-  ['/spaces', 'Spaces'],
-  ['/spaces/warehouse/v1', 'Scenario space'],
-  ['/workbench', 'Workbench'],
+  ['/spaces', 'Scenario spaces'],
+  ['/spaces/warehouse/v1', 'warehouse'],
+  ['/workbench', 'Workers'],
   ['/settings', 'Settings'],
   ['/reports', 'Reports'],
-  ['/reports/job1', 'Report'],
+  ['/reports/job1', 'Exported report'],
 ] as const;
 describe('notebook routes', () => {
   it.each(ROUTES)('renders %s', async (path, heading) => {

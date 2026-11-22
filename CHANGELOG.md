@@ -7,6 +7,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Dashboard polish (T-113a/b, T-115): Spaces list with YAML view and validation,
+  Workbench worker table, Settings (session token, theme, number locale, SSE reconnect),
+  report export with sandboxed preview route, and global keyboard shortcuts dialog.
 - Casebook and Insights (T-110a/b): filter and edit analyzed failure modes, replay or export
   representative scenarios, and compare SHAP importance with GP rankings and cross-validation.
 - Analysis and reporting API follow-through (T-082b/c, T-084a): cached, anchored risk

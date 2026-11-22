@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
+import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { expect, it } from 'vitest';
 import type { Campaign } from '../../../api/hooks';
 import { AppProviders } from '../../../app/providers';
@@ -17,9 +18,10 @@ const running: Campaign = {
 };
 
 it('wraps cancellation dialog focus at both keyboard boundaries', () => {
+  const router = createMemoryRouter([{ path: '/', element: <CampaignHeader campaign={running} /> }]);
   render(
     <AppProviders live={false}>
-      <CampaignHeader campaign={running} />
+      <RouterProvider router={router} />
     </AppProviders>,
   );
   const dialog = screen.getByLabelText('Cancel campaign confirmation');

@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll, expect, it } from 'vitest';
 import { type Campaign } from '../../api/hooks';
 import { apiUrl, type Schema } from '../../api/client';
 import { AppProviders } from '../../app/providers';
+import { DEFAULT_CONFIG } from '../../lib/config';
 import { useQueryClient } from '@tanstack/react-query';
 import { applyServerEvent } from '../../lib/sseBridge';
 import { Component } from './ConsolePage';
@@ -120,9 +121,12 @@ it.each([
   ['FAILED', []],
   ['CANCELLED', []],
 ] as const)('shows only allowed actions for %s', (status, actions) => {
+  const router = createMemoryRouter([
+  { path: '/', element: <CampaignHeader campaign={{ ...fixture, status }} /> },
+  ]);
   render(
-    <AppProviders live={false}>
-      <CampaignHeader campaign={{ ...fixture, status }} />
+    <AppProviders live={false} config={{ ...DEFAULT_CONFIG, featureFlags: { trials: true, reports: false } }}>
+      <RouterProvider router={router} />
     </AppProviders>,
   );
   expect(

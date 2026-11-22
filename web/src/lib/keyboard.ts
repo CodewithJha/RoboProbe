@@ -86,9 +86,11 @@ export class KeyboardManager {
     }
     const entry = { ...shortcut, keys };
     this.shortcuts.set(keys, entry);
+    this.bump();
     return () => {
       if (this.shortcuts.get(keys) === entry) {
         this.shortcuts.delete(keys);
+        this.bump();
       }
     };
   }
@@ -102,11 +104,33 @@ export class KeyboardManager {
     }));
   }
 
+  /** Subscribe to registry changes (for the shortcuts dialog). */
+  subscribeList(listener: () => void): () => void {
+    this.revisionListeners.add(listener);
+    return () => this.revisionListeners.delete(listener);
+  }
+
+  /** Monotonic revision for {@link subscribeList}. */
+  listRevision(): number {
+    return this._listRevision;
+  }
+
   /** Removes the listener and any pending chord. */
   dispose(): void {
     this.target.removeEventListener('keydown', this.onKeyDown);
     this.reset();
     this.shortcuts.clear();
+    this.bump();
+  }
+
+  private _listRevision = 0;
+  private readonly revisionListeners = new Set<() => void>();
+
+  private bump(): void {
+    this._listRevision += 1;
+    this.revisionListeners.forEach((listener) => {
+      listener();
+    });
   }
 
   private reset(): void {
@@ -162,4 +186,10 @@ export function getKeyboardManager(): KeyboardManager {
 /** Registers a shortcut on the app-wide manager; returns the unregister function. */
 export function registerShortcut(shortcut: Shortcut): () => void {
   return getKeyboardManager().register(shortcut);
+}
+
+/** Test helper: drop the singleton manager between suites. */
+export function resetKeyboardManager(): void {
+  defaultManager?.dispose();
+  defaultManager = undefined;
 }

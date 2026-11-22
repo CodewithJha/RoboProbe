@@ -1,8 +1,10 @@
+import { useEffect, useRef, useState } from 'react';
 import { campaignColumns } from '../campaigns/campaignColumns';
 import { Link } from 'react-router-dom';
 import { useCampaigns, useModes, useWorkers, useMeta, type Campaign } from '../../api/hooks';
 import { EmptyState, SpecimenTag, StatTable } from '../../components';
 import { ProblemView } from '../../app/ProblemView';
+import { useSearchFocus } from '../../app/SearchFocusContext';
 import { useRuntimeConfig } from '../../app/contexts';
 import { isOnline, limit } from '../../lib/workers';
 import styles from './BenchPage.module.css';
@@ -26,6 +28,13 @@ function RecentCases({ campaign }: { campaign: Campaign }) {
 }
 export function Component() {
   const config = useRuntimeConfig();
+  const { register } = useSearchFocus();
+  const searchRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState('');
+  useEffect(() => {
+    register(searchRef.current);
+    return () => register(null);
+  }, [register]);
   const campaigns = useCampaigns({ limit: config.benchRecentLimit });
   const running = useCampaigns({ status: 'RUNNING' });
   const paused = useCampaigns({ status: 'PAUSED' });
@@ -61,7 +70,8 @@ export function Component() {
   if (campaigns.isError) return <ProblemView error={campaigns.error} />;
   const rows = campaigns.data.pages
     .flatMap((page) => page.items)
-    .sort((a, b) => (b.created_at ?? b.id).localeCompare(a.created_at ?? a.id));
+    .sort((a, b) => (b.created_at ?? b.id).localeCompare(a.created_at ?? a.id))
+    .filter((row) => !query || row.name.toLowerCase().includes(query.toLowerCase()));
   const active = [...(running.data?.pages ?? []), ...(paused.data?.pages ?? [])].flatMap(
     (page) => page.items,
   );
@@ -169,6 +179,17 @@ export function Component() {
           </section>
           <section>
             <h2>Recent campaigns</h2>
+            <label htmlFor="bench-search">Search campaigns</label>
+            <input
+              id="bench-search"
+              ref={searchRef}
+              type="search"
+              value={query}
+              placeholder="Filter by name"
+              onChange={(event) => {
+                setQuery(event.target.value);
+              }}
+            />
             <StatTable
               rows={rows.slice(0, config.benchRecentLimit)}
               columns={campaignColumns}

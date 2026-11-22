@@ -9,7 +9,8 @@ import { DEFAULT_CONFIG, type RuntimeConfig } from '../../../lib/config';
 import { setToken } from '../../../lib/token';
 import { Component as ExperimentPage } from '../ExperimentPage';
 import { Component as TrialsPage } from '../TrialsPage';
-import { Component } from './ComparisonPage';
+import { Component as ComparisonPageComponent } from './ComparisonPage';
+import { Component as ReportPage } from '../../reports/ReportPage';
 
 const plot = vi.hoisted(() => vi.fn<(props: { data: object[] }) => null>(() => null));
 vi.mock('../../../components/charts/plotly', () => ({
@@ -118,7 +119,8 @@ function mount(path: string, config: RuntimeConfig = DEFAULT_CONFIG) {
     [
       { path: '/trials', Component: TrialsPage },
       { path: '/trials/:id', Component: ExperimentPage },
-      { path: '/trials/:id/comparison', Component },
+      { path: '/trials/:id/comparison', Component: ComparisonPageComponent },
+      { path: '/reports/:id', Component: ReportPage },
     ],
     { initialEntries: [path] },
   );
@@ -127,6 +129,7 @@ function mount(path: string, config: RuntimeConfig = DEFAULT_CONFIG) {
       <RouterProvider router={router} />
     </AppProviders>,
   );
+  return router;
 }
 
 it('links an experiment design cell to its child campaign', async () => {
@@ -211,27 +214,11 @@ it('plots empirical samples, mode bands and right-censored survival for complete
   expect(evidence.getByText('1 cell lacks completed run evidence.')).toBeInTheDocument();
 });
 
-it('generates a report, waits for completion, and downloads HTML with bearer authentication', async () => {
+it('generates a report, polls until complete, and opens the report view', async () => {
   const authored = vi.fn();
-  const downloaded = vi.fn();
-  const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:report');
-  const revokeObjectURL = vi.fn();
-  vi.stubGlobal(
-    'URL',
-    class extends URL {
-      static override createObjectURL = createObjectURL;
-      static override revokeObjectURL = revokeObjectURL;
-    },
-  );
-  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
-    this: HTMLAnchorElement,
-  ) {
-    downloaded(this.download);
-  });
   let reads = 0;
   let completed = false;
   const job = { id: 'r1', kind: 'experiment', target_id: 'e1' };
-  const html = '<h1>Experiment report</h1>';
   server.use(
     http.post(apiUrl('/reports'), async ({ request }) => {
       authored(request.headers.get('Authorization'), await request.json());
@@ -243,12 +230,12 @@ it('generates a report, waits for completion, and downloads HTML with bearer aut
     }),
     http.get(apiUrl('/reports/r1/content'), ({ request }) => {
       expect(request.headers.get('Authorization')).toBe('Bearer test-report-token');
-      return HttpResponse.html(html);
+      return HttpResponse.html('<h1>Experiment report</h1>');
     }),
   );
   setToken('test-report-token');
   try {
-    mount('/trials/e1/comparison', { ...DEFAULT_CONFIG, queryStaleTimeMs: 20 });
+    const view = mount('/trials/e1/comparison', { ...DEFAULT_CONFIG, queryStaleTimeMs: 20 });
     const exportButton = await screen.findByRole('button', { name: 'Export report' });
     fireEvent.click(exportButton);
     expect(await screen.findByText('Generating report…')).toBeInTheDocument();
@@ -257,14 +244,13 @@ it('generates a report, waits for completion, and downloads HTML with bearer aut
       expect(reads).toBeGreaterThanOrEqual(1);
     });
     completed = true;
-    fireEvent.click(await screen.findByRole('button', { name: 'Download HTML report' }));
     await vi.waitFor(() => {
-      expect(downloaded).toHaveBeenCalledWith('experiment-e1.html');
-      const result = createObjectURL.mock.calls[0]?.[0];
-      expect(result?.type).toMatch(/^text\/html/);
-      expect(result?.size).toBe(html.length);
-      expect(revokeObjectURL).toHaveBeenCalledWith('blob:report');
+      expect(view.state.location.pathname).toBe('/reports/r1');
     });
+    expect(await screen.findByTitle('Report preview')).toHaveAttribute(
+      'sandbox',
+      'allow-same-origin',
+    );
     expect(authored).toHaveBeenCalledWith('Bearer test-report-token', {
       kind: 'experiment',
       id: 'e1',
@@ -272,7 +258,6 @@ it('generates a report, waits for completion, and downloads HTML with bearer aut
     expect(reads).toBeGreaterThanOrEqual(2);
   } finally {
     setToken(null);
-    vi.unstubAllGlobals();
   }
 });
 
