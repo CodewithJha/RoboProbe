@@ -27,7 +27,7 @@
 
 - [Why RoboProbe?](#why-roboprobe)
 - [What it is](#what-it-is)
-- [Key features (planned)](#key-features-planned)
+- [Key features](#key-features)
 - [How it works](#how-it-works)
 - [Architecture overview](#architecture-overview)
 - [Example: the warehouse robot](#example-the-warehouse-robot)
@@ -59,7 +59,7 @@ RoboProbe is a **software-only, open-source testing layer on top of an establish
 5. clusters failures into explained failure modes, and
 6. maps the safe, uncertain and failure-prone regions of the robot's operating envelope.
 
-## Key features (planned)
+## Key features
 
 | | Feature | Spec |
 |---|---------|------|
@@ -141,15 +141,18 @@ Rationale and alternatives for each choice: [15 Tech stack & ADRs](docs/15-tech-
 
 | Milestone | Scope | Status |
 |-----------|-------|--------|
-| **M0** | Specification (this repo) | ✅ done |
-| M1 | Foundation: skeleton, settings, logging, CI, compose | ⏳ next |
-| M2–M3 | Scenario space, `kinematic2d`, oracles, runner, storage, CLI | planned |
-| M4–M6 | Baselines, metrics, intelligent selection (`S-PROBE`), analysis & risk | planned |
-| M7–M8 | REST/SSE API, Field Notebook dashboard | planned |
-| M9 | Gazebo + ROS 2 + Nav2 backend | planned |
-| M10–M11 | Evaluation experiments, v1.0 release | planned |
+| M0–M3 | Specification, settings, storage, CLI, runner and deterministic `kinematic2d` backend | Complete |
+| M4–M6 | Baselines, metrics, S-PROBE, failure analysis and risk mapping | Complete |
+| M7–M8 | REST/SSE API and Field Notebook dashboard | Complete |
+| M9 | Gazebo, ROS 2 Jazzy and Nav2 warehouse integration | Warehouse launch and backend verified. Packaging and nightly tests in progress. |
+| M10 | Preregistered experiments and reproducibility | In progress |
+| M11 | Deployment verification and v1.0 release | In progress |
 
-Full plan with ~90 agent-sized tasks: [22 Roadmap](docs/22-roadmap-and-implementation-plan.md) · risks: [23](docs/23-risks-and-mitigations.md).
+See the [implementation roadmap](docs/22-roadmap-and-implementation-plan.md), the
+[test and experiment evidence](docs/evidence/README.md), and the current states
+of [M9](https://github.com/CodewithJha/RoboProbe/issues/9),
+[M10](https://github.com/CodewithJha/RoboProbe/issues/10), and
+[M11](https://github.com/CodewithJha/RoboProbe/issues/11).
 
 ## Documentation map
 
@@ -213,7 +216,11 @@ Choose **New campaign** to run your own warehouse scenarios. Use `make down`
 when you finish. The [deployment guide](docs/29-deployment-guide.md) covers
 installation details and artifact permissions on native Linux.
 
-### Backend development (available now)
+![RoboProbe Bench showing warehouse campaigns and connected workers](docs/assets/dashboard/bench.png)
+
+![RoboProbe Risk Atlas showing the probability of failure across speed and obstacle lateral clearance](docs/assets/dashboard/risk-atlas.png)
+
+### Backend development
 
 Requires `git`, `make` and [`uv`](https://docs.astral.sh/uv/) (uv installs Python 3.12 itself).
 
@@ -229,25 +236,28 @@ make help         # list every target
 
 ## Repository structure
 
-Current (design phase):
-
 ```text
 RoboProbe/
-├── docs/                 # 35 specification documents, adr/, templates/, rfc/, evidence/
-├── .github/              # issue & PR templates, CODEOWNERS
-├── AGENTS.md             # instructions for AI coding agents
-├── README.md  CONTRIBUTING.md  CODE_OF_CONDUCT.md  SECURITY.md  SUPPORT.md  GOVERNANCE.md
-├── CHANGELOG.md  CITATION.cff  LICENSE  .editorconfig  .gitignore
+├── backend/        Python API, CLI, simulation workers, analysis and database migrations
+├── web/            Field Notebook dashboard and browser tests
+├── ros_ws/         ROS 2 package and Gazebo integration
+├── configs/        Scenario spaces, SUT profiles and experiment designs
+├── tasks/          Simulator task definitions and warehouse assets
+├── schemas/        Versioned external data formats
+├── docker/         Runtime images and Compose profiles
+├── scripts/        Development, verification and deployment utilities
+├── docs/           Specifications, decision records and test evidence
+└── .github/        CI workflows, issue templates and ownership
 ```
 
-Planned (from M1): `backend/` (Python package `roboprobe`), `ros_ws/` (ROS 2 package), `web/` (dashboard),
-`docker/`, `configs/`, `schemas/`, `tasks/`, `scripts/`, `.github/workflows/` — full tree in [16 §1](docs/16-repository-structure-and-coding-standards.md#1-target-repository-tree-created-progressively-by-tasks-in-22).
+The [repository standards](docs/16-repository-structure-and-coding-standards.md)
+describe package boundaries and file ownership.
 
 ## Contributing
 
-Contributions are welcome — right now especially **design reviews** of the documents. Please read
-[CONTRIBUTING.md](CONTRIBUTING.md) (workflow, conventions, PR process, good first issues). AI coding agents: read [AGENTS.md](AGENTS.md).
-Questions: [SUPPORT.md](SUPPORT.md) · Governance: [GOVERNANCE.md](GOVERNANCE.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development and pull request conventions.
+Coding agents should follow [AGENTS.md](AGENTS.md). More details are available in
+[SUPPORT.md](SUPPORT.md) and [GOVERNANCE.md](GOVERNANCE.md).
 
 ## Code of conduct
 
