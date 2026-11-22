@@ -5,7 +5,7 @@
 #   goal                - ~13 m north of Dock A through the first aisle, chosen before the kinematic2d
 #                         world (T-032) and the Gazebo map inspection (T-092) exist. T-092 fixes it.
 #   nominal_path        - straight provisional polyline; T-092 regenerates it with the Nav2 planner.
-#   injected_obstacles  - resolved in T-091 (0.135 m EUR pallet, below the 0.188 m lidar plane).
+#   injected_obstacles  - resolved in T-091 (0.144 m EUR pallet, below the 0.194 m lidar plane).
 schema_version: 1
 id: warehouse_delivery_v1
 name: Warehouse delivery - Dock A to Station B
@@ -16,6 +16,6 @@ goal: {x: 2.12, y: -8.3, yaw: 1.57}
 goal_tolerance: {xy: 0.25, yaw: 0.5}
 nominal_path: paths/warehouse_delivery_v1.csv
 injected_obstacles:
-  - {model: dropped_pallet, size: [0.8, 0.6, 0.135], placement: {along: obstacle.along_path, lateral: obstacle.clearance, side: left}}
+  - {model: dropped_pallet, size: [0.8, 0.6, 0.144], placement: {along: obstacle.along_path, lateral: obstacle.clearance, side: left}}
 time_limit: {factor: 2.5, offset_s: 10, cap_s: 120}
 provisional: [goal, nominal_path]

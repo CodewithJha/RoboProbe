@@ -122,6 +122,8 @@ def test_resolve_key_marks_k2d_model_only_for_kinematic_backend() -> None:
 def test_experiment_cli_run_then_report(
     monkeypatch: pytest.MonkeyPatch, settings_env: Path, tmp_path: Path
 ) -> None:
+    # This test shares one in-memory transaction across campaign drives.
+    monkeypatch.setenv("ROBOPROBE_EXPERIMENTS__MAX_CONCURRENT_CAMPAIGNS", "1")
     uow = InMemoryUnitOfWork()
     mod = "roboprobe.cli.experiment"
     services = SimpleNamespace(

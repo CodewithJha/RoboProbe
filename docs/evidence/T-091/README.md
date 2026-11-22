@@ -16,7 +16,9 @@ The committed capture in [default](default/ros-topics.txt) records the stock end
 
 The laser scan's ROS header names `rplidar_link`. The TF chain is `map → odom → base_link → shell_link → rplidar_link`. The pinned Xacro gives 0.030 m for the shell offset, 0.0642 m for the chassis offset and 0.098715 m for the sensor's offset from the shell, for a base-to-laser z offset of 0.192915 m. Live TF showed 0.193 m when rounded. The settled robot's world z was −0.00445 m, with pitch −0.004396 rad, so the scan plane was about 0.188 m above the floor at the sensor.
 
-The stock depth image and the Gazebo point cloud both use `oakd_rgb_camera_optical_frame`. The project's [dropped pallet](../../../ros_ws/src/roboprobe_ros/models/dropped_pallet/model.sdf) uses a 0.8 × 0.6 × 0.135 m collision box. It spawned in the live warehouse with its center at z = 0.0675 m, putting its top 0.053 m below the measured scan plane. The stock world includes its own warehouse assets. The injected pallet uses this repository's simpler box geometry as specified in the [task](../../../tasks/warehouse_delivery_v1.yaml).
+The stock depth image and the Gazebo point cloud both use `oakd_rgb_camera_optical_frame`. The project's [dropped pallet](../../../ros_ws/src/roboprobe_ros/models/dropped_pallet/model.sdf) uses a 0.8 × 0.6 × 0.135 m collision box. It spawned in the live warehouse with its center at z = 0.0675 m, putting its top 0.053 m below the measured scan plane. The stock world includes its own warehouse assets. The injected pallet uses this repository's simpler box geometry as specified in the [task](../../../tasks/warehouse_delivery_measured_v1.yaml).
+
+New warehouse registrations use the measured task. Previously registered campaigns still resolve their original task path and version.
 
 ## ROS endpoint and bridge contract
 
