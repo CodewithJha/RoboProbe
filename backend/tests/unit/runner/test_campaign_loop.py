@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import Any
 from uuid import uuid4
 
+import numpy as np
+import numpy.typing as npt
 import pytest
 from tests.fakes.store import InMemoryUnitOfWork
 from tests.unit.selection.conftest import load_space
@@ -12,7 +16,7 @@ from tests.unit.selection.conftest import load_space
 from roboprobe.core.clock import FakeClock
 from roboprobe.core.settings.runner import RunnerSettings
 from roboprobe.core.settings.selection import SelectionDefaults
-from roboprobe.core.types import CampaignStatus
+from roboprobe.core.types import CampaignStatus, Observation, Proposal
 from roboprobe.runner.loop import CampaignLoop
 from roboprobe.runner.scheduler import Scheduler
 from roboprobe.selection.base import StrategyContext
@@ -101,6 +105,31 @@ def test_enqueues_for_worker_budget() -> None:
     with uow:
         page = uow.runs.list_for_campaign(cid)  # type: ignore[arg-type]
         assert len(page.items) == 2
+
+
+def test_enqueued_proposal_keeps_predictions(monkeypatch: pytest.MonkeyPatch) -> None:
+    uow = InMemoryUnitOfWork()
+    cid = _campaign(uow, seed=3, workers=2)
+    propose = RandomStrategy.propose
+
+    def with_prediction(
+        self: RandomStrategy,
+        history: Sequence[Observation],
+        pending: Sequence[npt.NDArray[np.floating[Any]]],
+        q: int,
+    ) -> list[Proposal]:
+        first, second = propose(self, history, pending, q)
+        return [first.model_copy(update={"predicted_mean": -0.3, "predicted_std": 0.0}), second]
+
+    monkeypatch.setattr(RandomStrategy, "propose", with_prediction)
+
+    assert _loop(uow, cid, seed=3).step() == 2
+    with uow:
+        first, second = uow.runs.list_for_campaign(cid).items  # type: ignore[arg-type]
+    assert first.proposal["predicted_mean"] == -0.3
+    assert first.proposal["predicted_std"] == 0.0
+    assert "predicted_mean" not in second.proposal
+    assert "predicted_std" not in second.proposal
 
 
 def test_identical_seeds_identical_sequences() -> None:
