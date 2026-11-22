@@ -8,6 +8,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 ### Added
 
 - Verified TB4 Nav2 topic map (`ros_ws/src/roboprobe_ros/config/topics.yaml`), JSON Schema, and evidence capture script (T-091).
+- Playwright E2E harness and journeys (T-117, T-118, T-114): compose-backed global setup with
+  seeded warehouse campaign, axe helper and page objects, journey specs, `e2e.yml`, Lighthouse
+  nightly gate, and `size-limit` bundle budget in `build-web`.
 - Reproducible headless Gazebo and Nav2 warehouse measurements with a one-worker laptop recommendation (T-090).
 - Nightly API load test (T-106) checks endpoint p95 with a 10,000-run PostgreSQL seed and uploads the Locust CSV and runs-list query plan.
 - Dashboard polish (T-113a/b, T-115): Spaces list with YAML view and validation,

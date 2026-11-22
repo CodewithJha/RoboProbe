@@ -147,7 +147,7 @@ API responses against the committed OpenAPI schema and fixture JSON.
 | SEC-001/002 | bind-address test; `pip-audit`, `pnpm audit`, gitleaks, Trivy image scan |
 | ACC-001 | axe-core in Playwright |
 
-The [API performance workflow](../.github/workflows/e2e.yml) runs nightly and on changes to the
+The [API performance workflow](../.github/workflows/api-perf.yml) runs nightly and on changes to the
 load harness. It starts with a fresh PostgreSQL database, verifies all 10,000 benchmark runs
 completed, then runs Locust headless for 60 seconds with 20 users and a spawn rate of 5 per second.
 The workflow checks p95 per endpoint and uploads the CSV, API log and a five-page keyset query plan.

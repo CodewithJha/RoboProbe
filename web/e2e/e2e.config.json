@@ -1,0 +1,41 @@
+{
+  "seed": {
+    "campaignId": "01a1ee56-5e00-7001-9e37-79b97f4a7c15",
+    "experimentId": "01a1ee56-5e00-7000-8000-000000000000",
+    "medoidRunId": "01a1ee56-5e00-7012-9fe6-8f0af33cb97a",
+    "modeCode": "FM-01"
+  },
+  "timeoutsMs": {
+    "liveUpdate": 2000,
+    "navigation": 30000,
+    "campaignRun": 180000
+  },
+  "wizard": {
+    "budget": 8,
+    "batchSize": 1,
+    "seed": 42424242
+  },
+  "replayRepeats": 3,
+  "a11y": {
+    "lighthouseAccessibilityMin": 0.95,
+    "bundleGzipKbMax": 350,
+    "axeImpactLevels": ["serious", "critical"]
+  },
+  "routes": [
+    "/",
+    "/campaigns",
+    "/campaigns/new",
+    "/campaigns/01a1ee56-5e00-7001-9e37-79b97f4a7c15/console",
+    "/campaigns/01a1ee56-5e00-7001-9e37-79b97f4a7c15/casebook",
+    "/campaigns/01a1ee56-5e00-7001-9e37-79b97f4a7c15/atlas",
+    "/campaigns/01a1ee56-5e00-7001-9e37-79b97f4a7c15/insights",
+    "/campaigns/01a1ee56-5e00-7001-9e37-79b97f4a7c15/runs",
+    "/runs/01a1ee56-5e00-7012-9fe6-8f0af33cb97a",
+    "/trials",
+    "/trials/01a1ee56-5e00-7000-8000-000000000000",
+    "/trials/01a1ee56-5e00-7000-8000-000000000000/comparison",
+    "/spaces",
+    "/workbench",
+    "/settings"
+  ]
+}

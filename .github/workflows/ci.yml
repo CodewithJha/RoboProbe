@@ -217,6 +217,9 @@ jobs:
       - name: tsc -b && vite build
         working-directory: web
         run: pnpm build
+      - name: Initial JS bundle budget (T-114)
+        working-directory: web
+        run: pnpm size-limit
 
   config-docs-check:
     name: config-docs-check

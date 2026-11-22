@@ -56,7 +56,7 @@ Execution Time: 0.040 ms
 
 ## Reproduction
 
-Run the [API performance workflow](../../.github/workflows/e2e.yml) with a fresh PostgreSQL 17
+Run the [API performance workflow](../../.github/workflows/api-perf.yml) with a fresh PostgreSQL 17
 service, or follow the same steps against a disposable local database. The seed command rejects
 databases with existing application data.
 
