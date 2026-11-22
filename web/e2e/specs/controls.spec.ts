@@ -17,5 +17,5 @@ test('campaign pause resume cancel transitions', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Resume' })).toBeDisabled();
   await console.cancel();
   await page.getByRole('button', { name: 'Confirm cancellation' }).click();
-  await expect(page.getByText(/CANCELLED|cancelled/i)).toBeVisible();
+  await expect(page.getByText(/\bCANCELLED$/)).toBeVisible();
 });
