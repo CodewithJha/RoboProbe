@@ -25,7 +25,8 @@ from roboprobe.scenario.task import (
 pytestmark = pytest.mark.unit
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-WAREHOUSE_TASK = REPO_ROOT / "tasks" / "warehouse_delivery_v1.yaml"
+WAREHOUSE_TASK = REPO_ROOT / "tasks" / "warehouse_delivery_aligned_v1.yaml"
+LEGACY_TASK = REPO_ROOT / "tasks" / "warehouse_delivery_v1.yaml"
 CHECK_SCRIPT = REPO_ROOT / "scripts" / "check_no_tbd.py"
 
 
@@ -61,19 +62,13 @@ def issue_paths(exc: pytest.ExceptionInfo[errors.ValidationError]) -> list[str]:
 # --------------------------------------------------------------------------- shipped task
 
 
-def test_warehouse_task_loads_non_strict() -> None:
-    task = load_task(WAREHOUSE_TASK, strict=False)
+def test_warehouse_task_loads_in_strict_mode() -> None:
+    task = load_task(WAREHOUSE_TASK, strict=True)
     assert task.id == "warehouse_delivery_v1"
     assert task.start == Pose2D(x=2.12, y=-21.3, yaw=1.57)
     assert task.time_limit.cap_s == 120
     assert task.injected_obstacles[0].placement.along == "obstacle.along_path"
-    assert set(task.provisional) == {"goal", "nominal_path"}
-
-
-def test_warehouse_task_is_rejected_in_strict_mode_while_provisional() -> None:
-    with pytest.raises(errors.ValidationError, match="provisional") as exc:
-        load_task(WAREHOUSE_TASK, strict=True)
-    assert issue_paths(exc) == ["/goal", "/nominal_path"]
+    assert not task.provisional
 
 
 def test_warehouse_nominal_path_matches_task() -> None:
@@ -88,21 +83,26 @@ def test_warehouse_nominal_path_matches_task() -> None:
 
 
 def test_placeholders_rejected_in_both_modes_with_pointer(tmp_path: Path) -> None:
-    document = task_document(goal={"x": "TBD_T092", "y": "TBD_T092", "yaw": 1.57})
+    document = task_document(goal={"x": "TBD_T042", "y": "TBD_T042", "yaw": 1.57})
     path = write_task(tmp_path, document)
     for strict in (False, True):
-        with pytest.raises(errors.ValidationError, match="TBD_T092") as exc:
+        with pytest.raises(errors.ValidationError, match="TBD_T042") as exc:
             load_task(path, strict=strict)
         assert issue_paths(exc) == ["/goal/x", "/goal/y"]
-        assert "backlog task T-092" in str(exc.value)
+        assert "backlog task T-042" in str(exc.value)
 
 
-def test_doc_06_example_is_rejected_because_of_placeholders(tmp_path: Path) -> None:
+def test_doc_06_example_matches_the_verified_geometry(tmp_path: Path) -> None:
     text = (REPO_ROOT / "docs" / "06-scenario-parameter-space-and-schema.md").read_text("utf-8")
     block = text.split("## 7.", 1)[1].split("```yaml\n", 1)[1].split("```", 1)[0]
-    with pytest.raises(errors.ValidationError) as exc:
-        load_task(write_task(tmp_path, block), strict=False)
-    assert issue_paths(exc) == ["/goal/x", "/goal/y"]
+    example = load_task(write_task(tmp_path, block), strict=True)
+    task = load_task(WAREHOUSE_TASK, strict=True)
+    assert (example.world, example.map, example.goal, example.nominal_path) == (
+        task.world,
+        task.map,
+        task.goal,
+        task.nominal_path,
+    )
 
 
 def test_schema_violation_reports_pointer(tmp_path: Path) -> None:
@@ -153,8 +153,8 @@ def test_json_pointer_escapes_rfc_6901() -> None:
 
 
 def test_find_placeholders_walks_nested_documents() -> None:
-    document = {"a": ["TBD_T091", {"b": "TBD_T092"}], "c": "TBD", "d": 1}
-    assert find_placeholders(document) == [("/a/0", "TBD_T091"), ("/a/1/b", "TBD_T092")]
+    document = {"a": ["TBD_T091", {"b": "TBD_T042"}], "c": "TBD", "d": 1}
+    assert find_placeholders(document) == [("/a/0", "TBD_T091"), ("/a/1/b", "TBD_T042")]
     assert find_placeholders({"x/y": "TBD_T091"}) == [("/x~1y", "TBD_T091")]
 
 
@@ -248,17 +248,17 @@ def test_check_script_passes_on_repository_tasks() -> None:
 
 
 def test_check_script_strict_flags_provisional() -> None:
-    result = run_check("--strict", WAREHOUSE_TASK)
+    result = run_check("--strict", LEGACY_TASK)
     assert result.returncode == 1
     assert "provisional" in result.stderr
 
 
 def test_check_script_finds_placeholders_and_bad_yaml(tmp_path: Path) -> None:
-    (tmp_path / "a.yaml").write_text("goal: {x: TBD_T092}\n", encoding="utf-8")
-    (tmp_path / "notes.txt").write_text("TBD_T092", encoding="utf-8")
+    (tmp_path / "a.yaml").write_text("goal: {x: TBD_T042}\n", encoding="utf-8")
+    (tmp_path / "notes.txt").write_text("TBD_T042", encoding="utf-8")
     result = run_check(tmp_path)
     assert result.returncode == 1
-    assert "/goal/x: placeholder TBD_T092" in result.stderr
+    assert "/goal/x: placeholder TBD_T042" in result.stderr
     assert "notes.txt" not in result.stderr
     (tmp_path / "b.yml").write_text("a: [\n", encoding="utf-8")
     assert run_check(tmp_path).returncode == 2

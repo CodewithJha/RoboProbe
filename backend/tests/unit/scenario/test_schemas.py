@@ -137,7 +137,7 @@ def test_valid_fixtures_validate(path: Path) -> None:
 
 def test_task_schema_accepts_tbd_placeholders_for_the_loader_guard() -> None:
     task = example("task-06-7")
-    assert task["goal"]["x"] == "TBD_T092"
+    task["goal"]["x"] = "TBD_T042"
     assert errors("task", task) == []
 
 
