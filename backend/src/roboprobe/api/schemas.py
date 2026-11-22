@@ -8,10 +8,9 @@ Implements: T-081, T-082, T-084
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 from roboprobe.core.types import CampaignStatus, JsonValue
 from roboprobe.runner.campaign_spec import CampaignCreate, SpaceRef, StrategyRef
@@ -24,7 +23,6 @@ __all__ = [
     "CampaignProgress",
     "ExperimentComparisonOut",
     "ExperimentCreate",
-    "ExperimentNotes",
     "ExperimentOut",
     "FailureModeOut",
     "FailureModePatch",
@@ -71,9 +69,6 @@ class CampaignOut(BaseModel):
     status: CampaignStatus
     backend: str
     strategy: StrategyRef
-    space: SpaceRef | None = None
-    pins: dict[str, JsonValue] = Field(default_factory=dict)
-    oracle_config: dict[str, JsonValue] = Field(default_factory=dict)
     budget: int
     repeats: int
     batch_size: int
@@ -126,7 +121,6 @@ class RunOut(BaseModel):
     oracles: list[dict[str, JsonValue]] = Field(default_factory=list)
     metrics: dict[str, JsonValue] = Field(default_factory=dict)
     worker_id: str | None = None
-    infra_error: str | None = None
     timing: dict[str, datetime | None] = Field(default_factory=dict)
     mode: dict[str, JsonValue] | None = None
     manifest: dict[str, JsonValue] | None = None
@@ -137,7 +131,7 @@ class ManualRunCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     values: dict[str, JsonValue]
-    repeats: int = Field(default=1, gt=0)
+    repeats: int = 1
     tags: list[str] = Field(default_factory=list)
 
 
@@ -182,52 +176,17 @@ class FailureModeOut(BaseModel):
     campaign_id: UUID
     code: str
     label: str
-    label_is_user: bool = False
-    provisional: bool = False
-    first_seen_ordinal: int | None = None
-    reproducibility: float | None = None
-    version: int = 1
-    duplicate_of: str | None = None
-    param_ranges: dict[str, JsonValue] = Field(default_factory=dict)
-    characteristic: list[str] = Field(default_factory=list)
-    rules: list[JsonValue] = Field(default_factory=list)
-    medoid_run_id: UUID | None = None
-    minimal_run_id: UUID | None = None
     size: int
     primary_class: str
     status: str
     interaction: dict[str, JsonValue] | None = None
 
 
-_MODE_LABEL_MAX_LENGTH = 80
-_MODE_STATUSES = frozenset({"open", "accepted", "fixed", "duplicate"})
-
-
 class FailureModePatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
     label: str | None = None
     status: str | None = None
-    duplicate_of: str | None = None
-
-    @field_validator("label")
-    @classmethod
-    def _label(cls, value: str | None) -> str | None:
-        if value is not None:
-            value = value.strip()
-            if not 1 <= len(value) <= _MODE_LABEL_MAX_LENGTH or not value.isprintable():
-                msg = f"label must use 1 to {_MODE_LABEL_MAX_LENGTH} characters"
-                raise ValueError(msg)
-        return value
-
-    @model_validator(mode="after")
-    def _duplicate(self) -> Self:
-        if self.status is not None and self.status not in _MODE_STATUSES:
-            msg = "unknown failure mode status"
-            raise ValueError(msg)
-        if self.status == "duplicate" and not self.duplicate_of:
-            msg = "duplicate status requires duplicate_of"
-            raise ValueError(msg)
-        return self
 
 
 class ImportanceOut(BaseModel):
@@ -244,8 +203,6 @@ class RiskOut(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     campaign_id: UUID
-    analysis_id: UUID | None = None
-    computed_at: datetime | None = None
     robustness_score: float | None = None
     volumes: dict[str, JsonValue] = Field(default_factory=dict)
     thresholds: dict[str, JsonValue] = Field(default_factory=dict)
@@ -259,13 +216,6 @@ class RiskSliceOut(BaseModel):
     anchor: str
     resolution: int
     grid: dict[str, JsonValue] = Field(default_factory=dict)
-    x_values: list[float] = Field(default_factory=list)
-    y_values: list[float] = Field(default_factory=list)
-    p_fail: list[list[float]] = Field(default_factory=list)
-    region: list[list[int]] = Field(default_factory=list)
-    log_x: bool = False
-    log_y: bool = False
-    points: list[dict[str, JsonValue]] = Field(default_factory=list)
 
 
 class ExperimentCreate(BaseModel):
@@ -274,18 +224,8 @@ class ExperimentCreate(BaseModel):
     design: dict[str, JsonValue]
 
 
-class ExperimentNotes(BaseModel):
-    """Editable threats-to-validity notes (T-112b)."""
-
-    model_config = ConfigDict(extra="forbid")
-    notes: str
-
-
 class ExperimentOut(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    notes: str = ""
-    version: int = 1
-    cells: list[dict[str, JsonValue]] = Field(default_factory=list)
 
     id: UUID
     name: str
@@ -320,8 +260,6 @@ class ReportJobOut(BaseModel):
     kind: str
     target_id: UUID
     artifact_id: UUID | None = None
-    report_id: UUID | None = None
-    status_url: str | None = None
 
 
 class ArtifactOut(BaseModel):
@@ -342,6 +280,3 @@ class WorkerOut(BaseModel):
     status: str
     version: str
     last_heartbeat: datetime | None = None
-    heartbeat_age_s: float | None = None
-    current_run_id: UUID | None = None
-    host_hash: str | None = None

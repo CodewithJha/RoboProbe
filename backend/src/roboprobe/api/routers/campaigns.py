@@ -254,14 +254,6 @@ def analyze_campaign(
         msg = "campaign not found"
         raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
     services = get_services(request)
-    enqueue = getattr(services.analysis, "enqueue", None)
-    if callable(enqueue):
-        analysis_id = enqueue(campaign_id, AnalysisKind.FULL)
-        return {
-            "analysis_id": str(analysis_id),
-            "campaign_id": str(campaign_id),
-            "status": "scheduled",
-        }
     services.analysis.schedule(campaign_id, AnalysisKind.FULL, complete_campaign=False)
     return {"campaign_id": str(campaign_id), "status": "scheduled"}
 
@@ -332,7 +324,9 @@ def list_runs(  # noqa: PLR0913, PLR0917 - documented run filters
     return Page(items=items, next_cursor=page.next_cursor)
 
 
-@router.post("/{campaign_id}/runs", status_code=status.HTTP_201_CREATED, response_model=None)
+@router.post(
+    "/{campaign_id}/runs", status_code=status.HTTP_201_CREATED, response_model=dict[str, object]
+)
 async def add_manual_runs(
     campaign_id: UUID,
     body: ManualRunCreate,
@@ -351,6 +345,9 @@ async def add_manual_runs(
         msg = "campaign not found"
         raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
     settings = get_services(request).settings
+    if body.repeats <= 0:
+        msg = "repeats must be positive"
+        raise ValidationError(msg)
     if body.repeats > settings.runner.max_manual_repeats:
         msg = "repeats exceeds runner.max_manual_repeats"
         raise ValidationError(msg)

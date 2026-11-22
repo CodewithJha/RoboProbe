@@ -33,6 +33,12 @@ class CampaignFactory:
     ) -> CampaignCreate:
         """Resolve pins, strategy defaults and oracle thresholds before any campaign insert."""
         settings = self._settings
+        if min(request.budget, request.repeats, request.batch_size) <= 0:
+            msg = "budget, repeats and batch_size must be positive"
+            raise ValidationError(msg)
+        if request.strategy.seed is not None and request.strategy.seed < 0:
+            msg = "strategy seed must be nonnegative"
+            raise ValidationError(msg)
         if request.budget > settings.runner.max_budget:
             msg = f"budget exceeds runner.max_budget ({settings.runner.max_budget})"
             raise ValidationError(msg)

@@ -133,10 +133,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /**
-     * Risk Slice
-     * @description Compute in a worker thread with a deadline; cached slices track analysis versions.
-     */
+    /** Risk Slice */
     get: operations['risk_slice_api_v1_campaigns__campaign_id__risk_slice_get'];
     put?: never;
     post?: never;
@@ -192,26 +189,6 @@ export interface paths {
     put?: never;
     /** Cancel Campaign */
     post: operations['cancel_campaign_api_v1_campaigns__campaign_id__cancel_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v1/campaigns/{campaign_id}:export': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Export Campaign
-     * @description Export via the shared job status/content endpoints without blocking HTTP.
-     */
-    post: operations['export_campaign_api_v1_campaigns__campaign_id__export_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -321,11 +298,7 @@ export interface paths {
     delete?: never;
     options?: never;
     head?: never;
-    /**
-     * Patch Experiment Notes
-     * @description Save threats notes with optimistic concurrency.
-     */
-    patch: operations['patch_experiment_notes_api_v1_experiments__experiment_id__patch'];
+    patch?: never;
     trace?: never;
   };
   '/api/v1/experiments/{experiment_id}/comparison': {
@@ -392,10 +365,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /**
-     * Confirm Interaction
-     * @description Enqueue the actual idempotent confirmation plan instead of acknowledging a no-op.
-     */
+    /** Confirm Interaction */
     post: operations['confirm_interaction_api_v1_modes__mode_id__confirm_interaction_post'];
     delete?: never;
     options?: never;
@@ -786,17 +756,8 @@ export interface components {
       modes_found: number;
       /** Name */
       name: string;
-      /** Oracle Config */
-      oracle_config?: {
-        [key: string]: components['schemas']['JsonValue'];
-      };
-      /** Pins */
-      pins?: {
-        [key: string]: components['schemas']['JsonValue'];
-      };
       /** Repeats */
       repeats: number;
-      space?: components['schemas']['SpaceRef'] | null;
       /** Started At */
       started_at?: string | null;
       status: components['schemas']['CampaignStatus'];
@@ -865,20 +826,8 @@ export interface components {
         [key: string]: components['schemas']['JsonValue'];
       };
     };
-    /**
-     * ExperimentNotes
-     * @description Editable threats-to-validity notes (T-112b).
-     */
-    ExperimentNotes: {
-      /** Notes */
-      notes: string;
-    };
     /** ExperimentOut */
     ExperimentOut: {
-      /** Cells */
-      cells?: {
-        [key: string]: components['schemas']['JsonValue'];
-      }[];
       /** Created At */
       created_at?: string | null;
       /** Design */
@@ -894,22 +843,12 @@ export interface components {
       id: string;
       /** Name */
       name: string;
-      /**
-       * Notes
-       * @default
-       */
-      notes: string;
       /** Results */
       results?: {
         [key: string]: components['schemas']['JsonValue'];
       } | null;
       /** Status */
       status: string;
-      /**
-       * Version
-       * @default 1
-       */
-      version: number;
     };
     /**
      * FailureClass
@@ -933,14 +872,8 @@ export interface components {
        * Format: uuid
        */
       campaign_id: string;
-      /** Characteristic */
-      characteristic?: string[];
       /** Code */
       code: string;
-      /** Duplicate Of */
-      duplicate_of?: string | null;
-      /** First Seen Ordinal */
-      first_seen_ordinal?: number | null;
       /**
        * Id
        * Format: uuid
@@ -952,44 +885,15 @@ export interface components {
       } | null;
       /** Label */
       label: string;
-      /**
-       * Label Is User
-       * @default false
-       */
-      label_is_user: boolean;
-      /** Medoid Run Id */
-      medoid_run_id?: string | null;
-      /** Minimal Run Id */
-      minimal_run_id?: string | null;
-      /** Param Ranges */
-      param_ranges?: {
-        [key: string]: components['schemas']['JsonValue'];
-      };
       /** Primary Class */
       primary_class: string;
-      /**
-       * Provisional
-       * @default false
-       */
-      provisional: boolean;
-      /** Reproducibility */
-      reproducibility?: number | null;
-      /** Rules */
-      rules?: components['schemas']['JsonValue'][];
       /** Size */
       size: number;
       /** Status */
       status: string;
-      /**
-       * Version
-       * @default 1
-       */
-      version: number;
     };
     /** FailureModePatch */
     FailureModePatch: {
-      /** Duplicate Of */
-      duplicate_of?: string | null;
       /** Label */
       label?: string | null;
       /** Status */
@@ -1004,6 +908,11 @@ export interface components {
       detail: string;
       /** Pointer */
       pointer: string;
+    };
+    /** HTTPValidationError */
+    HTTPValidationError: {
+      /** Detail */
+      detail?: components['schemas']['ValidationError'][];
     };
     /** ImportanceOut */
     ImportanceOut: {
@@ -1145,12 +1054,8 @@ export interface components {
       id: string;
       /** Kind */
       kind: string;
-      /** Report Id */
-      report_id?: string | null;
       /** Status */
       status: string;
-      /** Status Url */
-      status_url?: string | null;
       /**
        * Target Id
        * Format: uuid
@@ -1159,15 +1064,11 @@ export interface components {
     };
     /** RiskOut */
     RiskOut: {
-      /** Analysis Id */
-      analysis_id?: string | null;
       /**
        * Campaign Id
        * Format: uuid
        */
       campaign_id: string;
-      /** Computed At */
-      computed_at?: string | null;
       /** Robustness Score */
       robustness_score?: number | null;
       /** Thresholds */
@@ -1187,34 +1088,12 @@ export interface components {
       grid?: {
         [key: string]: components['schemas']['JsonValue'];
       };
-      /**
-       * Log X
-       * @default false
-       */
-      log_x: boolean;
-      /**
-       * Log Y
-       * @default false
-       */
-      log_y: boolean;
-      /** P Fail */
-      p_fail?: number[][];
-      /** Points */
-      points?: {
-        [key: string]: components['schemas']['JsonValue'];
-      }[];
-      /** Region */
-      region?: number[][];
       /** Resolution */
       resolution: number;
       /** X Param */
       x_param: string;
-      /** X Values */
-      x_values?: number[];
       /** Y Param */
       y_param: string;
-      /** Y Values */
-      y_values?: number[];
     };
     /** RunOut */
     RunOut: {
@@ -1228,8 +1107,6 @@ export interface components {
        * Format: uuid
        */
       id: string;
-      /** Infra Error */
-      infra_error?: string | null;
       /** Manifest */
       manifest?: {
         [key: string]: components['schemas']['JsonValue'];
@@ -1421,6 +1298,19 @@ export interface components {
       /** Truncated */
       truncated: boolean;
     };
+    /** ValidationError */
+    ValidationError: {
+      /** Context */
+      ctx?: Record<string, never>;
+      /** Input */
+      input?: unknown;
+      /** Location */
+      loc: (string | number)[];
+      /** Message */
+      msg: string;
+      /** Error Type */
+      type: string;
+    };
     /**
      * Verdict
      * @description Outcome of judging one run (docs/08 §3).
@@ -1431,12 +1321,6 @@ export interface components {
     WorkerOut: {
       /** Backend */
       backend: string;
-      /** Current Run Id */
-      current_run_id?: string | null;
-      /** Heartbeat Age S */
-      heartbeat_age_s?: number | null;
-      /** Host Hash */
-      host_hash?: string | null;
       /** Id */
       id: string;
       /** Last Heartbeat */
@@ -1515,14 +1399,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -1601,14 +1484,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -1685,14 +1567,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -1767,14 +1648,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -1847,14 +1727,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -1935,14 +1814,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -2017,14 +1895,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -2099,14 +1976,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -2181,14 +2057,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -2263,14 +2138,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -2291,7 +2165,7 @@ export interface operations {
         x: string;
         y: string;
         anchor?: string;
-        resolution?: number | null;
+        resolution?: number;
       };
       header?: never;
       path: {
@@ -2350,14 +2224,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -2442,14 +2315,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -2485,7 +2357,9 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': unknown;
+          'application/json': {
+            [key: string]: unknown;
+          };
         };
       };
       /** @description Unauthorized */
@@ -2528,14 +2402,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -2612,14 +2485,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -2694,96 +2566,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-      /** @description Internal Server Error */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-    };
-  };
-  export_campaign_api_v1_campaigns__campaign_id__export_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        campaign_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ReportJobOut'];
-        };
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-      /** @description Precondition Failed */
-      412: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -2858,14 +2647,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -2940,14 +2728,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -3022,14 +2809,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -3105,14 +2891,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -3188,14 +2973,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -3272,14 +3056,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -3354,102 +3137,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-      /** @description Internal Server Error */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-    };
-  };
-  patch_experiment_notes_api_v1_experiments__experiment_id__patch: {
-    parameters: {
-      query?: never;
-      header?: {
-        'If-Match'?: string | null;
-      };
-      path: {
-        experiment_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ExperimentNotes'];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ExperimentOut'];
-        };
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-      /** @description Not Found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-      /** @description Conflict */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-      /** @description Precondition Failed */
-      412: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -3524,14 +3218,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -3598,16 +3291,6 @@ export interface operations {
       };
       /** @description Precondition Failed */
       412: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -3688,14 +3371,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -3733,7 +3415,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['FailureModeOut'];
+          'application/json': unknown;
         };
       };
       /** @description Unauthorized */
@@ -3776,14 +3458,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -3816,7 +3497,7 @@ export interface operations {
         };
         content: {
           'application/json': {
-            [key: string]: unknown;
+            [key: string]: string;
           };
         };
       };
@@ -3860,14 +3541,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -3944,14 +3624,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -4026,14 +3705,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -4108,14 +3786,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -4190,14 +3867,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -4272,14 +3948,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -4354,14 +4029,13 @@ export interface operations {
           'text/plain': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/problem+json': components['schemas']['ProblemDetail'];
-          'text/plain': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -4440,14 +4114,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -4528,14 +4201,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -4611,14 +4283,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -4689,16 +4360,6 @@ export interface operations {
       };
       /** @description Precondition Failed */
       412: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -4783,16 +4444,6 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
       /** @description Internal Server Error */
       500: {
         headers: {
@@ -4866,14 +4517,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -4949,14 +4599,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -5027,16 +4676,6 @@ export interface operations {
       };
       /** @description Precondition Failed */
       412: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -5118,14 +4757,13 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
+      /** @description Validation Error */
       422: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
+          'application/json': components['schemas']['HTTPValidationError'];
         };
       };
       /** @description Internal Server Error */
@@ -5200,16 +4838,6 @@ export interface operations {
           'application/problem+json': components['schemas']['ProblemDetail'];
         };
       };
-      /** @description Unprocessable Entity */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
       /** @description Internal Server Error */
       500: {
         headers: {
@@ -5272,16 +4900,6 @@ export interface operations {
       };
       /** @description Precondition Failed */
       412: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ProblemDetail'];
-          'application/problem+json': components['schemas']['ProblemDetail'];
-        };
-      };
-      /** @description Unprocessable Entity */
-      422: {
         headers: {
           [name: string]: unknown;
         };
