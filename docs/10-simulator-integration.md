@@ -99,6 +99,10 @@ Materialisation writes into `workdir/<run_id>/`:
 | P6 delay | `perturb_params.yaml` | FIFO latency in `cmd_delay` |
 | P8 dropout | `perturb_params.yaml` | Bernoulli beam drop in `sensor_perturber` |
 
+Give the sensor-data topics `scan_raw` and `scan` separate resolved names to prevent feedback.
+The node publishes cumulative `count` (processed beams) and `dropped` (new `+inf` returns)
+as JSON in `std_msgs/msg/String` once per second on `/roboprobe/perturber_stats`.
+
 The `cmd_delay` node reads `cmd_delay_ms` and the Nav2 controller's `rate_hz` from
 `perturb_params.yaml`. It keeps messages in order on the simulation clock and publishes the
 observed latency in **seconds** as `std_msgs/msg/Float64` on `/roboprobe/cmd_delay_actual`.
