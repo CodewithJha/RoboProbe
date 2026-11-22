@@ -99,6 +99,10 @@ Materialisation writes into `workdir/<run_id>/`:
 | P6 delay | `perturb_params.yaml` | FIFO latency in `cmd_delay` |
 | P8 dropout | `perturb_params.yaml` | Bernoulli beam drop in `sensor_perturber` |
 
+Give the sensor-data topics `scan_raw` and `scan` separate resolved names to prevent feedback.
+The node publishes cumulative `count` (processed beams) and `dropped` (new `+inf` returns)
+as JSON in `std_msgs/msg/String` once per second on `/roboprobe/perturber_stats`.
+
 The Jazzy depth relay reads `illuminance_lux` and `perception_model_file` from the episode's
 `perturb_params.yaml`, with the model path taken from `backends.gazebo_nav2.perception_model_file`.
 It consumes `depth_points_raw` and publishes XYZ points on `depth_points` with depth-one sensor QoS.

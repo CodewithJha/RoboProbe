@@ -26,6 +26,9 @@ setup(
         ],
     },
     extras_require={"recorder": ["pyarrow>=17"]},
+    entry_points={
+        "console_scripts": ["sensor_perturber = roboprobe_ros.sensor_perturber:main"],
+    },
     zip_safe=False,
     maintainer="CodewithJha",
     maintainer_email="155089480+CodewithJha@users.noreply.github.com",

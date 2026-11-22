@@ -23,6 +23,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   workers and dashboard with same-origin SSE.
 - RoboProbe ROS package (T-093a) loads episode parameters and topic QoS, provides seeded
   node utilities, and checks vendored numerical modules against the backend source.
+- Jazzy lidar relay (T-093b) applies seeded Gaussian noise and dropout and publishes beam counters.
 - Jazzy depth relay (T-093c) applies seeded low-light dropout and radial range noise to
   PointCloud2 frames while preserving their timestamps and frames of reference.
 - Opt-in experiment API launch atomically creates the planned campaign matrix and runs it
