@@ -18,7 +18,9 @@ const running: Campaign = {
 };
 
 it('wraps cancellation dialog focus at both keyboard boundaries', () => {
-  const router = createMemoryRouter([{ path: '/', element: <CampaignHeader campaign={running} /> }]);
+  const router = createMemoryRouter([
+    { path: '/', element: <CampaignHeader campaign={running} /> },
+  ]);
   render(
     <AppProviders live={false}>
       <RouterProvider router={router} />

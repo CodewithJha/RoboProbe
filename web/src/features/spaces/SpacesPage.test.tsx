@@ -10,14 +10,22 @@ import { Component } from './SpacesPage';
 const server = setupServer(
   http.get(apiUrl('/spaces'), () =>
     HttpResponse.json({
-      items: [{ id: 'warehouse_v1', version: '09cf763f2e0d', name: 'Warehouse', schema_version: 1 }],
+      items: [
+        { id: 'warehouse_v1', version: '09cf763f2e0d', name: 'Warehouse', schema_version: 1 },
+      ],
     }),
   ),
 );
 
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+beforeAll(() => {
+  server.listen();
+});
+afterEach(() => {
+  server.resetHandlers();
+});
+afterAll(() => {
+  server.close();
+});
 
 it('lists registered spaces', async () => {
   const router = createMemoryRouter([{ path: '/', Component }]);

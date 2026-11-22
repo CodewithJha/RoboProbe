@@ -17,7 +17,7 @@ export function ExportReportButton({
   const jobId = create.data?.id ?? '';
   const job = useReportJob(jobId);
   const opened = useRef(false);
-  const status = job.data?.status ?? create.data?.status;
+  const status = job.data?.status ?? (create.isSuccess ? create.data.status : undefined);
   const ready = status === 'COMPLETED' && Boolean(jobId);
   const running =
     create.isPending || (Boolean(jobId) && !job.isError && !ready && status !== 'FAILED');
@@ -34,7 +34,7 @@ export function ExportReportButton({
   }, [jobId]);
 
   return (
-  <>
+    <>
       <button
         type="button"
         disabled={running}

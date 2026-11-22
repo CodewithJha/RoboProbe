@@ -16,14 +16,6 @@
   white-space: pre-wrap;
 }
 
-.yaml :global(.comment) {
-  color: var(--ink-muted);
-}
-
-.yaml :global(.key) {
-  color: var(--ink-accent);
-}
-
 .panel {
   display: grid;
   gap: var(--space-2);

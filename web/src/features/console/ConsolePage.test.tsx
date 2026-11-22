@@ -122,10 +122,13 @@ it.each([
   ['CANCELLED', []],
 ] as const)('shows only allowed actions for %s', (status, actions) => {
   const router = createMemoryRouter([
-  { path: '/', element: <CampaignHeader campaign={{ ...fixture, status }} /> },
+    { path: '/', element: <CampaignHeader campaign={{ ...fixture, status }} /> },
   ]);
   render(
-    <AppProviders live={false} config={{ ...DEFAULT_CONFIG, featureFlags: { trials: true, reports: false } }}>
+    <AppProviders
+      live={false}
+      config={{ ...DEFAULT_CONFIG, featureFlags: { trials: true, reports: false } }}
+    >
       <RouterProvider router={router} />
     </AppProviders>,
   );

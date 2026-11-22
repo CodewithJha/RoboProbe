@@ -23,9 +23,15 @@ const server = setupServer(
   http.get(apiUrl('/meta'), () => HttpResponse.json({ limits: { heartbeat_timeout_s: 30 } })),
 );
 
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+beforeAll(() => {
+  server.listen();
+});
+afterEach(() => {
+  server.resetHandlers();
+});
+afterAll(() => {
+  server.close();
+});
 
 it('highlights stale heartbeats using the meta timeout', async () => {
   render(

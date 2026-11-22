@@ -33,7 +33,9 @@ export function Component() {
   const [query, setQuery] = useState('');
   useEffect(() => {
     register(searchRef.current);
-    return () => register(null);
+    return () => {
+      register(null);
+    };
   }, [register]);
   const campaigns = useCampaigns({ limit: config.benchRecentLimit });
   const running = useCampaigns({ status: 'RUNNING' });

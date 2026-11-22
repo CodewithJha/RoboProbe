@@ -36,7 +36,8 @@ export function ShortcutsDialog({
         <Dialog.Content className={styles['content']} aria-describedby={undefined}>
           <Dialog.Title>Keyboard shortcuts</Dialog.Title>
           <Dialog.Description className={styles['lead']}>
-            Press <kbd>?</kbd> anytime to reopen this panel. Shortcuts pause while you type in a field.
+            Press <kbd>?</kbd> anytime to reopen this panel. Shortcuts pause while you type in a
+            field.
           </Dialog.Description>
           {(['global', 'feature'] as const).map((scope) => {
             const items = groups.get(scope);

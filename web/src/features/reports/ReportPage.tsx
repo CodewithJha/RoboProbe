@@ -11,8 +11,9 @@ export function Component() {
   const contentUrl = id ? apiUrl(`/reports/${id}/content`) : '';
   if (job.isError) return <ProblemView error={job.error} />;
   if (job.isPending) return <p role="status">Loading report…</p>;
-  if (job.data?.status === 'FAILED') return <p role="alert">Report generation failed.</p>;
-  if (job.data?.status !== 'COMPLETED') return <p role="status">Report is still generating…</p>;
+  const status = job.data.status;
+  if (status === 'FAILED') return <p role="alert">Report generation failed.</p>;
+  if (status !== 'COMPLETED') return <p role="status">Report is still generating…</p>;
   return (
     <section>
       <p className="page-label">RoboProbe / Report</p>

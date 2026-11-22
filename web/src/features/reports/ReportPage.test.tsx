@@ -19,9 +19,15 @@ const server = setupServer(
   ),
 );
 
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+beforeAll(() => {
+  server.listen();
+});
+afterEach(() => {
+  server.resetHandlers();
+});
+afterAll(() => {
+  server.close();
+});
 
 it('embeds the report without allow-scripts', async () => {
   const router = createMemoryRouter([{ path: '/reports/:id', Component }], {

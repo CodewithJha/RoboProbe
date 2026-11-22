@@ -2,11 +2,8 @@ import { useContext, useState } from 'react';
 import { getToken, setToken } from '../../lib/token';
 import { useMeta } from '../../api/hooks';
 import { SseContext, useRuntimeConfig, useSseStatus, useTheme } from '../../app/contexts';
-import {
-  numberLocaleOptions,
-  useNumberLocale,
-  type NumberLocaleChoice,
-} from '../../lib/numberLocale';
+import { numberLocaleOptions, type NumberLocaleChoice } from '../../lib/numberLocale';
+import { useNumberLocale } from '../../lib/NumberLocaleProvider';
 import { ProblemView } from '../../app/ProblemView';
 
 export function Component() {
@@ -43,7 +40,12 @@ export function Component() {
               setTested('idle');
             }}
           />
-          <button type="button" onClick={() => setMasked((value) => !value)}>
+          <button
+            type="button"
+            onClick={() => {
+              setMasked((value) => !value);
+            }}
+          >
             {masked ? 'Show' : 'Hide'}
           </button>
           <button
@@ -59,8 +61,12 @@ export function Component() {
             onClick={() => {
               setToken(token.trim() || null);
               void meta.refetch().then(
-                () => setTested('ok'),
-                () => setTested('fail'),
+                () => {
+                  setTested('ok');
+                },
+                () => {
+                  setTested('fail');
+                },
               );
             }}
           >
@@ -118,8 +124,8 @@ export function Component() {
         </fieldset>
         <p>
           API <code>{config.apiBaseUrl}</code> · dashboard theme default {config.defaultTheme} · API
-          version {String(meta.data?.['api_version'] ?? '…')} · RoboProbe{' '}
-          {String(meta.data?.['version'] ?? '…')}
+          version {typeof meta.data?.['api_version'] === 'string' ? meta.data['api_version'] : '…'}{' '}
+          · RoboProbe {typeof meta.data?.['version'] === 'string' ? meta.data['version'] : '…'}
         </p>
       </form>
     </section>

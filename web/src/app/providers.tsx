@@ -5,7 +5,7 @@ import { createQueryClient } from '../lib/queryClient';
 import { getConfig, type RuntimeConfig } from '../lib/config';
 import { SseClient } from '../lib/sse';
 import { bindSse } from '../lib/sseBridge';
-import { NumberLocaleProvider } from '../lib/numberLocale';
+import { NumberLocaleProvider } from '../lib/NumberLocaleProvider';
 import { RuntimeContext, SseContext } from './contexts';
 import { SearchFocusProvider } from './SearchFocusContext';
 import { ThemeProvider } from './ThemeProvider';

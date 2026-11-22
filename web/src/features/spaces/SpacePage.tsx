@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { stringify } from 'yaml';
 import { useSpace, useValidateSpace } from '../../api/hooks';
@@ -7,38 +7,26 @@ import { StatTable } from '../../components';
 import { parameters } from '../../lib/spaceParameters';
 import styles from './SpacePage.module.css';
 
-function tintYaml(text: string): string {
-  return text
-    .replace(/^(#.*)$/gm, '<span class="comment">$1</span>')
-    .replace(/^(\s*[\w.-]+)(:)/gm, '<span class="key">$1</span>$2');
-}
-
 export function Component() {
   const { id = '', version = '' } = useParams();
   const space = useSpace(id, version);
   const validate = useValidateSpace();
   const [draft, setDraft] = useState('');
-  const yaml = useMemo(() => {
-    if (!space.data?.definition) return '';
-    return stringify(space.data.definition);
-  }, [space.data?.definition]);
-  const rows = parameters(space.data?.definition);
   if (space.isError) return <ProblemView error={space.error} />;
-  if (space.isPending || !space.data) return <p role="status">Loading space…</p>;
+  if (space.isPending) return <p role="status">Loading space…</p>;
+  const detail = space.data;
+  const yaml = stringify(detail.definition);
+  const rows = parameters(detail.definition);
   return (
     <section className={styles['layout']}>
       <p className="page-label">
-        <Link to="/spaces">Spaces</Link> / {space.data.name}
+        <Link to="/spaces">Spaces</Link> / {detail.name}
       </p>
-      <h1>{space.data.name}</h1>
-      <p className="page-description">{space.data.description || `Version ${space.data.version}`}</p>
+      <h1>{detail.name}</h1>
+      <p className="page-description">{detail.description || `Version ${detail.version}`}</p>
       <section>
         <h2>Definition</h2>
-        <pre
-          className={styles['yaml']}
-          // eslint-disable-next-line react/no-danger -- CSS-tinted read-only YAML (doc 13 §3.8).
-          dangerouslySetInnerHTML={{ __html: tintYaml(yaml) }}
-        />
+        <pre className={styles['yaml']}>{yaml}</pre>
       </section>
       <section>
         <h2>Parameters</h2>

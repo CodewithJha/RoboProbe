@@ -6,15 +6,21 @@ import { AppProviders } from '../../app/providers';
 import { apiUrl } from '../../api/client';
 import { Component } from './SettingsPage';
 
-const server = setupServer(http.get(apiUrl('/meta'), () => HttpResponse.json({ version: '0.0.0' })));
+const server = setupServer(
+  http.get(apiUrl('/meta'), () => HttpResponse.json({ version: '0.0.0' })),
+);
 
-beforeAll(() => server.listen());
+beforeAll(() => {
+  server.listen();
+});
 afterEach(() => {
   server.resetHandlers();
   localStorage.clear();
   sessionStorage.clear();
 });
-afterAll(() => server.close());
+afterAll(() => {
+  server.close();
+});
 
 it('stores the API token in sessionStorage only', () => {
   render(

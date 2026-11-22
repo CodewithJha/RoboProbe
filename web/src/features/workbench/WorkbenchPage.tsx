@@ -1,7 +1,7 @@
 import { useMeta, useWorkers } from '../../api/hooks';
 import type { Schema } from '../../api/client';
 import { ProblemView } from '../../app/ProblemView';
-import { useNumberLocale } from '../../lib/numberLocale';
+import { useNumberLocale } from '../../lib/NumberLocaleProvider';
 import { formatDuration } from '../../lib/format';
 import { heartbeatAgeSeconds } from '../../lib/heartbeat';
 import { limit } from '../../lib/workers';

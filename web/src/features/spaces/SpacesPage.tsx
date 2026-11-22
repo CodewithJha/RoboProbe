@@ -14,7 +14,10 @@ export function Component() {
       <p className="page-description">Registered scenario spaces and their canonical versions.</p>
       {spaces.isPending ? <p role="status">Loading spaces…</p> : null}
       {!spaces.isPending && !rows.length ? (
-        <EmptyState title="No spaces yet" body="Register a space through the API to list it here." />
+        <EmptyState
+          title="No spaces yet"
+          body="Register a space through the API to list it here."
+        />
       ) : (
         <StatTable
           caption="Scenario spaces"

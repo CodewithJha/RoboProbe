@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useRef,
-  type PropsWithChildren,
-} from 'react';
+import { createContext, useCallback, useContext, useRef, type PropsWithChildren } from 'react';
 
 const SearchFocusContext = createContext<{
   register: (element: HTMLElement | null) => void;
@@ -22,6 +16,7 @@ export function SearchFocusProvider({ children }: PropsWithChildren) {
   return <SearchFocusContext value={{ register, focus }}>{children}</SearchFocusContext>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- shared search focus hook
 export function useSearchFocus() {
   return useContext(SearchFocusContext);
 }
