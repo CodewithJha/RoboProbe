@@ -1,6 +1,9 @@
 import { afterNavigation, e2e, expect, test } from '../fixtures';
 
-async function setTheme(page: import('@playwright/test').Page, theme: 'light' | 'dark'): Promise<void> {
+async function setTheme(
+  page: import('@playwright/test').Page,
+  theme: 'light' | 'dark',
+): Promise<void> {
   await page.goto('/settings');
   await page.locator('#theme').selectOption(theme);
 }

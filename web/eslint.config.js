@@ -10,7 +10,16 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'node_modules', 'src/api/schema.d.ts', 'playwright-report', 'e2e-results'] },
+  {
+    ignores: [
+      'dist',
+      'coverage',
+      'node_modules',
+      'src/api/schema.d.ts',
+      'playwright-report',
+      'e2e-results',
+    ],
+  },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
