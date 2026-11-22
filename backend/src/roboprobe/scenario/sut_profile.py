@@ -1,7 +1,8 @@
 """SUT profiles: strict loader and ``config_hash`` (docs/10 §4, docs/11 ``sut_profiles``).
 
 A SUT profile names one robot-stack configuration so campaigns can compare stacks (UC-10, EXP-05):
-kinematic2d controller constants or a Nav2 parameter set. Profiles are domain configuration
+kinematic2d controller constants, a Nav2 parameter set, or an empty analytic benchmark profile.
+Profiles are domain configuration
 (docs/27 §1): they live in ``configs/sut_profiles/<id>.yaml`` and are never read from env vars.
 
 Loading runs in stages, each reporting JSON pointers: strict YAML, JSON Schema
@@ -38,6 +39,7 @@ from roboprobe.scenario._documents import (
 
 __all__ = [
     "PROFILE_CONFIGS",
+    "BenchmarkProfileConfig",
     "GazeboNav2ProfileConfig",
     "Kinematic2DProfileConfig",
     "config_hash",
@@ -72,9 +74,14 @@ class GazeboNav2ProfileConfig(_ProfileConfig):
     nav2_overrides: dict[str, JsonValue] = Field(default_factory=dict)
 
 
+class BenchmarkProfileConfig(_ProfileConfig):
+    """Empty marker profile for the analytic benchmark backend (T-107)."""
+
+
 PROFILE_CONFIGS: Mapping[str, type[_ProfileConfig]] = {
     "kinematic2d": Kinematic2DProfileConfig,
     "gazebo_nav2": GazeboNav2ProfileConfig,
+    "benchmark": BenchmarkProfileConfig,
 }
 """Config model per supported backend; must match the schema's ``backend`` enum."""
 

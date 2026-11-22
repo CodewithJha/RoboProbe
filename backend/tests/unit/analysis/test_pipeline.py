@@ -8,12 +8,13 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 import numpy as np
+import numpy.typing as npt
 import pytest
 from tests.fakes.store import InMemoryUnitOfWork
 from tests.unit.analysis.conftest import DEFAULT_METRICS, REPO_ROOT, WAREHOUSE
 
 from roboprobe.analysis.base import AnalysisContext, AnalysisKind
-from roboprobe.analysis.pipeline import analyze_campaign, default_analyzers
+from roboprobe.analysis.pipeline import RiskVolumesAnalyzer, analyze_campaign, default_analyzers
 from roboprobe.core.clock import FakeClock
 from roboprobe.core.errors import ValidationError
 from roboprobe.core.metrics_registry import create_metrics
@@ -159,6 +160,51 @@ def test_analyze_campaign_full(tmp_path: Path, space: ScenarioSpace, clock: Fake
     assert uow.analyses.get(report.analysis_id) is not None
     events = uow.events.since(0, campaign_id=cid)
     assert any(e.topic == "analysis.finished" for e in events)
+
+
+def test_risk_confidence_intervals_persist_as_json_arrays(
+    space: ScenarioSpace, clock: FakeClock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _FixedGP:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            pass
+
+        def fit(self, _x: npt.NDArray[np.float64], _y: npt.NDArray[np.float64]) -> None:
+            pass
+
+        def predict(
+            self, x: npt.NDArray[np.float64]
+        ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+            return np.zeros(len(x)), self.predict_total_std(x)
+
+        def predict_total_std(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+            return np.ones(len(x))
+
+    monkeypatch.setattr("roboprobe.selection.surrogate.RobustnessGP", _FixedGP)
+    uow = InMemoryUnitOfWork()
+    cid = _seed_campaign(uow, space)
+    arts = importlib.import_module("roboprobe.store.artifacts")
+    with uow:
+        report = analyze_campaign(
+            cid,
+            uow,
+            arts.NullArtifactStore(),
+            settings=AnalysisSettings(),
+            risk=RiskSettings(slice_resolution=2, volume_samples=8),
+            clock=clock,
+            load_space=_load_space,
+            analyzers=[RiskVolumesAnalyzer()],
+        )
+        uow.commit()
+
+    stored = uow.analyses.get(report.analysis_id)
+    assert stored is not None
+    volumes = stored.summary["volumes"]
+    assert isinstance(volumes, dict)
+    for key in ("safe_ci", "uncertain_ci", "failure_ci"):
+        interval = volumes[key]
+        assert isinstance(interval, list)
+        assert len(interval) == 2
 
 
 def test_analyze_campaign_idempotent_mode_codes(

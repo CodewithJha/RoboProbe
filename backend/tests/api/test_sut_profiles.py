@@ -54,6 +54,26 @@ def test_create_profile_returns_hash_and_config(upload_client: TestClient) -> No
     assert body["config"]["gain_overrides"] == {}
 
 
+def test_create_benchmark_profile_accepts_only_empty_config(upload_client: TestClient) -> None:
+    document: dict[str, Any] = {
+        "schema_version": 1,
+        "id": "benchmark_api",
+        "backend": "benchmark",
+        "config": {},
+    }
+    created = post_profile(upload_client, json.dumps(document), "application/json")
+
+    assert created.status_code == 201, created.text
+    assert created.json()["backend"] == "benchmark"
+    assert created.json()["config"] == {}
+
+    document["config"] = {"model_file": "configs/backends/kinematic2d_v1.yaml"}
+    invalid = post_profile(upload_client, json.dumps(document), "application/json")
+
+    assert invalid.status_code == 422
+    assert any(error["pointer"] == "/config" for error in invalid.json()["errors"])
+
+
 def test_identical_repost_is_idempotent(upload_client: TestClient, fake_db: Any) -> None:
     first = post_profile(upload_client, K2D_PROFILE)
     second = post_profile(upload_client, K2D_PROFILE)

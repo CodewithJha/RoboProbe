@@ -1,0 +1,38 @@
+{
+  "items": [
+    {
+      "campaign_id": "01a1ee56-5e00-7001-9e37-79b97f4a7c15",
+      "code": "FM-01",
+      "id": "01a1ee56-5e00-712f-83a9-128da928dcdb",
+      "interaction": null,
+      "label": "F-LOC | floor_friction low · noise high · speed low",
+      "medoid_run_id": "01a1ee56-5e00-7012-9fe6-8f0af33cb97a",
+      "primary_class": "F-LOC",
+      "size": 5,
+      "status": "open"
+    },
+    {
+      "campaign_id": "01a1ee56-5e00-7001-9e37-79b97f4a7c15",
+      "code": "FM-02",
+      "id": "01a1ee56-5e00-7130-a1e0-8c47287358f0",
+      "interaction": null,
+      "label": "F-STUCK | clearance low",
+      "medoid_run_id": "01a1ee56-5e00-70fd-9cd3-4c52cc9ca0c1",
+      "primary_class": "F-STUCK",
+      "size": 24,
+      "status": "open"
+    },
+    {
+      "campaign_id": "01a1ee56-5e00-7001-9e37-79b97f4a7c15",
+      "code": "FM-03",
+      "id": "01a1ee56-5e00-7131-8018-0600a7bdd505",
+      "interaction": null,
+      "label": "F-TIMEOUT | clearance low",
+      "medoid_run_id": "01a1ee56-5e00-70ad-ab7d-425b0555da31",
+      "primary_class": "F-TIMEOUT",
+      "size": 6,
+      "status": "open"
+    }
+  ],
+  "next_cursor": null
+}

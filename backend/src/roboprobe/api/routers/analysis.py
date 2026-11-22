@@ -79,7 +79,8 @@ def risk_slice(  # noqa: PLR0913, PLR0917
         msg = "slice artifact missing"
         raise NotFoundError(msg)
     store = get_services(request).artifact_store
-    raw = cast(Any, store.open(artifact_ref_from_record(art))).read()
+    with cast(Any, store.open(artifact_ref_from_record(art))) as stream:
+        raw = stream.read()
     slices = json.loads(raw.decode("utf-8"))
     selected = None
     for item in slices if isinstance(slices, list) else []:
