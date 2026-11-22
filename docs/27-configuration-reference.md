@@ -363,6 +363,12 @@ Risk atlas timing is set by the typed `atlasConfig` in `web/src/features/atlas/a
 `ROBOPROBE_IMAGE_TAG` (dev), `ROBOPROBE_API_PORT` (8000), `ROBOPROBE_WEB_PORT` (8080), `ROBOPROBE_DB_NAME`/`ROBOPROBE_DB_USER` (roboprobe), `ROBOPROBE_DB_PORT` (5432; published on `127.0.0.1` only with the `dev` profile), `ROBOPROBE_K2D_REPLICAS` (2), `ROBOPROBE_GRAFANA_PORT` (3000), `ROBOPROBE_PROMETHEUS_PORT` (9090), `ROBOPROBE_JAEGER_PORT` (16686). Grafana, Prometheus and Jaeger are published on `127.0.0.1` only with the `observability` profile.
 The database password is never a variable: `make setup` writes `secrets/db_password` (git-ignored) and Compose mounts it as the `db_password` secret.
 
+### 4.14 API load-test budgets
+
+The `[p95_ms]` table in [thresholds.toml](../backend/tests/perf/thresholds.toml) sets the p95 limit
+in milliseconds for each Locust endpoint group. All four groups default to 200 ms. The checker
+also fails if a configured group lacks samples or reports failed requests.
+
 ## 5. Example `roboprobe.toml`
 
 ```toml

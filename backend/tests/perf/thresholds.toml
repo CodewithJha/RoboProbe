@@ -1,0 +1,6 @@
+# NFR-PERF-004 (docs/02 §5, docs/12 §7). Values are milliseconds.
+[p95_ms]
+"/api/v1/campaigns" = 200
+"/api/v1/campaigns/{id}/runs" = 200
+"/api/v1/runs/{id}" = 200
+"/api/v1/campaigns/{id}/modes" = 200
