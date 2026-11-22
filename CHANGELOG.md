@@ -18,6 +18,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Dashboard polish (T-113a/b, T-115): Spaces list with YAML view and validation,
   Workbench worker table, Settings (session token, theme, number locale, SSE reconnect),
   report export with sandboxed preview route, and global keyboard shortcuts dialog.
+- Jazzy command relay (T-093d) applies FIFO velocity delays on the simulation clock and
+  publishes observed delay for the episode recorder.
 - Web production image (T-116): read-only nginx-unprivileged SPA, runtime `/config.json`,
   CSP and security headers, and a Compose `app` profile that starts the authenticated API,
   workers and dashboard with same-origin SSE.
