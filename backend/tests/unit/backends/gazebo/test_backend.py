@@ -69,7 +69,7 @@ def test_completed_launch_uses_terminal_file_and_trace(
     (episode_request.workdir / "episode_done.json").write_text("stale", encoding="utf-8")
     settings = RoboProbeSettings(
         storage={"workdir_root": episode_request.workdir},
-        backends={"gazebo_nav2": {"startup_timeout_s": 20, "wall_margin_s": 3}}
+        backends={"gazebo_nav2": {"startup_timeout_s": 20, "wall_margin_s": 3}},
     )
     result = GazeboNav2Backend(settings).run_episode(
         episode_request, MaterializedScenario(payload={"time_limit_s": 20})

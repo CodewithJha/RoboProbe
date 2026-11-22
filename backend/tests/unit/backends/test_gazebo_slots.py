@@ -4,17 +4,14 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import get_context
+from multiprocessing.synchronize import Event
 from pathlib import Path
 from signal import SIGKILL, pause
 from threading import Barrier
-from typing import TYPE_CHECKING
 
 import pytest
 
 from roboprobe.backends.gazebo_nav2.slots import SlotAllocator, SlotsExhaustedError
-
-if TYPE_CHECKING:
-    from multiprocessing.synchronize import Event
 
 pytestmark = pytest.mark.unit
 
