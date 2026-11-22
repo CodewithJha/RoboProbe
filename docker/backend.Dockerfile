@@ -84,6 +84,8 @@ RUN apt-get update \
 COPY --from=builder /app/.venv /app/.venv
 COPY configs /app/configs
 COPY tasks /app/tasks
+COPY backend/alembic.ini /app/backend/alembic.ini
+COPY backend/alembic /app/backend/alembic
 
 ENV PATH=/app/.venv/bin:${PATH} \
     PYTHONDONTWRITEBYTECODE=1 \

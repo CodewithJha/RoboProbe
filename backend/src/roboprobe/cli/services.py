@@ -146,4 +146,5 @@ def api_cmd(
         raise ValidationError(msg) from exc
     app = bootstrap_api.create_api_app(settings)
     state.output.data({"service": "api", "host": bind_host, "port": bind_port})
-    uvicorn.run(app, host=bind_host, port=bind_port, log_level="info")
+    # The application logs requests with redaction. Uvicorn logs the raw SSE query string.
+    uvicorn.run(app, host=bind_host, port=bind_port, log_level="info", access_log=False)

@@ -18,12 +18,13 @@ from sqlalchemy import text
 
 from roboprobe.api.errors import problem_response
 from roboprobe.core.errors import ErrorCode
+from roboprobe.scenario.repo_root import discover_repo_root
 
 __all__ = ["router"]
 
 router = APIRouter(tags=["health"])
 
-_BACKEND_ROOT = Path(__file__).resolve().parents[4]
+_BACKEND_ROOT = discover_repo_root() / "backend"
 
 
 @router.get("/health/live")

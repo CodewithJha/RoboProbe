@@ -87,8 +87,12 @@ SECTIONS: Sequence[tuple[str, Sequence[str]]] = (
 # models, so they are appended to .env.example verbatim.
 COMPOSE_VARIABLES: Sequence[tuple[str, str, str]] = (
     ("ROBOPROBE_IMAGE_TAG", "dev", "Image tag of the RoboProbe containers."),
-    ("ROBOPROBE_API_PORT", "8000", "Host port published for the API."),
     ("ROBOPROBE_WEB_PORT", "8080", "Host port published for the dashboard."),
+    (
+        "ROBOPROBE_API_TOKEN_FILE",
+        "../secrets/api_token",
+        "API token source file, relative to docker/compose.yaml unless absolute.",
+    ),
     ("ROBOPROBE_DB_NAME", "roboprobe", "PostgreSQL database name."),
     ("ROBOPROBE_DB_USER", "roboprobe", "PostgreSQL user name."),
     ("ROBOPROBE_DB_PORT", "5432", "Loopback host port for Postgres (dev profile only)."),
