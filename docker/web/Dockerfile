@@ -23,6 +23,7 @@ RUN pnpm build
 # hadolint ignore=DL3006
 FROM ${NGINX_IMAGE} AS runtime
 USER root
+RUN apk upgrade --no-cache
 COPY docker/web/nginx.conf /etc/nginx/nginx.conf
 COPY --chmod=755 docker/web/40-config-json.sh /docker-entrypoint.d/40-config-json.sh
 COPY --from=build /app/web/dist /usr/share/nginx/html
