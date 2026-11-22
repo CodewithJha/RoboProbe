@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.11
+# syntax=docker/dockerfile:1.7
 # RoboProbe dashboard production image (T-116, docs/17 §5, NFR-DEP-001 / NFR-SEC-001).
 # Build context: repository root (see docker/compose.yaml web.build).
 #
