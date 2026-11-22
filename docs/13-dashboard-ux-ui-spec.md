@@ -125,6 +125,9 @@ Margin rail icons: Bench, Campaigns, Trials, Spaces, Workbench, Settings; theme 
 "Why this scenario?" popover per entry: phase, predicted μ ± σ, acquisition value, nearest known case.
 Alert banner when `alert` SSE event arrives (e.g. INFRA_UNHEALTHY auto-pause).
 
+The cancel dialog opens with focus on **Keep campaign**. Tab and Shift+Tab cycle between
+the two actions. Escape dismisses the dialog and returns focus to **Cancel campaign**.
+
 ### 3.4 Run entry (detail) — FR-DSH-005, US-007, US-017
 
 - Header: verdict notch, ρ, primary class, warnings, seed, scenario hash, worker, durations; actions: *Replay ×N*, *Export scenario*, *Open bag* (download), *Copy CLI command*.
