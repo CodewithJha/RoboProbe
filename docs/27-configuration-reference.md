@@ -344,6 +344,9 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `sseUrl` | `ROBOPROBE_WEB_SSE_URL` | `/api/v1/events` |
 | `defaultTheme` | `ROBOPROBE_WEB_DEFAULT_THEME` | `system` |
 | `featureFlags` | `ROBOPROBE_WEB_FEATURES` | `trials,reports` |
+| `queryStaleTimeMs` | – | `10000` milliseconds |
+
+The dashboard uses `queryStaleTimeMs` to poll active experiment reports.
 
 Build/dev-time variables (Vite, `web/.env.example`; read in `web/vite.config.ts`, never in components):
 
@@ -351,6 +354,9 @@ Build/dev-time variables (Vite, `web/.env.example`; read in `web/vite.config.ts`
 |-----|---------|-------|
 | `VITE_API_BASE_URL` | `/api/v1` | baked into the bundle; overridden at runtime by `config.json` `apiBaseUrl` |
 | `VITE_API_PROXY_TARGET` | `http://127.0.0.1:8000` | `pnpm --dir web dev` only: origin that `/api/*` requests are proxied to |
+
+Risk atlas timing is set by the typed `atlasConfig` in `web/src/features/atlas/atlasConfig.ts`.
+`anchorDebounceMs` defaults to 250 ms between the last off-axis edit and the slice query and URL update.
 
 ### 4.13 Compose-level variables (`.env`)
 

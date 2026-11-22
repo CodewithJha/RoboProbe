@@ -1,0 +1,10 @@
+{
+  "analysis_id": "01a1ee56-5e00-712e-a571-98d429de60c6",
+  "campaign_id": "01a1ee56-5e00-7001-9e37-79b97f4a7c15",
+  "importance": {
+    "auc_mean": 0.9,
+    "low_confidence": false
+  },
+  "interactions": null,
+  "rules": []
+}

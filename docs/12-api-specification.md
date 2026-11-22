@@ -172,6 +172,13 @@ Validation: space exists; backend registered and supports all enabled, unpinned 
             "p": 0.00012, "p_holm": 0.00048, "a12": 0.81, "effect": "large"}]}
 ```
 
+`GET /api/v1/experiments/{id}/comparison/charts` returns per-strategy samples and step points
+from completed cells with adjudicated runs. Discovery counts the earliest eligible member of each
+mode from the final analysis. All discovery series stop at the common observed horizon. The
+pointwise bootstrap band uses `experiments.alpha` and `experiments.bootstrap_resamples` and is
+available for strategies with at least two analyzed cells. The survival series marks an observed
+cell as right-censored at its last comparison run when no failure occurred.
+
 ### 3.6 `SpaceValidationResult`
 
 `POST /api/v1/spaces/validate` is a query: it returns HTTP 200 with `valid: false` rather than 422.
@@ -194,6 +201,8 @@ The same streaming `api.max_upload_mb` limit applies. The backend-specific confi
 and defaults are filled before calculating `config_hash`, using the same loader as file-based
 profiles. A new id returns 201, an identical repost returns 200, and an existing id with a
 different hash returns 422 `VALIDATION_ERROR`; use a new id to compare changed configurations.
+The `benchmark` backend accepts an empty `config` object. Analytic function settings come from
+`selection.benchmarks`.
 Space uploads resolve task paths relative to the configured API `space_root` and cannot escape it.
 
 ### 3.8 Campaign and manual-run creation

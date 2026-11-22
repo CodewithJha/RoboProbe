@@ -248,10 +248,15 @@ export function useMeta() {
     queryFn: async ({ signal }) => requireData(await api.GET('/api/v1/meta', { signal })),
   });
 }
-export function useReportJob(id: string) {
-  return useQuery({
+export function useReportJob(id: string, refreshInterval?: number) {
+  return useQuery<Schema['ReportJobOut']>({
     queryKey: ['reports', id],
     enabled: Boolean(id),
+    refetchInterval: ({ state }) => {
+      if (!refreshInterval || state.error) return false;
+      if (state.data && !['PENDING', 'QUEUED', 'RUNNING'].includes(state.data.status)) return false;
+      return refreshInterval;
+    },
     queryFn: async ({ signal }) =>
       requireData(
         await api.GET('/api/v1/reports/{report_id}', {

@@ -5,9 +5,16 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { afterAll, afterEach, beforeAll, expect, it, vi } from 'vitest';
 import { apiUrl } from '../../../api/client';
 import { AppProviders } from '../../../app/providers';
+import { DEFAULT_CONFIG, type RuntimeConfig } from '../../../lib/config';
+import { setToken } from '../../../lib/token';
 import { Component as ExperimentPage } from '../ExperimentPage';
 import { Component as TrialsPage } from '../TrialsPage';
 import { Component } from './ComparisonPage';
+
+const plot = vi.hoisted(() => vi.fn<(props: { data: object[] }) => null>(() => null));
+vi.mock('../../../components/charts/plotly', () => ({
+  loadPlotly: () => Promise.resolve({ default: plot }),
+}));
 
 const experiment = {
   id: 'e1',
@@ -52,6 +59,42 @@ const server = setupServer(
       ],
     }),
   ),
+  http.get(apiUrl('/experiments/e1/comparison/charts'), () =>
+    HttpResponse.json({
+      experiment_id: 'e1',
+      metrics: ['MET-01', 'MET-03'],
+      confidence: 0.95,
+      excluded_cells: 1,
+      groups: [
+        {
+          strategy: 'S-PROBE',
+          observed_cells: 2,
+          analyzed_cells: 2,
+          metric_samples: { 'MET-01': [0.4, 0.8], 'MET-03': [3] },
+          discovery: [
+            { simulations: 0, median: 0, low: 0, high: 0 },
+            { simulations: 4, median: 1, low: 0, high: 2 },
+          ],
+          survival: [
+            { simulations: 0, probability: 1, censored: 0 },
+            { simulations: 3, probability: 0.5, censored: 0 },
+            { simulations: 6, probability: 0.5, censored: 1 },
+          ],
+        },
+        {
+          strategy: 'S-RANDOM',
+          observed_cells: 1,
+          analyzed_cells: 0,
+          metric_samples: { 'MET-01': [0], 'MET-03': [] },
+          discovery: [],
+          survival: [
+            { simulations: 0, probability: 1, censored: 0 },
+            { simulations: 6, probability: 1, censored: 1 },
+          ],
+        },
+      ],
+    }),
+  ),
   http.patch(apiUrl('/experiments/e1'), async ({ request }) => {
     const body = await request.json();
     patch(request.headers.get('If-Match'), body);
@@ -70,7 +113,7 @@ afterAll(() => {
 afterEach(() => {
   server.resetHandlers();
 });
-function mount(path: string) {
+function mount(path: string, config: RuntimeConfig = DEFAULT_CONFIG) {
   const router = createMemoryRouter(
     [
       { path: '/trials', Component: TrialsPage },
@@ -80,7 +123,7 @@ function mount(path: string) {
     { initialEntries: [path] },
   );
   render(
-    <AppProviders live={false}>
+    <AppProviders live={false} config={config}>
       <RouterProvider router={router} />
     </AppProviders>,
   );
@@ -139,4 +182,96 @@ it('keeps the draft when the notes version changes and requires an explicit retr
   expect(await screen.findByText('Saved by collaborator')).toBeInTheDocument();
   expect(save).toBeEnabled();
   expect(editor).toHaveValue('My draft');
+});
+
+it('plots empirical samples, mode bands and right-censored survival for completed cells', async () => {
+  mount('/trials/e1/comparison');
+  const charts = await screen.findByRole('region', { name: 'Comparison charts' });
+  const evidence = within(charts);
+  expect(await evidence.findByRole('region', { name: 'Mode discovery' })).toBeInTheDocument();
+  expect(
+    evidence.getByRole('region', { name: 'Time to first failure (MET-03)' }),
+  ).toBeInTheDocument();
+  expect(evidence.getByRole('region', { name: 'MET-01 per-cell samples' })).toBeInTheDocument();
+  expect(evidence.getByRole('region', { name: 'MET-03 per-cell samples' })).toBeInTheDocument();
+  const traces = plot.mock.calls.flatMap(([props]) => props.data);
+  expect(traces).toContainEqual(expect.objectContaining({ x: [0, 4], y: [0, 0] }));
+  expect(traces).toContainEqual(expect.objectContaining({ fill: 'tonexty', x: [0, 4], y: [0, 2] }));
+  expect(traces).toContainEqual(expect.objectContaining({ name: 'S-PROBE', x: [0, 4], y: [0, 1] }));
+  expect(traces).toContainEqual(
+    expect.objectContaining({
+      mode: 'markers',
+      x: [6],
+      y: [1],
+      text: ['S-RANDOM, 1 censored at 6 simulations'],
+    }),
+  );
+  expect(traces).toContainEqual(expect.objectContaining({ type: 'box', name: 'S-PROBE', x: [3] }));
+  expect(evidence.getByText('No observed values for S-RANDOM.')).toBeInTheDocument();
+  expect(evidence.getByText('1 cell lacks completed run evidence.')).toBeInTheDocument();
+});
+
+it('generates a report, waits for completion, and downloads HTML with bearer authentication', async () => {
+  const authored = vi.fn();
+  const downloaded = vi.fn();
+  const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:report');
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal(
+    'URL',
+    class extends URL {
+      static override createObjectURL = createObjectURL;
+      static override revokeObjectURL = revokeObjectURL;
+    },
+  );
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+    this: HTMLAnchorElement,
+  ) {
+    downloaded(this.download);
+  });
+  let reads = 0;
+  let completed = false;
+  const job = { id: 'r1', kind: 'experiment', target_id: 'e1' };
+  const html = '<h1>Experiment report</h1>';
+  server.use(
+    http.post(apiUrl('/reports'), async ({ request }) => {
+      authored(request.headers.get('Authorization'), await request.json());
+      return HttpResponse.json({ ...job, status: 'RUNNING' }, { status: 202 });
+    }),
+    http.get(apiUrl('/reports/r1'), () => {
+      reads += 1;
+      return HttpResponse.json({ ...job, status: completed ? 'COMPLETED' : 'RUNNING' });
+    }),
+    http.get(apiUrl('/reports/r1/content'), ({ request }) => {
+      expect(request.headers.get('Authorization')).toBe('Bearer test-report-token');
+      return HttpResponse.html(html);
+    }),
+  );
+  setToken('test-report-token');
+  try {
+    mount('/trials/e1/comparison', { ...DEFAULT_CONFIG, queryStaleTimeMs: 20 });
+    const exportButton = await screen.findByRole('button', { name: 'Export report' });
+    fireEvent.click(exportButton);
+    expect(await screen.findByText('Generating report…')).toBeInTheDocument();
+    expect(exportButton).toBeDisabled();
+    await vi.waitFor(() => {
+      expect(reads).toBeGreaterThanOrEqual(1);
+    });
+    completed = true;
+    fireEvent.click(await screen.findByRole('button', { name: 'Download HTML report' }));
+    await vi.waitFor(() => {
+      expect(downloaded).toHaveBeenCalledWith('experiment-e1.html');
+      const result = createObjectURL.mock.calls[0]?.[0];
+      expect(result?.type).toMatch(/^text\/html/);
+      expect(result?.size).toBe(html.length);
+      expect(revokeObjectURL).toHaveBeenCalledWith('blob:report');
+    });
+    expect(authored).toHaveBeenCalledWith('Bearer test-report-token', {
+      kind: 'experiment',
+      id: 'e1',
+    });
+    expect(reads).toBeGreaterThanOrEqual(2);
+  } finally {
+    setToken(null);
+    vi.unstubAllGlobals();
+  }
 });

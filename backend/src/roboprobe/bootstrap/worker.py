@@ -55,15 +55,18 @@ def build_worker(
         msg = "worker.backend is required to build a worker"
         raise ValueError(msg)
     infrastructure = build_infrastructure(settings) if infra is None else infra
-    backend = cast("SimulatorBackendPort", get_backend(settings.worker.backend, settings))
+    backend = get_backend(settings.worker.backend, settings)
     uow_factory = cast("Callable[[], UnitOfWorkPort]", infrastructure.uow_factory)
     metrics = create_metrics(enabled=settings.observability.metrics_enabled)
     return WorkerProcess(
-        backend=backend,
+        backend=cast("SimulatorBackendPort", backend),
         uow_factory=uow_factory,
         queue=cast("RunQueuePort", infrastructure.queue),
         artifact_store=cast("ArtifactStorePort", infrastructure.artifact_store),
-        verdict_engine=VerdictEngine(create_all(settings.oracles)),
+        verdict_engine=VerdictEngine(
+            create_all(settings.oracles),
+            direct_rho=backend.capabilities.direct_rho,
+        ),
         clock=SystemClock(),
         worker_settings=settings.worker,
         storage_settings=settings.storage,

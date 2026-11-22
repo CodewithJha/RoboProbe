@@ -345,6 +345,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/experiments/{experiment_id}/comparison/charts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Experiment Charts
+     * @description Read chart evidence with explicit censoring and no extrapolated runs.
+     */
+    get: operations['experiment_charts_api_v1_experiments__experiment_id__comparison_charts_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/meta': {
     parameters: {
       query?: never;
@@ -834,6 +854,39 @@ export interface components {
      */
     CampaignStatus:
       'CREATED' | 'RUNNING' | 'PAUSED' | 'ANALYZING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+    /**
+     * DiscoveryPoint
+     * @description Pointwise median cumulative modes with a percentile-bootstrap interval.
+     */
+    DiscoveryPoint: {
+      /** High */
+      high: number | null;
+      /** Low */
+      low: number | null;
+      /** Median */
+      median: number;
+      /** Simulations */
+      simulations: number;
+    };
+    /**
+     * ExperimentChartsOut
+     * @description Per-strategy evidence prepared from stored runs and final mode analysis.
+     */
+    ExperimentChartsOut: {
+      /** Confidence */
+      confidence: number;
+      /** Excluded Cells */
+      excluded_cells: number;
+      /**
+       * Experiment Id
+       * Format: uuid
+       */
+      experiment_id: string;
+      /** Groups */
+      groups: components['schemas']['StrategyCharts'][];
+      /** Metrics */
+      metrics: string[];
+    };
     /** ExperimentComparisonOut */
     ExperimentComparisonOut: {
       /**
@@ -1364,6 +1417,26 @@ export interface components {
       /** Version */
       version: string;
     };
+    /**
+     * StrategyCharts
+     * @description Per-strategy samples and discovery/survival estimates.
+     */
+    StrategyCharts: {
+      /** Analyzed Cells */
+      analyzed_cells: number;
+      /** Discovery */
+      discovery: components['schemas']['DiscoveryPoint'][];
+      /** Metric Samples */
+      metric_samples: {
+        [key: string]: number[];
+      };
+      /** Observed Cells */
+      observed_cells: number;
+      /** Strategy */
+      strategy: string;
+      /** Survival */
+      survival: components['schemas']['SurvivalPoint'][];
+    };
     /** StrategyRef */
     StrategyRef: {
       /** Id */
@@ -1374,6 +1447,18 @@ export interface components {
       };
       /** Seed */
       seed?: number | null;
+    };
+    /**
+     * SurvivalPoint
+     * @description Kaplan-Meier survival after failures at this time, and number censored here.
+     */
+    SurvivalPoint: {
+      /** Censored */
+      censored: number;
+      /** Probability */
+      probability: number;
+      /** Simulations */
+      simulations: number;
     };
     /**
      * SutProfileDTO
@@ -3458,6 +3543,87 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ExperimentComparisonOut'];
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Precondition Failed */
+      412: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+      /** @description Internal Server Error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProblemDetail'];
+          'application/problem+json': components['schemas']['ProblemDetail'];
+        };
+      };
+    };
+  };
+  experiment_charts_api_v1_experiments__experiment_id__comparison_charts_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        experiment_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ExperimentChartsOut'];
         };
       };
       /** @description Unauthorized */

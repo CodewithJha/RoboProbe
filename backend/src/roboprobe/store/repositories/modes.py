@@ -155,3 +155,22 @@ class SqlFailureModeRepo:
                 mode_id=mode_id, run_id=member.run_id, membership=member.membership
             )
             execute(self._s, stmt)
+
+    def member_run_ids_for_analysis(
+        self, campaign_id: UUID, analysis_id: UUID
+    ) -> dict[UUID, list[UUID]]:
+        """Read one finalized mode snapshot and all its members in one query."""
+        rows = self._s.execute(
+            select(FailureModeRow.id, FailureModeMemberRow.run_id)
+            .outerjoin(FailureModeMemberRow, FailureModeMemberRow.mode_id == FailureModeRow.id)
+            .where(
+                FailureModeRow.campaign_id == campaign_id,
+                FailureModeRow.analysis_id == analysis_id,
+            )
+        )
+        members: dict[UUID, list[UUID]] = {}
+        for mode_id, run_id in rows:
+            group = members.setdefault(mode_id, [])
+            if run_id is not None:
+                group.append(run_id)
+        return members

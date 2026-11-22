@@ -356,6 +356,92 @@
         "title": "CampaignStatus",
         "type": "string"
       },
+      "DiscoveryPoint": {
+        "additionalProperties": false,
+        "description": "Pointwise median cumulative modes with a percentile-bootstrap interval.",
+        "properties": {
+          "high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "High"
+          },
+          "low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Low"
+          },
+          "median": {
+            "title": "Median",
+            "type": "number"
+          },
+          "simulations": {
+            "title": "Simulations",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "simulations",
+          "median",
+          "low",
+          "high"
+        ],
+        "title": "DiscoveryPoint",
+        "type": "object"
+      },
+      "ExperimentChartsOut": {
+        "additionalProperties": false,
+        "description": "Per-strategy evidence prepared from stored runs and final mode analysis.",
+        "properties": {
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "excluded_cells": {
+            "title": "Excluded Cells",
+            "type": "integer"
+          },
+          "experiment_id": {
+            "format": "uuid",
+            "title": "Experiment Id",
+            "type": "string"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/StrategyCharts"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "metrics": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Metrics",
+            "type": "array"
+          }
+        },
+        "required": [
+          "experiment_id",
+          "metrics",
+          "confidence",
+          "excluded_cells",
+          "groups"
+        ],
+        "title": "ExperimentChartsOut",
+        "type": "object"
+      },
       "ExperimentComparisonOut": {
         "additionalProperties": false,
         "properties": {
@@ -1815,6 +1901,58 @@
         "title": "SpaceVersion",
         "type": "object"
       },
+      "StrategyCharts": {
+        "additionalProperties": false,
+        "description": "Per-strategy samples and discovery/survival estimates.",
+        "properties": {
+          "analyzed_cells": {
+            "title": "Analyzed Cells",
+            "type": "integer"
+          },
+          "discovery": {
+            "items": {
+              "$ref": "#/components/schemas/DiscoveryPoint"
+            },
+            "title": "Discovery",
+            "type": "array"
+          },
+          "metric_samples": {
+            "additionalProperties": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "title": "Metric Samples",
+            "type": "object"
+          },
+          "observed_cells": {
+            "title": "Observed Cells",
+            "type": "integer"
+          },
+          "strategy": {
+            "title": "Strategy",
+            "type": "string"
+          },
+          "survival": {
+            "items": {
+              "$ref": "#/components/schemas/SurvivalPoint"
+            },
+            "title": "Survival",
+            "type": "array"
+          }
+        },
+        "required": [
+          "strategy",
+          "observed_cells",
+          "analyzed_cells",
+          "metric_samples",
+          "discovery",
+          "survival"
+        ],
+        "title": "StrategyCharts",
+        "type": "object"
+      },
       "StrategyRef": {
         "additionalProperties": false,
         "properties": {
@@ -1845,6 +1983,31 @@
           "id"
         ],
         "title": "StrategyRef",
+        "type": "object"
+      },
+      "SurvivalPoint": {
+        "additionalProperties": false,
+        "description": "Kaplan-Meier survival after failures at this time, and number censored here.",
+        "properties": {
+          "censored": {
+            "title": "Censored",
+            "type": "integer"
+          },
+          "probability": {
+            "title": "Probability",
+            "type": "number"
+          },
+          "simulations": {
+            "title": "Simulations",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "simulations",
+          "probability",
+          "censored"
+        ],
+        "title": "SurvivalPoint",
         "type": "object"
       },
       "SutProfileDTO": {
@@ -5334,6 +5497,125 @@
           }
         },
         "summary": "Experiment Comparison",
+        "tags": [
+          "experiments"
+        ]
+      }
+    },
+    "/api/v1/experiments/{experiment_id}/comparison/charts": {
+      "get": {
+        "description": "Read chart evidence with explicit censoring and no extrapolated runs.",
+        "operationId": "experiment_charts_api_v1_experiments__experiment_id__comparison_charts_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "experiment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Experiment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentChartsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "412": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Precondition Failed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              },
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Experiment Charts",
         "tags": [
           "experiments"
         ]

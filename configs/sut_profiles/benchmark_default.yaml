@@ -1,0 +1,4 @@
+schema_version: 1
+id: benchmark_default
+backend: benchmark
+config: {}

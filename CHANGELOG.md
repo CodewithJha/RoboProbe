@@ -11,6 +11,10 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   representative scenarios, and compare SHAP importance with GP rankings and cross-validation.
 - Analysis and reporting API follow-through (T-082b/c, T-084a): cached, anchored risk
   slices, campaign bundle jobs, durable report state and conflict-safe experiment notes.
+- Trials comparison charts for recorded mode discoveries, per-cell metric samples, and
+  censored time to first failure, plus HTML report export (T-112b, #181).
+- Shared seed datasets (T-107, #159): a PostgreSQL fixture with 60 warehouse runs, three
+  failure modes, medoid traces and seven API responses, plus a 10,000-run benchmark generator.
 - Trace and artifact transport (T-081e): event-preserving JSON downsampling, original
   Parquet downloads, confined streamed attachments with digest ETags, and rejected-path logs.
 - Dashboard foundation (T-085b/c/d): Field Notebook navigation, lazy feature routes,
@@ -197,6 +201,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Changed
 
+- Risk atlas off-axis controls now query and update the share URL after edits settle (T-111b).
 - `.env.example` and `roboprobe.example.toml` now list every setting (commented out, with defaults and
   descriptions) instead of a hand-picked subset.
 - Docs: fixed Markdown that rendered incorrectly (paragraphs swallowed into tables, unescaped `|` in table code spans,

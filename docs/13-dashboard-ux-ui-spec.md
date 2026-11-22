@@ -170,7 +170,8 @@ per-mode values where available.
 
 - Left: **pair matrix** — `d×d` small multiples (upper triangle) of `p_fail` slices; click to enlarge.
 - Main: enlarged slice heatmap (`p_fail` colour ramp from `--risk-safe` through `--risk-uncertain` to `--risk-failure`, with hatching for UNCERTAIN), evaluated points (○/✕), contour line at `p_fail = 0.5`; axes in physical units (log axis for illuminance).
-- Anchor selector: nominal or any case medoid; sliders for the other parameters (re-query slice).
+- Anchor selector: nominal or any case medoid. Off-axis controls show edits immediately and rerun
+  the slice query after a short pause. The URL captures the selected pair, anchor and applied values.
 - Volume gauge: stacked bar SAFE/UNCERTAIN/FAILURE with Wilson CIs; robustness score.
 - Click a cell → "Probe here" (manual run, UC-05).
 
@@ -179,6 +180,12 @@ per-mode values where available.
 Design table (strategies × seeds × budget), progress per cell; comparison page: discovery curves with
 95 % bands per strategy, box plots per metric, statistics table (median, IQR, p, p_Holm, Â12 + verbal
 effect), "threats to validity" notes field.
+
+The chart legend shows completed and analyzed cell counts for each strategy. Discovery uses
+the cumulative count of distinct modes at the common observed horizon. MET-03 boxes show observed
+first failures. Open markers in the survival chart show cells censored at their last simulation.
+Export report starts an experiment report job. When it completes, Download HTML report saves
+the generated HTML.
 
 ### 3.8 Spaces, Workbench, Settings
 
