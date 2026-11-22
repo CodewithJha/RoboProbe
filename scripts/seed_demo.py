@@ -60,9 +60,9 @@ from roboprobe.analysis import pipeline as analysis_pipeline
 from roboprobe.analysis.base import AnalysisKind
 from roboprobe.analysis.ports import AnalysisArtifactStore, AnalysisUnitOfWork
 from roboprobe.bootstrap import build_cli_services
+from roboprobe.bootstrap import experiments as experiment_module
 from roboprobe.bootstrap._infra import UowFactory, build_infrastructure
 from roboprobe.bootstrap.experiments import SqlExperimentWriter
-from roboprobe.cli import experiment as experiment_module
 from roboprobe.cli.campaign import _ensure_sut, create_campaign_from_config, run_inline
 from roboprobe.cli.db import upgrade_head
 from roboprobe.cli.experiment import _resolve_key

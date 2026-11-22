@@ -1,8 +1,0 @@
-# nav2_minimal_tb4_description/urdf (ros-navigation/nav2_minimal_turtlebot_simulation)
-base_link_z_offset = 6.42 cm
-shell_z_offset = 3.00 cm
-rplidar_z_offset = 9.8715 cm
-spawn z_pose = 0.01 m (warehouse task / T-090 harness)
-# Lidar frame: rplidar_link (ray_sensor frame_id in common_properties.urdf.xacro)
-# Plane height above ground ≈ 0.01 + (0.0642 + 0.03 + 0.098715) = 0.192915 m → 0.194 m (rounded)
-dropped_pallet_height_m = 0.144  # EUR pallet; top ≈ 4.9 cm below lidar plane

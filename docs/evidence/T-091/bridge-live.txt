@@ -1,0 +1,46 @@
+Publishers [Address, Message Type]:
+  tcp://172.17.0.3:38251, gz.msgs.Pose
+No subscribers on topic [/world/warehouse/model/turtlebot4/pose]
+
+# Actual bridge message headers
+/scan_raw
+stamp:
+  sec: 242
+  nanosec: 1000000
+frame_id: rplidar_link
+---
+/rgbd_camera/points_raw
+stamp:
+  sec: 243
+  nanosec: 102000000
+frame_id: oakd_rgb_camera_optical_frame
+---
+/ground_truth_pose
+stamp:
+  sec: 244
+  nanosec: 263000000
+frame_id: warehouse
+---
+
+# Actual stamped velocity conversion
+Publishers [Address, Message Type]:
+  tcp://172.17.0.3:43257, gz.msgs.Twist
+  tcp://172.17.0.3:42223, gz.msgs.Twist
+No subscribers on topic [/roboprobe/introspect_cmd_vel]
+publisher: beginning loop
+publishing #1: geometry_msgs.msg.TwistStamped(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id='base_link'), twist=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.123, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=-0.25)))
+
+header {
+  stamp {
+  }
+  data {
+    key: "frame_id"
+    value: "base_link"
+  }
+}
+linear {
+  x: 0.123
+}
+angular {
+  z: -0.25
+}

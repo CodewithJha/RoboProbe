@@ -11,7 +11,7 @@ const server = setupServer(
   http.get(apiUrl('/spaces'), () =>
     HttpResponse.json({
       items: [
-        { id: 'warehouse_v1', version: '4326a28381df', name: 'Warehouse', schema_version: 1 },
+        { id: 'warehouse_v1', version: '2b4d5a96d21a', name: 'Warehouse', schema_version: 1 },
       ],
     }),
   ),
@@ -36,6 +36,6 @@ it('lists registered spaces', async () => {
   );
   expect(await screen.findByRole('link', { name: 'Warehouse' })).toHaveAttribute(
     'href',
-    '/spaces/warehouse_v1/4326a28381df',
+    '/spaces/warehouse_v1/2b4d5a96d21a',
   );
 });

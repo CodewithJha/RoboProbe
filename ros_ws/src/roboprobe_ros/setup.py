@@ -15,6 +15,10 @@ setup(
         (f"share/{PACKAGE}", ["package.xml"]),
         (f"share/{PACKAGE}/config", [str(path) for path in sorted(Path("config").glob("*.yaml"))]),
         (
+            f"share/{PACKAGE}/models/dropped_pallet",
+            [str(path) for path in sorted(Path("models/dropped_pallet").glob("model.*"))],
+        ),
+        (
             f"share/{PACKAGE}/launch",
             [str(path) for path in sorted(Path("launch").glob("*.launch.py"))],
         ),
