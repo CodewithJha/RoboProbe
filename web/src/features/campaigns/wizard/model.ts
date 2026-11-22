@@ -1,5 +1,5 @@
 /** Runtime views of document-defined parameters and plugin metadata (T-087b). */
-import Ajv2020 from 'ajv/dist/2020.js';
+import { Validator, type Schema as JsonSchema } from '@cfworker/json-schema';
 import type { Schema } from '../../../api/client';
 import campaignSchema from '../../../../../schemas/campaign.schema.json';
 import { stringify } from 'yaml';
@@ -60,25 +60,25 @@ export function strategies(meta: unknown): Strategy[] {
       : [];
   });
 }
-const ajv = new Ajv2020({ allErrors: true, strict: false });
-const validateCampaign = ajv.compile(campaignSchema);
+// Strategy schemas arrive at runtime. Interpret them under the production CSP.
+const validateCampaign = new Validator(campaignSchema as JsonSchema, '2020-12', false);
 export function validateRequest(
   payload: CampaignRequest,
   strategy?: Strategy,
 ): { pointer: string; detail: string }[] {
-  const errors: { pointer: string; detail: string }[] = [];
-  if (!validateCampaign(payload))
-    for (const error of validateCampaign.errors ?? [])
-      errors.push({ pointer: error.instancePath, detail: error.message ?? 'Invalid value' });
+  const errors = validateCampaign.validate(payload).errors.map((error) => ({
+    pointer: error.instanceLocation.replace(/^#/, ''),
+    detail: error.error,
+  }));
   if (strategy && Object.keys(strategy.schema).length) {
     try {
-      const validate = ajv.compile(strategy.schema);
-      if (!validate(payload.strategy.params ?? {}))
-        for (const error of validate.errors ?? [])
-          errors.push({
-            pointer: `/strategy/params${error.instancePath}`,
-            detail: error.message ?? 'Invalid strategy parameter',
-          });
+      const validator = new Validator(strategy.schema, '2020-12', false);
+      for (const error of validator.validate(payload.strategy.params ?? {}).errors) {
+        errors.push({
+          pointer: `/strategy/params${error.instanceLocation.replace(/^#/, '')}`,
+          detail: error.error,
+        });
+      }
     } catch {
       errors.push({
         pointer: '/strategy/params',

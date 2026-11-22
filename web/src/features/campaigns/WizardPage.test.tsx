@@ -9,6 +9,7 @@ import { parse } from 'yaml';
 import { AppProviders } from '../../app/providers';
 import { apiUrl } from '../../api/client';
 import { Component } from './WizardPage';
+import { validateRequest, type CampaignRequest } from './wizard/model';
 
 const defaultCliConfig = readFileSync(
   new NodeURL('../../../../backend/tests/fixtures/campaigns/wizard-default.yaml', import.meta.url),
@@ -162,4 +163,19 @@ it('returns from review and associates a server validation message with the reje
   expect(screen.getByRole('spinbutton', { name: 'Batch size' })).not.toHaveAttribute(
     'aria-invalid',
   );
+});
+
+it('reports nested pointers for constraints supplied by a runtime strategy schema', () => {
+  const campaign = parse(defaultCliConfig) as CampaignRequest;
+  campaign.strategy.params = { scale: 0 };
+  const strategy = {
+    id: 'S-RANDOM',
+    description: 'Random',
+    schema: { type: 'object', properties: { scale: { type: 'number', exclusiveMinimum: 0 } } },
+  };
+  expect(validateRequest(campaign, strategy).map(({ pointer }) => pointer)).toEqual([
+    '/strategy/params/scale',
+  ]);
+  campaign.strategy.params = { scale: 1 };
+  expect(validateRequest(campaign, strategy)).toEqual([]);
 });
