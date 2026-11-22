@@ -52,7 +52,7 @@ pnpm --dir web dev                           # Vite dev server on :5173, proxies
 | `web` | `roboprobe-web` (nginx) | app | runtime `config.json` | 127.0.0.1:8080 | api healthy |
 | `prometheus`, `grafana` | official OSS images | observability | – | 9090, 3000 | api |
 
-Volumes: `pgdata` (named), `./data/artifacts` (bind, shared by api/orchestrator/workers), `./data/workdirs` (bind, Gazebo scratch).
+Volumes: `pgdata` (named) and `./data/artifacts` (bind, shared by API, orchestrator and workers).
 Health checks use `pg_isready` for Postgres, authenticated `GET /health/ready` for the API,
 and internal `/healthz` for workers (heartbeat age). Compose stores temporary backend workdirs in `/tmp/roboprobe-workdirs`.
 For a worker started directly on the host, pass `roboprobe worker --backend kinematic2d --health`
@@ -66,7 +66,10 @@ Postgres is reachable from the host only with the `dev` profile (`PROFILES=dev` 
 Open the dashboard's Settings page to enter the API token for the browser session.
 On a native Linux Docker host, grant the backend container user (UID/GID 10001) write access to `data/artifacts` before starting the app profile.
 
-Scaling: `docker compose up -d --scale worker-k2d=6` · Gazebo: `--profile gazebo up -d --scale worker-gazebo=2`.
+Scale kinematic workers with `docker compose up -d --scale worker-k2d=6`.
+Start the Gazebo worker with `make up PROFILES="core gazebo"`. Compose gives it an init
+process, a read-only root filesystem, and the same artifact and database access as the
+kinematic worker. Its temporary workdirs stay under `/tmp`.
 
 ### 4.1 Compose skeleton (illustrative; the real file is created in T-005)
 
@@ -134,7 +137,7 @@ volumes: {pgdata: {}}
 | Image | Base | Contents | Size target |
 |-------|------|----------|-------------|
 | `roboprobe-backend` | `python:3.12-slim` (multi-stage, uv) | `roboprobe[ml,api,worker]`, CPU torch wheel from the PyTorch CPU index | ≤ 1.5 GB |
-| `roboprobe-gazebo` | `ros:jazzy-ros-base` (Ubuntu 24.04) | apt: `ros-jazzy-navigation2 ros-jazzy-nav2-bringup ros-jazzy-nav2-minimal-tb4-sim ros-jazzy-ros-gz ros-jazzy-rmw-cyclonedds-cpp ros-jazzy-rosbag2-storage-mcap`, Mesa EGL; venv `--system-site-packages` with `roboprobe[worker]` (no torch); colcon-built `roboprobe_ros` | ≤ 4 GB |
+| `roboprobe-gazebo` | `ros:jazzy-ros-base-noble` (Ubuntu 24.04) | Pinned Nav2, Harmonic, TB4, Cyclone DDS, and MCAP, plus Mesa EGL, the installed ROS workspace, and a separate locked Python venv | ≤ 4 GB |
 | `roboprobe-web` | `node:24` build → `nginxinc/nginx-unprivileged` | static SPA, `config.json` templated from env at start | ≤ 60 MB |
 
 All images run as non-root, read-only root FS where possible, with OCI labels (`org.opencontainers.image.revision` = git SHA) used by provenance.
@@ -147,6 +150,13 @@ env override); it works with `read_only: true` plus a `/tmp` tmpfs. A bind-mount
 Build locally with
 `docker build -f docker/backend.Dockerfile --build-arg VERSION=$(git describe --tags --always) --build-arg REVISION=$(git rev-parse HEAD) -t roboprobe-backend:dev .`;
 `.dockerignore` allow-lists the build context, so `.env`, `secrets/` and `data/` never reach a layer.
+
+The Gazebo image reads its architecture-specific ROS versions from `docker/gazebo/apt-pins.txt`.
+It also preloads the versioned warehouse Fuel models listed in `docker/gazebo/fuel-models.txt`.
+The standard warehouse can start from the image's cache without downloading models at runtime.
+The worker records the apt versions, ROS distribution, Gazebo and Nav2 versions in each Gazebo
+run manifest. Set `backends.gazebo_nav2.software_rendering` to force Mesa software rendering on
+a host without usable GPU access.
 
 ## 6. Running Gazebo visually (debugging)
 

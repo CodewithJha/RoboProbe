@@ -1,0 +1,10 @@
+# Active Fuel includes in the pinned TB4 warehouse, as owner|model|version.
+openrobotics|warehouse|5
+openrobotics|foldable_chair|3
+openrobotics|table|4
+openrobotics|jersey barrier|6
+openrobotics|chair|3
+openrobotics|malevisitoronphone|2
+movai|shelf|1
+movai|shelf_big|2
+plateau|casual female|1

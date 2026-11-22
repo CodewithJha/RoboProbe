@@ -14,7 +14,7 @@ x-backend: &backend
   env_file:
     - path: ../.env
       required: false
-  environment:
+  environment: &backend-environment
     # In-network DSN without a password: the `db_password` secret is merged in by the settings
     # loader from /run/secrets (docs/27 §2), so the password never appears in env or URLs.
     ROBOPROBE_DATABASE__URL: postgresql+psycopg://${ROBOPROBE_DB_USER:-roboprobe}@postgres:5432/${ROBOPROBE_DB_NAME:-roboprobe}
@@ -98,6 +98,22 @@ services:
       timeout: 5s
       retries: 12
       start_period: 20s
+    depends_on: {migrate: {condition: service_completed_successfully}}
+
+  worker-gazebo:
+    <<: *backend
+    profiles: [gazebo]
+    image: &gazebo-image ${ROBOPROBE_BACKENDS__GAZEBO_NAV2__IMAGE:-ghcr.io/codewithjha/roboprobe-gazebo:${ROBOPROBE_IMAGE_TAG:-dev}}
+    build:
+      context: ..
+      dockerfile: docker/gazebo/Dockerfile
+    environment:
+      <<: *backend-environment
+      ROBOPROBE_BACKENDS__GAZEBO_NAV2__IMAGE: *gazebo-image
+    shm_size: ${ROBOPROBE_GZ_SHM_SIZE:-1gb}
+    init: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
     depends_on: {migrate: {condition: service_completed_successfully}}
 
   # Observability profile (T-125, T-126). Scrapes API :8000 and the orchestrator/worker
