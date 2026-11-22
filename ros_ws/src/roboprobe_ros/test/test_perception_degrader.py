@@ -19,7 +19,7 @@ from rclpy.node import Node
 from rclpy.parameter import Parameter
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy
 from roboprobe_ros._vendor.perturbation.perception import PerceptionModel
-from roboprobe_ros.perception_degrader import PerceptionDegrader
+from roboprobe_ros.perception_degrader import PerceptionDegrader, main
 from sensor_msgs.msg import PointCloud2
 from sensor_msgs_py import point_cloud2
 from std_msgs.msg import Header
@@ -144,3 +144,25 @@ def test_rejects_invalid_episode_setup(ros_context: Context, tmp_path: Path) -> 
         PerceptionDegrader(
             context=ros_context, parameter_overrides=_write_parameters(tmp_path, 50.0, _INPUT)
         )
+
+
+def test_console_entry_starts_and_shuts_down(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Use the pinned Jazzy startup API through the installed console entry."""
+    overrides = _write_parameters(tmp_path, 50.0)
+    args = ["--ros-args"]
+    for override in overrides:
+        args.extend(["-p", f"{override.name}:={override.value}"])
+
+    spun: list[str] = []
+
+    def spin(node: PerceptionDegrader) -> None:
+        assert rclpy.ok()
+        spun.append(node.get_name())
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(rclpy, "spin", spin)
+    main(args)
+    assert spun == ["perception_degrader"]
+    assert not rclpy.ok()
