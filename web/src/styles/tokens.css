@@ -53,6 +53,14 @@
   --risk-uncertain: #E69F00;
   --risk-failure: #D55E00;
   --invalid: #8A8F98;
+  --strategy-1: #0072B2;
+  --strategy-2: #D55E00;
+  --strategy-3: #007E62;
+  --strategy-4: #A64785;
+  --strategy-5: #6E5600;
+  --strategy-6: #326795;
+  --strategy-7: #9B4F31;
+  --strategy-8: #53545A;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -70,6 +78,14 @@
     --risk-uncertain: #F2B53A;
     --risk-failure: #F07A2A;
     --invalid: #7C828A;
+    --strategy-1: #67BFF1;
+    --strategy-2: #F58A48;
+    --strategy-3: #64D5AC;
+    --strategy-4: #E889C4;
+    --strategy-5: #F4DA70;
+    --strategy-6: #93A9F6;
+    --strategy-7: #E2A185;
+    --strategy-8: #BFC9D3;
   }
 }
 
@@ -87,4 +103,12 @@
   --risk-uncertain: #F2B53A;
   --risk-failure: #F07A2A;
   --invalid: #7C828A;
+  --strategy-1: #67BFF1;
+  --strategy-2: #F58A48;
+  --strategy-3: #64D5AC;
+  --strategy-4: #E889C4;
+  --strategy-5: #F4DA70;
+  --strategy-6: #93A9F6;
+  --strategy-7: #E2A185;
+  --strategy-8: #BFC9D3;
 }

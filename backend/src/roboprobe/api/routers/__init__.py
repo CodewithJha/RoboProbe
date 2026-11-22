@@ -11,6 +11,7 @@ from roboprobe.api.routers import (
     analysis,
     campaigns,
     events,
+    experiment_charts,
     experiments,
     health,
     meta,
@@ -39,4 +40,5 @@ ROUTERS: list[APIRouter] = [
     reports.router,
     workers.router,
     traces.router,
+    experiment_charts.router,
 ]

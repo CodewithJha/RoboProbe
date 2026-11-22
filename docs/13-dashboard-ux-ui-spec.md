@@ -180,6 +180,12 @@ Design table (strategies × seeds × budget), progress per cell; comparison page
 95 % bands per strategy, box plots per metric, statistics table (median, IQR, p, p_Holm, Â12 + verbal
 effect), "threats to validity" notes field.
 
+The chart legend shows completed and analyzed cell counts for each strategy. Discovery uses
+the cumulative count of distinct modes at the common observed horizon. MET-03 boxes show observed
+first failures. Open markers in the survival chart show cells censored at their last simulation.
+Export report starts an experiment report job. When it completes, Download HTML report saves
+the generated HTML.
+
 ### 3.8 Spaces, Workbench, Settings
 
 Spaces: list, YAML viewer with schema validation messages, parameter table. Workbench: workers (backend,

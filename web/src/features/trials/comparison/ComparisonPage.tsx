@@ -1,11 +1,15 @@
 import { Link, useParams } from 'react-router-dom';
 import { useExperiment, useExperimentComparison } from '../../../api/hooks';
+import { useRuntimeConfig } from '../../../app/contexts';
 import { StatTable } from '../../../components';
 import { number, summaries, text } from '../evidence';
+import { ExperimentCharts } from './ExperimentCharts';
+import { ReportExport } from './ReportExport';
 import { ThreatsNotes } from './ThreatsNotes';
 
 export function Component() {
   const { id = '' } = useParams();
+  const { featureFlags } = useRuntimeConfig();
   const experiment = useExperiment(id);
   const comparison = useExperimentComparison(id);
   const data = comparison.data;
@@ -28,6 +32,7 @@ export function Component() {
       <p>
         <Link to={`/trials/${id}`}>Experiment details</Link>
       </p>
+      {data && featureFlags.reports && <ReportExport key={`report-${id}`} experimentId={id} />}
       {comparison.isPending && <p role="status">Loading comparison…</p>}
       {comparison.isError && <p role="alert">{comparison.error.message}</p>}
       {data && (
@@ -73,6 +78,7 @@ export function Component() {
           />
         </>
       )}
+      {data && <ExperimentCharts id={id} />}
       {experiment.data && <ThreatsNotes key={id} experiment={experiment.data} />}
       {experiment.isError && <p role="alert">Unable to load experiment notes.</p>}
     </article>
