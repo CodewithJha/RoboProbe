@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pyarrow.parquet as pq
 import pytest
+from typer.testing import CliRunner
 
 from roboprobe.backends.kinematic2d.calibration import load_calibration
 from roboprobe.bootstrap.reference_set import (
@@ -14,6 +16,7 @@ from roboprobe.bootstrap.reference_set import (
     sha256_file,
     write_parquet,
 )
+from roboprobe.cli.main import app
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import Verdict
 from roboprobe.scenario.space import ScenarioSpace
@@ -58,3 +61,22 @@ def test_generate_label_and_hash(tmp_path: Path) -> None:
     assert sha256_file(path) == sha256_file(path)
     reread = pq.read_table(path).to_pylist()
     assert len(reread) == 8
+
+
+def test_reference_cli_outputs_matching_parquet_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The documented command writes an integrity manifest and returns it as JSON."""
+    monkeypatch.setenv("ROBOPROBE_STORAGE__WORKDIR_ROOT", str(tmp_path / "runs"))
+    out = tmp_path / "reference.parquet"
+    result = CliRunner().invoke(
+        app,
+        ["--json", "reference", "generate", "--output", str(out), "--n", "1", "--seed", "11"],
+    )
+    assert result.exit_code == 0, result.exception
+    manifest = json.loads(out.with_suffix(".manifest.json").read_text(encoding="utf-8"))
+    assert json.loads(result.stdout) == manifest
+    assert manifest["path"] == str(out)
+    assert manifest["sha256"] == sha256_file(out)
+    assert pq.read_table(out).num_rows == manifest["n"] == 1
+    assert manifest["seed"] == 11

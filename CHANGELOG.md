@@ -238,6 +238,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Fixed
 
+- Reference-set generation writes the Parquet SHA-256 manifest and returns the same metadata via the CLI (T-103).
 - Embed the API comparison payload in offline experiment reports and surface restart-interrupted
   report jobs as errors (T-084a).
 - Casebook interaction checks, replays, and Atlas manual probes run after campaign completion.
