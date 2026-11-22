@@ -42,7 +42,9 @@ def _base_url(value: str) -> str:
         or parsed.query
         or parsed.fragment
     ):
-        msg = "base URL must be HTTP or HTTPS without credentials, a query, or a fragment"
+        msg = (
+            "base URL must be HTTP or HTTPS without credentials, a query, or a fragment"
+        )
         raise argparse.ArgumentTypeError(msg)
     return value.rstrip("/")
 
@@ -90,7 +92,9 @@ def _fetch(
         payload = response.json()
         validator.validate(payload)
         return (
-            json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True, allow_nan=False)
+            json.dumps(
+                payload, ensure_ascii=False, indent=2, sort_keys=True, allow_nan=False
+            )
             + "\n"
         )
     except ValidationError as exc:
@@ -104,17 +108,26 @@ def _fetch(
 def main(argv: list[str] | None = None) -> int:
     """Run the fixture exporter and return a shell status code."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base-url", required=True, type=_base_url, help="API server URL")
+    parser.add_argument(
+        "--base-url", required=True, type=_base_url, help="API server URL"
+    )
     parser.add_argument("--campaign-id", required=True, type=UUID)
     parser.add_argument("--run-id", required=True, type=UUID)
     parser.add_argument("--experiment-id", required=True, type=UUID)
     parser.add_argument("--risk-x", default="robot.max_speed")
     parser.add_argument("--risk-y", default="obstacle.clearance")
     parser.add_argument(
-        "--risk-resolution", required=True, type=_positive_int, help="Stored slice resolution"
+        "--risk-resolution",
+        required=True,
+        type=_positive_int,
+        help="Stored slice resolution",
     )
-    parser.add_argument("--runs-limit", type=_positive_int, help="Page size for the runs fixture")
-    parser.add_argument("--output", type=Path, default=_DEFAULT_OUTPUT, help="Output directory")
+    parser.add_argument(
+        "--runs-limit", type=_positive_int, help="Page size for the runs fixture"
+    )
+    parser.add_argument(
+        "--output", type=Path, default=_DEFAULT_OUTPUT, help="Output directory"
+    )
     args = parser.parse_args(argv)
 
     ids = {
@@ -123,7 +136,11 @@ def main(argv: list[str] | None = None) -> int:
         "experiment_id": args.experiment_id,
     }
     runs_query = {} if args.runs_limit is None else {"limit": args.runs_limit}
-    risk_query = {"x": args.risk_x, "y": args.risk_y, "resolution": args.risk_resolution}
+    risk_query = {
+        "x": args.risk_x,
+        "y": args.risk_y,
+        "resolution": args.risk_resolution,
+    }
     requests: tuple[tuple[str, str, dict[str, str | int]], ...] = (
         ("campaigns", _CAMPAIGNS, {}),
         ("runs_page", f"{_CAMPAIGN}/runs", runs_query),
@@ -133,7 +150,9 @@ def main(argv: list[str] | None = None) -> int:
         ("risk_slice", f"{_CAMPAIGN}/risk/slice", risk_query),
         ("comparison", "/api/v1/experiments/{experiment_id}/comparison", {}),
     )
-    token = os.environ.get("ROBOPROBE_API__TOKEN") or os.environ.get("ROBOPROBE_API_TOKEN")
+    token = os.environ.get("ROBOPROBE_API__TOKEN") or os.environ.get(
+        "ROBOPROBE_API_TOKEN"
+    )
     headers = {"Accept": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -141,14 +160,20 @@ def main(argv: list[str] | None = None) -> int:
     try:
         spec = json.loads(_OPENAPI.read_text(encoding="utf-8"))
         with httpx2.Client(
-            base_url=args.base_url, headers=headers, follow_redirects=False, trust_env=False
+            base_url=args.base_url,
+            headers=headers,
+            follow_redirects=False,
+            trust_env=False,
         ) as client:
             fixtures = {
-                name: _fetch(client, spec, route, ids, params) for name, route, params in requests
+                name: _fetch(client, spec, route, ids, params)
+                for name, route, params in requests
             }
         args.output.mkdir(parents=True, exist_ok=True)
         for name, contents in fixtures.items():
-            (args.output / f"{name}.json").write_text(contents, encoding="utf-8", newline="\n")
+            (args.output / f"{name}.json").write_text(
+                contents, encoding="utf-8", newline="\n"
+            )
     except httpx2.InvalidURL:
         print("Invalid API server URL", file=sys.stderr)
         return 1
