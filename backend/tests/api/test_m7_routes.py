@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -210,3 +211,19 @@ def test_campaign_start_accepted(m7_client: TestClient) -> None:
 def test_experiments_list(m7_client: TestClient) -> None:
     resp = m7_client.get("/api/v1/experiments")
     assert resp.status_code == 200
+
+
+def test_experiment_comparison_uses_saved_report_results(
+    m7_client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    experiment_id = uuid4()
+    results = {
+        "experiment_id": str(experiment_id),
+        "metrics": ["MET-01"],
+        "strategies": {"S-RANDOM": {"MET-01": {"median": 0.4}}},
+        "tests": [],
+    }
+    monkeypatch.setattr(_Experiments, "get", lambda *_: SimpleNamespace(results=results))
+    response = m7_client.get(f"/api/v1/experiments/{experiment_id}/comparison")
+    assert response.status_code == 200
+    assert response.json() == results

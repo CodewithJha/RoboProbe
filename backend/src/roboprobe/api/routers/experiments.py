@@ -5,6 +5,7 @@ Implements: T-084
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any, cast
 from uuid import UUID
 
@@ -131,6 +132,9 @@ def experiment_comparison(
     if row is None:
         msg = "experiment not found"
         raise NotFoundError(msg, context={"experiment_id": str(experiment_id)})
+    stored_results = getattr(row, "results", None)
+    if stored_results:
+        return _comparison_response(experiment_id, stored_results)
     campaigns = uow.campaigns.list_for_experiment(experiment_id)
     runs_by: dict[UUID, list[CampaignRun]] = {}
     for camp in campaigns:
@@ -167,6 +171,12 @@ def experiment_comparison(
         settings=services.settings.experiments,
         rng=np.random.default_rng(services.settings.experiments.reference_set.seed),
     )
+    return _comparison_response(experiment_id, payload)
+
+
+def _comparison_response(
+    experiment_id: UUID, payload: Mapping[str, object]
+) -> ExperimentComparisonOut:
     return ExperimentComparisonOut(
         experiment_id=experiment_id,
         metrics=[str(m) for m in cast(list[object], payload.get("metrics", []))],
