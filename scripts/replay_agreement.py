@@ -30,24 +30,31 @@ def load_medoids(path: Path) -> list[Medoid]:
         rows = csv.DictReader(source)
         required = {"campaign_id", "mode", "medoid_run_id"}
         if not required.issubset(rows.fieldnames or ()):
-            raise ValueError("medoid CSV requires campaign_id, mode, medoid_run_id columns")
+            message = "medoid CSV requires campaign_id, mode, medoid_run_id columns"
+            raise ValueError(message)
         medoids = [
-            Medoid(str(UUID(row["campaign_id"])), row["mode"].strip(), str(UUID(row["medoid_run_id"])))
+            Medoid(
+                str(UUID(row["campaign_id"])), row["mode"].strip(), str(UUID(row["medoid_run_id"]))
+            )
             for row in rows
         ]
     if not medoids:
-        raise ValueError("medoid CSV contains no modes")
+        message = "medoid CSV contains no modes"
+        raise ValueError(message)
     if any(not medoid.mode for medoid in medoids):
-        raise ValueError("every medoid must have a mode code")
+        message = "every medoid must have a mode code"
+        raise ValueError(message)
     keys = {(medoid.campaign_id, medoid.mode) for medoid in medoids}
     if len(keys) != len(medoids):
-        raise ValueError("medoid CSV contains duplicate campaign and mode pairs")
+        message = "medoid CSV contains duplicate campaign and mode pairs"
+        raise ValueError(message)
     return medoids
 
 
 def replay_medoid(executable: str, medoid: Medoid) -> tuple[float, dict[str, object]]:
     """Replay a source seed five times and retain the CLI's verdict and class comparisons."""
-    result = subprocess.run(
+    # The operator selects the executable. The only CSV argument is a canonical UUID.
+    result = subprocess.run(  # noqa: S603
         [executable, "--json", "replay", "--repeats", str(REPEATS), medoid.medoid_run_id],
         check=True,
         stdout=subprocess.PIPE,
@@ -55,7 +62,8 @@ def replay_medoid(executable: str, medoid: Medoid) -> tuple[float, dict[str, obj
     )
     evidence = json.loads(result.stdout)
     if evidence["source_run_id"] != medoid.medoid_run_id or evidence["source_verdict"] is None:
-        raise ValueError(f"invalid replay source for {medoid.medoid_run_id}")
+        message = f"invalid replay source for {medoid.medoid_run_id}"
+        raise ValueError(message)
     rows = evidence["rows"]
     agreements = sum(row["agree"] is True for row in rows)
     if (
@@ -65,7 +73,8 @@ def replay_medoid(executable: str, medoid: Medoid) -> tuple[float, dict[str, obj
         or agreements != evidence["agreements"]
         or REPEATS - agreements != evidence["disagreements"]
     ):
-        raise ValueError(f"incomplete replay accounting for {medoid.medoid_run_id}")
+        message = f"incomplete replay accounting for {medoid.medoid_run_id}"
+        raise ValueError(message)
     return agreements / REPEATS, evidence
 
 

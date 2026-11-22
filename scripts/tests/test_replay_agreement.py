@@ -21,10 +21,7 @@ OTHER_SOURCE = str(UUID(int=3))
 def result(source: str, matches: int) -> subprocess.CompletedProcess[str]:
     """Build the verdict and class summary returned by the RoboProbe CLI."""
     replay_ids = [str(UUID(int=index)) for index in range(4, 9)]
-    rows = [
-        {"run_id": run_id, "agree": index < matches}
-        for index, run_id in enumerate(replay_ids)
-    ]
+    rows = [{"run_id": run_id, "agree": index < matches} for index, run_id in enumerate(replay_ids)]
     return subprocess.CompletedProcess(
         args=[],
         returncode=0,
@@ -84,6 +81,8 @@ class ReplayAgreementTest(unittest.TestCase):
         payload["rows"].pop()
         partial.stdout = json.dumps(payload)
         medoid = replay.Medoid(CAMPAIGN, "mode", SOURCE)
-        with patch.object(replay.subprocess, "run", return_value=partial):
-            with self.assertRaisesRegex(ValueError, "incomplete"):
-                replay.replay_medoid("roboprobe", medoid)
+        with (
+            patch.object(replay.subprocess, "run", return_value=partial),
+            self.assertRaisesRegex(ValueError, "incomplete"),
+        ):
+            replay.replay_medoid("roboprobe", medoid)
