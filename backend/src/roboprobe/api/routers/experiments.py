@@ -5,18 +5,26 @@ Implements: T-084
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any, cast
 from uuid import UUID
 
 import numpy as np
-from fastapi import APIRouter, Depends, Request
+import pydantic
+from fastapi import APIRouter, Depends, Header, Request, Response
 
 from roboprobe.api._store import new_uuid, records
+from roboprobe.api.concurrency import assert_if_match, format_etag
 from roboprobe.api.deps import get_services, get_uow
 from roboprobe.api.mapping import experiment_out
 from roboprobe.api.pagination import Page, clamp_limit
-from roboprobe.api.schemas import ExperimentComparisonOut, ExperimentCreate, ExperimentOut
-from roboprobe.core.errors import NotFoundError
+from roboprobe.api.schemas import (
+    ExperimentComparisonOut,
+    ExperimentCreate,
+    ExperimentNotes,
+    ExperimentOut,
+)
+from roboprobe.core.errors import NotFoundError, ValidationError
 from roboprobe.experiments.planner import ExperimentDesign
 from roboprobe.experiments.runner import _as_campaign_row, build_comparison
 from roboprobe.metrics.campaign_metrics import CampaignRun, comparison_runs
@@ -47,7 +55,10 @@ def list_experiments(
 
 @router.post("", status_code=201)
 def create_experiment(body: ExperimentCreate, uow: Any = Depends(get_uow)) -> ExperimentOut:
-    design = ExperimentDesign.model_validate(body.design)
+    try:
+        design = ExperimentDesign.model_validate(body.design)
+    except pydantic.ValidationError as exc:
+        raise ValidationError(str(exc)) from exc
     rec = records()
     eid = new_uuid()
     uow.experiments.add(
@@ -67,12 +78,48 @@ def create_experiment(body: ExperimentCreate, uow: Any = Depends(get_uow)) -> Ex
 
 
 @router.get("/{experiment_id}")
-def get_experiment(experiment_id: UUID, uow: Any = Depends(get_uow)) -> ExperimentOut:
+def get_experiment(
+    experiment_id: UUID, response: Response, uow: Any = Depends(get_uow)
+) -> ExperimentOut:
     row = uow.experiments.get(experiment_id)
     if row is None:
         msg = "experiment not found"
         raise NotFoundError(msg, context={"experiment_id": str(experiment_id)})
-    return experiment_out(row)
+    response.headers["ETag"] = format_etag(getattr(row, "etag_version", 1))
+    payload = experiment_out(row)
+    payload.cells = [
+        {
+            "campaign_id": str(c.id),
+            "strategy_id": c.strategy_id,
+            "seed": c.seed,
+            "budget": c.budget,
+            "status": getattr(c.status, "value", c.status),
+            "rep": c.experiment_rep,
+        }
+        for c in uow.campaigns.list_for_experiment(experiment_id)
+    ]
+    return payload
+
+
+@router.patch("/{experiment_id}")
+def patch_experiment_notes(
+    experiment_id: UUID,
+    body: ExperimentNotes,
+    response: Response,
+    if_match: str | None = Header(default=None, alias="If-Match"),
+    uow: Any = Depends(get_uow),
+) -> ExperimentOut:
+    """Save threats notes with optimistic concurrency."""
+    row = uow.experiments.get(experiment_id)
+    if row is None:
+        msg = "experiment not found"
+        raise NotFoundError(msg)
+    etag = getattr(row, "etag_version", 1)
+    assert_if_match(if_match, etag)
+    uow.experiments.patch_notes(experiment_id, body.notes, etag)
+    uow.commit()
+    response.headers["ETag"] = format_etag(etag + 1)
+    return experiment_out(uow.experiments.get(experiment_id))
 
 
 @router.get("/{experiment_id}/comparison")
@@ -85,29 +132,32 @@ def experiment_comparison(
     if row is None:
         msg = "experiment not found"
         raise NotFoundError(msg, context={"experiment_id": str(experiment_id)})
+    stored_results = getattr(row, "results", None)
+    if stored_results:
+        return _comparison_response(experiment_id, stored_results)
     campaigns = uow.campaigns.list_for_experiment(experiment_id)
     runs_by: dict[UUID, list[CampaignRun]] = {}
     for camp in campaigns:
-        runs: list[CampaignRun] = []
+        runs: list[tuple[tuple[int, int], CampaignRun]] = []
         cursor: str | None = None
         while True:
             page = uow.runs.list_for_campaign(camp.id, limit=None, cursor=cursor)
             for r in page.items:
                 if r.verdict is None:
                     continue
-                runs.append(
-                    CampaignRun(
-                        verdict=r.verdict,
-                        wall_time_s=float((r.metrics or {}).get("duration_s", 0.0)),
-                        x_unit=tuple(float(x) for x in r.x_unit),
-                        phase=str(r.phase or ""),
-                        tags=tuple(str(t) for t in r.tags),
-                    )
+                run = CampaignRun(
+                    verdict=r.verdict,
+                    wall_time_s=float((r.metrics or {}).get("duration_s", 0.0)),
+                    x_unit=tuple(float(x) for x in r.x_unit),
+                    phase=str(r.phase or ""),
+                    tags=tuple(str(t) for t in r.tags),
                 )
+                runs.append(((r.ordinal, r.repeat_index), run))
             cursor = page.next_cursor
             if cursor is None:
                 break
-        runs_by[camp.id] = list(comparison_runs(tuple(runs)))
+        runs.sort(key=lambda entry: entry[0])
+        runs_by[camp.id] = list(comparison_runs(tuple(run for _, run in runs)))
     if not campaigns:
         return ExperimentComparisonOut(experiment_id=experiment_id)
     services = get_services(request)
@@ -121,6 +171,12 @@ def experiment_comparison(
         settings=services.settings.experiments,
         rng=np.random.default_rng(services.settings.experiments.reference_set.seed),
     )
+    return _comparison_response(experiment_id, payload)
+
+
+def _comparison_response(
+    experiment_id: UUID, payload: Mapping[str, object]
+) -> ExperimentComparisonOut:
     return ExperimentComparisonOut(
         experiment_id=experiment_id,
         metrics=[str(m) for m in cast(list[object], payload.get("metrics", []))],

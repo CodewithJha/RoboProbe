@@ -42,6 +42,7 @@ EVENTS: frozenset[str] = frozenset(
         "run.lost",
         "run.execute_error",
         "run.requeued",
+        "report.failed",
         "episode.launch_failed",
         "episode.teardown_orphans",
         "analysis.finished",

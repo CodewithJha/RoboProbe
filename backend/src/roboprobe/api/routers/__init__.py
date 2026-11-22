@@ -8,6 +8,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from roboprobe.api.routers import (
+    actions,
     analysis,
     campaigns,
     events,
@@ -40,5 +41,6 @@ ROUTERS: list[APIRouter] = [
     reports.router,
     workers.router,
     traces.router,
+    actions.router,
     experiment_charts.router,
 ]

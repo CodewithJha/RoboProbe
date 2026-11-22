@@ -116,6 +116,9 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `api.cors_origins` | list[str] | `["http://localhost:5173", "http://localhost:8080"]` | `ROBOPROBE_API__CORS_ORIGINS` | Origins allowed by CORS (dev server and dashboard). |
 | `api.trace_default_hz` | float | `10.0` | `ROBOPROBE_API__TRACE_DEFAULT_HZ` | Default JSON trace sampling target [Hz]. |
 | `api.trace_max_hz` | float | `50.0` | `ROBOPROBE_API__TRACE_MAX_HZ` | Maximum JSON trace sampling target [Hz]. |
+| `api.report_workers` | int | `1` | `ROBOPROBE_API__REPORT_WORKERS` | Concurrent API report/export jobs. |
+| `api.slice_cache_size` | int | `32` | `ROBOPROBE_API__SLICE_CACHE_SIZE` | Cached risk slices per API process. |
+| `api.slice_timeout_s` | float | `30.0` | `ROBOPROBE_API__SLICE_TIMEOUT_S` | Risk slice computation timeout [s]. |
 | `api.max_upload_mb` | int | `10` | `ROBOPROBE_API__MAX_UPLOAD_MB` | Maximum request body size [MB]. |
 | `api.page_limit_default` | int | `50` | `ROBOPROBE_API__PAGE_LIMIT_DEFAULT` | Default page size [items]. |
 | `api.page_limit_max` | int | `500` | `ROBOPROBE_API__PAGE_LIMIT_MAX` | Maximum page size [items]. |
@@ -293,6 +296,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `risk.thresholds.safe` | float | `0.05` | `ROBOPROBE_RISK__THRESHOLDS__SAFE` | Upper bound of the safe region. |
 | `risk.thresholds.failure` | float | `0.95` | `ROBOPROBE_RISK__THRESHOLDS__FAILURE` | Lower bound of the failure-prone region. |
 | `risk.slice_resolution` | int | `50` | `ROBOPROBE_RISK__SLICE_RESOLUTION` | Grid points per axis of a 2-D slice. |
+| `risk.max_slice_resolution` | int | `100` | `ROBOPROBE_RISK__MAX_SLICE_RESOLUTION` | Maximum on-demand API slice resolution. |
 | `risk.volume_samples` | int | `8192` | `ROBOPROBE_RISK__VOLUME_SAMPLES` | Sobol QMC sample count for region volume estimates (power of two). |
 
 ### 4.9 Reporting

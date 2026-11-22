@@ -92,6 +92,7 @@ def analyze_campaign(  # noqa: PLR0913
     metrics: Metrics | None = None,
     load_space: Callable[[str, str], ScenarioSpace] | None = None,
     analyzers: Sequence[Analyzer] | None = None,
+    analysis_id: UUID | None = None,
 ) -> AnalysisReport:
     """Run the analysis chain for ``campaign_id`` and persist results.
 
@@ -104,10 +105,12 @@ def analyze_campaign(  # noqa: PLR0913
     if campaign is None:
         msg = "campaign not found"
         raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
-    analysis_id = uuid4()
+    analysis_id = analysis_id or uuid4()
     started = clock.monotonic()
     risk_settings = risk or RiskSettings()
-    space = load_space(campaign.space_id, campaign.space_version)
+    space = load_space(campaign.space_id, campaign.space_version).with_pins(
+        getattr(campaign, "pins", {})
+    )
     runs, gp_x, gp_y = _load_runs(uow, campaign_id)
     chain = list(analyzers) if analyzers is not None else _chain_for_kind(kind)
     ctx = AnalysisContext(

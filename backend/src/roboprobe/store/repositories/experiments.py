@@ -9,7 +9,7 @@ from uuid import UUID
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from roboprobe.core.errors import NotFoundError
+from roboprobe.core.errors import ErrorCode, NotFoundError, ValidationError
 from roboprobe.store.flush import execute
 from roboprobe.store.mapping import experiment_record
 from roboprobe.store.orm import ExperimentRow
@@ -58,6 +58,17 @@ class SqlExperimentRepo:
         if int(getattr(result, "rowcount", 0) or 0) != 1:
             msg = "experiment not found"
             raise NotFoundError(msg, context={"experiment_id": str(experiment_id)})
+
+    def patch_notes(self, experiment_id: UUID, notes: str, expected_etag: int) -> None:
+        result = execute(
+            self._s,
+            update(ExperimentRow)
+            .where(ExperimentRow.id == experiment_id, ExperimentRow.etag_version == expected_etag)
+            .values(notes=notes, etag_version=expected_etag + 1),
+        )
+        if int(getattr(result, "rowcount", 0) or 0) != 1:
+            msg = "experiment changed concurrently"
+            raise ValidationError(msg, code=ErrorCode.PRECONDITION_FAILED)
 
     def list(
         self, *, limit: int | None = None, cursor: str | None = None

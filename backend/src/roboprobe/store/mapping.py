@@ -70,6 +70,8 @@ def sut_record(row: SutProfileRow) -> SutProfileRecord:
 
 def experiment_record(row: ExperimentRow) -> ExperimentRecord:
     return ExperimentRecord(
+        notes=row.notes,
+        etag_version=row.etag_version,
         id=row.id,
         name=row.name,
         design=_json(row.design),

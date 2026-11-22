@@ -504,6 +504,15 @@ class _Experiments:
             )
         self._db.experiments[experiment_id] = rec.model_copy(update={"results": dict(results)})
 
+    def patch_notes(self, experiment_id: UUID, notes: str, expected_etag: int) -> None:
+        rec = self._db.experiments.get(experiment_id)
+        if rec is None or rec.etag_version != expected_etag:
+            msg = "experiment changed concurrently"
+            raise ValidationError(msg, code=ErrorCode.PRECONDITION_FAILED)
+        self._db.experiments[experiment_id] = rec.model_copy(
+            update={"notes": notes, "etag_version": expected_etag + 1}
+        )
+
     def list(
         self, *, limit: int | None = None, cursor: str | None = None
     ) -> Page[ExperimentRecord]:
@@ -548,6 +557,13 @@ class _Workers:
             for w in self._db.workers.values()
             if w.backend == backend and w.status in {"IDLE", "BUSY", "DRAINING"}
         )
+
+    def list(self, *, limit: int | None = None, cursor: str | None = None) -> Page[WorkerRecord]:
+        rows = sorted(self._db.workers.values(), key=lambda row: row.id)
+        if cursor is not None:
+            rows = [row for row in rows if row.id > cursor]
+        items, extra = extra_item(rows, clamp_limit(limit))
+        return Page(items=items, next_cursor=None if extra is None else items[-1].id)
 
     def stale(self, *, older_than: datetime) -> tuple[WorkerRecord, ...]:
         out: list[WorkerRecord] = []

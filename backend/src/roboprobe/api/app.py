@@ -14,6 +14,7 @@ from typing import Any
 import structlog
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -58,6 +59,9 @@ def create_app(settings: RoboProbeSettings | None = None) -> FastAPI:
         if autostart:
             await hub.start()
         try:
+            recover_reports = getattr(app.state, "recover_reports", None)
+            if recover_reports is not None:
+                await run_in_threadpool(recover_reports)
             yield
         finally:
             await hub.stop()
