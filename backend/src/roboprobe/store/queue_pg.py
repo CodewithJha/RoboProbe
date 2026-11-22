@@ -8,6 +8,7 @@ Implements: T-012, FR-RUN-001, FR-RUN-002
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
 from uuid import UUID
 
@@ -19,8 +20,9 @@ from roboprobe.core.types import RunOutcome, RunStatus, Verdict
 from roboprobe.store.engine import SessionFactory
 from roboprobe.store.events import TOPIC_RUN_FINISHED, TOPIC_RUN_STARTED
 from roboprobe.store.flush import execute
+from roboprobe.store.mapping import run_record
 from roboprobe.store.orm import RunRow
-from roboprobe.store.records import ClaimedRun, OracleResultRecord
+from roboprobe.store.records import ClaimedRun, OracleResultRecord, RunRecord
 from roboprobe.store.repositories.events import SqlEventRepo
 from roboprobe.store.repositories.oracle_results import SqlOracleResultRepo
 
@@ -38,16 +40,25 @@ _LEGAL: dict[RunStatus, frozenset[RunStatus]] = {
     RunStatus.CANCELLED: frozenset(),
 }
 
-CLAIM_SQL = """
+_CLAIMABLE_CAMPAIGN = """
+(c.status='RUNNING' OR (c.status='COMPLETED' AND r.phase IN ('confirm', 'replay', 'manual')))
+"""
+
+CLAIM_SQL = f"""
 UPDATE runs SET status='CLAIMED', worker_id=:worker, claimed_at=now(), attempt=attempt+1
 WHERE id = (
   SELECT r.id FROM runs r JOIN campaigns c ON c.id = r.campaign_id
-  WHERE r.status='PENDING' AND r.backend=:backend AND c.status='RUNNING'
+  WHERE r.status='PENDING' AND r.backend=:backend AND {_CLAIMABLE_CAMPAIGN}
   ORDER BY r.priority, r.enqueued_at
   FOR UPDATE OF r SKIP LOCKED
   LIMIT 1)
 RETURNING id, campaign_id, scenario_hash, scenario_values, seed, attempt, backend, ordinal
-"""
+"""  # noqa: S608 - fixed claim predicate, bound request parameters
+
+_DEPTH_SQL = f"""
+SELECT count(*) FROM runs r JOIN campaigns c ON c.id = r.campaign_id
+WHERE r.status='PENDING' AND r.backend=:backend AND {_CLAIMABLE_CAMPAIGN}
+"""  # noqa: S608 - fixed claim predicate, bound request parameters
 
 REAP_SQL = """
 UPDATE runs r SET status = CASE WHEN r.attempt < :max_attempts THEN 'PENDING' ELSE 'ERROR' END,
@@ -56,6 +67,7 @@ UPDATE runs r SET status = CASE WHEN r.attempt < :max_attempts THEN 'PENDING' EL
 FROM workers w
 WHERE r.worker_id = w.id AND r.status IN ('CLAIMED','RUNNING')
   AND w.last_heartbeat < :now - make_interval(secs => :heartbeat_timeout_s)
+RETURNING r.id, r.status, r.phase
 """
 
 
@@ -69,11 +81,13 @@ class PostgresRunQueue:
         notify_channel: str,
         wall_timeout_s: float,
         sim_time_budget_s: float,
+        on_confirmation_finished: Callable[[Session, RunRecord], None] | None = None,
     ) -> None:
         self._factory = factory
         self._notify_channel = notify_channel
         self._wall_timeout_s = wall_timeout_s
         self._sim_time_budget_s = sim_time_budget_s
+        self._on_confirmation_finished = on_confirmation_finished
 
     def claim(self, worker_id: str, backend: str) -> ClaimedRun | None:
         session = self._factory()
@@ -168,6 +182,7 @@ class PostgresRunQueue:
                 },
                 campaign_id=run.campaign_id,
             )
+            self._finish_confirmation(session, run)
             session.commit()
         except Exception:
             session.rollback()
@@ -197,6 +212,7 @@ class PostgresRunQueue:
                 },
                 campaign_id=run.campaign_id,
             )
+            self._finish_confirmation(session, run)
             session.commit()
         except Exception:
             session.rollback()
@@ -207,17 +223,25 @@ class PostgresRunQueue:
     def reap(self, now: datetime, heartbeat_timeout_s: float, max_attempts: int) -> int:
         session = self._factory()
         try:
-            result = execute(
-                session,
-                text(REAP_SQL),
-                {
-                    "now": now,
-                    "heartbeat_timeout_s": heartbeat_timeout_s,
-                    "max_attempts": max_attempts,
-                },
+            rows = (
+                execute(
+                    session,
+                    text(REAP_SQL),
+                    {
+                        "now": now,
+                        "heartbeat_timeout_s": heartbeat_timeout_s,
+                        "max_attempts": max_attempts,
+                    },
+                )
+                .mappings()
+                .all()
             )
+            if self._on_confirmation_finished is not None:
+                for row in rows:
+                    if row["phase"] == "confirm" and row["status"] == RunStatus.ERROR:
+                        self._finish_confirmation(session, self._require(session, row["id"]))
             session.commit()
-            return int(getattr(result, "rowcount", 0) or 0)
+            return len(rows)
         except Exception:
             session.rollback()
             raise
@@ -229,15 +253,17 @@ class PostgresRunQueue:
         try:
             count = execute(
                 session,
-                text(
-                    "SELECT count(*) FROM runs r JOIN campaigns c ON c.id = r.campaign_id "
-                    "WHERE r.status='PENDING' AND r.backend=:backend AND c.status='RUNNING'"
-                ),
+                text(_DEPTH_SQL),
                 {"backend": backend},
             ).scalar_one()
             return int(count)
         finally:
             session.close()
+
+    def _finish_confirmation(self, session: Session, run: RunRow) -> None:
+        if run.phase == "confirm" and self._on_confirmation_finished is not None:
+            session.flush()
+            self._on_confirmation_finished(session, run_record(run))
 
     def _require(self, session: Session, run_id: UUID) -> RunRow:
         run = session.get(RunRow, run_id)

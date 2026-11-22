@@ -12,6 +12,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from roboprobe.core.errors import ErrorCode, NotFoundError, ValidationError
+from roboprobe.core.types import JsonValue
 from roboprobe.store.flush import execute
 from roboprobe.store.mapping import mode_record
 from roboprobe.store.orm import FailureModeMemberRow, FailureModeRow
@@ -24,9 +25,18 @@ class SqlFailureModeRepo:
     def __init__(self, session: Session) -> None:
         self._s = session
 
-    def get(self, mode_id: UUID) -> FailureModeRecord | None:
-        row = self._s.get(FailureModeRow, mode_id)
+    def get(self, mode_id: UUID, *, for_update: bool = False) -> FailureModeRecord | None:
+        row = self._s.get(FailureModeRow, mode_id, with_for_update=for_update)
         return None if row is None else mode_record(row)
+
+    def set_interaction(self, mode_id: UUID, interaction: dict[str, JsonValue]) -> None:
+        """Store interaction evidence without rewriting labels, status, or members."""
+        execute(
+            self._s,
+            update(FailureModeRow)
+            .where(FailureModeRow.id == mode_id)
+            .values(interaction=interaction, etag_version=FailureModeRow.etag_version + 1),
+        )
 
     def patch(
         self,

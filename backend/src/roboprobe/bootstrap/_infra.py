@@ -8,14 +8,19 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import cast
 
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
 
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.observability.tracing import configure_tracing, instrument_sqlalchemy
+from roboprobe.runner.confirmations import conclude_confirmation
+from roboprobe.runner.ports import RunView, UnitOfWorkPort
 from roboprobe.store.artifacts import LocalArtifactStore
 from roboprobe.store.engine import create_engine_from_settings, session_factory
 from roboprobe.store.queue_pg import PostgresRunQueue
+from roboprobe.store.records import RunRecord
 from roboprobe.store.uow import SqlAlchemyUnitOfWork
 
 __all__ = ["Infrastructure", "build_infrastructure"]
@@ -49,11 +54,20 @@ def build_infrastructure(settings: RoboProbeSettings) -> Infrastructure:
     def uow_factory() -> SqlAlchemyUnitOfWork:
         return SqlAlchemyUnitOfWork(factory, notify_channel=channel)
 
+    def finish_confirmation(session: Session, run: RunRecord) -> None:
+        uow = uow_factory().bind_session(session)
+        conclude_confirmation(
+            cast("UnitOfWorkPort", uow),
+            cast("RunView", run),
+            interaction=settings.analysis.interaction,
+        )
+
     queue = PostgresRunQueue(
         factory,
         notify_channel=channel,
         wall_timeout_s=settings.worker.default_wall_timeout_s,
         sim_time_budget_s=settings.worker.default_sim_time_budget_s,
+        on_confirmation_finished=finish_confirmation,
     )
     store = LocalArtifactStore(settings.storage.artifact_root)
     return Infrastructure(

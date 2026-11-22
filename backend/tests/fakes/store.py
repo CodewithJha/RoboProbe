@@ -379,8 +379,15 @@ class _Modes:
     def __init__(self, db: _Db) -> None:
         self._db = db
 
-    def get(self, mode_id: UUID) -> FailureModeRecord | None:
+    def get(self, mode_id: UUID, *, for_update: bool = False) -> FailureModeRecord | None:
+        del for_update
         return self._db.modes.get(mode_id)
+
+    def set_interaction(self, mode_id: UUID, interaction: dict[str, JsonValue]) -> None:
+        row = self._db.modes[mode_id]
+        self._db.modes[mode_id] = row.model_copy(
+            update={"interaction": interaction, "etag_version": row.etag_version + 1}
+        )
 
     def list_for_campaign(self, campaign_id: UUID) -> tuple[FailureModeRecord, ...]:
         return tuple(
