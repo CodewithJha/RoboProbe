@@ -1,0 +1,80 @@
+.page {
+  display: grid;
+  gap: var(--space-4, 1rem);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) minmax(0, 3fr);
+  gap: 1.25rem;
+}
+
+.pairs {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.pairs button {
+  text-align: start;
+  width: 100%;
+}
+
+.pairs button[aria-pressed='true'] {
+  font-weight: 700;
+}
+
+.volume {
+  display: flex;
+  height: 1rem;
+}
+
+.volume [data-region='safe'] {
+  background: var(--risk-safe);
+}
+
+.volume [data-region='uncertain'] {
+  background: var(--risk-uncertain);
+}
+
+.volume [data-region='failure'] {
+  background: var(--risk-failure);
+}
+
+.statistics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.statistics dt {
+  text-transform: capitalize;
+}
+
+.statistics dd {
+  margin: 0;
+}
+
+.probe {
+  margin-block: 1rem;
+}
+
+.probe button + button {
+  margin-inline-start: 0.5rem;
+}
+
+.anchors label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.anchors input {
+  max-width: 100%;
+}
+
+@media (width <= 48rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
