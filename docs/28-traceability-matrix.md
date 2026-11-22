@@ -9,7 +9,7 @@
 | PRD | SRS requirements | Design (docs §) | Tasks (22) | Verification (18) |
 |-----|------------------|-----------------|-----------|-------------------|
 | PR-01 Scenario space | FR-SCN-001…007 | 06 §2–5, 05 §3 | T-020…T-025 | unit/property `tests/unit/scenario`, schema fixtures |
-| PR-02 Autonomous campaigns | FR-RUN-001…006, FR-SIM-001, FR-SIM-003 | 04 §4–6, 05 §5, 10, 11 §4, 14 §2–5 | T-012, T-033, T-035, T-040…T-047, T-091, T-092, T-093a/b, T-096 | integration runner, chaos, backend contract, [warehouse map alignment](evidence/T-092.md), Jazzy package and lidar launch tests, sim map alignment |
+| PR-02 Autonomous campaigns | FR-RUN-001…006, FR-SIM-001, FR-SIM-003 | 04 §4–6, 05 §5, 10, 11 §4, 14 §2–5 | T-012, T-033, T-035, T-040…T-047, T-091, T-092, T-093a/b, T-094c, T-096 | integration runner, chaos, backend contract, [warehouse map alignment](evidence/T-092.md), Jazzy package, lidar and navigation tests, sim map alignment |
 | PR-03 Intelligent selection | FR-SEL-002/003/005/006/007/008 | 07 §4–6 | T-055…T-061 | strategy contract, benchmark gates 18 §4.4, EXP-01 |
 | PR-04 Baselines | FR-SEL-001 | 07 §3 | T-050, T-051 | strategy contract, design tests |
 | PR-05 Failure detection | FR-ORC-001…006 | 08 | T-036…T-039 | golden traces, invariants |
@@ -51,6 +51,9 @@ Gazebo velocity relay verification (T-093d, #195, FR-SIM-003):
 against a fake simulation clock and verifies both velocity message types, FIFO ordering,
 reported latency, zero-delay delivery and process shutdown.
 
+Ground-truth geometry (T-094a, #196, FR-SIM-003 and FR-ORC-001) compares clearance
+between the ROS monitor and kinematic2d on the same map, footprint and poses.
+
 Gazebo episode recording (T-094b, #197, FR-RUN-004, FR-SIM-003, FR-SIM-005) is verified in
 `ros_ws/src/roboprobe_ros/test/test_episode_recorder.py` with the ROS simulation clock,
 shared Trace v1 fixtures, incomplete output, and real MCAP recording.
@@ -64,6 +67,10 @@ Creation durability and scale follow-up (#147–#149):
 `test_campaign_http_queries.py` verifies campaign/run HTTP filters, bounded query counts and the
 200 ms p95 target at 10,000 runs. `tests/unit/runner/test_campaign_space_loader.py` covers stored
 uploaded spaces and pins; factory tests verify effective selection snapshot restoration.
+
+Gazebo materialization tests in `tests/unit/backends/gazebo/test_materialize.py` cover stable
+generated files, the individual effects of P1–P8, XML document restrictions and ROS topic and
+parameter contracts (T-096a, FR-SIM-003).
 
 ## 2. Non-functional requirements → verification
 

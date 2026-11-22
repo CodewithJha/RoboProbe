@@ -9,6 +9,7 @@
   "geometry/footprint.py": "dcb0db40949b5e845d716597d1b22713e6d9059f06740bce04a2546c33aeb22d",
   "geometry/grid.py": "f959b70d481ee992cd967e9bbb87dd698de69719dca3686704b19da10a8fda62",
   "geometry/raycast.py": "350cdcf0d5f8c336274f8d2070edd347e6dd2cb47a087583fa40394cdf975e63",
+  "geometry/ros_map.py": "9bfeebc360fe8f4f47b45049846d0cc6d82f9ae401eda91225620e30e4399fc3",
   "perturbation/__init__.py": "4bdad240885a5daeee5996dd434bcbeae129239160ed4c923e3606f9ef1afb36",
   "perturbation/delay.py": "c8c218b7663320cd6843194f3a7c8001deb8ce065c1a3bbdedfde3d11b2f359b",
   "perturbation/friction.py": "4c0b24fac6e2b1419a9dd0ba08c0f0206f625867e38e5d1678f3e14403d5b777",

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pyarrow.parquet as pq
@@ -58,3 +61,38 @@ def test_generate_label_and_hash(tmp_path: Path) -> None:
     assert sha256_file(path) == sha256_file(path)
     reread = pq.read_table(path).to_pylist()
     assert len(reread) == 8
+
+
+def test_reference_cli_outputs_matching_parquet_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The documented command writes an integrity manifest and returns it as JSON."""
+    monkeypatch.setenv("ROBOPROBE_STORAGE__WORKDIR_ROOT", str(tmp_path / "runs"))
+    out = tmp_path / "reference.parquet"
+    result = subprocess.run(  # noqa: S603 - this is the tested CLI in an isolated interpreter.
+        [
+            sys.executable,
+            "-c",
+            "from roboprobe.cli.main import app; app()",
+            "--json",
+            "reference",
+            "generate",
+            "--output",
+            str(out),
+            "--n",
+            "1",
+            "--seed",
+            "11",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert result.returncode == 0, result.stderr
+    manifest = json.loads(out.with_suffix(".manifest.json").read_text(encoding="utf-8"))
+    assert json.loads(result.stdout) == manifest
+    assert manifest["path"] == str(out)
+    assert manifest["sha256"] == sha256_file(out)
+    assert pq.read_table(out).num_rows == manifest["n"] == 1
+    assert manifest["seed"] == 11

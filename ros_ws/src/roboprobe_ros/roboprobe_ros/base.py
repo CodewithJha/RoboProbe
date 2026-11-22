@@ -12,7 +12,7 @@ import yaml
 from ament_index_python.packages import get_package_share_directory
 from numpy.random import PCG64, Generator
 from rclpy.node import Node
-from rclpy.qos import QoSProfile, qos_profile_sensor_data
+from rclpy.qos import DurabilityPolicy, QoSProfile, qos_profile_sensor_data
 
 if TYPE_CHECKING:
     from rclpy.context import Context
@@ -90,6 +90,11 @@ class RoboProbeNode(Node):
             return copy(qos_profile_sensor_data)
         if profile == "default":
             return QoSProfile(depth=_ROS_DEFAULT_QUEUE_DEPTH)
+        if profile == "transient_local":
+            return QoSProfile(
+                depth=_ROS_DEFAULT_QUEUE_DEPTH,
+                durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            )
         msg = f"topics.{key}.qos must name a supported QoS profile"
         raise ValueError(msg)
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, cast
 from uuid import uuid4
@@ -167,7 +167,7 @@ def write_manifest(path: Path, manifest: ReferenceManifest) -> None:
     """Persist manifest JSON next to the parquet artefact."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        json.dumps(manifest.__dict__, indent=2, sort_keys=True) + "\n",
+        json.dumps(asdict(manifest), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
 

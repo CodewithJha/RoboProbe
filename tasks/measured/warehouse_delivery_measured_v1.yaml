@@ -1,0 +1,21 @@
+# Task under test for scenario space warehouse_v1 (docs/06 §1, §7). Schema: schemas/task.schema.json.
+#
+# PROVISIONAL values (listed under `provisional`, rejected by the strict loader and by
+# `scripts/check_no_tbd.py --strict`):
+#   goal                - ~13 m north of Dock A through the first aisle, chosen before the kinematic2d
+#                         world (T-032) and the Gazebo map inspection (T-092) exist. T-092 fixes it.
+#   nominal_path        - straight provisional polyline; T-092 regenerates it with the Nav2 planner.
+#   injected_obstacles  - resolved in T-091 (0.135 m EUR pallet, below the 0.188 m lidar plane).
+schema_version: 1
+id: warehouse_delivery_v1
+name: Warehouse delivery - Dock A to Station B
+world: {gazebo: nav2_minimal_tb4_sim/worlds/warehouse.sdf, kinematic2d: worlds/warehouse_k2d.json}
+map: maps/warehouse.yaml
+start: {x: 2.12, y: -21.3, yaw: 1.57}
+goal: {x: 2.12, y: -8.3, yaw: 1.57}
+goal_tolerance: {xy: 0.25, yaw: 0.5}
+nominal_path: paths/warehouse_delivery_v1.csv
+injected_obstacles:
+  - {model: dropped_pallet, size: [0.8, 0.6, 0.135], placement: {along: obstacle.along_path, lateral: obstacle.clearance, side: left}}
+time_limit: {factor: 2.5, offset_s: 10, cap_s: 120}
+provisional: [goal, nominal_path]

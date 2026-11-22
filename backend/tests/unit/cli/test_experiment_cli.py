@@ -119,9 +119,14 @@ def test_resolve_key_marks_k2d_model_only_for_kinematic_backend() -> None:
     assert _resolve_key(space, "h", "benchmark").k2d_model_version == "n/a"
 
 
-def test_experiment_cli_run_then_report(
-    monkeypatch: pytest.MonkeyPatch, settings_env: Path, tmp_path: Path
-) -> None:
+@pytest.fixture
+def serial_experiment_settings(monkeypatch: pytest.MonkeyPatch, settings_env: Path) -> None:
+    """Limit campaign drives when the test shares one in-memory transaction."""
+    monkeypatch.setenv("ROBOPROBE_EXPERIMENTS__MAX_CONCURRENT_CAMPAIGNS", "1")
+
+
+@pytest.mark.usefixtures("serial_experiment_settings")
+def test_experiment_cli_run_then_report(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     uow = InMemoryUnitOfWork()
     mod = "roboprobe.cli.experiment"
     services = SimpleNamespace(

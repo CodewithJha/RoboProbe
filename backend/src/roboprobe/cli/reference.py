@@ -5,6 +5,7 @@ Implements: FR-CLI-001
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from pathlib import Path
 from typing import Annotated
 
@@ -35,7 +36,7 @@ def reference_generate(
     state = get_state(ctx)
     settings: RoboProbeSettings = state.bootstrap()
     manifest = generate_and_write(settings, output=output, n=n, seed=seed, space_id=space_id)
-    state.output.data(manifest.__dict__)
+    state.output.data(asdict(manifest))
 
 
 @app.command("label")
