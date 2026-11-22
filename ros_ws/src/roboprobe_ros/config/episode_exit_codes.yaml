@@ -1,0 +1,4 @@
+completed: 0
+startup_timeout: 10
+spawn_failed: 11
+internal_error: 12

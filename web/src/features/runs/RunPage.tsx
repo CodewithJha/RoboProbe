@@ -175,6 +175,7 @@ function Parameters({
                     <>
                       <span
                         className={styles['track']}
+                        role="img"
                         aria-label={`Range ${String(low)} to ${String(high)}, nominal ${String(nominal)}`}
                       >
                         <i

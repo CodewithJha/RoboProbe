@@ -139,7 +139,7 @@ def test_task_schema_accepts_tbd_placeholders_for_the_loader_guard() -> None:
     task = example("task-06-7")
     assert task["goal"]["x"] == 2.12
     assert errors("task", task) == []
-    placeholder_task = dict(task, goal={"x": "TBD_T092", "y": "TBD_T092", "yaw": 1.57})
+    placeholder_task = dict(task, goal={"x": "TBD_T042", "y": "TBD_T042", "yaw": 1.57})
     assert errors("task", placeholder_task) == []
 
 

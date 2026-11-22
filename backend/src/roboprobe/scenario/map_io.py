@@ -26,7 +26,8 @@ __all__ = [
 ]
 
 _PGM_MAGIC = re.compile(rb"P5\s*\n(?:#[^\n]*\n)*(?P<dims>\d+)\s+(?P<rows>\d+)\s+(?P<maxval>\d+)\s")
-_MIN_ORIGIN_LEN = 2
+_MAX_PIXEL = 255
+_ORIGIN_LEN = 3
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,16 +41,16 @@ class OccupancyIoU:
 
 def _read_pgm(path: Path) -> npt.NDArray[np.uint8]:
     raw = path.read_bytes()
-    match = _PGM_MAGIC.search(raw)
-    if match is None:
-        msg = f"{path}: not a binary P5 PGM"
+    match = _PGM_MAGIC.match(raw)
+    if match is None or int(match.group("maxval")) != _MAX_PIXEL:
+        msg = f"{path}: not an 8-bit binary P5 PGM"
         raise errors.ValidationError(msg, context={"path": str(path)})
     start = match.end()
     width = int(match.group("dims"))
     rows = int(match.group("rows"))
-    pixels = np.frombuffer(raw[start:], dtype=np.uint8, count=width * rows)
-    if pixels.size != width * rows:
-        msg = f"{path}: PGM pixel payload truncated"
+    pixels = np.frombuffer(raw, dtype=np.uint8, offset=start)
+    if width < 1 or rows < 1 or pixels.size != width * rows:
+        msg = f"{path}: PGM pixel payload size does not match its dimensions"
         raise errors.ValidationError(msg, context={"path": str(path), "expected": width * rows})
     return pixels.reshape(rows, width)
 
@@ -57,13 +58,10 @@ def _read_pgm(path: Path) -> npt.NDArray[np.uint8]:
 def _threshold_occupied(
     meta: dict[str, Any], values: npt.NDArray[np.uint8]
 ) -> npt.NDArray[np.bool_]:
-    mode = str(meta.get("mode", "trinary"))
-    _ = float(meta["free_thresh"])
-    occupied_thresh = float(meta["occupied_thresh"])
-    if mode == "trinary":
-        return values >= int(np.ceil(occupied_thresh * 255))
-    scaled = values.astype(np.float64) / 255.0
-    return scaled > occupied_thresh
+    gray = values.astype(np.float64) / _MAX_PIXEL
+    probability = gray if int(meta.get("negate", 0)) else 1.0 - gray
+    # Only cells below the free threshold are traversable, including for a trinary map.
+    return probability >= float(meta["free_thresh"])
 
 
 def load_ros_map(yaml_path: Path) -> OccupancyGrid:
@@ -82,20 +80,17 @@ def load_ros_map(yaml_path: Path) -> OccupancyGrid:
         msg = f"{yaml_path}: missing image"
         raise errors.ValidationError(msg, context={"path": str(yaml_path)})
     image_path = (yaml_path.parent / image_name).resolve()
+    if not image_path.is_relative_to(yaml_path.parent.resolve()):
+        msg = f"{yaml_path}: image must stay inside the map directory"
+        raise errors.ValidationError(msg)
     values = _read_pgm(image_path)
-    rows, cols = values.shape
-    height = int(meta["height"]) if "height" in meta else rows
-    width = int(meta["width"]) if "width" in meta else cols
-    if rows != height or cols != width:
-        meta = dict(meta)
-        meta["height"] = rows
-        meta["width"] = cols
     resolution = float(meta["resolution"])
     origin = meta["origin"]
-    if not isinstance(origin, list) or len(origin) < _MIN_ORIGIN_LEN:
-        msg = f"{yaml_path}: origin must be [x, y, yaw]"
+    if not isinstance(origin, list) or len(origin) != _ORIGIN_LEN or origin[2] != 0:
+        msg = f"{yaml_path}: origin must be [x, y, 0]"
         raise errors.ValidationError(msg, context={"path": str(yaml_path)})
-    occupied = _threshold_occupied(meta, values)
+    # PGM is top-first. OccupancyGrid row zero is the lowest world y.
+    occupied = np.flipud(_threshold_occupied(meta, values))
     return OccupancyGrid(occupied, resolution, origin=(float(origin[0]), float(origin[1])))
 
 
@@ -113,10 +108,7 @@ def write_ros_map(  # noqa: PLR0913
     pgm_name = image_name or f"{yaml_path.stem}.pgm"
     pgm_path = yaml_path.parent / pgm_name
     rows, cols = grid.shape
-    if mode == "trinary":
-        pixels = np.where(grid.occupied, 254, 0).astype(np.uint8)
-    else:
-        pixels = np.where(grid.occupied, 255, 0).astype(np.uint8)
+    pixels = np.flipud(np.where(grid.occupied, 0, _MAX_PIXEL)).astype(np.uint8)
     header = f"P5\n# RoboProbe map export (T-092)\n{cols} {rows}\n255\n".encode()
     pgm_path.write_bytes(header + pixels.tobytes())
     document = {

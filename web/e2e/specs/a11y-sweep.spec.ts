@@ -9,9 +9,11 @@ async function setTheme(
 }
 
 async function tabThrough(page: import('@playwright/test').Page): Promise<void> {
+  const active = page.locator(':focus');
   for (let i = 0; i < 12; i += 1) {
     await page.keyboard.press('Tab');
-    const active = page.locator(':focus');
+    // Chromium may move focus to its own controls when advancing past the document.
+    if ((await active.count()) === 0) await page.keyboard.press('Tab');
     await expect(active).toBeVisible();
   }
 }

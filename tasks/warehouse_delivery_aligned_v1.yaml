@@ -1,0 +1,15 @@
+# Task under test for scenario space warehouse_v1 (docs/06 §1, §7). Schema: schemas/task.schema.json.
+#
+# T-092 verified the poses and exported the shared nominal path from Nav2.
+schema_version: 1
+id: warehouse_delivery_v1
+name: Warehouse delivery - Dock A to Station B
+world: {gazebo: nav2_minimal_tb4_sim/worlds/warehouse.sdf, kinematic2d: configs/maps/warehouse_v1_k2d.json}
+map: configs/maps/warehouse_v1.yaml
+start: {x: 2.12, y: -21.3, yaw: 1.57}
+goal: {x: 2.12, y: -8.3, yaw: 1.57}
+goal_tolerance: {xy: 0.25, yaw: 0.5}
+nominal_path: paths/warehouse_v1_nominal_path.csv
+injected_obstacles:
+  - {model: dropped_pallet, size: [0.8, 0.6, 0.135], placement: {along: obstacle.along_path, lateral: obstacle.clearance, side: left}}
+time_limit: {factor: 2.5, offset_s: 10, cap_s: 120}

@@ -9,7 +9,7 @@ import json
 import threading
 from collections.abc import Callable
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, cast
 
 import numpy as np
 
@@ -23,17 +23,18 @@ from roboprobe.backends.base import (
 from roboprobe.backends.kinematic2d.episode import PARAM_ALONG, PARAM_DROPOUT, run_k2d_episode
 from roboprobe.backends.kinematic2d.model import Kinematic2DModel
 from roboprobe.backends.kinematic2d.world import (
-    dump_world_json,
     load_world,
     nominal_path_polyline,
     world_document,
 )
 from roboprobe.backends.trace_io import write_trace
+from roboprobe.core.errors import ValidationError
 from roboprobe.core.settings import RoboProbeSettings
-from roboprobe.core.types import NavStatus, Trace
+from roboprobe.core.types import JsonValue, NavStatus, Trace
 from roboprobe.perturbation.perception import PerceptionModel
 from roboprobe.scenario.materialize import place_obstacle, side_sign
-from roboprobe.scenario.repo_root import resolve_repo_path
+from roboprobe.scenario.repo_root import discover_repo_root, resolve_repo_path
+from roboprobe.scenario.task import load_nominal_path
 
 __all__ = ["K2D_SUPPORTED_PARAMS", "Kinematic2DBackend"]
 
@@ -85,9 +86,23 @@ class Kinematic2DBackend:
         """Write world JSON and resolved obstacle pose (byte-identical for equal inputs)."""
         req.workdir.mkdir(parents=True, exist_ok=True)
         world_path = req.workdir / "world.json"
-        world_path.write_text(dump_world_json(self._model), encoding="utf-8")
-        path = nominal_path_polyline(self._model.world)
-        obstacle: dict[str, float] | None = None
+        root = discover_repo_root()
+        source = (root / req.task.world.get("kinematic2d", "")).resolve()
+        if not source.is_relative_to(root):
+            msg = "kinematic2d world must stay inside the repository"
+            raise ValidationError(msg)
+        if source.is_file():
+            world_text = source.read_text(encoding="utf-8")
+            payload = cast("dict[str, JsonValue]", json.loads(world_text))
+            path = load_nominal_path(root / "tasks" / f"{req.task.id}.yaml", req.task)
+            payload["nominal_path"] = path.tolist()
+        else:
+            # Older task documents used a descriptive world path before a clone existed.
+            payload = world_document(self._model)
+            world_text = json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n"
+            path = nominal_path_polyline(self._model.world)
+        world_path.write_text(world_text, encoding="utf-8")
+        obstacle: dict[str, JsonValue] | None = None
         if req.task.injected_obstacles:
             spec = req.task.injected_obstacles[0]
             along = float(req.scenario.values.get(spec.placement.along, 0.5))
@@ -99,7 +114,6 @@ class Kinematic2DBackend:
             json.dumps(obstacle, sort_keys=True, separators=(",", ":")) + "\n",
             encoding="utf-8",
         )
-        payload = world_document(self._model)
         if obstacle is not None:
             payload["obstacle"] = obstacle
         return MaterializedScenario(
@@ -119,7 +133,12 @@ class Kinematic2DBackend:
         artifacts: dict[str, Path] = {}
         try:
             world = load_world(materialized.files["world"])
-            path = nominal_path_polyline(self._model.world)
+            nominal_path = materialized.payload.get("nominal_path")
+            path = (
+                np.asarray(nominal_path, dtype=np.float64)
+                if nominal_path is not None
+                else nominal_path_polyline(self._model.world)
+            )
             trace = run_k2d_episode(
                 world,
                 req.task,

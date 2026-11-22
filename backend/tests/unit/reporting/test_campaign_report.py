@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -116,6 +118,30 @@ def test_render_campaign_report_offline_html(tmp_path: Path) -> None:
     parser = _LinkParser()
     parser.feed(html)
     assert parser.external == []
+
+
+def test_report_renders_legacy_json_risk_regions(tmp_path: Path) -> None:
+    """Older records still supply a plotted risk slice."""
+    risk = tmp_path / "risk.json"
+    risk.write_text(
+        json.dumps(
+            [
+                {
+                    "x_param": "robot.max_speed",
+                    "y_param": "env.illuminance",
+                    "x_values": [0.1, 0.2],
+                    "y_values": [1.0, 2.0, 3.0],
+                    "region": [[0, 1, 2], [0, 0, 1]],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    uow = _FakeUow()
+    uow.risk_maps = SimpleNamespace(latest=lambda _id: SimpleNamespace(slices_artifact="risk"))
+    uow.artifacts = SimpleNamespace(get=lambda _id: SimpleNamespace(sha256="0" * 64, rel_path=risk))
+    out = render_campaign_report(CID, uow, _FakeStore(), out=tmp_path / "report.html")
+    assert "robot.max_speed x env.illuminance" in out.read_text(encoding="utf-8")
 
 
 def test_xss_escaped_mode_label(tmp_path: Path) -> None:

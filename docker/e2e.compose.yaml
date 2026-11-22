@@ -1,0 +1,27 @@
+# Playwright overrides. Docker Compose resolves these paths relative to compose.yaml.
+x-e2e-backend: &e2e-backend
+  env_file: !override [./e2e.env]
+  volumes:
+    - e2e-artifacts:/data/artifacts
+
+services:
+  migrate:
+    <<: *e2e-backend
+  orchestrator:
+    <<: *e2e-backend
+  worker-k2d:
+    <<: *e2e-backend
+  api:
+    <<: *e2e-backend
+    secrets: [api_token]
+  web:
+    env_file: !override [./e2e.env]
+
+secrets:
+  db_password:
+    file: ${E2E_DB_PASSWORD_FILE:-/dev/null}
+  api_token:
+    file: ${E2E_API_TOKEN_FILE:-/dev/null}
+
+volumes:
+  e2e-artifacts: {}

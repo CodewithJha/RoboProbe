@@ -14,7 +14,7 @@ from scipy import ndimage
 from roboprobe.backends.kinematic2d.model import Kinematic2DModel
 from roboprobe.geometry import OccupancyGrid
 
-__all__ = ["RollingCostmap", "inflate", "overlay_sensor_hits"]
+__all__ = ["RollingCostmap", "inflate", "overlay_sensor_hits", "sensor_hit_occupancy"]
 
 FloatArray = npt.NDArray[np.float64]
 
@@ -23,8 +23,10 @@ def inflate(occupied: npt.NDArray[np.bool_], radius_cells: int) -> npt.NDArray[n
     """Binary dilation by ``radius_cells`` (4-connected square)."""
     if radius_cells <= 0:
         return occupied.copy()
-    structure = np.ones((2 * radius_cells + 1, 2 * radius_cells + 1), dtype=np.bool_)
-    return np.asarray(ndimage.binary_dilation(occupied, structure=structure), dtype=np.bool_)
+    window = 2 * radius_cells + 1
+    return np.asarray(
+        ndimage.maximum_filter(occupied, size=window, mode="constant", cval=0), dtype=np.bool_
+    )
 
 
 def overlay_sensor_hits(  # noqa: PLR0913,PLR0917
@@ -39,27 +41,51 @@ def overlay_sensor_hits(  # noqa: PLR0913,PLR0917
     depth_inflation_cells: int = 0,
 ) -> OccupancyGrid:
     """Return a copy of ``grid`` with finite sensor endpoints marked occupied (optional inflate)."""
-    occupied = grid.occupied.copy()
+    occupied = sensor_hit_occupancy(
+        grid,
+        grid.occupied,
+        pose,
+        lidar_ranges,
+        lidar_angles,
+        depth_ranges,
+        depth_angles,
+        lidar_inflation_cells=lidar_inflation_cells,
+        depth_inflation_cells=depth_inflation_cells,
+    )
+    return OccupancyGrid(occupied, grid.resolution, grid.origin)
+
+
+def sensor_hit_occupancy(  # noqa: PLR0913,PLR0917 - two sensors and their inflation radii
+    grid: OccupancyGrid,
+    static_occupied: npt.NDArray[np.bool_],
+    pose: tuple[float, float, float],
+    lidar_ranges: FloatArray,
+    lidar_angles: FloatArray,
+    depth_ranges: FloatArray,
+    depth_angles: FloatArray,
+    *,
+    lidar_inflation_cells: int,
+    depth_inflation_cells: int,
+) -> npt.NDArray[np.bool_]:
+    """Compose the planning mask without computing a distance transform."""
+    occupied = static_occupied.copy()
     specs = (
         (lidar_ranges, lidar_angles, lidar_inflation_cells),
         (depth_ranges, depth_angles, depth_inflation_cells),
     )
-    for ranges, angles, inflate_cells in specs:
-        layer = np.zeros_like(occupied)
-        _mark_world_cells(layer, grid, pose, ranges, angles)
-        if inflate_cells > 0:
-            layer = inflate(layer, inflate_cells)
-        occupied |= layer
-    return OccupancyGrid(occupied, grid.resolution, grid.origin)
+    for sensor in specs:
+        _mark_world_cells(occupied, grid, pose, sensor)
+    return occupied
 
 
 def _mark_world_cells(
     occupied: npt.NDArray[np.bool_],
     grid: OccupancyGrid,
     pose: tuple[float, float, float],
-    ranges: FloatArray,
-    angles: FloatArray,
+    sensor: tuple[FloatArray, FloatArray, int],
 ) -> None:
+    ranges, angles, inflate_cells = sensor
+    radius = max(0, inflate_cells)
     finite = np.isfinite(ranges)
     if not np.any(finite):
         return
@@ -69,8 +95,11 @@ def _mark_world_cells(
     cells = grid.world_to_cell(np.stack([x, y], axis=1))
     rows, cols = grid.shape
     for row, col in cells:
-        if 0 <= row < rows and 0 <= col < cols and not occupied[row, col]:
-            occupied[row, col] = True
+        if 0 <= row < rows and 0 <= col < cols:
+            occupied[
+                max(0, row - radius) : min(rows, row + radius + 1),
+                max(0, col - radius) : min(cols, col + radius + 1),
+            ] = True
 
 
 class RollingCostmap:

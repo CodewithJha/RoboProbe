@@ -26,6 +26,7 @@ setup(
         "console_scripts": [
             "cmd_delay = roboprobe_ros.cmd_delay:main",
             "episode_recorder = roboprobe_ros.episode_recorder:main",
+            "perception_degrader = roboprobe_ros.perception_degrader:main",
             "sensor_perturber = roboprobe_ros.sensor_perturber:main",
         ],
     },

@@ -109,6 +109,12 @@ observed latency in **seconds** as `std_msgs/msg/Float64` on `/roboprobe/cmd_del
 The `stamped_cmd_vel` flag in `topics.yaml` selects the ROS message type. Zero delay forwards
 the message in its subscription callback with a reported latency of zero.
 
+The Jazzy depth relay reads `illuminance_lux` and `perception_model_file` from the episode's
+`perturb_params.yaml`, with the model path taken from `backends.gazebo_nav2.perception_model_file`.
+It consumes `depth_points_raw` and publishes XYZ points on `depth_points` with depth-one sensor QoS.
+It preserves the source frame and timestamp, omits invalid and lost returns, and logs elapsed milliseconds
+for each processed cloud. The installed OAK-D simulation publishes 320×240 points at 10 Hz.
+
 Friction and lighting are world properties ⇒ a fresh world load per run (no warm reset in MVP; see §8).
 
 **SUT profiles** (`configs/sut_profiles/<id>.yaml`, schema `schemas/sut_profile.schema.json`, loader
@@ -133,8 +139,9 @@ sequenceDiagram
     L->>G: gz sim -s -r --headless-rendering world.sdf
     L->>N: nav2 bringup with nav2_params.yaml
     L->>E: start nodes (perturber, degrader, delay, gt, recorder, manager)
-    E->>N: wait lifecycle ACTIVE (timeout startup_timeout_s)
-    E->>N: publish /initialpose (start pose)
+    E->>N: wait for AMCL lifecycle ACTIVE (startup_timeout_s)
+    E->>N: publish /initialpose and verify localization
+    E->>N: wait for BT navigator lifecycle ACTIVE
     E->>R: start recording
     E->>N: NavigateToPose(goal)
     loop until result, T_max, or wall timeout
@@ -150,6 +157,10 @@ sequenceDiagram
 
 Communication worker ↔ episode: **files + exit code** (`episode_done.json`, `trace.parquet`, `episode.log`),
 not a live ROS connection — keeps the worker free of rclpy state and makes crashes easy to classify as F-INFRA.
+The [shared exit-code table](../ros_ws/src/roboprobe_ros/config/episode_exit_codes.yaml) defines
+`0` for completed episodes, `10` for startup timeouts, `11` for failed spawn validation, and `12`
+for internal errors. A navigation timeout is a completed episode with status `TIMEOUT`.
+The manager writes `episode_done.json` beside `episode.yaml` after the recorder flushes.
 
 ## 6. Ground truth & recording
 
