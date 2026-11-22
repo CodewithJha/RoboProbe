@@ -144,6 +144,9 @@ sequenceDiagram
 
 Communication worker ↔ episode: **files + exit code** (`episode_done.json`, `trace.parquet`, `episode.log`),
 not a live ROS connection — keeps the worker free of rclpy state and makes crashes easy to classify as F-INFRA.
+The [shared exit-code table](../ros_ws/src/roboprobe_ros/config/episode_exit_codes.yaml) defines
+`0` for completed episodes, `10` for startup timeouts, `11` for failed spawn validation, and `12`
+for internal errors. A navigation timeout is a completed episode with status `TIMEOUT`.
 
 ## 6. Ground truth & recording
 

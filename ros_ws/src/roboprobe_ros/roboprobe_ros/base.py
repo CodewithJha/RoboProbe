@@ -55,7 +55,8 @@ class RoboProbeNode(Node):
             seed = self.declare_parameter("seed", 0)
             topics_path = Path(topic_file.get_parameter_value().string_value)
             perturb_path = perturb_file.get_parameter_value().string_value
-            self._topics = _mapping(_read_yaml(topics_path).get("topics"), "topics")
+            self._catalog = _read_yaml(topics_path)
+            self._topics = _mapping(self._catalog.get("topics"), "topics")
             self.perturbation = _read_yaml(Path(perturb_path)) if perturb_path else {}
             self.rng = Generator(PCG64(seed.get_parameter_value().integer_value))
         except Exception:
@@ -82,6 +83,14 @@ class RoboProbeNode(Node):
             return QoSProfile(depth=_ROS_DEFAULT_QUEUE_DEPTH)
         msg = f"topics.{key}.qos must name a supported QoS profile"
         raise ValueError(msg)
+
+    def frame(self, key: str) -> str:
+        """Resolve a logical frame to its configured tf frame identifier."""
+        value = _mapping(self._catalog.get("frames"), "frames")[key]
+        if not isinstance(value, str) or not value:
+            msg = f"frames.{key} must be a nonempty string"
+            raise ValueError(msg)
+        return value
 
     def log_event(self, event: str, **fields: object) -> None:
         """Write one JSON event with the common backend log fields."""
