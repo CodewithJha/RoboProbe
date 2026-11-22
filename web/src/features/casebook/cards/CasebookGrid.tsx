@@ -6,19 +6,7 @@ import { useCampaign, useModes, useReplay, useSpace } from '../../../api/hooks';
 import { number, object } from '../../runs/runData';
 import styles from './CasebookGrid.module.css';
 
-type Mode = Schema['FailureModeOut'] & {
-  medoid_run_id?: string | null;
-  rules?: unknown[];
-  version?: number;
-  provisional?: boolean;
-  duplicate_of?: string | null;
-  characteristic?: Array<{ name?: string; value?: unknown }>;
-  param_ranges?: Record<string, unknown>;
-  reproducibility?: unknown;
-  minimal_run_id?: string | null;
-  first_seen_ordinal?: number | null;
-};
-type PatchBody = Schema['FailureModePatch'] & { duplicate_of?: string | null };
+type Mode = Schema['FailureModeOut'];
 type ModePage = Schema['Page_FailureModeOut_'];
 type Status = NonNullable<Schema['FailureModePatch']['status']>;
 const statuses: Status[] = ['open', 'accepted', 'fixed', 'duplicate'];
@@ -27,6 +15,25 @@ const format = new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 });
 function display(value: unknown) {
   const n = number(value);
   return n === undefined ? 'Unavailable' : format.format(n);
+}
+
+function readMode(mode: Mode) {
+  const row = object(mode);
+  const characteristic = Array.isArray(row['characteristic'])
+    ? row['characteristic'].filter((item): item is string => typeof item === 'string')
+    : [];
+  return {
+    provisional: row['provisional'] === true,
+    duplicate_of: typeof row['duplicate_of'] === 'string' ? row['duplicate_of'] : null,
+    medoid_run_id: typeof row['medoid_run_id'] === 'string' ? row['medoid_run_id'] : null,
+    minimal_run_id: typeof row['minimal_run_id'] === 'string' ? row['minimal_run_id'] : null,
+    version: number(row['version']) ?? 1,
+    characteristic,
+    param_ranges: object(row['param_ranges']),
+    rules: Array.isArray(row['rules']) ? row['rules'] : [],
+    reproducibility: number(row['reproducibility']),
+    first_seen_ordinal: number(row['first_seen_ordinal']),
+  };
 }
 
 function CaseCard({
@@ -45,18 +52,19 @@ function CaseCard({
   const [duplicate, setDuplicate] = useState(false);
   const [target, setTarget] = useState('');
   const [message, setMessage] = useState('');
-  const replay = useReplay(mode.medoid_run_id ?? '');
+  const extra = readMode(mode);
+  const replay = useReplay(extra.medoid_run_id ?? '');
   const interaction = object(mode.interaction);
   const interactionStatus = interaction['status'];
-  const patch = useMutation<Mode, Error, PatchBody>({
-    mutationFn: async (body) =>
-      requireData(
-        await api.PATCH('/api/v1/modes/{mode_id}', {
-          params: { path: { mode_id: mode.id } },
-          headers: { 'If-Match': `W/"${String(mode.version)}"` },
-          body,
-        }),
-      ),
+  const patch = useMutation({
+    mutationFn: async (body: Schema['FailureModePatch']): Promise<Mode> => {
+      const response = await api.PATCH('/api/v1/modes/{mode_id}', {
+        params: { path: { mode_id: mode.id } },
+        headers: { 'If-Match': `W/"${String(extra.version)}"` },
+        body,
+      });
+      return requireData(response) as Mode;
+    },
     onMutate: async (body) => {
       await queryClient.cancelQueries({ queryKey: key });
       const previous = queryClient
@@ -77,7 +85,7 @@ function CaseCard({
       setMessage('');
       return previous;
     },
-    onSuccess: (updated: Mode) => {
+    onSuccess: (updated) => {
       if (updated.id)
         queryClient.setQueryData<ModePage>(
           key,
@@ -114,11 +122,9 @@ function CaseCard({
         }),
       ),
   });
-  const best = (mode.rules ?? [])
+  const best = extra.rules
     .map(object)
-    .sort((a: Record<string, unknown>, b: Record<string, unknown>) =>
-      (number(b['precision']) ?? 0) - (number(a['precision']) ?? 0),
-    )[0];
+    .sort((a, b) => (number(b['precision']) ?? 0) - (number(a['precision']) ?? 0))[0];
   const conditions = Array.isArray(best?.['conditions'])
     ? (best['conditions'] as unknown[]).map(object)
     : [];
@@ -151,7 +157,7 @@ function CaseCard({
     <article className={styles['card']}>
       <header>
         <strong>
-          {mode.code} {mode.provisional ? <small>Provisional</small> : null}
+          {mode.code} {extra.provisional ? <small>Provisional</small> : null}
         </strong>
         <span>
           {mode.primary_class} · {mode.size} runs
@@ -216,7 +222,10 @@ function CaseCard({
           onSubmit={(event) => {
             event.preventDefault();
             if (target) {
-              patch.mutate({ status: 'duplicate', duplicate_of: target });
+              patch.mutate({
+                status: 'duplicate',
+                duplicate_of: target,
+              } as Schema['FailureModePatch']);
               setDuplicate(false);
             }
           }}
@@ -248,13 +257,13 @@ function CaseCard({
             Cancel
           </button>
         </form>
-      ) : mode.duplicate_of ? (
-        <small>Duplicate of {mode.duplicate_of}</small>
+      ) : extra.duplicate_of ? (
+        <small>Duplicate of {extra.duplicate_of}</small>
       ) : null}
-      {(mode.characteristic ?? []).length ? (
+      {extra.characteristic.length ? (
         <dl>
-          {mode.characteristic?.map((param) => {
-            const range = object(mode.param_ranges?.[param]);
+          {extra.characteristic.map((param) => {
+            const range = object(extra.param_ranges[param]);
             const coverage = number(range['space_coverage']);
             const definition = definitions.find((item) => item['id'] === param);
             const lo = number(definition?.['low']);
@@ -308,13 +317,15 @@ function CaseCard({
           {conditions
             .map(
               (condition) =>
-                `${String(condition['param'])} ${String(condition['op'])} ${display(condition['threshold_physical'])}`,
+                `${typeof condition['param'] === 'string' ? condition['param'] : 'param'} ${typeof condition['op'] === 'string' ? condition['op'] : 'op'} ${display(condition['threshold_physical'])}`,
             )
             .join(' ∧ ')}{' '}
           · Precision {display(best['precision'])} · Support {display(best['support'])}
         </p>
       ) : null}
-      {mode.reproducibility != null ? <p>Reproducibility {display(mode.reproducibility)}</p> : null}
+      {extra.reproducibility != null ? (
+        <p>Reproducibility {display(extra.reproducibility)}</p>
+      ) : null}
       {typeof interactionStatus === 'string' ? (
         <p>
           Interaction {interactionStatus.replaceAll('_', ' ')}
@@ -324,9 +335,9 @@ function CaseCard({
         </p>
       ) : null}
       <div className={styles['actions']}>
-        {mode.medoid_run_id ? (
+        {extra.medoid_run_id ? (
           <>
-            <Link to={`/runs/${mode.medoid_run_id}`}>Medoid run</Link>
+            <Link to={`/runs/${extra.medoid_run_id}`}>Medoid run</Link>
             <button
               type="button"
               disabled={replay.isPending}
@@ -338,13 +349,13 @@ function CaseCard({
             </button>
           </>
         ) : null}
-        {mode.minimal_run_id ? (
+        {extra.minimal_run_id ? (
           <>
-            <Link to={`/runs/${mode.minimal_run_id}`}>Minimal scenario</Link>
+            <Link to={`/runs/${extra.minimal_run_id}`}>Minimal scenario</Link>
             <button
               type="button"
               onClick={() => {
-                if (mode.minimal_run_id) void exportScenario(mode.minimal_run_id);
+                if (extra.minimal_run_id) void exportScenario(extra.minimal_run_id);
               }}
             >
               Export scenario
@@ -380,7 +391,11 @@ function CaseCard({
 export function CasebookGrid({ campaignId }: { campaignId: string }) {
   const query = useModes(campaignId);
   const campaign = useCampaign(campaignId);
-  const space = useSpace(campaign.data?.space?.id ?? '', campaign.data?.space?.version ?? '');
+  const campaignRow = object(campaign.data);
+  const spaceRef = object(campaignRow['space']);
+  const spaceId = typeof spaceRef['id'] === 'string' ? spaceRef['id'] : '';
+  const spaceVersion = typeof spaceRef['version'] === 'string' ? spaceRef['version'] : '';
+  const space = useSpace(spaceId, spaceVersion);
   const definition = space.data?.definition['parameters'];
   const definitions = Array.isArray(definition) ? definition.map(object) : [];
   const [status, setStatus] = useState('');
@@ -393,12 +408,14 @@ export function CasebookGrid({ campaignId }: { campaignId: string }) {
         (!status || mode.status === status) &&
         (!failureClass || mode.primary_class === failureClass),
     )
-    .sort((a, b) =>
-      sort === 'size'
+    .sort((a, b) => {
+      const aExtra = readMode(a);
+      const bExtra = readMode(b);
+      return sort === 'size'
         ? b.size - a.size || a.code.localeCompare(b.code)
-        : (a.first_seen_ordinal ?? Infinity) - (b.first_seen_ordinal ?? Infinity) ||
-          a.code.localeCompare(b.code, undefined, { numeric: true }),
-    );
+        : (aExtra.first_seen_ordinal ?? Infinity) - (bExtra.first_seen_ordinal ?? Infinity) ||
+            a.code.localeCompare(b.code, undefined, { numeric: true });
+    });
   return (
     <section aria-labelledby="casebook-title">
       <h1 id="casebook-title">Casebook</h1>
