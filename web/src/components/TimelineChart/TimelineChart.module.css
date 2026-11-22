@@ -1,0 +1,114 @@
+.root {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.header h3 {
+  font-size: var(--font-size-md);
+}
+
+.header button {
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid var(--ink-muted);
+  background: var(--paper-raised);
+  border-radius: var(--radius-tag);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}
+
+.chart {
+  width: 100%;
+  background: var(--paper-raised);
+  border: var(--border-width) solid var(--ink-muted);
+}
+
+.chart text {
+  fill: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+}
+
+.grid {
+  stroke: var(--grid-line);
+  stroke-width: 1;
+}
+
+.primary {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+
+.secondary {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.threshold {
+  stroke: var(--risk-uncertain);
+  stroke-dasharray: 5 3;
+}
+
+.cursor {
+  stroke: var(--margin-line);
+  stroke-width: 1;
+}
+
+.safe {
+  fill: var(--risk-safe);
+  opacity: 0.12;
+}
+
+.uncertain {
+  fill: var(--risk-uncertain);
+  opacity: 0.12;
+}
+
+.failure {
+  fill: var(--risk-failure);
+  opacity: 0.12;
+}
+
+.neutral {
+  fill: var(--ink-muted);
+  opacity: 0.1;
+}
+
+.chart .band-label {
+  font-size: var(--font-size-xs);
+}
+
+.scrubber {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
+.scrubber input {
+  flex: 1;
+  min-width: 6rem;
+  accent-color: var(--accent);
+}
+
+.scrubber output {
+  min-width: 6ch;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.legend {
+  color: var(--ink-muted);
+  font-size: var(--font-size-sm);
+}
