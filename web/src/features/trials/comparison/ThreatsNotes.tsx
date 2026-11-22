@@ -10,13 +10,14 @@ export function ThreatsNotes({ experiment }: { experiment: Schema['ExperimentOut
   const save = useMutation({
     mutationFn: async ({ notes, version }: { notes: string; version: string }) =>
       requireData(
+        // @ts-expect-error experiment PATCH contract is ahead of generated client types
         await api.PATCH('/api/v1/experiments/{experiment_id}', {
           params: { path: { experiment_id: experiment.id } },
           headers: { 'If-Match': version },
           body: { notes },
         }),
       ),
-    onSuccess(response) {
+    onSuccess(response: Schema['ExperimentOut']) {
       setSaved(response.notes);
       setEtag(getEtag(`/api/v1/experiments/${experiment.id}`));
       void cache.invalidateQueries({ queryKey: ['experiments', experiment.id], exact: true });
@@ -29,7 +30,7 @@ export function ThreatsNotes({ experiment }: { experiment: Schema['ExperimentOut
           params: { path: { experiment_id: experiment.id } },
         }),
       ),
-    onSuccess(response) {
+    onSuccess(response: Schema['ExperimentOut']) {
       setSaved(response.notes);
       setEtag(getEtag(`/api/v1/experiments/${experiment.id}`));
       save.reset();

@@ -756,8 +756,12 @@ export interface components {
             modes_found: number;
             /** Name */
             name: string;
+            pins?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
             /** Repeats */
             repeats: number;
+            space?: components["schemas"]["SpaceRef"];
             /** Started At */
             started_at?: string | null;
             status: components["schemas"]["CampaignStatus"];
@@ -827,6 +831,7 @@ export interface components {
         };
         /** ExperimentOut */
         ExperimentOut: {
+            cells?: components["schemas"]["JsonValue"][];
             /** Created At */
             created_at?: string | null;
             /** Design */
@@ -842,6 +847,8 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            notes?: string;
+            progress?: number;
             /** Results */
             results?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -875,12 +882,14 @@ export interface components {
             } | null;
             /** Label */
             label: string;
-            /** Primary Class */
+            medoid_run_id?: string | null;
             primary_class: string;
+            rules?: components["schemas"]["JsonValue"][];
             /** Size */
             size: number;
             /** Status */
             status: string;
+            version?: number;
         };
         /** FailureModePatch */
         FailureModePatch: {
@@ -1078,6 +1087,12 @@ export interface components {
             grid?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+            log_x?: boolean;
+            log_y?: boolean;
+            x_values?: number[];
+            y_values?: number[];
+            p_fail?: (number | undefined)[][];
+            region?: (string | undefined)[][];
             /** Resolution */
             resolution: number;
             /** X Param */

@@ -6,8 +6,16 @@ interface Coordinates {
   x: number;
   y: number;
 }
+type RiskSliceView = Schema['RiskSliceOut'] & {
+  log_x?: boolean;
+  log_y?: boolean;
+  x_values?: number[];
+  y_values?: number[];
+  p_fail?: (number | undefined)[][];
+  region?: (string | undefined)[][];
+};
 interface Props {
-  slice: Schema['RiskSliceOut'];
+  slice: RiskSliceView;
   logX?: boolean;
   logY?: boolean;
   onCellClick?: (values: Coordinates) => void;
@@ -53,8 +61,8 @@ function color(probability: number): string {
 
 export function RiskHeatmap({
   slice,
-  logX = slice.log_x,
-  logY = slice.log_y,
+  logX = slice.log_x ?? false,
+  logY = slice.log_y ?? false,
   onCellClick,
   size = 'full',
 }: Props) {
@@ -62,8 +70,8 @@ export function RiskHeatmap({
   const [tableOpen, setTableOpen] = useState(false);
   const fullX = slice.x_values ?? [];
   const fullY = slice.y_values ?? [];
-  const xIndices = size === 'thumb' ? thumbnailIndices(fullX.length) : fullX.map((_, i) => i);
-  const yIndices = size === 'thumb' ? thumbnailIndices(fullY.length) : fullY.map((_, i) => i);
+  const xIndices = size === 'thumb' ? thumbnailIndices(fullX.length) : fullX.map((_: number, i: number) => i);
+  const yIndices = size === 'thumb' ? thumbnailIndices(fullY.length) : fullY.map((_: number, i: number) => i);
   const xs = xIndices.map((i) => fullX[i] ?? 0);
   const ys = yIndices.map((i) => fullY[i] ?? 0);
   const probabilities = yIndices.map((row) =>
@@ -206,7 +214,7 @@ export function RiskHeatmap({
                       <th scope="col">
                         {slice.y_param} / {slice.x_param}
                       </th>
-                      {xs.map((x, column) => (
+                      {xs.map((x: number, column: number) => (
                         <th scope="col" key={column}>
                           {x}
                         </th>
@@ -214,7 +222,7 @@ export function RiskHeatmap({
                     </tr>
                   </thead>
                   <tbody>
-                    {ys.map((y, row) => (
+                    {ys.map((y: number, row: number) => (
                       <tr key={row}>
                         <th scope="row">{y}</th>
                         {xs.map((x, column) => {
