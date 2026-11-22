@@ -171,7 +171,7 @@ function Parameters({
               <div key={key}>
                 <dt>
                   {key}
-                  {key in object(campaign?.pins) ? <small> · Pinned</small> : null}
+                  null}
                 </dt>
                 <dd>
                   {label(value)} {unit}
@@ -211,7 +211,6 @@ function Oracles({ run }: { run: Schema['RunOut'] }) {
   if (run.verdict === 'INVALID') {
     const manifest = object(run.manifest);
     const reason =
-      run.infra_error ??
       manifest['infra_error'] ??
       manifest['invalid_reason'] ??
       run.warnings?.join(', ');
