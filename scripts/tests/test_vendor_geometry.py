@@ -22,8 +22,20 @@ class VendorGeometryTest(unittest.TestCase):
             source.mkdir(parents=True)
             module = source / "sample.py"
             module.write_text("from roboprobe.geometry import radius\n", encoding="utf-8")
+            trace_sources = {
+                "backends/trace_io.py": "from roboprobe.core.types import Trace\n",
+                "core/errors.py": "from roboprobe.core.types import JsonValue\n",
+                "core/types/enums.py": "from enum import IntEnum\n",
+                "core/types/trace.py": "from roboprobe.core.types.enums import NavStatus\n",
+            }
+            for path, content in trace_sources.items():
+                fixture = source.parent / path
+                fixture.parent.mkdir(parents=True, exist_ok=True)
+                fixture.write_text(content, encoding="utf-8")
             self.assertEqual(vendor_geometry.vendor(root, check=False), ())
             self.assertEqual(vendor_geometry.vendor(root, check=True), ())
+            trace = next((root / "ros_ws").rglob("trace_io.py"))
+            self.assertIn("from roboprobe_ros._vendor.trace", trace.read_text(encoding="utf-8"))
 
             module.write_text("from roboprobe.geometry import diameter\n", encoding="utf-8")
             changed = vendor_geometry.vendor(root, check=True)
