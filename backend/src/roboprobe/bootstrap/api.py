@@ -19,6 +19,7 @@ from sqlalchemy.engine import Engine
 
 from roboprobe.backends.registry import ENTRY_POINT_GROUP, get_backend
 from roboprobe.bootstrap._infra import Infrastructure, UowFactory, build_infrastructure
+from roboprobe.bootstrap.idempotency import SqlAlchemyIdempotencyStore
 from roboprobe.core.clock import SystemClock
 from roboprobe.core.metrics_registry import Metrics, create_metrics
 from roboprobe.core.settings import RoboProbeSettings, load_settings
@@ -30,6 +31,7 @@ from roboprobe.runner.ports import UnitOfWorkPort
 from roboprobe.scenario.repo_root import discover_repo_root
 from roboprobe.selection import registry as strategy_registry
 from roboprobe.store.artifacts import LocalArtifactStore
+from roboprobe.store.engine import session_factory
 
 __all__ = ["ApiServices", "build_api", "build_api_infra", "create_api_app"]
 
@@ -45,6 +47,7 @@ class ApiServices:
     analysis: AnalysisJobRunner
     report_jobs: ReportJobStore
     space_root: Path
+    idempotency: object | None = None
     plugin_catalog: dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -96,6 +99,7 @@ def build_api(settings: RoboProbeSettings) -> ApiServices:
             ThreadPoolExecutor(max_workers=settings.runner.analysis.max_workers)
         ),
         space_root=discover_repo_root(),
+        idempotency=SqlAlchemyIdempotencyStore(session_factory(infra.engine)),
         plugin_catalog=_plugin_catalog(settings),
     )
 
