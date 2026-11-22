@@ -9,6 +9,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 - Trace and artifact transport (T-081e): event-preserving JSON downsampling, original
   Parquet downloads, confined streamed attachments with digest ETags, and rejected-path logs.
+- Dashboard foundation (T-085b/c/d): Field Notebook navigation, lazy feature routes,
+  persisted Paper/Night Shift themes, runtime config, generated typed API hooks, session-scoped
+  bearer auth, ETag-aware mutations and SSE reconnect/resume with query-cache updates.
 
 - Campaign creation and Idempotency-Key responses now commit together, including `start: true`;
   filtered campaign pages use stable creation-time cursors and aggregated counters. Selection

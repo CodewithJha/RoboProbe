@@ -382,3 +382,11 @@ e_max = 0.5
 3. Never put secrets in TOML/YAML committed to git; use `SecretStr` + env/secret file.
 4. Domain configuration used by a run must appear in its manifest `config_snapshot`.
 5. Changing a default is a behaviour change ⇒ CHANGELOG entry (33) and, for oracles/strategies, bump the respective `*_version` so old results stay interpretable.
+
+### Dashboard runtime policy fields (T-085d)
+
+Optional `config.json` fields: `queryStaleTimeMs` (10000), `queryRetryAttempts` (2),
+`sseReconnectInitialMs` (500), `sseReconnectMaxMs` (30000), `sseReconnectJitter` (0.2), and
+`sseRecentEventLimit` (2048). Query retries apply only to network errors, never HTTP problems.
+Reconnect jitter is a fraction in [0, 1]; the final delay remains bounded by the maximum.
+Theme preference is stored in localStorage, while API credentials remain in sessionStorage.

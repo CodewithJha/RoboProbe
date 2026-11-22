@@ -177,6 +177,9 @@ jobs:
       - uses: ./.github/actions/setup-web
         with:
           node-version: ${{ env.NODE_VERSION }}
+      - name: Generated API types are current
+        working-directory: web
+        run: pnpm check:api
       - name: Vitest with coverage (threshold in web/vite.config.ts)
         working-directory: web
         run: pnpm test:coverage --reporter=default --reporter=junit --outputFile.junit=test-results/junit-web.xml

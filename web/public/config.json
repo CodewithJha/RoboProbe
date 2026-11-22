@@ -1,0 +1,6 @@
+{
+  "apiBaseUrl": "/api/v1",
+  "sseUrl": "/api/v1/events",
+  "defaultTheme": "system",
+  "featureFlags": { "trials": true, "reports": true }
+}

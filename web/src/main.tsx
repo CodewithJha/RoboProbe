@@ -3,6 +3,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './app/App';
+import { loadConfig } from './lib/config';
 import './styles/fonts.css';
 import './styles/tokens.css';
 import './styles/base.css';
@@ -15,8 +16,20 @@ if (container === null) {
   throw new Error(`Missing #${ROOT_ELEMENT_ID} element in index.html`);
 }
 
-createRoot(container).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+const root = createRoot(container);
+void loadConfig()
+  .then(() => {
+    root.render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    );
+  })
+  .catch(() => {
+    root.render(
+      <main role="alert">
+        <h1>Configuration could not be loaded</h1>
+        <p>Check config.json and reload this page.</p>
+      </main>,
+    );
+  });

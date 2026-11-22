@@ -93,3 +93,9 @@ proposed via RFC.
 | UC-08 | FR-EXP-001…003, FR-DSH-006 |
 | UC-09 | FR-DSH-007 |
 | UC-10 | FR-RSK-005 |
+
+Dashboard foundation verification (T-085b/c/d, #163–#165; FR-DSH-008, FR-DSH-002, NFR-DEP-001):
+`web/src/app/router.test.tsx` covers every mount, missing routes, feature flags, errors and theme
+persistence. `web/src/api/client.test.tsx` verifies authentication, ProblemError, If-Match and
+infinite pagination against MSW. `config.test.ts`, `sse.test.ts` and `sseBridge.test.ts` verify
+configuration, reconnect/resume, duplicate handling and every documented server event.

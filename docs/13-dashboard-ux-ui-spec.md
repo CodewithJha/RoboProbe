@@ -224,3 +224,22 @@ web/src/
 - SC-6: a first-time user starts a campaign in ≤ 5 min (hallway test with 3 people, recorded in `docs/evidence/`).
 - Lighthouse accessibility ≥ 95; axe-core: 0 serious/critical violations on every route (Playwright).
 - Bundle: initial JS ≤ 350 KB gzip (Plotly lazy-loaded on Atlas/Insights/Trials only).
+
+### Foundation implementation notes (T-085b/c/d)
+
+The shell exposes every documented route as an independently lazy-loaded feature module. Feature
+PRs replace the contextual empty mount points. `api/hooks.ts` exports the generated-type query and
+mutation hooks, with path-based keys and cursor pagination. `api/client.ts` resolves snapshot paths
+against the runtime API base, adds the session token, retains response ETags, and raises structured
+`ProblemError` instances. The generated declaration is never edited by hand; `pnpm check:api`
+regenerates and checks it in CI.
+
+`public/config.json` is a valid development default, avoiding Vite's HTML fallback for a missing
+JSON file. At boot, malformed configuration fails visibly; missing files/network unavailability use
+build defaults. SSE uses explicit exponential reconnect with configurable jitter, resumes by event
+id and drops previously processed ids. Sparse server events invalidate authoritative queries rather
+than synthesizing incomplete run records; complete run payloads patch infinite-page caches. Native
+EventSource cannot observe comment heartbeats, so it relies on transport errors for reconnect.
+
+Development-only component galleries register through a DEV-only module glob; production builds
+exclude the gallery module. The shell accepts feature content in its margin via `MarginRailSlot`.
