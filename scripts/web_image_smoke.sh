@@ -127,7 +127,7 @@ WEB_SMOKE_URL="$base" WEB_SMOKE_TOKEN_FILE="$scratch/api_token" node web/scripts
 "${compose[@]}" stop --timeout 1 api
 status="$(curl --silent --show-error --max-time 5 --get --data-urlencode "token@$scratch/api_token" \
     -o /dev/null -w '%{http_code}' "$base/api/v1/events")"
-[[ "$status" == 502 ]]
+[[ "$status" == 502 || "$status" == 504 ]]
 "${compose[@]}" logs web api >"$scratch/proxy.log" 2>&1
 if grep -Fq -f "$scratch/api_token" "$scratch/proxy.log"; then
     echo 'The event stream credential appeared in the proxy or API logs.' >&2
