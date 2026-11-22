@@ -1,0 +1,12 @@
+.root { display: grid; gap: var(--space-2); }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--font-size-sm); }
+.toolbar button { padding: var(--space-1) var(--space-2); border: var(--border-width) solid var(--ink-muted); background: var(--paper-raised); border-radius: var(--radius-tag); cursor: pointer; }
+.note { color: var(--ink-muted); font-size: var(--font-size-sm); }
+.plot { width: 100%; max-height: 32rem; background: var(--paper-raised); border: var(--border-width) solid var(--ink-muted); touch-action: none; }
+.ground-truth { fill: none; stroke: var(--ink); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.estimated { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+.obstacle { fill: var(--ink-muted); opacity: 0.5; }
+.ghost { fill: none; stroke: var(--ink-muted); opacity: 0.3; vector-effect: non-scaling-stroke; }
+.robot { fill: none; stroke: var(--accent); vector-effect: non-scaling-stroke; }
+.failure { fill: none; stroke: var(--risk-failure); stroke-width: 3; vector-effect: non-scaling-stroke; }
+.cursor { fill: var(--accent); stroke: var(--paper-raised); stroke-width: 1; vector-effect: non-scaling-stroke; }
