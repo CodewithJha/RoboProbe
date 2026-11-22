@@ -102,6 +102,10 @@ class ApiSettings(SettingsSection):
         description="Maximum JSON trace sampling target [Hz].",
     )
     report_workers: int = Field(default=1, gt=0, description="Concurrent API report/export jobs.")
+    experiment_workers: int = Field(default=1, gt=0, description="Concurrent API experiment jobs.")
+    experiment_max_cells: int = Field(
+        default=128, gt=0, description="Maximum planned strategy/seed cells per API experiment."
+    )
     slice_cache_size: int = Field(
         default=32, gt=0, description="Cached risk slices per API process."
     )

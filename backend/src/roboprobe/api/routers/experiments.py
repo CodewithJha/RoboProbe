@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, Header, Request, Response
 from roboprobe.api._store import new_uuid, records
 from roboprobe.api.concurrency import assert_if_match, format_etag
 from roboprobe.api.deps import get_services, get_uow
+from roboprobe.api.experiment_create import plan_experiment, stage_campaigns
 from roboprobe.api.mapping import experiment_out
 from roboprobe.api.pagination import Page, clamp_limit
 from roboprobe.api.schemas import (
@@ -52,11 +53,17 @@ def list_experiments(
 
 
 @router.post("", status_code=201)
-def create_experiment(body: ExperimentCreate, uow: Any = Depends(get_uow)) -> ExperimentOut:
+def create_experiment(
+    body: ExperimentCreate, request: Request, response: Response, uow: Any = Depends(get_uow)
+) -> ExperimentOut:
     try:
         design = ExperimentDesign.model_validate(body.design)
     except pydantic.ValidationError as exc:
         raise ValidationError(str(exc)) from exc
+    services = get_services(request)
+    launch = (
+        plan_experiment(design, body.design, uow=uow, services=services) if body.start else None
+    )
     rec = records()
     eid = new_uuid()
     uow.experiments.add(
@@ -67,11 +74,18 @@ def create_experiment(body: ExperimentCreate, uow: Any = Depends(get_uow)) -> Ex
             status="CREATED",
         )
     )
+    if launch is not None:
+        stage_campaigns(eid, launch[1], uow=uow, services=services)
     uow.commit()
     row = uow.experiments.get(eid)
     if row is None:
         msg = "experiment not found after create"
         raise NotFoundError(msg, context={"experiment_id": str(eid)})
+    response.headers["Location"] = f"{services.settings.api.base_path}/experiments/{eid}"
+    if launch is not None:
+        result = _experiment_detail(row, uow)
+        services.experiment_jobs.submit(eid, design, launch[0])
+        return result
     return experiment_out(row)
 
 
@@ -84,7 +98,12 @@ def get_experiment(
         msg = "experiment not found"
         raise NotFoundError(msg, context={"experiment_id": str(experiment_id)})
     response.headers["ETag"] = format_etag(getattr(row, "etag_version", 1))
+    return _experiment_detail(row, uow)
+
+
+def _experiment_detail(row: Any, uow: Any) -> ExperimentOut:
     payload = experiment_out(row)
+    campaigns = uow.campaigns.list_for_experiment(row.id)
     payload.cells = [
         {
             "campaign_id": str(c.id),
@@ -94,8 +113,12 @@ def get_experiment(
             "status": getattr(c.status, "value", c.status),
             "rep": c.experiment_rep,
         }
-        for c in uow.campaigns.list_for_experiment(experiment_id)
+        for c in campaigns
     ]
+    payload.progress = {
+        "completed": sum(c.status == "COMPLETED" for c in campaigns),
+        "total": len(campaigns),
+    }
     return payload
 
 

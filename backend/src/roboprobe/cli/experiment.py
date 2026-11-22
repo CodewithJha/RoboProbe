@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import importlib
 from pathlib import Path
-from types import ModuleType
 from typing import Annotated, cast
 from uuid import UUID, uuid4
 
@@ -17,18 +16,17 @@ import typer
 
 from roboprobe import __version__ as package_version
 from roboprobe.bootstrap import build_cli_services
+from roboprobe.bootstrap.experiments import SqlExperimentWriter
 from roboprobe.cli._context import get_state
 from roboprobe.cli.campaign import run_inline
 from roboprobe.cli.space import REPO_ROOT, register_space
 from roboprobe.core.clock import SystemClock
 from roboprobe.core.errors import NotFoundError, ValidationError
-from roboprobe.core.types import CampaignStatus, JsonValue, Verdict
-from roboprobe.experiments.planner import CampaignSpec, ComparabilityKey, load_design
+from roboprobe.core.types import CampaignStatus
+from roboprobe.experiments.planner import ComparabilityKey, load_design
 from roboprobe.experiments.runner import ExperimentRunner
-from roboprobe.metrics.campaign_metrics import CampaignRun
 from roboprobe.oracles import __version__ as oracle_set_version
 from roboprobe.reporting.ports import ReportArtifactStore, ReportUnitOfWork
-from roboprobe.runner.ports import UowFactory
 from roboprobe.scenario.space import ScenarioSpace
 from roboprobe.scenario.sut_profile import load_sut_profile
 
@@ -37,100 +35,6 @@ __all__ = ["app"]
 app = typer.Typer(name="experiment", help="Strategy comparison experiments.", no_args_is_help=True)
 
 _SUT_DIR = REPO_ROOT / "configs" / "sut_profiles"
-
-
-def _records() -> ModuleType:
-    return importlib.import_module("roboprobe.store.records")
-
-
-class _UowWriter:
-    """ExperimentWriter backed by a live UnitOfWork factory."""
-
-    def __init__(self, make_uow: UowFactory, clock: SystemClock) -> None:
-        self._make_uow = make_uow
-        self._clock = clock
-
-    def add_experiment(self, *, name: str, design: dict[str, JsonValue], status: str) -> UUID:
-        eid = uuid4()
-        with self._make_uow() as uow:
-            uow.experiments.add(
-                _records().ExperimentRecord(id=eid, name=name, design=design, status=status)
-            )
-            uow.commit()
-        return eid
-
-    def add_campaign(self, spec: CampaignSpec, experiment_id: UUID) -> UUID:
-        cid = uuid4()
-        sut = spec.sut_profile_id or "k2d_default"
-        with self._make_uow() as uow:
-            uow.campaigns.add(
-                _records().CampaignRecord(
-                    id=cid,
-                    name=spec.name,
-                    space_id=spec.space_id,
-                    space_version=spec.space_version,
-                    sut_profile_id=sut,
-                    backend=spec.backend,
-                    strategy_id=spec.strategy_id,
-                    strategy_params=dict(spec.strategy_params),
-                    seed=spec.seed,
-                    budget=spec.budget,
-                    repeats=spec.repeats,
-                    batch_size=spec.batch_size,
-                    pins=dict(spec.pins),
-                    oracle_config=dict(spec.oracle_overrides),
-                    stop_rules=dict(spec.stop_rules),
-                    status=CampaignStatus.CREATED,
-                    experiment_id=experiment_id,
-                    experiment_rep=spec.experiment_rep,
-                    tags=spec.tags,
-                )
-            )
-            uow.commit()
-        return cid
-
-    def get_experiment(self, experiment_id: UUID) -> object | None:
-        with self._make_uow() as uow:
-            found: object | None = uow.experiments.get(experiment_id)
-            return found
-
-    def set_experiment_status(
-        self, experiment_id: UUID, status: str, *, finished: bool = False
-    ) -> None:
-        del finished  # finished_at stamped by DB triggers / future set_finished helper
-        with self._make_uow() as uow:
-            uow.experiments.set_status(experiment_id, status)
-            uow.commit()
-
-    def set_experiment_results(self, experiment_id: UUID, results: dict[str, JsonValue]) -> None:
-        with self._make_uow() as uow:
-            uow.experiments.set_results(experiment_id, results)
-            uow.commit()
-
-    def list_campaigns(self, experiment_id: UUID) -> list[object]:
-        with self._make_uow() as uow:
-            return list(uow.campaigns.list_for_experiment(experiment_id))
-
-    def campaign_runs(self, campaign_id: UUID) -> list[CampaignRun]:
-        with self._make_uow() as uow:
-            page = uow.runs.list_for_campaign(campaign_id, limit=None)
-            rows = sorted(page.items, key=lambda r: (r.ordinal, r.repeat_index))
-        out: list[CampaignRun] = []
-        for row in rows:
-            if row.verdict is None:
-                continue
-            verdict = row.verdict if isinstance(row.verdict, Verdict) else Verdict(str(row.verdict))
-            duration = (row.metrics or {}).get("duration_s", 0.0)
-            out.append(
-                CampaignRun(
-                    verdict=verdict,
-                    wall_time_s=float(cast(float | int | str, duration)),
-                    x_unit=tuple(float(x) for x in row.x_unit),
-                    phase=str(row.phase or ""),
-                    tags=tuple(str(t) for t in row.tags),
-                )
-            )
-        return out
 
 
 def _resolve_key(space: ScenarioSpace, sut_hash: str, backend: str) -> ComparabilityKey:
@@ -175,7 +79,7 @@ def experiment_run(
     key = _resolve_key(space, profile.config_hash, design.backend)
     services = build_cli_services(settings)
     clock = SystemClock()
-    writer = _UowWriter(cast(UowFactory, services.make_uow), clock)
+    writer = SqlExperimentWriter(services.make_uow)
 
     def drive(campaign_id: UUID) -> CampaignStatus:
         services.campaigns.start(campaign_id)
@@ -227,7 +131,7 @@ def experiment_report(
             services.close()
         state.output.data({"path": str(path)})
         return
-    writer = _UowWriter(cast(UowFactory, services.make_uow), clock)
+    writer = SqlExperimentWriter(services.make_uow)
     runner = ExperimentRunner(
         writer,
         settings.experiments,
