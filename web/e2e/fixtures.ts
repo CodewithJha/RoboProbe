@@ -16,7 +16,15 @@ function guardConsole(page: Page): string[] {
   return errors;
 }
 
+const E2E_API_TOKEN = process.env['E2E_API_TOKEN'] ?? 'e2e-ci-token';
+
 export const test = base.extend<{ consoleErrors: string[] }>({
+  page: async ({ page }, use) => {
+    await page.addInitScript((token) => {
+      sessionStorage.setItem('roboprobe.api-token', token);
+    }, E2E_API_TOKEN);
+    await use(page);
+  },
   consoleErrors: [
     async ({ page }, use) => {
       const errors = guardConsole(page);
