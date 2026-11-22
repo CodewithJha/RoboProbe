@@ -1,0 +1,106 @@
+.page {
+  display: grid;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+.page > section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.metadata,
+.parameters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--space-3);
+  margin-block: var(--space-3);
+}
+
+.metadata dd,
+.drawer code {
+  overflow-wrap: anywhere;
+}
+
+.metadata dt,
+.parameters dt {
+  font-weight: var(--font-weight-bold);
+}
+
+.actions,
+.verdict {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.scroll {
+  overflow: auto;
+}
+
+.scroll table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.scroll th,
+.scroll td {
+  border-block-end: var(--border-width) solid var(--rule);
+  text-align: start;
+  padding: var(--space-2);
+}
+
+.track {
+  display: block;
+  position: relative;
+  height: var(--space-2);
+  margin-block: var(--space-2);
+  background: var(--rule);
+}
+
+.track i,
+.track b {
+  position: absolute;
+  inset-block: 0;
+  width: var(--border-width);
+  background: var(--ink);
+}
+
+.track b {
+  background: var(--accent);
+  width: calc(3 * var(--border-width));
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+}
+
+.drawer {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-end: 0;
+  z-index: 11;
+  width: min(100%, 40rem);
+  background: var(--paper);
+  color: var(--ink);
+  padding: var(--space-6);
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+}
+
+.drawer pre,
+.scroll pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

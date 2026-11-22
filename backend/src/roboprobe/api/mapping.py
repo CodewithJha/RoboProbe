@@ -149,6 +149,7 @@ def run_out(record: Any, *, oracles: list[dict[str, object]] | None = None) -> R
         warnings=list(record.warnings),
         oracles=oracles or [],
         metrics=dict(record.metrics),
+        infra_error=getattr(record, "infra_error", None),
         worker_id=None
         if record.worker_id is None
         else hashlib.sha256(record.worker_id.encode()).hexdigest(),

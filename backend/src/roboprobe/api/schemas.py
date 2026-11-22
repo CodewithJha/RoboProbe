@@ -126,6 +126,7 @@ class RunOut(BaseModel):
     oracles: list[dict[str, JsonValue]] = Field(default_factory=list)
     metrics: dict[str, JsonValue] = Field(default_factory=dict)
     worker_id: str | None = None
+    infra_error: str | None = None
     timing: dict[str, datetime | None] = Field(default_factory=dict)
     mode: dict[str, JsonValue] | None = None
     manifest: dict[str, JsonValue] | None = None

@@ -9,12 +9,12 @@ describe('map transforms', () => {
     const restored = screenToWorld(point, map, viewport);
     expect(restored[0]).toBeCloseTo(0.3);
     expect(restored[1]).toBeCloseTo(2.7);
-    expect(worldToScreen(map.origin, map, {zoom:1, pan:[0,0]})).toEqual([0,400]);
+    expect(worldToScreen(map.origin, map, { zoom: 1, pan: [0, 0] })).toEqual([0, 400]);
   });
   it('finds the nearest time at boundaries and ties', () => {
     expect(nearestTime([], 0)).toBe(-1);
-    expect(nearestTime([0,1,2], -3)).toBe(0);
-    expect(nearestTime([0,1,2], 9)).toBe(2);
-    expect(nearestTime([0,1,2], 0.5)).toBe(0);
+    expect(nearestTime([0, 1, 2], -3)).toBe(0);
+    expect(nearestTime([0, 1, 2], 9)).toBe(2);
+    expect(nearestTime([0, 1, 2], 0.5)).toBe(0);
   });
 });

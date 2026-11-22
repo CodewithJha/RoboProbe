@@ -40,6 +40,7 @@ def get_run(run_id: UUID, uow: Any = Depends(get_uow)) -> RunOut:
             "violated": row.violated,
             "robustness": row.robustness,
             "first_violation_t": row.first_violation_t,
+            "details": getattr(row, "details", {}),
         }
         for row in uow.oracle_results.list_for_run(run_id)
     ]

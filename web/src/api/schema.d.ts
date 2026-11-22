@@ -1219,6 +1219,8 @@ export interface components {
        * Format: uuid
        */
       id: string;
+      /** Infra Error */
+      infra_error?: string | null;
       /** Manifest */
       manifest?: {
         [key: string]: components['schemas']['JsonValue'];

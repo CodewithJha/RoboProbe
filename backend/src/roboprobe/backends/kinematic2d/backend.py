@@ -23,7 +23,6 @@ from roboprobe.backends.base import (
 from roboprobe.backends.kinematic2d.episode import PARAM_ALONG, PARAM_DROPOUT, run_k2d_episode
 from roboprobe.backends.kinematic2d.model import Kinematic2DModel
 from roboprobe.backends.kinematic2d.world import (
-    dump_world_json,
     load_world,
     nominal_path_polyline,
     world_document,
@@ -85,7 +84,6 @@ class Kinematic2DBackend:
         """Write world JSON and resolved obstacle pose (byte-identical for equal inputs)."""
         req.workdir.mkdir(parents=True, exist_ok=True)
         world_path = req.workdir / "world.json"
-        world_path.write_text(dump_world_json(self._model), encoding="utf-8")
         path = nominal_path_polyline(self._model.world)
         obstacle: dict[str, float] | None = None
         if req.task.injected_obstacles:
@@ -93,15 +91,25 @@ class Kinematic2DBackend:
             along = float(req.scenario.values.get(spec.placement.along, 0.5))
             lateral = float(req.scenario.values.get(spec.placement.lateral, 0.8))
             pose = place_obstacle(path, along, lateral, side_sign(spec.placement.side))
-            obstacle = {"x": pose.x, "y": pose.y, "yaw": pose.yaw}
+            obstacle = {
+                "x": pose.x,
+                "y": pose.y,
+                "yaw": pose.yaw,
+                "width": spec.size[0],
+                "height": spec.size[1],
+            }
         obstacle_path = req.workdir / "obstacle.json"
         obstacle_path.write_text(
             json.dumps(obstacle, sort_keys=True, separators=(",", ":")) + "\n",
             encoding="utf-8",
         )
         payload = world_document(self._model)
+        payload["footprint_radius"] = self._model.robot.footprint_radius_m
         if obstacle is not None:
             payload["obstacle"] = obstacle
+        world_path.write_text(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8"
+        )
         return MaterializedScenario(
             files={"world": world_path, "obstacle": obstacle_path},
             payload=payload,

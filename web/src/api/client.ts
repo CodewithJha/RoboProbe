@@ -54,9 +54,16 @@ export const api = createClient<paths>({
   fetch: (input: Request) => fetch(input),
 });
 api.use({
-  onRequest({ request }) {
+  async onRequest({ request }) {
     const schemaUrl = new URL(request.url);
-    const target = new Request(`${apiUrl(schemaUrl.pathname)}${schemaUrl.search}`, request);
+    // Construct an explicit init when redirecting to the runtime API origin. Request
+    // instances are not portable as init dictionaries, particularly for method/body.
+    const target = new Request(`${apiUrl(schemaUrl.pathname)}${schemaUrl.search}`, {
+      method: request.method,
+      headers: request.headers,
+      signal: request.signal,
+      ...(request.body === null ? {} : { body: await request.arrayBuffer() }),
+    });
     const token = getToken();
     if (token) target.headers.set('Authorization', `Bearer ${token}`);
     const etag = etags.get(target.url);

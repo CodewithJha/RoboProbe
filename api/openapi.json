@@ -1358,6 +1358,17 @@
             "title": "Id",
             "type": "string"
           },
+          "infra_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Infra Error"
+          },
           "manifest": {
             "anyOf": [
               {
