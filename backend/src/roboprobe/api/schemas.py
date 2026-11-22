@@ -131,7 +131,7 @@ class ManualRunCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     values: dict[str, JsonValue]
-    repeats: int = Field(default=1, gt=0)
+    repeats: int = 1
     tags: list[str] = Field(default_factory=list)
 
 

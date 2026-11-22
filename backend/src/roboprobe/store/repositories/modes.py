@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -49,6 +49,16 @@ class SqlFailureModeRepo:
         if int(getattr(result, "rowcount", 0) or 0) != 1:
             msg = "failure mode not found"
             raise NotFoundError(msg, context={"mode_id": str(mode_id)})
+
+    def counts_for_campaigns(self, campaign_ids: Sequence[UUID]) -> dict[UUID, int]:
+        """Count modes for a whole page in one query (T-081b)."""
+        return dict(
+            self._s.execute(
+                select(FailureModeRow.campaign_id, func.count())
+                .where(FailureModeRow.campaign_id.in_(campaign_ids))
+                .group_by(FailureModeRow.campaign_id)
+            ).all()
+        )
 
     def list_for_campaign(self, campaign_id: UUID) -> tuple[FailureModeRecord, ...]:
         rows = self._s.scalars(

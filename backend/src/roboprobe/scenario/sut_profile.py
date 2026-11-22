@@ -60,6 +60,7 @@ class Kinematic2DProfileConfig(_ProfileConfig):
     """kinematic2d stack: model file (T-029) plus per-profile constant overrides."""
 
     model_file: NonEmptyStr
+    perception_model_file: NonEmptyStr | None = None
     gain_overrides: dict[str, Scalar] = Field(default_factory=dict)
 
 
@@ -147,7 +148,7 @@ def _parse_document(
             source,
             [(_CONFIG_POINTER + json_pointer(e["loc"]), e["msg"]) for e in exc.errors()],
         ) from exc
-    config: dict[str, JsonValue] = parsed.model_dump(mode="json")
+    config: dict[str, JsonValue] = parsed.model_dump(mode="json", exclude_none=True)
 
     issues: list[tuple[str, str]] = []
     if expected_stem is not None and expected_stem != profile_id:

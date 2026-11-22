@@ -195,13 +195,24 @@ shipped configs remain a convenience when no version is supplied. Config referen
 `configs/scenario_spaces` or `configs/sut_profiles`.
 
 Successful campaign creation returns `Location`. `Idempotency-Key` replays are persisted in
-`idempotency_keys`; using a key for different content returns 422. `start: true` commits the
-campaign before invoking its separate lifecycle transaction. Start responses warn with `NO_WORKERS`
+`idempotency_keys`; using a key for different content returns 422. A transaction-scoped lock
+serializes matching keys; competing in-flight requests receive 409 and may retry. The campaign,
+optional `start: true` transition/outbox event, and cached response commit atomically in one UoW,
+so a retry after process failure cannot duplicate a committed campaign. Cached rows expire using
+`api.idempotency_ttl_s`. Start responses warn with `NO_WORKERS`
 when no fresh worker is available. Progress reports discovered modes, not the number of failures.
 Manual requests apply campaign pins, normalize and hash values, derive repeat seeds from the
 campaign seed, and respect `runner.max_manual_repeats` and `runner.manual_priority`.
 Run filters are applied in SQL before keyset pagination; sort ties use run id, and null values
-sort first in ascending order (last descending). Cursors must retain their original sort order.
+sort first in ascending order (last descending). Cursors must retain their original sort order. Campaign lists filter `status`, `strategy` and
+`backend` before keyset pagination and order by `created_at desc, id desc`; run/mode counters are
+aggregated for the whole page (three SELECTs rather than loading every run).
+
+Campaign creation resolves all plugin parameter defaults and persists complete selection/scenario
+settings under the internal `_resolved_settings` envelope in `strategy_params`. The strategy registry
+restores those immutable settings into `StrategyContext`, so later process defaults do not alter a
+campaign. The envelope is omitted from public plugin parameters. Runners prefer registered space
+definitions and restore campaign pins instead of requiring an uploaded space to exist as a file.
 
 ### 3.9 Trace and artifact transport
 

@@ -177,6 +177,8 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `backends.kinematic2d.lidar_beams` | int | `180` | `ROBOPROBE_BACKENDS__KINEMATIC2D__LIDAR_BEAMS` | Simulated lidar beams. |
 | `backends.kinematic2d.depth_beams` | int | `60` | `ROBOPROBE_BACKENDS__KINEMATIC2D__DEPTH_BEAMS` | Simulated depth-camera beams. |
 | `backends.kinematic2d.model_file` | Path | `configs/backends/kinematic2d_v1.yaml` | `ROBOPROBE_BACKENDS__KINEMATIC2D__MODEL_FILE` | Robot, controller and planner constants (calibrated in T-034) [path]. |
+| `backends.kinematic2d.perception_model_file` | Path | `configs/perception/oakd_k2d_v1.yaml` | `ROBOPROBE_BACKENDS__KINEMATIC2D__PERCEPTION_MODEL_FILE` | Perception degradation constants for depth simulation (T-034) [path]. |
+| `backends.kinematic2d.calibration_file` | Path | `configs/reference/k2d_gt_canonical.yaml` | `ROBOPROBE_BACKENDS__KINEMATIC2D__CALIBRATION_FILE` | Designed GT canonical unit-cube points (T-034) [path]. |
 | `backends.gazebo_nav2.image` | str | `ghcr.io/codewithjha/roboprobe-gazebo:${tag}` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__IMAGE` | Worker image reference recorded in run manifests (informational). |
 | `backends.gazebo_nav2.launch_package` | str | `roboprobe_ros` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__LAUNCH_PACKAGE` | ROS package of the launch. |
 | `backends.gazebo_nav2.launch_file` | str | `episode.launch.py` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__LAUNCH_FILE` | Episode launch file. |
@@ -312,6 +314,8 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `experiments.alpha` | float | `0.05` | `ROBOPROBE_EXPERIMENTS__ALPHA` | Significance level. |
 | `experiments.reference_set.n` | int | `20000` | `ROBOPROBE_EXPERIMENTS__REFERENCE_SET__N` | Reference scenarios. |
 | `experiments.reference_set.seed` | int | `20261119` | `ROBOPROBE_EXPERIMENTS__REFERENCE_SET__SEED` | Seed of the reference sample. |
+| `experiments.reference_set.space_id` | str | `warehouse_v1` | `ROBOPROBE_EXPERIMENTS__REFERENCE_SET__SPACE_ID` | Scenario space id. |
+| `experiments.reference_set.artifact_relpath` | str | `reference/warehouse_v1_k2d.parquet` | `ROBOPROBE_EXPERIMENTS__REFERENCE_SET__ARTIFACT_RELPATH` | Relative path under artifact root. |
 | `experiments.mode_match_radius` | float | `0.05` | `ROBOPROBE_EXPERIMENTS__MODE_MATCH_RADIUS` | Unit-cube radius matching a found mode to a true one. |
 | `experiments.coverage_bins` | int | `5` | `ROBOPROBE_EXPERIMENTS__COVERAGE_BINS` | Bins per axis for coverage metrics. |
 

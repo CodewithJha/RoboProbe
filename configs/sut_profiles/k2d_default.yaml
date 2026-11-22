@@ -8,4 +8,5 @@ name: kinematic2d default
 description: Regulated pure pursuit + A* with the calibrated kinematic2d_v1 constants.
 config:
   model_file: configs/backends/kinematic2d_v1.yaml
+  perception_model_file: configs/perception/oakd_k2d_v1.yaml
   gain_overrides: {}

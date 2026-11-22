@@ -30,7 +30,7 @@ Settings = Annotated[RoboProbeSettings, Depends(get_settings)]
 
 _PROFILE_BODY: dict[str, Any] = {
     "requestBody": {
-        "required": True,
+        "required": False,
         "description": "SUT profile document (YAML or JSON; JSON is valid YAML).",
         "content": {
             "application/yaml": {"schema": {"type": "object"}},

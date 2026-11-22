@@ -63,7 +63,11 @@ def campaign_out(
         strategy=StrategyRef(
             id=record.strategy_id,
             seed=record.seed,
-            params=dict(record.strategy_params),
+            params={
+                key: value
+                for key, value in record.strategy_params.items()
+                if key != "_resolved_settings"
+            },
         ),
         budget=record.budget,
         repeats=record.repeats,

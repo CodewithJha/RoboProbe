@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import json
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import uuid4
@@ -73,3 +75,30 @@ def test_cursor_roundtrip_retains_sort_and_tie_breaker(
     other = "-ordinal" if sort == "ordinal" else "ordinal"
     with pytest.raises(ValidationError):
         query_runs(session, uuid4(), limit=1, cursor=first.next_cursor, sort=other)
+
+
+@pytest.mark.parametrize(
+    "sort,value,identifier",
+    [
+        ("ordinal", [], "id"),
+        ("ordinal", True, "id"),
+        ("ordinal", -1, "id"),
+        ("ordinal", 2**100, "id"),
+        ("robustness", {}, "id"),
+        ("robustness", float("nan"), "id"),
+        ("finished_at", 7, "id"),
+        ("finished_at", "2026-01-01", "id"),
+        ("ordinal", 1, 3),
+    ],
+)
+def test_cursor_values_are_validated_before_sql(
+    sort: str, value: object, identifier: object
+) -> None:
+    payload = {
+        "sort": sort,
+        "value": value,
+        "id": str(uuid4()) if identifier == "id" else identifier,
+    }
+    cursor = base64.urlsafe_b64encode(json.dumps(payload).encode()).decode()
+    with pytest.raises(ValidationError):
+        query_runs(MagicMock(), uuid4(), limit=10, cursor=cursor, sort=sort)
