@@ -220,6 +220,7 @@ def run_inline(  # noqa: PLR0912,PLR0915 - inline supervisor wires loop, workers
     settings: RoboProbeSettings,
     *,
     workers: int,
+    serve_probe: bool = True,
 ) -> CampaignStatus:
     """Drive one campaign in-process: CampaignLoop + ``workers`` worker threads."""
     orch = build_orchestrator(settings)
@@ -276,9 +277,9 @@ def run_inline(  # noqa: PLR0912,PLR0915 - inline supervisor wires loop, workers
                 heartbeat_timeout_s=settings.runner.heartbeat_timeout_s,
                 metrics=orch.metrics,
             )
-            hb.register()
-            hb.start()
             heartbeats.append(hb)
+            hb.register()
+            hb.start(serve_probe=serve_probe)
             threads.append(
                 threading.Thread(
                     target=worker.serve_forever,

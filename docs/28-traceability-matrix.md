@@ -9,7 +9,7 @@
 | PRD | SRS requirements | Design (docs §) | Tasks (22) | Verification (18) |
 |-----|------------------|-----------------|-----------|-------------------|
 | PR-01 Scenario space | FR-SCN-001…007 | 06 §2–5, 05 §3 | T-020…T-025 | unit/property `tests/unit/scenario`, schema fixtures |
-| PR-02 Autonomous campaigns | FR-RUN-001…006, FR-SIM-001, FR-SIM-003 | 04 §4–6, 05 §5, 10, 11 §4, 14 §2–5 | T-012, T-033, T-035, T-040…T-047, T-091, T-096 | integration runner, chaos, backend contract, sim tests |
+| PR-02 Autonomous campaigns | FR-RUN-001…006, FR-SIM-001, FR-SIM-003 | 04 §4–6, 05 §5, 10, 11 §4, 14 §2–5 | T-012, T-033, T-035, T-040…T-047, T-091, T-093a, T-096 | integration runner, chaos, backend contract, Jazzy package tests |
 | PR-03 Intelligent selection | FR-SEL-002/003/005/006/007/008 | 07 §4–6 | T-055…T-061 | strategy contract, benchmark gates 18 §4.4, EXP-01 |
 | PR-04 Baselines | FR-SEL-001 | 07 §3 | T-050, T-051 | strategy contract, design tests |
 | PR-05 Failure detection | FR-ORC-001…006 | 08 | T-036…T-039 | golden traces, invariants |
@@ -17,7 +17,7 @@
 | PR-07 Risk atlas | FR-RSK-001…003 | 09 §5 | T-055, T-076 | analytic risk tests |
 | PR-08 Replay & regression | FR-REP-001/002, FR-SCN-008 | 21 §3–4, 06 §6, 14 §7 | T-026, T-043, T-044 | bit-identical replay, export round-trip |
 | PR-09 Dashboard | FR-DSH-001…005, FR-DSH-008 | 13 | T-085…T-089, T-110, T-111 | Vitest, Playwright, axe |
-| PR-10 Experiments & report | FR-EXP-001/002, FR-DSH-007 | 19, 09 §7, 05 §12 | T-078, T-079, T-100…T-105 | metric unit tests, report render |
+| PR-10 Experiments & report | FR-EXP-001/002/003, FR-DSH-007 | 19, 09 §7, 05 §12 | T-078, T-079, T-100…T-105 | metric unit tests, analytical mode evidence, report render |
 | PR-11 Built-in simulator | FR-SIM-001/002 | 10 §7, ADR-0003 | T-030…T-035, T-103 | determinism, speed, calibration |
 | PR-12 Typed configuration | NFR-CFG-001…003 | 27, ADR-0015 | T-003 | precedence tests, config-docs drift check |
 | PR-13 Deployability | NFR-DEP-001…003 | 17, 20, 29 | T-005, T-006, T-047, T-095 | compose smoke test, images workflow |

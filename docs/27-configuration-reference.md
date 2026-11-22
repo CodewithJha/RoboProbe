@@ -373,6 +373,14 @@ The `[p95_ms]` table in [thresholds.toml](../backend/tests/perf/thresholds.toml)
 in milliseconds for each Locust endpoint group. All four groups default to 200 ms. The checker
 also fails if a configured group lacks samples or reports failed requests.
 
+### 4.15 Gazebo episode ROS parameters
+
+| ROS parameter | Default | Use |
+|---------------|---------|-----|
+| `topics_file` | Installed `roboprobe_ros/config/topics.yaml` | Logical names and QoS profiles for the node's topics |
+| `perturb_file` | Empty | YAML parameters written into the episode working directory |
+| `seed` | `0` | Initial PCG64 state for the node's random stream |
+
 ## 5. Example `roboprobe.toml`
 
 ```toml

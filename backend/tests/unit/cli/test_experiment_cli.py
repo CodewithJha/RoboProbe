@@ -17,6 +17,7 @@ from roboprobe.bootstrap.experiments import SqlExperimentWriter
 from roboprobe.cli.experiment import _resolve_key
 from roboprobe.cli.main import ExitCode, app
 from roboprobe.core.clock import FakeClock
+from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.settings.experiments import ExperimentSettings
 from roboprobe.core.types import CampaignStatus, RunStatus, Verdict
 from roboprobe.experiments.planner import ComparabilityKey, ExperimentDesign
@@ -88,6 +89,14 @@ def _drive(uow: InMemoryUnitOfWork, campaign_id: UUID) -> CampaignStatus:
     return CampaignStatus.COMPLETED
 
 
+def _drive_isolated(
+    uow: InMemoryUnitOfWork, campaign_id: UUID, settings: RoboProbeSettings, serve_probe: bool
+) -> CampaignStatus:
+    assert settings.worker.id_prefix.endswith(f":{campaign_id.hex}")
+    assert not serve_probe
+    return _drive(uow, campaign_id)
+
+
 def test_uow_writer_runs_experiment_end_to_end_and_reports() -> None:
     uow = InMemoryUnitOfWork()
     writer = SqlExperimentWriter(lambda: uow)
@@ -125,7 +134,12 @@ def test_experiment_cli_run_then_report(
     for target in (mod, "roboprobe.cli.report", "roboprobe.cli.analyze"):
         monkeypatch.setattr(f"{target}.build_cli_services", lambda _s: services)
     monkeypatch.setattr(f"{mod}.register_space", lambda *_a, **_k: None)
-    monkeypatch.setattr(f"{mod}.run_inline", lambda cid, _s, workers: _drive(uow, cid))
+    monkeypatch.setattr(
+        f"{mod}.run_inline",
+        lambda cid, settings, workers, serve_probe: _drive_isolated(
+            uow, cid, settings, serve_probe
+        ),
+    )
     space = ScenarioSpace.from_yaml(BRANIN, base_dir=BRANIN.parents[2])
     design = tmp_path / "exp.yaml"
     body = _design().model_dump(mode="json", exclude_none=True)
@@ -139,6 +153,8 @@ def test_experiment_cli_run_then_report(
     assert result.exit_code == ExitCode.OK, result.output
     eid = json.loads(result.stdout)["experiment_id"]
     assert raw.is_file()
+    with uow:
+        assert uow.sut_profiles.get("k2d_default") is not None
     again = CliRunner().invoke(app, [*args[:4], "--resume", eid])
     assert again.exit_code == ExitCode.OK, again.output
     assert json.loads(again.stdout)["experiment_id"] == eid
