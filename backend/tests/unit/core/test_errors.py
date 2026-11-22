@@ -24,6 +24,7 @@ from roboprobe.core.errors import (
     StoreError,
     StrategyError,
     ValidationError,
+    WorkerUnhealthy,
     is_transient,
 )
 
@@ -32,7 +33,7 @@ pytestmark = pytest.mark.unit
 ALL_ERRORS = [
     RoboProbeError, ConfigError, ValidationError, NotFoundError, ConflictError, BackendError,
     EpisodeLaunchError, EpisodeTimeoutError, OracleError, StrategyError, ModelFitError,
-    StoreError, QueueError, PluginError,
+    StoreError, QueueError, PluginError, WorkerUnhealthy,
 ]  # fmt: skip
 
 
@@ -46,6 +47,7 @@ ALL_ERRORS = [
         (BackendError, RoboProbeError),
         (EpisodeLaunchError, BackendError),
         (EpisodeTimeoutError, BackendError),
+        (WorkerUnhealthy, BackendError),
         (OracleError, RoboProbeError),
         (StrategyError, RoboProbeError),
         (ModelFitError, StrategyError),

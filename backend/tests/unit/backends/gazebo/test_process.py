@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 import threading
 from contextlib import suppress
@@ -75,23 +76,23 @@ sleep(60)
         assert psutil.Process(int(child)).status() == psutil.STATUS_ZOMBIE
 
 
-def test_orphan_check_rejects_survivors_from_the_current_partition(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    calls: list[str | None] = []
-
-    def retained(partition: str | None) -> list[int]:
-        calls.append(partition)
-        return [123]
-
-    monkeypatch.setattr("roboprobe.backends.gazebo_nav2.process._orphan_pids", retained)
-    with pytest.raises(WorkerUnhealthy, match="left live processes") as error:
-        EpisodeProcess(GazeboNav2Settings(), poll_interval_s=0.01).run(
-            [sys.executable, "-c", "pass"],
-            workdir=tmp_path,
-            env={**os.environ, "GZ_PARTITION": "unit-test-owned"},
-            wall_timeout_s=2.0,
-            cancel=threading.Event(),
-        )
-    assert calls == ["unit-test-owned"]
-    assert error.value.context["orphan_pids"] == [123]
+def test_orphan_check_rejects_survivors_from_the_current_partition(tmp_path: Path) -> None:
+    program = tmp_path / "parameter_bridge"
+    program.write_text("from time import sleep\nsleep(15)\n", encoding="utf-8")
+    partition = f"unit-test-owned-{tmp_path.name}"
+    env = {**os.environ, "GZ_PARTITION": partition}
+    with subprocess.Popen(  # noqa: S603 - this test starts its own placeholder process
+        [sys.executable, str(program)], start_new_session=True, env=env
+    ) as escape:
+        try:
+            with pytest.raises(WorkerUnhealthy, match="left live processes") as error:
+                EpisodeProcess(GazeboNav2Settings(), poll_interval_s=0.01).run(
+                    [sys.executable, "-c", "pass"],
+                    workdir=tmp_path,
+                    env=env,
+                    wall_timeout_s=2.0,
+                    cancel=threading.Event(),
+                )
+            assert error.value.context["orphan_pids"] == [escape.pid]
+        finally:
+            escape.terminate()

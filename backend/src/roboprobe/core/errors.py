@@ -14,7 +14,8 @@ Hierarchy::
     ├── ConflictError
     ├── BackendError
     │   ├── EpisodeLaunchError
-    │   └── EpisodeTimeoutError
+    │   ├── EpisodeTimeoutError
+    │   └── WorkerUnhealthy
     ├── OracleError
     ├── StrategyError
     │   └── ModelFitError
@@ -75,6 +76,7 @@ class ErrorCode(StrEnum):
     BACKEND_ERROR = "BACKEND_ERROR"
     EPISODE_LAUNCH_FAILED = "EPISODE_LAUNCH_FAILED"
     EPISODE_TIMEOUT = "EPISODE_TIMEOUT"
+    WORKER_UNHEALTHY = "WORKER_UNHEALTHY"
     ORACLE_ERROR = "ORACLE_ERROR"
     STRATEGY_ERROR = "STRATEGY_ERROR"
     MODEL_FIT_FAILED = "MODEL_FIT_FAILED"
@@ -247,6 +249,8 @@ class PluginError(RoboProbeError):
 
 class WorkerUnhealthy(BackendError):  # noqa: N818 - named by the worker lifecycle contract
     """The worker must exit because its backend cannot safely start another episode."""
+
+    default_code = ErrorCode.WORKER_UNHEALTHY
 
 
 def is_transient(exc: BaseException) -> bool:
