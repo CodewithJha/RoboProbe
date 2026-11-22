@@ -42,7 +42,7 @@ def test_topics_yaml_matches_schema() -> None:
     names = [topic["name"] for topic in document["topics"].values()]
     assert len(names) == len(set(names))
 
-    task = load_task(REPO_ROOT / "tasks/warehouse_delivery_measured_v1.yaml", strict=False)
+    task = load_task(REPO_ROOT / "tasks/measured/warehouse_delivery_measured_v1.yaml", strict=False)
     pallet = REPO_ROOT / "ros_ws/src/roboprobe_ros/models/dropped_pallet/model.sdf"
     model = ET.parse(pallet)  # noqa: S314 - checked-in static SDF, not an external input
     size = model.findtext("./model/link/collision/geometry/box/size")
@@ -62,10 +62,9 @@ def test_stamped_velocity_and_depth_match_the_actual_bridge_types() -> None:
     assert not validator().is_valid(document)
 
 
-def test_corrected_geometry_keeps_the_previous_warehouse_version_loadable() -> None:
+def test_seeded_measured_task_versions_remain_loadable() -> None:
     space_file = REPO_ROOT / "configs/scenario_spaces/warehouse_v1.yaml"
     raw = load_yaml_document(space_file.read_bytes(), source=str(space_file))
-    archived = {**raw, "task": "tasks/warehouse_delivery_v1.yaml"}
+    archived = {**raw, "task": "tasks/measured/warehouse_delivery_measured_v1.yaml"}
     historical = ScenarioSpace.from_mapping(archived, source="archived space", base_dir=REPO_ROOT)
-    assert historical.version == "4326a28381df"
-    assert ScenarioSpace.from_yaml(space_file, base_dir=REPO_ROOT).version == "2b4d5a96d21a"
+    assert historical.version == "2b4d5a96d21a"

@@ -12,7 +12,7 @@ import pytest
 import rclpy
 from rclpy.context import Context
 from rclpy.parameter import Parameter
-from rclpy.qos import QoSReliabilityPolicy
+from rclpy.qos import DurabilityPolicy, QoSReliabilityPolicy
 from roboprobe_ros._vendor.geometry import CircleFootprint
 from roboprobe_ros._vendor.geometry.grid import OccupancyGrid
 from roboprobe_ros._vendor.perturbation.delay import CommandDelayBuffer
@@ -41,6 +41,7 @@ def test_installed_topics_and_vendored_kernels(ros_context: Context) -> None:
         assert node.topic("scan_raw").startswith("/")
         assert node.qos("scan_raw").reliability is QoSReliabilityPolicy.BEST_EFFORT
         assert node.qos("cmd_vel").reliability is QoSReliabilityPolicy.RELIABLE
+        assert node.qos("amcl_pose").durability is DurabilityPolicy.TRANSIENT_LOCAL
         assert CircleFootprint.__module__.startswith("roboprobe_ros._vendor.")
         assert OccupancyGrid.__module__.startswith("roboprobe_ros._vendor.")
         assert CommandDelayBuffer.__module__.startswith("roboprobe_ros._vendor.")

@@ -16,7 +16,7 @@ const defaultCliConfig = readFileSync(
   'utf8',
 );
 
-const version = '2b4d5a96d21a';
+const version = '98c8f6e8ce35';
 const configSeed = 20261119;
 let payload: unknown;
 let requestKey: string | null;

@@ -6,7 +6,7 @@ repeats: 1
 schema_version: 1
 space:
   id: warehouse_v1
-  version: 2b4d5a96d21a
+  version: 98c8f6e8ce35
 start: true
 strategy:
   id: S-RANDOM

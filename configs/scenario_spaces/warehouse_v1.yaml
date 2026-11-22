@@ -5,7 +5,7 @@ id: warehouse_v1
 name: Warehouse delivery - single injected pallet
 description: >
   TurtleBot 4 delivers from Dock A to Station B; a low pallet is injected near the nominal path.
-task: tasks/warehouse_delivery_measured_v1.yaml
+task: tasks/warehouse_delivery_v1.yaml
 parameters:
   - id: robot.max_speed
     name: Max linear speed
