@@ -10,7 +10,6 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Casebook and Insights (T-110a/b): filter and edit analyzed failure modes, replay or export
   representative scenarios, and compare SHAP importance with GP rankings and cross-validation.
 
-
 - Trace and artifact transport (T-081e): event-preserving JSON downsampling, original
   Parquet downloads, confined streamed attachments with digest ETags, and rejected-path logs.
 - Dashboard foundation (T-085b/c/d): Field Notebook navigation, lazy feature routes,
