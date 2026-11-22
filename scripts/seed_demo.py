@@ -507,7 +507,7 @@ def _run_small_experiment(
     services = build_cli_services(settings)
     _ensure_sut(services, "k2d_default", "kinematic2d")
     clock = FakeClock(_FIXED_TIMESTAMP)
-    writer = _FixtureExperimentWriter(cast(UowFactory, services.make_uow), seed)
+    writer = _FixtureExperimentWriter(services.make_uow, seed)
 
     def drive(campaign_id: UUID) -> CampaignStatus:
         services.campaigns.start(campaign_id)
