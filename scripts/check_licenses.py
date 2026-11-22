@@ -147,15 +147,15 @@ def read_pnpm_licenses(path: Path) -> list[PackageLicense]:
     return packages
 
 
+def _effective_license(pkg: PackageLicense) -> str:
+    return PACKAGE_LICENSE_OVERRIDES.get(pkg.name, pkg.license)
+
+
 def find_disallowed(
     packages: Iterable[PackageLicense], allowed: frozenset[str]
 ) -> list[PackageLicense]:
     """Packages whose licence is not satisfiable from the allow-list, sorted for stable output."""
-
-    def effective_license(pkg: PackageLicense) -> str:
-        return PACKAGE_LICENSE_OVERRIDES.get(pkg.name, pkg.license)
-
-    bad = (pkg for pkg in packages if not is_allowed(effective_license(pkg), allowed))
+    bad = (pkg for pkg in packages if not is_allowed(_effective_license(pkg), allowed))
     return sorted(bad, key=lambda pkg: (pkg.ecosystem, pkg.name.casefold()))
 
 
