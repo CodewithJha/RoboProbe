@@ -367,15 +367,19 @@ export function useRunTrace(id: string, hz?: number, columns?: string) {
   return useQuery({
     queryKey: ['runs', id, 'trace', { hz, columns }],
     enabled: Boolean(id),
-    queryFn: async ({ signal }) =>
-      requireData(
+    queryFn: async ({ signal }): Promise<Schema['TraceOut']> => {
+      const data = requireData(
         await api.GET('/api/v1/runs/{run_id}/trace', {
           signal,
+          headers: { Accept: 'application/json' },
           params: {
             path: { run_id: id },
             query: { ...(hz === undefined ? {} : { hz }), ...(columns ? { columns } : {}) },
           },
         }),
-      ),
+      );
+      if (typeof data === 'string') throw new Error('The server returned a non-JSON trace.');
+      return data;
+    },
   });
 }
