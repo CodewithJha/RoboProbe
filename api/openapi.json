@@ -3424,7 +3424,11 @@
           "201": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Add Manual Runs Api V1 Campaigns  Campaign Id  Runs Post",
+                  "type": "object"
+                }
               }
             },
             "description": "Successful Response"

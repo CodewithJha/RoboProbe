@@ -324,7 +324,9 @@ def list_runs(  # noqa: PLR0913, PLR0917 - documented run filters
     return Page(items=items, next_cursor=page.next_cursor)
 
 
-@router.post("/{campaign_id}/runs", status_code=status.HTTP_201_CREATED, response_model=None)
+@router.post(
+    "/{campaign_id}/runs", status_code=status.HTTP_201_CREATED, response_model=dict[str, object]
+)
 async def add_manual_runs(
     campaign_id: UUID,
     body: ManualRunCreate,
