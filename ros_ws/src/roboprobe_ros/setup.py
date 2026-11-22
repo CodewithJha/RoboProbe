@@ -20,6 +20,11 @@ setup(
         ),
     ],
     install_requires=["setuptools"],
+    entry_points={
+        "console_scripts": [
+            "perception_degrader = roboprobe_ros.perception_degrader:main",
+        ],
+    },
     extras_require={"recorder": ["pyarrow>=17"]},
     zip_safe=False,
     maintainer="CodewithJha",
