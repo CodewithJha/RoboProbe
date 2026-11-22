@@ -34,7 +34,7 @@
 - [Tech stack](#tech-stack)
 - [Project status & roadmap](#project-status--roadmap)
 - [Documentation map](#documentation-map)
-- [Quick start (planned)](#quick-start-planned)
+- [Try the dashboard locally](#try-the-dashboard-locally)
 - [Repository structure](#repository-structure)
 - [Contributing](#contributing) · [Code of conduct](#code-of-conduct) · [Security](#security) · [License](#license)
 - [Citation](#citation) · [Acknowledgements & prior art](#acknowledgements--prior-art) · [Author](#author)
