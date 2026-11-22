@@ -90,7 +90,8 @@ def replay_run(
 
 
 @router.get(
-    "/runs/{run_id}/scenario.yaml", response_class=PlainTextResponse,
+    "/runs/{run_id}/scenario.yaml",
+    response_class=PlainTextResponse,
     responses={200: {"content": {"application/yaml": {"schema": {"type": "string"}}}}},
 )
 def export_scenario(run_id: UUID, request: Request, uow: Any = Depends(get_uow)) -> Response:

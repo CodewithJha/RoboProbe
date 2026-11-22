@@ -6427,6 +6427,11 @@
         "responses": {
           "200": {
             "content": {
+              "application/yaml": {
+                "schema": {
+                  "type": "string"
+                }
+              },
               "text/plain": {
                 "schema": {
                   "type": "string"

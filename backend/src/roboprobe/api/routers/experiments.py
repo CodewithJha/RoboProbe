@@ -138,26 +138,26 @@ def experiment_comparison(
     campaigns = uow.campaigns.list_for_experiment(experiment_id)
     runs_by: dict[UUID, list[CampaignRun]] = {}
     for camp in campaigns:
-        runs: list[CampaignRun] = []
+        runs: list[tuple[tuple[int, int], CampaignRun]] = []
         cursor: str | None = None
         while True:
             page = uow.runs.list_for_campaign(camp.id, limit=None, cursor=cursor)
             for r in page.items:
                 if r.verdict is None:
                     continue
-                runs.append(
-                    CampaignRun(
-                        verdict=r.verdict,
-                        wall_time_s=float((r.metrics or {}).get("duration_s", 0.0)),
-                        x_unit=tuple(float(x) for x in r.x_unit),
-                        phase=str(r.phase or ""),
-                        tags=tuple(str(t) for t in r.tags),
-                    )
+                run = CampaignRun(
+                    verdict=r.verdict,
+                    wall_time_s=float((r.metrics or {}).get("duration_s", 0.0)),
+                    x_unit=tuple(float(x) for x in r.x_unit),
+                    phase=str(r.phase or ""),
+                    tags=tuple(str(t) for t in r.tags),
                 )
+                runs.append(((r.ordinal, r.repeat_index), run))
             cursor = page.next_cursor
             if cursor is None:
                 break
-        runs_by[camp.id] = list(comparison_runs(tuple(runs)))
+        runs.sort(key=lambda entry: entry[0])
+        runs_by[camp.id] = list(comparison_runs(tuple(run for _, run in runs)))
     if not campaigns:
         return ExperimentComparisonOut(experiment_id=experiment_id)
     services = get_services(request)

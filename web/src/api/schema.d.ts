@@ -4268,6 +4268,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
+          'application/yaml': string;
           'text/plain': string;
         };
       };
