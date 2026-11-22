@@ -8,7 +8,6 @@ Implements: T-045a, FR-CLI-001
 from __future__ import annotations
 
 import importlib
-from pathlib import Path
 from types import ModuleType
 
 import typer
@@ -17,13 +16,11 @@ from alembic.config import Config
 
 from roboprobe.cli._context import get_state
 from roboprobe.core.settings import RoboProbeSettings
+from roboprobe.paths import backend_root
 
 __all__ = ["app", "upgrade_head"]
 
 app = typer.Typer(name="db", help="Database migrations.", no_args_is_help=True)
-
-_BACKEND_ROOT = Path(__file__).resolve().parents[3]
-"""``backend/`` directory (``cli/db.py`` → ``roboprobe`` → ``src`` → ``backend``)."""
 
 
 def _engine_mod() -> ModuleType:
@@ -31,9 +28,12 @@ def _engine_mod() -> ModuleType:
 
 
 def _alembic_config() -> Config:
-    cfg = Config(str(_BACKEND_ROOT / "alembic.ini"))
-    cfg.set_main_option("script_location", str(_BACKEND_ROOT / "alembic"))
-    cfg.set_main_option("prepend_sys_path", str(_BACKEND_ROOT / "src"))
+    root = backend_root()
+    cfg = Config(str(root / "alembic.ini"))
+    cfg.set_main_option("script_location", str(root / "alembic"))
+    src = root / "src"
+    if src.is_dir():
+        cfg.set_main_option("prepend_sys_path", str(src))
     return cfg
 
 

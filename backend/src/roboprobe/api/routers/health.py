@@ -18,12 +18,11 @@ from sqlalchemy import text
 
 from roboprobe.api.errors import problem_response
 from roboprobe.core.errors import ErrorCode
+from roboprobe.paths import backend_root
 
 __all__ = ["router"]
 
 router = APIRouter(tags=["health"])
-
-_BACKEND_ROOT = Path(__file__).resolve().parents[4]
 
 
 @router.get("/health/live")
@@ -57,7 +56,7 @@ def ready(request: Request) -> JSONResponse | dict[str, Any]:
                 context = MigrationContext.configure(conn)
                 current = context.get_current_revision()
             cfg = Config()
-            cfg.set_main_option("script_location", str(_BACKEND_ROOT / "alembic"))
+            cfg.set_main_option("script_location", str(backend_root() / "alembic"))
             head = ScriptDirectory.from_config(cfg).get_current_head()
             if current != head:
                 failures.append("migrations_behind")
