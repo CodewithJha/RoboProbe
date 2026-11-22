@@ -43,6 +43,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   failure modes, medoid traces and seven API responses, plus a 10,000-run benchmark generator.
 - Trace and artifact transport (T-081e): event-preserving JSON downsampling, original
   Parquet downloads, confined streamed attachments with digest ETags, and rejected-path logs.
+- Launch one Gazebo warehouse episode with the materialized Nav2, bridge, and recorder files (T-094d).
 - Jazzy ground-truth monitoring shares warehouse clearance geometry with kinematic2d (T-094a).
 - Dashboard foundation (T-085b/c/d): Field Notebook navigation, lazy feature routes,
   persisted Paper/Night Shift themes, runtime config, generated typed API hooks, session-scoped

@@ -178,6 +178,10 @@ sequenceDiagram
     W->>W: load trace, return EpisodeResult
 ```
 
+Start the standalone episode with `ros2 launch roboprobe_ros episode.launch.py
+workdir:=/path/to/materialized/episode`. Per-episode inputs resolve under the workdir.
+Stock ROS launch files and robot description resolve from the installed Jazzy packages.
+
 Communication worker ↔ episode: **files + exit code** (`episode_done.json`, `trace.parquet`, `episode.log`),
 not a live ROS connection — keeps the worker free of rclpy state and makes crashes easy to classify as F-INFRA.
 The [shared exit-code table](../ros_ws/src/roboprobe_ros/config/episode_exit_codes.yaml) defines

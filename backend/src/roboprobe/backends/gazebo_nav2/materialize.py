@@ -152,7 +152,7 @@ def _read_topics(raw: bytes, path: Path) -> _Topics:
     return topics
 
 
-def _bridge(topics: _Topics, world: str) -> str:
+def _bridge(topics: _Topics) -> str:
     bindings = (
         ("odom", "/odom", "gz.msgs.Odometry", _GZ_TO_ROS),
         ("scan_raw", "/scan", "gz.msgs.LaserScan", _GZ_TO_ROS),
@@ -160,7 +160,7 @@ def _bridge(topics: _Topics, world: str) -> str:
         ("cmd_vel", "/cmd_vel", "gz.msgs.Twist", _ROS_TO_GZ),
         (
             "ground_truth_pose",
-            f"/world/{world}/model/{_WORLD_ROBOT}/pose",
+            f"/model/{_WORLD_ROBOT}/pose",
             "gz.msgs.Pose",
             _GZ_TO_ROS,
         ),
@@ -280,7 +280,7 @@ class GazeboMaterializer:
             "perturb_params.yaml": self._perturb(
                 scenario, seeds, illuminance, params.controller_frequency_hz
             ).encode(),
-            "bridge.yaml": _bridge(topics, world.name).encode(),
+            "bridge.yaml": _bridge(topics).encode(),
             "episode.yaml": self._episode(
                 pallets, params, time_limit, simulator_seed, world.name
             ).encode(),
