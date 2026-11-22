@@ -80,7 +80,7 @@ function open(details: Schema['RunOut'] = run) {
   return fetcher;
 }
 
-test.skip('links the timeline scrubber to all timeline cursors and the trajectory', async () => {
+test('links the timeline scrubber to all timeline cursors and the trajectory', async () => {
   open();
   const slider = await screen.findByRole('slider', { name: 'Clearance inspection time' });
   expect(screen.getByText('Safe clearance: 0.15 m')).toBeInTheDocument();
@@ -100,7 +100,7 @@ test.skip('links the timeline scrubber to all timeline cursors and the trajector
   expect(screen.getByTestId('trajectory-viewport').getAttribute('transform')).toContain('scale(1)');
 });
 
-test.skip('queues replay with the selected seed option and highlights the returned run', async () => {
+test('queues replay with the selected seed option and highlights the returned run', async () => {
   const fetcher = open();
   fireEvent.click(await screen.findByRole('button', { name: 'Replay' }));
   fireEvent.change(screen.getByRole('spinbutton', { name: 'Repeats' }), { target: { value: '2' } });
