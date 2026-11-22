@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pyarrow.parquet as pq
 import pytest
-from typer.testing import CliRunner
 
 from roboprobe.backends.kinematic2d.calibration import load_calibration
 from roboprobe.bootstrap.reference_set import (
@@ -16,7 +17,6 @@ from roboprobe.bootstrap.reference_set import (
     sha256_file,
     write_parquet,
 )
-from roboprobe.cli.main import app
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import Verdict
 from roboprobe.scenario.space import ScenarioSpace
@@ -69,11 +69,27 @@ def test_reference_cli_outputs_matching_parquet_manifest(
     """The documented command writes an integrity manifest and returns it as JSON."""
     monkeypatch.setenv("ROBOPROBE_STORAGE__WORKDIR_ROOT", str(tmp_path / "runs"))
     out = tmp_path / "reference.parquet"
-    result = CliRunner().invoke(
-        app,
-        ["--json", "reference", "generate", "--output", str(out), "--n", "1", "--seed", "11"],
+    result = subprocess.run(  # noqa: S603 - this is the tested CLI in an isolated interpreter.
+        [
+            sys.executable,
+            "-c",
+            "from roboprobe.cli.main import app; app()",
+            "--json",
+            "reference",
+            "generate",
+            "--output",
+            str(out),
+            "--n",
+            "1",
+            "--seed",
+            "11",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=120,
     )
-    assert result.exit_code == 0, result.exception
+    assert result.returncode == 0, result.stderr
     manifest = json.loads(out.with_suffix(".manifest.json").read_text(encoding="utf-8"))
     assert json.loads(result.stdout) == manifest
     assert manifest["path"] == str(out)
