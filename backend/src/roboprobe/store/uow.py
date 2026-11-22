@@ -60,7 +60,10 @@ class SqlAlchemyUnitOfWork:
         self._advisory: dict[str, AdvisoryLock] = {}
 
     def __enter__(self) -> SqlAlchemyUnitOfWork:
-        session = self._factory()
+        return self.bind_session(self._factory())
+
+    def bind_session(self, session: Session) -> SqlAlchemyUnitOfWork:
+        """Bind repositories to an existing session without entering a context."""
         self._session = session
         self._closed = False
         self.spaces = SqlSpaceRepo(session)

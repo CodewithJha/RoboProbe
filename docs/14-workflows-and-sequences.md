@@ -68,6 +68,11 @@ stateDiagram-v2
 
 Stop rules (campaign `stop_rules`, all optional): `max_modes`, `max_wall_s`, `max_consecutive_invalid` (default 10 ⇒ auto-pause), `invalid_ratio` (> 0.2 after ≥ 20 runs ⇒ auto-pause).
 
+Workers can claim explicitly queued Casebook confirmations, replays, and Atlas manual probes
+after a campaign completes. The campaign stays completed, and strategy-generated runs are not restarted.
+The final confirmation run commits the interaction verdict and publishes a campaign update
+in the same transaction. Existing case labels, statuses and member assignments are preserved.
+
 ## 4. Worker executes a run
 
 ```mermaid

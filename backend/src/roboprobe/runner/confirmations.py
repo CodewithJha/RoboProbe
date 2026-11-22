@@ -23,7 +23,7 @@ from roboprobe.core.types import FailureClass, JsonValue, ParamValue, Phase, Run
 from roboprobe.runner.ports import FailureModeView, RunView, UnitOfWorkPort, UowFactory
 from roboprobe.scenario.space import ScenarioSpace
 
-__all__ = ["CONFIRM_PHASE", "CONFIRM_TAG", "ConfirmationService"]
+__all__ = ["CONFIRM_PHASE", "CONFIRM_TAG", "ConfirmationService", "conclude_confirmation"]
 
 CONFIRM_PHASE: Phase = "confirm"
 CONFIRM_TAG = "confirm"
@@ -59,7 +59,7 @@ class ConfirmationService:
             if campaign is None:
                 msg = "campaign not found"
                 raise NotFoundError(msg, context={"campaign_id": str(campaign_id)})
-            mode = uow.modes.get(mode_id)
+            mode = uow.modes.get(mode_id, for_update=True)
             if mode is None or mode.campaign_id != campaign_id:
                 msg = "failure mode not found"
                 raise NotFoundError(msg, context={"mode_id": str(mode_id)})
@@ -105,57 +105,10 @@ class ConfirmationService:
             uow.commit()
         return ids
 
-    def on_run_finished(self, run: RunView) -> None:  # noqa: PLR0911
-        """Conclude a mode when every confirm run for it is terminal."""
-        if run.phase != CONFIRM_PHASE:
-            return
-        proposal = run.proposal or {}
-        raw_mode = proposal.get(_PROPOSAL_MODE)
-        if raw_mode is None:
-            return
-        mode_id = UUID(str(raw_mode))
-        campaign_id = run.campaign_id
+    def on_run_finished(self, run: RunView) -> None:
+        """Conclude a mode for a run already persisted by an existing caller."""
         with self._uow_factory() as uow:
-            mode = uow.modes.get(mode_id)
-            if mode is None:
-                return
-            confirm_runs = _confirm_records_for_mode(uow, campaign_id, mode_id)
-            if not confirm_runs:
-                return
-            if any(r.status not in _TERMINAL for r in confirm_runs):
-                return
-            if mode.interaction is not None:
-                return
-            campaign = uow.campaigns.get(campaign_id)
-            if campaign is None:
-                return
-            summary = _summary_from_record(uow, mode)
-            analysis_runs = [_to_analysis_run(r) for r in confirm_runs]
-            verdict = InteractionTester(self._interaction, campaign.seed).conclude(
-                summary, analysis_runs
-            )
-            _persist_verdict(uow, mode, verdict)
-            uow.events.append(
-                _TOPIC_MODE_DISCOVERED,
-                {
-                    "campaign_id": str(campaign_id),
-                    "mode_id": str(mode_id),
-                    "code": mode.code,
-                    "interaction": verdict.status,
-                },
-                campaign_id=campaign_id,
-            )
-            uow.events.append(
-                _TOPIC_CAMPAIGN_UPDATED,
-                {
-                    "campaign_id": str(campaign_id),
-                    "status": campaign.status.value
-                    if hasattr(campaign.status, "value")
-                    else str(campaign.status),
-                    "reason": "interaction_confirmed",
-                },
-                campaign_id=campaign_id,
-            )
+            conclude_confirmation(uow, run, interaction=self._interaction)
             uow.commit()
 
     def auto_confirm_top(self, campaign_id: UUID) -> list[UUID]:
@@ -311,6 +264,51 @@ _PHASES = frozenset(
 )
 
 
+def conclude_confirmation(
+    uow: UnitOfWorkPort, run: RunView, *, interaction: InteractionSettings
+) -> None:
+    """Finalize a mode in the same transaction as its final run."""
+    if run.phase != CONFIRM_PHASE:
+        return
+    raw_mode = (run.proposal or {}).get(_PROPOSAL_MODE)
+    if raw_mode is None:
+        return
+    mode_id = UUID(str(raw_mode))
+    campaign_id = run.campaign_id
+    mode = uow.modes.get(mode_id, for_update=True)
+    if mode is None or mode.campaign_id != campaign_id or mode.interaction is not None:
+        return
+    confirm_runs = _confirm_records_for_mode(uow, campaign_id, mode_id)
+    if not confirm_runs or any(r.status not in _TERMINAL for r in confirm_runs):
+        return
+    campaign = uow.campaigns.get(campaign_id)
+    if campaign is None:
+        return
+    summary = _summary_from_record(uow, mode)
+    analysis_runs = [_to_analysis_run(r) for r in confirm_runs]
+    verdict = InteractionTester(interaction, campaign.seed).conclude(summary, analysis_runs)
+    _persist_verdict(uow, mode, verdict)
+    uow.events.append(
+        _TOPIC_MODE_DISCOVERED,
+        {
+            "campaign_id": str(campaign_id),
+            "mode_id": str(mode_id),
+            "code": mode.code,
+            "interaction": verdict.status,
+        },
+        campaign_id=campaign_id,
+    )
+    uow.events.append(
+        _TOPIC_CAMPAIGN_UPDATED,
+        {
+            "campaign_id": str(campaign_id),
+            "status": campaign.status.value,
+            "reason": "interaction_confirmed",
+        },
+        campaign_id=campaign_id,
+    )
+
+
 def _persist_verdict(
     uow: UnitOfWorkPort, mode: FailureModeView, verdict: InteractionVerdict
 ) -> None:
@@ -321,8 +319,7 @@ def _persist_verdict(
         "ratios": {k: float(v) for k, v in verdict.ratios.items()},
         "evidence_run_ids": [str(i) for i in verdict.evidence_run_ids],
     }
-    updated = mode.model_copy(update={"interaction": payload})
-    uow.modes.upsert_modes(mode.campaign_id, [updated], [])
+    uow.modes.set_interaction(mode.id, payload)
 
 
 def _jsonable(value: ParamValue | object) -> JsonValue:
