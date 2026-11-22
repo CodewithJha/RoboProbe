@@ -6,14 +6,7 @@ interface Coordinates {
   x: number;
   y: number;
 }
-type RiskSliceView = Schema['RiskSliceOut'] & {
-  log_x?: boolean;
-  log_y?: boolean;
-  x_values?: number[];
-  y_values?: number[];
-  p_fail?: (number | undefined)[][];
-  region?: (string | undefined)[][];
-};
+type RiskSliceView = Schema['RiskSliceOut'];
 interface Props {
   slice: RiskSliceView;
   logX?: boolean;
@@ -102,7 +95,7 @@ export function RiskHeatmap({
             const right = xAxis.bounds[column + 1] ?? WIDTH;
             const bottom = HEIGHT - (yAxis.bounds[row] ?? 0);
             const top = HEIGHT - (yAxis.bounds[row + 1] ?? HEIGHT);
-            const uncertain = regions[row]?.[column] === 1;
+            const uncertain = Number(regions[row]?.[column]) === 1;
             const above = probabilities[row + 1]?.[column];
             const next = probabilities[row]?.[column + 1];
             const crosses = (neighbor?: number) =>

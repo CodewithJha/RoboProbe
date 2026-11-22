@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, getEtag, ProblemError, requireData, type Schema } from '../../../api/client';
 
 export function ThreatsNotes({ experiment }: { experiment: Schema['ExperimentOut'] }) {
-  const [draft, setDraft] = useState(experiment.notes);
-  const [saved, setSaved] = useState(experiment.notes);
+  const [draft, setDraft] = useState(experiment.notes ?? '');
+  const [saved, setSaved] = useState(experiment.notes ?? '');
   const [etag, setEtag] = useState(() => getEtag(`/api/v1/experiments/${experiment.id}`));
   const cache = useQueryClient();
   const save = useMutation({
@@ -15,7 +15,7 @@ export function ThreatsNotes({ experiment }: { experiment: Schema['ExperimentOut
       notes: string;
       version: string;
     }): Promise<Schema['ExperimentOut']> =>
-      requireData(
+      requireData<Schema['ExperimentOut']>(
         // @ts-expect-error experiment PATCH is not yet in the generated client
         await api.PATCH('/api/v1/experiments/{experiment_id}', {
           params: { path: { experiment_id: experiment.id } },
@@ -24,7 +24,7 @@ export function ThreatsNotes({ experiment }: { experiment: Schema['ExperimentOut
         }),
       ),
     onSuccess(response: Schema['ExperimentOut']) {
-      setSaved(response.notes);
+      setSaved(response.notes ?? '');
       setEtag(getEtag(`/api/v1/experiments/${experiment.id}`));
       void cache.invalidateQueries({ queryKey: ['experiments', experiment.id], exact: true });
     },
@@ -37,7 +37,7 @@ export function ThreatsNotes({ experiment }: { experiment: Schema['ExperimentOut
         }),
       ),
     onSuccess(response: Schema['ExperimentOut']) {
-      setSaved(response.notes);
+      setSaved(response.notes ?? '');
       setEtag(getEtag(`/api/v1/experiments/${experiment.id}`));
       save.reset();
     },
@@ -50,7 +50,7 @@ export function ThreatsNotes({ experiment }: { experiment: Schema['ExperimentOut
         onSubmit={(event) => {
           event.preventDefault();
           if (etag && draft !== saved && !conflict)
-            save.mutate({ notes: draft, version: etag ?? '' });
+            save.mutate({ notes: draft, version: etag });
         }}
       >
         <label>
@@ -91,7 +91,7 @@ export function ThreatsNotes({ experiment }: { experiment: Schema['ExperimentOut
       {refresh.isSuccess && draft !== saved && (
         <details open>
           <summary>Latest saved notes</summary>
-          <p>{saved || 'No saved notes.'}</p>
+          <p>{saved !== '' ? saved : 'No saved notes.'}</p>
         </details>
       )}
       {!etag && <p>The server did not provide a version for safe editing.</p>}
