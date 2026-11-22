@@ -10,6 +10,11 @@
     "node": ">=24",
     "pnpm": ">=9 <10"
   },
+  "pnpm": {
+    "overrides": {
+      "glslify@7.1.1>stack-trace": "0.0.10"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "gen:tokens": "node scripts/gen-tokens.ts",
