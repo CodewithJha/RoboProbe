@@ -17,6 +17,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   verdict shapes; centered robustness meters; keyboard-selectable virtual run spines; sortable
   virtual statistics tables; and actionable empty states.
 
+- Run inspection (T-089a/b/c): replay and artifact export, provenance and oracle results,
+  and a zoomable trajectory with linked clearance, localization, velocity, and navigation timelines.
+
 - Analysis API completion (T-082a/b/c, T-084a): versioned mode edits and real confirmation
   requests, exact cached NPZ/on-demand risk slices, complete importance payloads, reserved async
   analysis ids, bundle export jobs and durable report status across restart. Worker identifiers
