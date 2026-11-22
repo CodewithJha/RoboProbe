@@ -1,3 +1,4 @@
 # Accepted dependency vulnerabilities for scripts/check_audit.py (doc 31 TM-10).
 # One per line: <advisory ID or alias (GHSA/CVE/PYSEC)>  # <why it is safe> (<reviewer>, <date>, <revisit by>)
 # Entries without a justification fail the check. Remove an entry as soon as a fix is available.
+GHSA-jrc7-96c5-q579  # plotly maplibre only in bundled casebook charts; dashboard not exposed to untrusted GeoJSON (CodewithJha, 2026-11-22, 2026-06)

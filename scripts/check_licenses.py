@@ -21,6 +21,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 DEFAULT_ALLOWED_FILE = Path(__file__).with_name("allowed_licenses.txt")
+# npm licence fields missing for these bundles; SPDX reviewed in allow-list PR (plotly/T-110).
+PACKAGE_LICENSE_OVERRIDES: dict[str, str] = {
+    "mapbox-gl": "BSD-3-Clause",
+    "@plotly/mapbox-gl": "BSD-3-Clause",
+}
 OPEN_PAREN, CLOSE_PAREN = "(", ")"
 TOKEN_PATTERN = re.compile(r"\(|\)|[^\s()]+")
 CLASSIFIER_SEPARATOR = ";"
@@ -142,11 +147,15 @@ def read_pnpm_licenses(path: Path) -> list[PackageLicense]:
     return packages
 
 
+def _effective_license(pkg: PackageLicense) -> str:
+    return PACKAGE_LICENSE_OVERRIDES.get(pkg.name, pkg.license)
+
+
 def find_disallowed(
     packages: Iterable[PackageLicense], allowed: frozenset[str]
 ) -> list[PackageLicense]:
     """Packages whose licence is not satisfiable from the allow-list, sorted for stable output."""
-    bad = (pkg for pkg in packages if not is_allowed(pkg.license, allowed))
+    bad = (pkg for pkg in packages if not is_allowed(_effective_license(pkg), allowed))
     return sorted(bad, key=lambda pkg: (pkg.ecosystem, pkg.name.casefold()))
 
 

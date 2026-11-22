@@ -1,11 +1,11 @@
-import { FeaturePage } from '../../app/FeaturePage';
+import { useParams } from 'react-router-dom';
+import { InsightsPanel } from '../casebook/insights/InsightsPanel';
 export function Component() {
+  const { id } = useParams();
   return (
-    <FeaturePage
-      title="Insights"
-      description="Understand which parameters and interactions explain the failures."
-      action="Return to Bench"
-      to="/"
-    />
+    <section>
+      <h1>Insights</h1>
+      {id ? <InsightsPanel campaignId={id} /> : null}
+    </section>
   );
 }
