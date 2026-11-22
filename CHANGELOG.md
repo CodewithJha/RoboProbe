@@ -7,6 +7,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Seeded Playwright smoke tests for the production Compose stack in Chromium and Firefox.
+  CI retains accessibility failures, traces, video, screenshots, and service logs (T-117, #186).
 - Dashboard polish (T-113a/b, T-115): Spaces list with YAML view and validation,
   Workbench worker table, Settings (session token, theme, number locale, SSE reconnect),
   report export with sandboxed preview route, and global keyboard shortcuts dialog.

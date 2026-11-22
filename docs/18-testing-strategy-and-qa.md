@@ -31,7 +31,7 @@ flowchart TB
 | Benchmark (algorithmic) | `backend/tests/benchmark` | pytest + fixed seed sets, pytest-benchmark | PR (smoke), nightly (full) | smoke < 3 min |
 | Simulation | `backend/tests/sim` (`-m sim`) | Gazebo image | nightly / manual | ≤ 60 min |
 | Web unit/component | `web/src/**/*.test.tsx` | Vitest, Testing Library, MSW | every PR | < 2 min |
-| E2E | `web/e2e` | Playwright + axe-core against compose `core` | nightly + release | < 15 min |
+| E2E | `web/e2e` | Chromium and Firefox + axe-core against Compose `core` and `app` | dashboard/API PRs + nightly | < 10 min |
 | Migration | `backend/tests/migrations` | Alembic up/down/up | every PR | < 1 min |
 | Docs | `scripts/check_docs.sh` | markdownlint, mermaid-cli, lychee | docs changes | < 2 min |
 
@@ -93,6 +93,21 @@ Schema conformance (`schemathesis` against OpenAPI, nightly); error envelope; pa
 ### 4.10 Web
 
 Component tests for ConditionStrip, RiskHeatmap, RobustnessBar (rendering & a11y); MSW-mocked feature tests for wizard and console; Playwright flows: create campaign → see runs stream → open case → replay → export report; axe on every route; visual snapshot of tokens page (light/dark).
+
+To run the seeded browser smoke locally, start Docker with Compose 2.24.4 or newer, install the
+locked web dependencies, and run the following from `web/`.
+
+```bash
+pnpm exec playwright install chromium firefox
+pnpm test:e2e
+```
+
+The harness builds the production images, starts a dedicated Compose project, and restores the
+committed database and artefacts through the T-107 loader. Each browser opens the seeded Bench,
+checks its three cases and accessibility, and uses the keyboard to enter the campaign Console.
+The harness checks the production Content Security Policy and cleans up its containers and volumes
+after success, failure, or a partial setup. Reports are under `web/playwright-report/` and
+`web/test-results/` and CI links failure reports from the job summary.
 
 ## 5. Test data & fixtures
 

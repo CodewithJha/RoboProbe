@@ -1,0 +1,77 @@
+# Full-stack browser and accessibility smoke (T-117, docs/18 §4.10).
+name: e2e
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/e2e.yml
+      - .github/actions/setup-web/**
+      - api/**
+      - backend/alembic/**
+      - backend/pyproject.toml
+      - backend/uv.lock
+      - backend/src/roboprobe/api/**
+      - backend/tests/fixtures/db/**
+      - docker/**
+      - web/**
+  schedule:
+    - cron: "30 20 * * *" # 02:00 IST daily
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    name: Chromium and Firefox against Compose
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      E2E_COMPOSE_PROJECT: roboprobe-e2e-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-web
+        with:
+          node-version: "24"
+      - name: Install Chromium, Firefox and their system dependencies
+        working-directory: web
+        run: pnpm exec playwright install --with-deps chromium firefox
+      - name: Build local images and run seeded browser tests
+        timeout-minutes: 9
+        working-directory: web
+        run: pnpm test:e2e
+      - name: Collect Compose logs and release the sandbox
+        if: ${{ always() }}
+        run: |
+          flags=(
+            --project-name "$E2E_COMPOSE_PROJECT"
+            --env-file docker/e2e.env
+            -f docker/compose.yaml -f docker/e2e.compose.yaml
+            --profile core --profile app
+          )
+          mkdir -p web/test-results
+          if [[ ! -s web/test-results/compose.log ]]; then
+            docker compose "${flags[@]}" logs --no-color > web/test-results/compose.log 2>&1 || true
+          fi
+          docker compose "${flags[@]}" down --volumes --remove-orphans
+      - name: Upload failure reports
+        if: ${{ failure() }}
+        id: reports
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-failure-reports
+          path: |
+            web/playwright-report/
+            web/test-results/
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Link failure reports
+        if: ${{ failure() && steps.reports.outputs.artifact-url != '' }}
+        env:
+          ARTIFACT_URL: ${{ steps.reports.outputs.artifact-url }}
+        run: printf '[Download browser failure reports and Compose logs](%s)\n' "$ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
