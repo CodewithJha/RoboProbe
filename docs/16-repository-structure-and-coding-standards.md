@@ -132,6 +132,19 @@ contract 2 as well. The executable form (ids `layers`, `domain-independence`, `a
 - `ament_python`, nodes as classes inheriting `rclpy.node.Node`, all tunables as declared ROS parameters loaded from the generated YAML (never literals); topic names from `config/topics.yaml`.
 - Follow ROS 2 naming (snake_case topics, `~/` private params); launch files in Python.
 
+`RoboProbeNode` reads the installed topic catalog unless `topics_file` points to an override.
+`perturb_file` supplies episode parameters and `seed` initializes the node's PCG64 random stream.
+Use `node.topic(key)` and `node.qos(key)` when wiring a publisher or subscription. `node.log_event`
+writes JSON lines with event, node, service, and UTC timestamp fields.
+
+Geometry and perturbations are generated from the backend's numerical modules. After changing
+either source package, run `python3 scripts/vendor_geometry.py` from the repository root.
+The ROS package workflow checks the source digests and generated files, then runs
+`colcon build --packages-select roboprobe_ros` and `colcon test --packages-select roboprobe_ros`
+in the Jazzy container.
+Ubuntu 24.04 does not provide a PyArrow rosdep rule. Install the package's `recorder` extra
+in the worker Python environment when building the Parquet recorder.
+
 ## 6. Git conventions
 
 - Default branch `main` (protected: PR + green CI required, linear history).
