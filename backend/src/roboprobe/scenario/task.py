@@ -2,7 +2,7 @@
 
 A task file describes the navigation task under test: start and goal poses, tolerances, the nominal
 path polyline and the obstacles injected along it. Values that later Gazebo tasks will determine are
-written as ``TBD_Tnnn`` placeholders (e.g. ``TBD_T092``); they can never be loaded. Values that are
+written as ``TBD_Tnnn`` placeholders (e.g. ``TBD_T042``); they can never be loaded. Values that are
 already usable but await verification are listed under ``provisional`` and are rejected only when
 ``strict=True`` (release builds, Gazebo runs).
 
@@ -39,7 +39,7 @@ __all__ = [
 
 _PLACEHOLDER_PREFIX = "TBD_T"
 PLACEHOLDER_PATTERN = re.compile(rf"^{_PLACEHOLDER_PREFIX}\d{{3}}$")
-"""A value to be fixed by the named backlog task, e.g. ``TBD_T092``."""
+"""A value to be fixed by the named backlog task, e.g. ``TBD_T042``."""
 
 _TASK_SCHEMA = "task"
 _PATH_DIM = 2
@@ -65,7 +65,7 @@ def find_placeholders(document: object, pointer: str = "") -> list[tuple[str, st
 
 
 def _backlog_task(placeholder: str) -> str:
-    """``"TBD_T092"`` -> ``"T-092"`` (backlog task id, docs/22)."""
+    """``"TBD_T042"`` -> ``"T-042"`` (backlog task id, docs/22)."""
     return f"T-{placeholder.removeprefix(_PLACEHOLDER_PREFIX)}"
 
 

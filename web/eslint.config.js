@@ -18,6 +18,8 @@ export default tseslint.config(
       'src/api/schema.d.ts',
       'playwright-report',
       'e2e-results',
+      'e2e-artifacts',
+      '.lighthouseci',
     ],
   },
   {

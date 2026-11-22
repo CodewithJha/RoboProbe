@@ -3,7 +3,7 @@ import { WizardPage } from '../pages/wizard';
 import { afterNavigation, e2e, test, expect } from '../fixtures';
 
 test('campaign pause resume cancel transitions', async ({ page }) => {
-  const wizard = new WizardPage(page, { ...e2e.wizard, budget: 6 });
+  const wizard = new WizardPage(page, { ...e2e.wizard, budget: e2e.controlBudget });
   const console = new ConsolePage(page);
 
   await wizard.open();
@@ -12,10 +12,12 @@ test('campaign pause resume cancel transitions', async ({ page }) => {
   await afterNavigation(page);
 
   await console.pause();
-  await expect(page.getByRole('button', { name: 'Pause' })).toBeDisabled();
+  await expect(page.getByText(/· PAUSED$/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pause' })).toHaveCount(0);
   await console.resume();
-  await expect(page.getByRole('button', { name: 'Resume' })).toBeDisabled();
+  await expect(page.getByText(/· RUNNING$/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Resume' })).toHaveCount(0);
   await console.cancel();
   await page.getByRole('button', { name: 'Confirm cancellation' }).click();
-  await expect(page.getByText(/CANCELLED|cancelled/i)).toBeVisible();
+  await expect(page.getByText(/· CANCELLED$/)).toBeVisible();
 });

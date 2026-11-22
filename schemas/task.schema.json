@@ -125,7 +125,7 @@
     "tbd": {
       "type": "string",
       "pattern": "^TBD_T[0-9]{3}$",
-      "description": "Placeholder for a value fixed by the named task (e.g. TBD_T092); loaders reject it (T-027)."
+      "description": "Placeholder for a value fixed by the named task (e.g. TBD_T042); loaders reject it (T-027)."
     },
     "number_or_tbd": {
       "oneOf": [

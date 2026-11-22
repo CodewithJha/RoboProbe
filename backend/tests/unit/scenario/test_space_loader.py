@@ -48,7 +48,7 @@ def test_warehouse_space_loads_with_six_enabled_parameters() -> None:
         "sensor.lidar_noise_std", "env.floor_friction", "comms.cmd_delay_ms",
     ]  # fmt: skip
     assert space.task.id == "warehouse_delivery_v1"
-    assert space.task_ref == "tasks/warehouse_delivery_v1.yaml"
+    assert space.task_ref == yaml.safe_load(WAREHOUSE.read_text(encoding="utf-8"))["task"]
     assert space.oracle_thresholds == "default"
     assert len(space.version) == 12
     assert space.param("env.illuminance").scale == "log"

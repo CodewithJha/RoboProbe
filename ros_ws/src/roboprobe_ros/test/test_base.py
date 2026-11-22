@@ -41,6 +41,8 @@ def test_installed_topics_and_vendored_kernels(ros_context: Context) -> None:
         assert node.topic("scan_raw").startswith("/")
         assert node.qos("scan_raw").reliability is QoSReliabilityPolicy.BEST_EFFORT
         assert node.qos("cmd_vel").reliability is QoSReliabilityPolicy.RELIABLE
+        assert node.topic("initial_pose") == "/initialpose"
+        assert node.frame("map") == "map"
         assert CircleFootprint.__module__.startswith("roboprobe_ros._vendor.")
         assert OccupancyGrid.__module__.startswith("roboprobe_ros._vendor.")
         assert CommandDelayBuffer.__module__.startswith("roboprobe_ros._vendor.")

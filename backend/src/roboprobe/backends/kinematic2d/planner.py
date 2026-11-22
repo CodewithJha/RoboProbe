@@ -32,6 +32,8 @@ def plan_path(
     grid: OccupancyGrid,
     start: tuple[float, float],
     goal: tuple[float, float],
+    *,
+    occupied: npt.NDArray[np.bool_] | None = None,
 ) -> npt.NDArray[np.float64] | None:
     """8-connected A* on free cells. ``None`` if start/goal occupied or no path."""
     start_cell = _cell(grid, start)
@@ -39,7 +41,8 @@ def plan_path(
     if start_cell is None or goal_cell is None:
         return None
     rows, cols = grid.shape
-    occupied = grid.occupied
+    if occupied is None:
+        occupied = grid.occupied
     sr, sc = start_cell
     gr, gc = goal_cell
     if occupied[sr, sc] or occupied[gr, gc]:
@@ -47,25 +50,31 @@ def plan_path(
     if start_cell == goal_cell:
         return grid.cell_to_world(np.array([[sr, sc]], dtype=np.int64))
 
-    g_score = np.full((rows, cols), np.inf)
+    g_score = {(sr, sc): 0.0}
     came: dict[tuple[int, int], tuple[int, int]] = {}
-    g_score[sr, sc] = 0.0
     open_heap: list[tuple[float, int, int]] = [(float(_heuristic(sr, sc, gr, gc)), sr, sc)]
-    closed = np.zeros((rows, cols), dtype=np.bool_)
+    closed: set[tuple[int, int]] = set()
 
     while open_heap:
         _, r, c = heapq.heappop(open_heap)
-        if closed[r, c]:
+        if (r, c) in closed:
             continue
-        closed[r, c] = True
+        closed.add((r, c))
         if (r, c) == (gr, gc):
             return _reconstruct(grid, came, (r, c), (sr, sc))
         for dr, dc, cost in _NEIGHBOURS:
             nr, nc = r + dr, c + dc
-            if nr < 0 or nr >= rows or nc < 0 or nc >= cols or occupied[nr, nc] or closed[nr, nc]:
+            if (
+                nr < 0
+                or nr >= rows
+                or nc < 0
+                or nc >= cols
+                or occupied[nr, nc]
+                or (nr, nc) in closed
+            ):
                 continue
             tentative = g_score[r, c] + cost * grid.resolution
-            if tentative >= g_score[nr, nc]:
+            if tentative >= g_score.get((nr, nc), math.inf):
                 continue
             came[nr, nc] = (r, c)
             g_score[nr, nc] = tentative
