@@ -8,7 +8,11 @@ export class CasebookPage {
     await this.page.getByRole('heading', { name: 'Casebook' }).waitFor();
   }
 
-  openMedoid(): Promise<void> {
-    return this.page.getByRole('link', { name: 'Medoid run' }).first().click();
+  openMedoid(modeCode: string): Promise<void> {
+    return this.page
+      .getByRole('article')
+      .filter({ hasText: modeCode })
+      .getByRole('link', { name: 'Medoid run', exact: true })
+      .click();
   }
 }

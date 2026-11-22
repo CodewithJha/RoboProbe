@@ -94,6 +94,12 @@ Schema conformance (`schemathesis` against OpenAPI, nightly); error envelope; pa
 
 Component tests for ConditionStrip, RiskHeatmap, RobustnessBar (rendering & a11y); MSW-mocked feature tests for wizard and console; Playwright flows: create campaign → see runs stream → open case → replay → export report; axe on every route; visual snapshot of tokens page (light/dark).
 
+From `web/`, install Chromium and Firefox with `pnpm exec playwright install chromium firefox`.
+Run the seeded smoke in both browsers with `pnpm test:e2e smoke.spec.ts`. The harness builds
+the production images, loads the shared seed into a dedicated Compose project, and tears it down
+on completion. Browser reports and Compose logs are under `web/playwright-report/`,
+`web/e2e-results/`, and `web/e2e-artifacts/`.
+
 ## 5. Test data & fixtures
 
 - `fixtures/spaces/warehouse_v1.yaml`, `fixtures/traces/*.parquet` (golden), `fixtures/db/seed_small.sql` (1 campaign, 60 runs, 3 modes) for API/web tests, `fixtures/reference/` small reference set for risk tests.

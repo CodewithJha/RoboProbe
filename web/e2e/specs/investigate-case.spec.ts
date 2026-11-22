@@ -1,16 +1,15 @@
 import { CasebookPage } from '../pages/casebook';
 import { afterNavigation, e2e, test, expect } from '../fixtures';
+import { seed } from '../seed';
 
 test('casebook medoid → replay ×3 → export report', async ({ page }) => {
   const casebook = new CasebookPage(page);
-  const { campaignId, medoidRunId } = e2e.seed;
-
-  await casebook.open(campaignId);
+  await casebook.open(seed.campaign.id);
   await afterNavigation(page);
-  await casebook.openMedoid();
+  await casebook.openMedoid(seed.medoid.modeCode);
   await afterNavigation(page);
 
-  await expect(page).toHaveURL(new RegExp(`/runs/${medoidRunId.replace(/-/g, '\\-')}`));
+  await expect(page).toHaveURL(new RegExp(`/runs/${seed.medoid.id}$`));
   await page.getByRole('button', { name: 'Replay' }).click();
   await page.getByLabel('Repeats').fill(String(e2e.replayRepeats));
   await page.getByRole('button', { name: 'Queue replay' }).click();

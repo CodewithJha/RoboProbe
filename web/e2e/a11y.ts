@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
-import config from './e2e.config.json';
+import config from './e2e.config.json' with { type: 'json' };
 
 export async function expectNoA11yViolations(
   page: Page,

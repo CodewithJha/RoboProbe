@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import type e2eConfig from '../e2e.config.json';
+import { seed } from '../seed';
 
 export class WizardPage {
   constructor(
@@ -13,9 +14,8 @@ export class WizardPage {
   }
 
   async createK2dCampaign(): Promise<string> {
-    await this.page
-      .getByLabel(/Scenario space/)
-      .selectOption({ label: 'warehouse_v1 · 09cf763f2e0d' });
+    const { id, version } = seed.campaign.space;
+    await this.page.getByLabel(/Scenario space/).selectOption(JSON.stringify([id, version]));
     await this.page.getByRole('button', { name: 'Continue' }).click();
     await this.page.getByLabel('Backend').selectOption('kinematic2d');
     await this.page.getByLabel('Robot profile').selectOption('k2d_default');
