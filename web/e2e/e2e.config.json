@@ -16,6 +16,7 @@
     "seed": 42424242
   },
   "replayRepeats": 3,
+  "controlBudget": 32,
   "a11y": {
     "lighthouseAccessibilityMin": 0.95,
     "bundleGzipKbMax": 350,

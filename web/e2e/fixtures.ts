@@ -3,12 +3,16 @@ import type { Page } from '@playwright/test';
 import { expectNoA11yViolations } from './a11y';
 import config from './e2e.config.json' with { type: 'json' };
 
-function guardConsole(page: Page): string[] {
+const sandboxedReportProbe =
+  "Blocked script execution in 'about:srcdoc' because the document's frame is sandboxed and the 'allow-scripts' permission is not set.";
+
+function guardConsole(page: Page, inspectSandboxedReport: boolean): string[] {
   const errors: string[] = [];
   page.on('console', (message) => {
-    if (message.type() === 'error') {
-      errors.push(message.text());
-    }
+    if (message.type() !== 'error') return;
+    const text = message.text();
+    if (inspectSandboxedReport && text === sandboxedReportProbe) return;
+    errors.push(text);
   });
   page.on('pageerror', (error) => {
     errors.push(error.message);
@@ -16,7 +20,8 @@ function guardConsole(page: Page): string[] {
   return errors;
 }
 
-export const test = base.extend<{ consoleErrors: string[] }>({
+export const test = base.extend<{ consoleErrors: string[]; inspectSandboxedReport: boolean }>({
+  inspectSandboxedReport: [false, { option: true }],
   page: async ({ page, baseURL }, provide) => {
     const token = process.env['E2E_API_TOKEN'];
     if (!baseURL || !token) throw new Error('The Compose setup did not supply an E2E API session.');
@@ -28,8 +33,8 @@ export const test = base.extend<{ consoleErrors: string[] }>({
     await provide(page);
   },
   consoleErrors: [
-    async ({ page }, use) => {
-      const errors = guardConsole(page);
+    async ({ page, inspectSandboxedReport }, use) => {
+      const errors = guardConsole(page, inspectSandboxedReport);
       await use(errors);
       expect(errors, 'browser console errors').toEqual([]);
     },

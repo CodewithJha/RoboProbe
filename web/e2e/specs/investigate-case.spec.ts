@@ -3,6 +3,8 @@ import { CasebookPage } from '../pages/casebook';
 import { afterNavigation, e2e, test, expect } from '../fixtures';
 import { seed } from '../seed';
 
+test.use({ inspectSandboxedReport: true });
+
 test('casebook medoid → replay ×3 → export report', async ({ page }) => {
   const casebook = new CasebookPage(page);
   await casebook.open(seed.campaign.id);
