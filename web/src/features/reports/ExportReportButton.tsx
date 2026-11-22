@@ -18,9 +18,9 @@ export function ExportReportButton({
   const job = useReportJob(jobId);
   const opened = useRef(false);
   const status = job.data?.status ?? (create.isSuccess ? create.data.status : undefined);
+  const failed = status === 'FAILED' || status === 'ERROR';
   const ready = status === 'COMPLETED' && Boolean(jobId);
-  const running =
-    create.isPending || (Boolean(jobId) && !job.isError && !ready && status !== 'FAILED');
+  const running = create.isPending || (Boolean(jobId) && !job.isError && !ready && !failed);
   const error = create.error ?? job.error;
 
   useEffect(() => {
@@ -47,7 +47,7 @@ export function ExportReportButton({
       </button>
       {running ? <p role="status">Generating report…</p> : null}
       {error ? <p role="alert">{error.message}</p> : null}
-      {!error && status === 'FAILED' ? <p role="alert">Report generation failed.</p> : null}
+      {!error && failed ? <p role="alert">Report generation failed.</p> : null}
     </>
   );
 }
