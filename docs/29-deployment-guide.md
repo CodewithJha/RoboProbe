@@ -48,7 +48,7 @@ mkdir -p data/artifacts
 sudo chown 10001:10001 data/artifacts
 export ROBOPROBE_IMAGE_TAG=v1.0.0
 docker compose -f docker/compose.yaml --profile app pull
-docker compose -f docker/compose.yaml --profile app up -d --wait
+make up PROFILES=app UP_FLAGS=--no-build
 docker compose -f docker/compose.yaml --profile app ps
 curl -fsS http://127.0.0.1:8080/config.json
 ```
@@ -57,7 +57,8 @@ Open `http://127.0.0.1:8080` and enter the API token in dashboard Settings.
 Browser API and SSE requests use the same origin as the dashboard.
 
 Gazebo workers: `docker compose -f docker/compose.yaml --profile core --profile gazebo up -d`.
-Upgrade: change `ROBOPROBE_IMAGE_TAG`, `pull`, `up -d` (the `migrate` service applies migrations first; API/orchestrator wait for it).
+To upgrade, set `ROBOPROBE_IMAGE_TAG` to the next published version, pull the images, and repeat
+`make up PROFILES=app UP_FLAGS=--no-build`. The API and orchestrator wait for migrations.
 
 ## 4. Configuration in deployment
 
