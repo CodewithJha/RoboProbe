@@ -207,9 +207,26 @@
             "title": "Name",
             "type": "string"
           },
+          "pins": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Pins",
+            "type": "object"
+          },
           "repeats": {
             "title": "Repeats",
             "type": "integer"
+          },
+          "space": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SpaceRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "started_at": {
             "anyOf": [
@@ -401,6 +418,20 @@
       "ExperimentOut": {
         "additionalProperties": false,
         "properties": {
+          "cells": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cells"
+          },
           "created_at": {
             "anyOf": [
               {
@@ -440,6 +471,31 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress"
           },
           "results": {
             "anyOf": [
@@ -519,6 +575,18 @@
           "label": {
             "title": "Label",
             "type": "string"
+          },
+          "medoid_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Medoid Run Id"
           },
           "primary_class": {
             "title": "Primary Class",
@@ -1087,6 +1155,86 @@
             "title": "Grid",
             "type": "object"
           },
+          "log_x": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log X"
+          },
+          "log_y": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log Y"
+          },
+          "p_fail": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P Fail"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
           "resolution": {
             "title": "Resolution",
             "type": "integer"
@@ -1095,9 +1243,37 @@
             "title": "X Param",
             "type": "string"
           },
+          "x_values": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "X Values"
+          },
           "y_param": {
             "title": "Y Param",
             "type": "string"
+          },
+          "y_values": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Y Values"
           }
         },
         "required": [

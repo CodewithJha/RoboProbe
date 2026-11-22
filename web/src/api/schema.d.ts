@@ -756,8 +756,13 @@ export interface components {
       modes_found: number;
       /** Name */
       name: string;
+      /** Pins */
+      pins?: {
+        [key: string]: components['schemas']['JsonValue'];
+      };
       /** Repeats */
       repeats: number;
+      space?: components['schemas']['SpaceRef'] | null;
       /** Started At */
       started_at?: string | null;
       status: components['schemas']['CampaignStatus'];
@@ -828,6 +833,8 @@ export interface components {
     };
     /** ExperimentOut */
     ExperimentOut: {
+      /** Cells */
+      cells?: components['schemas']['JsonValue'][] | null;
       /** Created At */
       created_at?: string | null;
       /** Design */
@@ -843,6 +850,12 @@ export interface components {
       id: string;
       /** Name */
       name: string;
+      /** Notes */
+      notes?: string | null;
+      /** Progress */
+      progress?: {
+        [key: string]: number;
+      } | null;
       /** Results */
       results?: {
         [key: string]: components['schemas']['JsonValue'];
@@ -885,6 +898,8 @@ export interface components {
       } | null;
       /** Label */
       label: string;
+      /** Medoid Run Id */
+      medoid_run_id?: string | null;
       /** Primary Class */
       primary_class: string;
       /** Size */
@@ -1088,12 +1103,30 @@ export interface components {
       grid?: {
         [key: string]: components['schemas']['JsonValue'];
       };
+      /** Log X */
+      log_x?: boolean | null;
+      /** Log Y */
+      log_y?: boolean | null;
+      /** P Fail */
+      p_fail?: (number | null)[][] | null;
+      /** Points */
+      points?:
+        | {
+            [key: string]: components['schemas']['JsonValue'];
+          }[]
+        | null;
+      /** Region */
+      region?: components['schemas']['JsonValue'][][] | null;
       /** Resolution */
       resolution: number;
       /** X Param */
       x_param: string;
+      /** X Values */
+      x_values?: number[] | null;
       /** Y Param */
       y_param: string;
+      /** Y Values */
+      y_values?: number[] | null;
     };
     /** RunOut */
     RunOut: {

@@ -1,0 +1,19 @@
+.figure {
+  margin: 0;
+}
+
+.plot {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.table {
+  overflow: auto;
+}
+
+.table th,
+.table td {
+  padding: 0.3rem;
+  text-align: end;
+}
