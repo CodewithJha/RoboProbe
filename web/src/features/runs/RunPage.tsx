@@ -135,7 +135,6 @@ function ReplayForm({ run, maximum }: { run: Schema['RunOut']; maximum: number |
 
 function Parameters({
   run,
-  campaign,
 }: {
   run: Schema['RunOut'];
   campaign: Schema['CampaignOut'] | undefined;
