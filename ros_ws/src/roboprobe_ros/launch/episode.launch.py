@@ -139,6 +139,7 @@ def _sim_actions(
     simulator = ExecuteProcess(cmd=[*gazebo, str(world)], cwd=str(root), output="screen")
     return [
         AppendEnvironmentVariable("GZ_SIM_RESOURCE_PATH", str(sim / "worlds")),
+        AppendEnvironmentVariable("GZ_SIM_RESOURCE_PATH", str(description.parent)),
         AppendEnvironmentVariable("GZ_SIM_RESOURCE_PATH", str(payloads)),
         RegisterEventHandler(OnProcessExit(target_action=simulator, on_exit=_on_simulator_exit)),
         simulator,
