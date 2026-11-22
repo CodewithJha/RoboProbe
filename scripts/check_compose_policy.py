@@ -15,7 +15,7 @@ from urllib.parse import urlsplit
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-_CORE_PROFILES = {"core", "app", "dev", "observability"}
+_PROFILES = {"core", "app", "dev", "gazebo", "observability"}
 _DATABASE_SERVICES = {"postgres", "migrate", "orchestrator", "worker-k2d", "worker-gazebo", "api"}
 _SECRET_ENV = {
     "PGPASSWORD",
@@ -125,9 +125,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     prefix = ["-f", str(args.file)]
     try:
         profiles = set(_compose([*prefix, "config", "--profiles"]).splitlines())
-        errors = [
-            f"missing Compose profile: {profile}" for profile in sorted(_CORE_PROFILES - profiles)
-        ]
+        errors = [f"missing Compose profile: {profile}" for profile in sorted(_PROFILES - profiles)]
         for profile in sorted(profiles):
             flags = ["--profile", "core"] if profile == "gazebo" else []
             rendered = _compose(

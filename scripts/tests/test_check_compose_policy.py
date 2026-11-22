@@ -106,6 +106,10 @@ class ComposePolicyTest(unittest.TestCase):
             ["--profile", "core", "--profile", "gazebo"],
             [call.args[0][2:6] for call in compose.call_args_list],
         )
+        compose.side_effect = ["app\ncore\ndev\nobservability", *([model] * 4)]
+        with patch.object(policy, "_compose", compose), patch("builtins.print") as output:
+            self.assertEqual(main([]), 1)
+        self.assertEqual(output.call_args.args, ("missing Compose profile: gazebo",))
 
     def test_render_failure_does_not_echo_compose_output(self) -> None:
         """Keep model interpolation output out of logs even when Docker rejects it."""
