@@ -23,21 +23,15 @@ BEGIN = "<!-- BEGIN REQUIREMENT EVIDENCE -->"
 END = "<!-- END REQUIREMENT EVIDENCE -->"
 _GH_TIMEOUT_S = 45
 
-_REQUIREMENT = re.compile(
-    r"^(?:- \*\*(FR-[A-Z]+-\d{3})|\| (NFR-[A-Z]+-\d{3})) \[", re.MULTILINE
-)
+_REQUIREMENT = re.compile(r"^(?:- \*\*(FR-[A-Z]+-\d{3})|\| (NFR-[A-Z]+-\d{3})) \[", re.MULTILINE)
 _ROW = re.compile(
     r"^\|[ \t]*((?:FR|NFR)-[A-Z]+-\d{3})[ \t]*\|[ \t]*([^|\r\n]*)\|[ \t]*([^|\r\n]*)\|[ \t]*$",
     re.MULTILINE,
 )
 _NODE = re.compile(r"`([^`]+)`")
-_ISSUE = re.compile(
-    rf"^https://github\.com/{REPOSITORY}/issues/[1-9]\d*$", re.IGNORECASE
-)
+_ISSUE = re.compile(rf"^https://github\.com/{REPOSITORY}/issues/[1-9]\d*$", re.IGNORECASE)
 _LINK = re.compile(r"\]\((https://github\.com/[^\s)]+)\)")
-_TS_TEST = re.compile(
-    r"^[^\S\r\n]*(?:test|it)\(\s*(['\"])([^\r\n]*?)\1\s*,", re.MULTILINE
-)
+_TS_TEST = re.compile(r"^[^\S\r\n]*(?:test|it)\(\s*(['\"])([^\r\n]*?)\1\s*,", re.MULTILINE)
 _TEST_DIRECTORIES = (
     Path("backend/tests"),
     Path("ros_ws"),
@@ -48,10 +42,7 @@ _TEST_DIRECTORIES = (
 
 def requirement_ids(text: str) -> set[str]:
     """Read canonical FR bullet and NFR table IDs from the SRS."""
-    return {
-        functional or nonfunctional
-        for functional, nonfunctional in _REQUIREMENT.findall(text)
-    }
+    return {functional or nonfunctional for functional, nonfunctional in _REQUIREMENT.findall(text)}
 
 
 def _python_test_exists(source: str, names: list[str]) -> bool:
@@ -62,14 +53,12 @@ def _python_test_exists(source: str, names: list[str]) -> bool:
         if child is None:
             return False
         if not name.startswith("Test") and all(
-            ast.unparse(base) not in {"TestCase", "unittest.TestCase"}
-            for base in child.bases
+            ast.unparse(base) not in {"TestCase", "unittest.TestCase"} for base in child.bases
         ):
             return False
         scope = child
     return names[-1].startswith("test_") and any(
-        isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef)
-        and node.name == names[-1]
+        isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) and node.name == names[-1]
         for node in scope.body
     )
 
@@ -83,17 +72,12 @@ def test_node_exists(root: Path, node: str) -> bool:
     try:
         base = root.resolve()
         path = (base / relative).resolve()
-        if not any(
-            path.is_relative_to(base / directory) for directory in _TEST_DIRECTORIES
-        ):
+        if not any(path.is_relative_to(base / directory) for directory in _TEST_DIRECTORIES):
             return False
         source = path.read_text(encoding="utf-8")
         if path.suffix == ".py" and path.name.startswith("test_"):
             return _python_test_exists(source, names)
-        if (
-            path.name.endswith((".test.ts", ".test.tsx", ".spec.ts"))
-            and len(names) == 1
-        ):
+        if path.name.endswith((".test.ts", ".test.tsx", ".spec.ts")) and len(names) == 1:
             source = re.sub(r"/\*.*?\*/", "", source, flags=re.DOTALL)
             return any(title == names[0] for _, title in _TS_TEST.findall(source))
     except (OSError, SyntaxError, UnicodeError):
@@ -102,11 +86,7 @@ def test_node_exists(root: Path, node: str) -> bool:
 
 
 def _matrix_rows(text: str) -> list[tuple[str, str, str]]:
-    if (
-        text.count(BEGIN) != 1
-        or text.count(END) != 1
-        or text.find(BEGIN) > text.find(END)
-    ):
+    if text.count(BEGIN) != 1 or text.count(END) != 1 or text.find(BEGIN) > text.find(END):
         msg = "traceability matrix must contain one bounded requirement evidence table"
         raise ValueError(msg)
     table = text.split(BEGIN, 1)[1].split(END, 1)[0]
@@ -138,9 +118,7 @@ def audit(root: Path, closed_issues: set[str]) -> tuple[int, list[str]]:
         stale_nodes = [node for node in test_ids if not test_node_exists(root, node)]
         if stale_nodes or not test_ids:
             detail = f" ({', '.join(stale_nodes)})" if stale_nodes else ""
-            problems.append(
-                f"{identifier} has no existing test node for listed evidence{detail}"
-            )
+            problems.append(f"{identifier} has no existing test node for listed evidence{detail}")
         issue_urls = _LINK.findall(issue_cell)
         invalid_urls = [url for url in issue_urls if url.lower() not in closed_issues]
         if invalid_urls or not issue_urls:
@@ -148,9 +126,7 @@ def audit(root: Path, closed_issues: set[str]) -> tuple[int, list[str]]:
             problems.append(
                 f"{identifier} has no verified closed GitHub issue for evidence{detail}"
             )
-    problems.extend(
-        f"{identifier} has no evidence row" for identifier in sorted(expected - seen)
-    )
+    problems.extend(f"{identifier} has no evidence row" for identifier in sorted(expected - seen))
     return len(expected), problems
 
 
@@ -169,7 +145,7 @@ def _closed_issues(root: Path, snapshot: Path | None) -> set[str]:
             "--json",
             "url,stateReason",
         ]
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603 - fixed GitHub CLI command
             command,
             cwd=root,
             capture_output=True,
@@ -182,14 +158,10 @@ def _closed_issues(root: Path, snapshot: Path | None) -> set[str]:
         source = snapshot.read_text(encoding="utf-8")
     rows = json.loads(source)
     if not isinstance(rows, list) or not all(
-        isinstance(row, dict)
-        and isinstance(row.get("url"), str)
-        and _ISSUE.fullmatch(row["url"])
+        isinstance(row, dict) and isinstance(row.get("url"), str) and _ISSUE.fullmatch(row["url"])
         for row in rows
     ):
-        msg = (
-            "invalid closed GitHub issue snapshot; expected the output of gh issue list"
-        )
+        msg = "invalid closed GitHub issue snapshot; expected the output of gh issue list"
         raise ValueError(msg)
     return {row["url"].lower() for row in rows if row.get("stateReason") == "COMPLETED"}
 
@@ -201,13 +173,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--closed-issues",
         type=Path,
-        help="Read a snapshot from gh issue list --state closed --limit 1000 --json url,stateReason.",
+        help="Read a closed GitHub issue snapshot containing url and stateReason.",
     )
     args = parser.parse_args(argv)
     try:
-        total, problems = audit(
-            args.root, _closed_issues(args.root, args.closed_issues)
-        )
+        total, problems = audit(args.root, _closed_issues(args.root, args.closed_issues))
     except subprocess.SubprocessError:
         print(
             "Cannot query closed GitHub issues. Authenticate gh or pass --closed-issues.",
@@ -225,9 +195,7 @@ def main(argv: list[str] | None = None) -> int:
         for problem in problems:
             print(problem, file=sys.stderr)
         return 1
-    print(
-        f"All {total} requirements have a checked-in test node and a closed GitHub issue."
-    )
+    print(f"All {total} requirements have a checked-in test node and a closed GitHub issue.")
     return 0
 
 

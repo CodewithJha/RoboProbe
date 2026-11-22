@@ -87,8 +87,10 @@ class CheckTraceabilityTest(unittest.TestCase):
     def test_valid_python_typescript_and_closed_links(self) -> None:
         """Accept exact node IDs from both test runners and verified GitHub URLs."""
         self._matrix(
-            f"| FR-SCN-001 | `backend/tests/test_space.py::TestSpace::test_accepts_yaml` | [#101]({FIRST}) |\n"
-            f"| NFR-CFG-001 | `web/e2e/specs/config.spec.ts::reads the config` | [#102]({SECOND}) |\n"
+            "| FR-SCN-001 | `backend/tests/test_space.py::TestSpace::test_accepts_yaml` | "
+            f"[#101]({FIRST}) |\n"
+            "| NFR-CFG-001 | `web/e2e/specs/config.spec.ts::reads the config` | "
+            f"[#102]({SECOND}) |\n"
         )
         code, output = self._check()
         self.assertEqual(code, 0, output)
@@ -108,9 +110,7 @@ class CheckTraceabilityTest(unittest.TestCase):
 
     def test_duplicate_and_unknown_ids_fail(self) -> None:
         """Reject ambiguous rows and IDs missing from the specification."""
-        self._matrix(
-            "| FR-SCN-001 | — | — |\n| FR-SCN-001 | — | — |\n| FR-SCN-987 | — | — |\n"
-        )
+        self._matrix("| FR-SCN-001 | — | — |\n| FR-SCN-001 | — | — |\n| FR-SCN-987 | — | — |\n")
         code, output = self._check()
         self.assertEqual(code, 1)
         self.assertIn("FR-SCN-001 has duplicate evidence rows", output)
@@ -145,9 +145,7 @@ class CheckTraceabilityTest(unittest.TestCase):
         with patch.object(
             checker.subprocess,
             "run",
-            return_value=subprocess.CompletedProcess(
-                ["gh"], 0, self.snapshot.read_text()
-            ),
+            return_value=subprocess.CompletedProcess(["gh"], 0, self.snapshot.read_text()),
         ) as run:
             self.assertEqual(self._check(live=True)[0], 1)
             self.assertIn("url,stateReason", run.call_args.args[0])
