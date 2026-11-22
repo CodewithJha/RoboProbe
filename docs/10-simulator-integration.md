@@ -206,7 +206,13 @@ The manager writes `episode_done.json` beside `episode.yaml` after the recorder 
   the manager's completeness flag. Interrupted recordings and invalid sampling carry
   `complete=false` in trace metadata. The trace also records the latest lidar drop counters,
   maximum observed command delay and recovery count for the episode.
-- Optional rosbag2 (MCAP storage) of `/scan`, `/cmd_vel`, `/amcl_pose`, `/tf`, ground truth when `record_bag` (default: failures only — the worker re-records on confirmatory replays, since a run's verdict is unknown in advance; option `record_bag: always`).
+- The optional rosbag2 recording contains `/scan`, `/cmd_vel`, `/amcl_pose`, `/tf` and ground
+  truth. `backends.gazebo_nav2.record_bag` defaults to `failures`, which records confirmation
+  runs, manual runs, and replays whose source verdict is `FAIL`. The worker selects recording
+  before launch. `always` selects every run, and `never` disables recording.
+- The recorder writes one chunk-compressed MCAP. After teardown the worker registers it as a
+  `bag` artifact. A requested recording without a finalized MCAP is an infrastructure failure.
+  Run inspection exposes **Open bag**, which downloads the original MCAP.
 
 ## 7. kinematic2d backend (development & evaluation test double)
 
@@ -274,6 +280,10 @@ the run INVALID and makes the worker command exit so Docker can restart the cont
 The backend uses `episode_done.json` and the v1 Parquet trace when the launch wrapper returns
 success. It treats launch failures, missing or invalid files, wall-clock deadlines and the shared
 startup/spawn/internal exit codes as infrastructure failures.
+
+The Gazebo worker caps the requested concurrency at `backends.gazebo_nav2.max_parallel_per_host`.
+Workers on one host use the same domain base and capacity and share the `storage.workdir_root` volume.
+The kernel releases each episode's lock on exit. Its numbered lockfile in `slots/` stays available.
 
 ## 10. Adding another simulator (Webots, MuJoCo, Isaac Sim)
 

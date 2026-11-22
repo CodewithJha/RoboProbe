@@ -12,6 +12,7 @@ Implements: T-043, FR-REP-002, PR-08
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import platform
 from collections.abc import Mapping
@@ -21,6 +22,7 @@ from typing import Final
 from uuid import UUID
 
 from roboprobe import __version__
+from roboprobe.core.errors import ValidationError
 from roboprobe.core.seeding import LOCALIZATION, PERCEPTION, SENSOR, SIMULATOR, derive_seed
 from roboprobe.core.types import JsonValue
 from roboprobe.scenario._documents import validate_document
@@ -52,6 +54,41 @@ UNKNOWN_GIT_SHA: Final = "unknown"
 _SHA256_PREFIX: Final = "sha256:"
 _BYTES_PER_GIB: Final = 1024**3
 _HOSTNAME_HASH_HEX: Final = 16
+_ROS_VERSIONS_FILE: Final = Path("/opt/roboprobe/ros_versions.json")
+_ROS_VERSION_FIELDS: Final = ("ros_distro", "gz", "nav2", "rmw")
+_GAZEBO_IMAGE_ENV: Final = "ROBOPROBE_BACKENDS__GAZEBO_NAV2__IMAGE"
+
+
+def _gazebo_provenance(path: Path) -> dict[str, JsonValue]:
+    """Read the version record baked into the Gazebo worker image."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        msg = "Cannot read Gazebo image version metadata."
+        raise ValidationError(msg) from exc
+    if not isinstance(data, dict) or not all(
+        isinstance(data.get(key), str) and data[key] for key in _ROS_VERSION_FIELDS
+    ):
+        msg = "Gazebo image version metadata is missing its recorded simulator versions."
+        raise ValidationError(msg)
+    packages = data.get("apt_packages")
+    if (
+        not isinstance(packages, dict)
+        or not packages
+        or not all(
+            isinstance(name, str) and isinstance(version, str) and version
+            for name, version in packages.items()
+        )
+    ):
+        msg = "Gazebo image version metadata has invalid apt package pins."
+        raise ValidationError(msg)
+    details: dict[str, JsonValue] = {key: data[key] for key in _ROS_VERSION_FIELDS}
+    details["apt_packages"] = dict(packages)
+    if image := os.environ.get(_GAZEBO_IMAGE_ENV):
+        details["image"] = image
+    if rmw := os.environ.get("RMW_IMPLEMENTATION"):
+        details["rmw"] = rmw
+    return details
 
 
 def hash_hostname(hostname: str) -> str:
@@ -149,9 +186,14 @@ class ManifestBuilder:
         self._experiment_id = None if experiment_id is None else str(experiment_id)
         return self
 
-    def with_backend(self, name: str, **details: JsonValue) -> ManifestBuilder:
-        """Record backend name and optional version/image fields."""
+    def with_backend(
+        self, name: str, *, ros_versions_file: Path | None = None, **details: JsonValue
+    ) -> ManifestBuilder:
+        """Record backend name and optional versions supplied by the simulator image."""
         payload: dict[str, JsonValue] = {"name": name}
+        versions = ros_versions_file or _ROS_VERSIONS_FILE
+        if name == "gazebo_nav2" and versions.is_file():
+            payload.update(_gazebo_provenance(versions))
         payload.update(details)
         self._backend = payload
         return self

@@ -100,6 +100,7 @@ def test_k2d_replay_same_seed_agrees(uow_factory, session_factory, tmp_path: Pat
     )
     claimed = worker.claim()
     assert claimed is not None
+    assert (claimed.phase, claimed.source_verdict) == ("baseline", None)
     worker.execute(claimed)
 
     ids = enqueue_replays(
@@ -108,6 +109,10 @@ def test_k2d_replay_same_seed_agrees(uow_factory, session_factory, tmp_path: Pat
     assert len(ids) == 1
     claimed = worker.claim()
     assert claimed is not None
+    with uow_factory() as uow:
+        source = uow.runs.get(source_id)
+    assert source is not None
+    assert (claimed.phase, claimed.source_verdict) == ("replay", source.verdict)
     worker.execute(claimed)
 
     with uow_factory() as uow:

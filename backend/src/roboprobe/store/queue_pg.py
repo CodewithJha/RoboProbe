@@ -52,7 +52,9 @@ WHERE id = (
   ORDER BY r.priority, r.enqueued_at
   FOR UPDATE OF r SKIP LOCKED
   LIMIT 1)
-RETURNING id, campaign_id, scenario_hash, scenario_values, seed, attempt, backend, ordinal
+RETURNING id, campaign_id, scenario_hash, scenario_values, seed, attempt, backend, ordinal, phase,
+          (SELECT source.verdict FROM runs source WHERE source.id = runs.replay_of)
+          AS source_verdict
 """  # noqa: S608 - fixed claim predicate, bound request parameters
 
 _DEPTH_SQL = f"""
@@ -124,6 +126,8 @@ class PostgresRunQueue:
                 worker_id=worker_id,
                 wall_timeout_s=self._wall_timeout_s,
                 sim_time_budget_s=self._sim_time_budget_s,
+                phase=row["phase"],
+                source_verdict=row["source_verdict"],
             )
         except Exception:
             session.rollback()

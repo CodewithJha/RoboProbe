@@ -102,6 +102,7 @@ class WorkerProcess:
         metrics: Metrics | None = None,
         slot: int = 0,
         on_after_claim: Callable[[ClaimedRunView], None] | None = None,
+        record_bag: Callable[[ClaimedRunView], bool] | None = None,
     ) -> None:
         """Constructor-injected collaborators only (docs/05 §5.2)."""
         if worker_settings.backend is None:
@@ -119,6 +120,7 @@ class WorkerProcess:
         self._metrics = metrics if metrics is not None else create_metrics(enabled=False)
         self._slot = slot
         self._on_after_claim = on_after_claim
+        self._record_bag = record_bag
         self._backend_name = worker_settings.backend
         self.worker_id = f"{worker_settings.id_prefix}:{os.getpid()}:{slot}"
         self.state = WorkerState.IDLE
@@ -253,6 +255,7 @@ class WorkerProcess:
                 workdir=workdir,
                 sim_time_budget_s=sim_s,
                 wall_timeout_s=wall_s,
+                record_bag=self._record_bag(run) if self._record_bag is not None else False,
             )
             log.info("run.started", run_id=str(run.run_id), worker_id=self.worker_id)
             with span("run.execute", run_id=str(run.run_id)):

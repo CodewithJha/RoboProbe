@@ -201,7 +201,7 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `backends.gazebo_nav2.teardown_grace_s` | float | `10.0` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__TEARDOWN_GRACE_S` | Time from SIGINT to SIGTERM on episode teardown [s]. |
 | `backends.gazebo_nav2.teardown_term_wait_s` | float | `5.0` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__TEARDOWN_TERM_WAIT_S` | Time from SIGTERM to SIGKILL after an episode [s]. |
 | `backends.gazebo_nav2.sample_hz` | float | `20.0` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__SAMPLE_HZ` | Trace sampling rate [Hz]. |
-| `backends.gazebo_nav2.record_bag` | enum: `never` / `failures` / `always` | `failures` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__RECORD_BAG` | When to record rosbag2 MCAP: never, failures, always. |
+| `backends.gazebo_nav2.record_bag` | enum: `never` / `failures` / `always` | `failures` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__RECORD_BAG` | MCAP recording policy. Choose never, always, or failures (confirmations, manual runs and replays of a FAIL run). |
 | `backends.gazebo_nav2.max_parallel_per_host` | int | `1` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__MAX_PARALLEL_PER_HOST` | Gazebo episodes allowed in parallel on one host. |
 | `backends.gazebo_nav2.perception_model_file` | Path | `configs/perception/oakd_lowlight_v1.yaml` | `ROBOPROBE_BACKENDS__GAZEBO_NAV2__PERCEPTION_MODEL_FILE` | Perception degradation constants (docs/06 §3.3) [path]. |
 
@@ -371,6 +371,8 @@ Risk atlas timing is set by the typed `atlasConfig` in `web/src/features/atlas/a
 The database password is never a variable: `make setup` writes `secrets/db_password` (git-ignored) and Compose mounts it as the `db_password` secret.
 Set `ROBOPROBE_API_TOKEN_FILE` to override the source file for the shared API and Prometheus
 `api_token` secret. Compose defaults to `secrets/api_token` at the repository root.
+Set `ROBOPROBE_GZ_SHM_SIZE` to change the Gazebo worker container's shared-memory allocation.
+It defaults to `1gb`.
 
 Browser tests default to `E2E_BASE_URL=http://127.0.0.1:8080`. Use HTTP on `localhost` or
 `127.0.0.1` to change the port. `E2E_COMPOSE_PROJECT` defaults to

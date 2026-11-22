@@ -12,6 +12,8 @@
 !plugins/
 !web/
 !docker/web/
+!docker/gazebo/
+!ros_ws/src/
 **/node_modules/
 web/dist/
 web/coverage/

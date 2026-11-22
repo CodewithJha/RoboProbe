@@ -7,11 +7,16 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Record Gazebo confirmations, manual runs, and replays of failed runs as downloadable MCAP
+  artifacts by default (T-097b).
+
 - Gazebo worker backend with process-group shutdown, cancellation, and typed infrastructure failures (T-096b).
+- Gazebo workers lease host-local slots with distinct ROS domains and transport partitions (T-097a).
 - Gazebo nightly workflow runs the simulator suite and Jazzy package tests and reports episode timings (T-098).
 - Record Gazebo episodes as Trace v1 Parquet on simulation time, with optional MCAP bags (T-094b).
 - The verified warehouse occupancy map, aligned kinematic map, and Nav2 nominal path for cross-backend pallet placement (T-092).
 - Deterministic Gazebo episode materialization for the warehouse world, Nav2, sensor perturbations, and bridge configuration (T-096a).
+- Package the Gazebo worker with pinned Jazzy and Harmonic dependencies and an isolated Compose profile (T-095).
 - Verified TB4 Nav2 topic map (`ros_ws/src/roboprobe_ros/config/topics.yaml`), JSON Schema, and evidence capture script (T-091).
 - Playwright E2E harness and journeys (T-117, T-118, T-114): compose-backed global setup with
   seeded warehouse campaign, axe helper and page objects, journey specs, `e2e.yml`, Lighthouse
@@ -250,6 +255,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   to the trigger when dismissed.
 
 ### Fixed
+
+- Bound Gaussian-process prediction batches so a full Risk Atlas can be generated on a laptop.
 
 - Campaign reports render legacy risk slices, and authenticated dashboard sessions can preview
   and download completed reports.

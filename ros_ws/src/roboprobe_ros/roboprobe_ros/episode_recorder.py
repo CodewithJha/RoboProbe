@@ -370,6 +370,8 @@ class EpisodeRecorder(RoboProbeNode):
                 "record",
                 "-s",
                 "mcap",
+                "--storage-preset-profile",
+                "zstd_fast",
                 "--use-sim-time",
                 "-o",
                 str(self._episode_file.with_name("bag")),

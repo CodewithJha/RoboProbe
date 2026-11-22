@@ -300,7 +300,12 @@ class GazeboMaterializer:
             output.write_bytes(content)
             written[filename] = output
         return MaterializedEpisode(
-            files=written, payload={"time_limit_s": time_limit, "simulator_seed": simulator_seed}
+            files=written,
+            payload={
+                "time_limit_s": time_limit,
+                "simulator_seed": simulator_seed,
+                "record_bag": self._settings.record_bag,
+            },
         )
 
     def _nav2(self, topics: _Topics, speed: float) -> PatchedNav2Params:

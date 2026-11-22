@@ -1,0 +1,47 @@
+name: Published app smoke
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/published-app.yml"
+      - "scripts/web_image_smoke.sh"
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Published RoboProbe image tag
+        type: string
+        default: main
+
+permissions:
+  contents: read
+
+jobs:
+  quickstart:
+    name: Published images on native Ubuntu
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ROBOPROBE_IMAGE_TAG: ${{ inputs.image_tag || 'main' }}
+      WEB_SMOKE_BUILD: "0"
+      WEB_SMOKE_DEMO: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-web
+        with:
+          node-version: "24"
+      - name: Install Chromium
+        working-directory: web
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Pull the published images
+        run: |
+          started=$SECONDS
+          docker compose -f docker/compose.yaml --profile app pull --quiet
+          docker image inspect --format '{{index .RepoDigests 0}}' \
+            "ghcr.io/codewithjha/roboprobe-backend:$ROBOPROBE_IMAGE_TAG" \
+            "ghcr.io/codewithjha/roboprobe-web:$ROBOPROBE_IMAGE_TAG"
+          printf 'Image tag: `%s`\n\nPull: %s seconds\n' "$ROBOPROBE_IMAGE_TAG" "$((SECONDS - started))" >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify dashboard and warehouse campaign
+        run: |
+          started=$SECONDS
+          bash scripts/web_image_smoke.sh
+          printf 'App smoke and warehouse demo: %s seconds\n' "$((SECONDS - started))" >> "$GITHUB_STEP_SUMMARY"

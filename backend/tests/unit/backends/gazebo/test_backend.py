@@ -55,7 +55,7 @@ def test_completed_launch_uses_terminal_file_and_trace(
             f"workdir:={workdir}",
         ]
         assert env["ROS_DOMAIN_ID"] == "30"
-        assert env["GZ_PARTITION"].endswith(episode_request.run_id.hex)
+        assert env["GZ_PARTITION"].startswith("rp_") and env["GZ_PARTITION"].endswith("_0")
         assert env["ROS_AUTOMATIC_DISCOVERY_RANGE"] == "LOCALHOST"
         assert wall_timeout_s == 43
         assert not (workdir / "episode_done.json").exists()
@@ -68,7 +68,8 @@ def test_completed_launch_uses_terminal_file_and_trace(
     monkeypatch.setattr(EpisodeProcess, "run", run_process)
     (episode_request.workdir / "episode_done.json").write_text("stale", encoding="utf-8")
     settings = RoboProbeSettings(
-        backends={"gazebo_nav2": {"startup_timeout_s": 20, "wall_margin_s": 3}}
+        storage={"workdir_root": episode_request.workdir},
+        backends={"gazebo_nav2": {"startup_timeout_s": 20, "wall_margin_s": 3}},
     )
     result = GazeboNav2Backend(settings).run_episode(
         episode_request, MaterializedScenario(payload={"time_limit_s": 20})
@@ -110,8 +111,54 @@ def test_infra_classifications(
         return ProcessExit(state, returncode)
 
     monkeypatch.setattr(EpisodeProcess, "run", run_process)
-    result = GazeboNav2Backend(RoboProbeSettings()).run_episode(
+    settings = RoboProbeSettings(storage={"workdir_root": episode_request.workdir})
+    result = GazeboNav2Backend(settings).run_episode(
         episode_request, MaterializedScenario(payload={"time_limit_s": 20})
     )
     assert result.infra_error == expected
     assert result.trace.n_samples == 2
+
+
+@pytest.mark.parametrize("bag", ["complete", "partial", "missing", "split", "symlink", "disabled"])
+def test_bag_artifact_requires_current_finalized_mcap(
+    monkeypatch: pytest.MonkeyPatch, episode_request: EpisodeRequest, bag: str
+) -> None:
+    magic = b"\x89MCAP0\r\n"
+    directory = episode_request.workdir / "bag"
+    directory.mkdir()
+    (directory / "previous_attempt.mcap").write_bytes(magic + b"old" + magic)
+
+    def run_process(_self, *_args, **kw):
+        assert not directory.exists()
+        (kw["workdir"] / "episode_done.json").write_text(
+            json.dumps({"status": "TIMEOUT", **SUMMARY}), encoding="utf-8"
+        )
+        write_trace(
+            make_trace(n=2, nav_status=[NavStatus.ACTIVE] * 2), kw["workdir"] / "trace.parquet"
+        )
+        if bag not in {"disabled", "missing"}:
+            directory.mkdir()
+            output = directory / "bag_0.mcap"
+            if bag == "symlink":
+                target = kw["workdir"] / "other.mcap"
+                target.write_bytes(magic + b"not a recorder output" + magic)
+                output.symlink_to(target)
+            else:
+                output.write_bytes(magic + b"body" + (b"" if bag == "partial" else magic))
+            if bag == "split":
+                (directory / "bag_1.mcap").write_bytes(magic + b"second" + magic)
+        return ProcessExit(ProcessState.EXITED, 0)
+
+    monkeypatch.setattr(EpisodeProcess, "run", run_process)
+    result = GazeboNav2Backend(RoboProbeSettings()).run_episode(
+        episode_request,
+        MaterializedScenario(
+            payload={"time_limit_s": 20, "record_bag": "never" if bag == "disabled" else "always"}
+        ),
+    )
+    if bag == "complete":
+        assert result.infra_error is None
+        assert result.artifacts["bag"] == directory / "bag_0.mcap"
+    else:
+        assert "bag" not in result.artifacts
+        assert result.infra_error == (None if bag == "disabled" else InfraReason.BAG_INVALID)

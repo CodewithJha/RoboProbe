@@ -58,6 +58,11 @@ Gazebo episode recording (T-094b, #197, FR-RUN-004, FR-SIM-003, FR-SIM-005) is v
 `ros_ws/src/roboprobe_ros/test/test_episode_recorder.py` with the ROS simulation clock,
 shared Trace v1 fixtures, incomplete output, and real MCAP recording.
 
+Gazebo worker packaging (T-095, #200, FR-SIM-003, NFR-DEP-001, NFR-REP-001) uses the
+image workflow to build the pinned Jazzy and Harmonic stack and smoke-test the non-root
+runtime. `tests/unit/runner/test_manifest.py` verifies the image version metadata is
+included in each Gazebo manifest.
+
 Trace transport verification (T-081e, #150; FR-DSH-005, FR-STO-002, NFR-SEC-003):
 `tests/api/test_trace_artifacts.py` covers clearance minima, flag transitions, rate caps, column
 selection, Parquet/attachment headers, unknown ids, and malicious stored paths (TM-04).
@@ -76,6 +81,10 @@ Gazebo worker lifecycle tests in `tests/unit/backends/gazebo/test_process.py` an
 `tests/unit/backends/gazebo/test_backend.py` cover process-group cleanup and classification.
 The simulator gate in `tests/sim/test_gazebo_backend.py` exercises loss of a running Gazebo
 process during navigation (T-096b, FR-SIM-003, FR-RUN-005).
+
+Gazebo bag policy and download (T-097b, #204, FR-SIM-005, FR-STO-002) are verified in
+`backend/tests/sim/test_bag_policy.py` with a policy truth table and a real failed-run replay
+whose MCAP is downloaded through the API and read by Jazzy rosbag2.
 
 ## 2. Non-functional requirements → verification
 

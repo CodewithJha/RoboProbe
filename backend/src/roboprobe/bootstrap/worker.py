@@ -8,8 +8,10 @@ Implements: T-046, NFR-EXT-001, NFR-EXT-002, PR-19
 from __future__ import annotations
 
 from collections.abc import Callable
+from functools import partial
 from typing import cast
 
+from roboprobe.backends.gazebo_nav2.bags import should_record_bag
 from roboprobe.backends.registry import get_backend
 from roboprobe.bootstrap._infra import Infrastructure, build_infrastructure
 from roboprobe.core.clock import SystemClock
@@ -26,7 +28,14 @@ from roboprobe.runner.ports import (
 )
 from roboprobe.runner.worker import WorkerProcess
 
-__all__ = ["build_worker"]
+__all__ = ["build_worker", "worker_slot_count"]
+
+
+def worker_slot_count(settings: RoboProbeSettings, requested: int) -> int:
+    """Cap Gazebo slots at the host's simulator capacity."""
+    if settings.worker.backend == "gazebo_nav2":
+        return min(requested, settings.backends.gazebo_nav2.max_parallel_per_host)
+    return requested
 
 
 def build_worker(
@@ -73,4 +82,9 @@ def build_worker(
         task=task,
         metrics=metrics,
         slot=slot,
+        record_bag=(
+            partial(should_record_bag, settings=settings.backends.gazebo_nav2)
+            if settings.worker.backend == "gazebo_nav2"
+            else None
+        ),
     )
