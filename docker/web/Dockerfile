@@ -16,6 +16,7 @@ RUN corepack enable
 COPY web/package.json web/pnpm-lock.yaml ./
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
+COPY schemas/ /app/schemas/
 COPY web/ ./
 RUN pnpm build
 
