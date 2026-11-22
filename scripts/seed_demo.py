@@ -56,6 +56,8 @@ DEFAULT_SEED: Final = 20261119
 SMALL_RUNS: Final = 60
 SMALL_MODES: Final = 3
 LARGE_RUNS: Final = 10_000
+_LARGE_BATCH_SIZE: Final = 256
+_LARGE_WORKERS: Final = 8
 FIXTURE_SLICE_RESOLUTION: Final = 8
 FIXTURE_VOLUME_SAMPLES: Final = 256
 MAX_ARTIFACT_BYTES: Final = 2 * 1024 * 1024
@@ -604,6 +606,13 @@ def seed_large(settings: Any, seed: int) -> dict[str, object]:
     from roboprobe.cli.space import register_space
     from roboprobe.scenario.repo_root import discover_repo_root
 
+    runner_settings = settings.runner.model_copy(
+        update={
+            "max_batch_size": _LARGE_BATCH_SIZE,
+            "inflight_factor": 2 * _LARGE_BATCH_SIZE / _LARGE_WORKERS,
+        }
+    )
+    settings = settings.model_copy(update={"runner": runner_settings})
     root = discover_repo_root()
     register_space(
         root / "configs" / "scenario_spaces" / "multi_mode_6d.yaml",
@@ -619,11 +628,11 @@ def seed_large(settings: Any, seed: int) -> dict[str, object]:
             backend="benchmark",
             budget=LARGE_RUNS,
             seed=seed,
-            batch_size=32,
+            batch_size=_LARGE_BATCH_SIZE,
         )
         started = time.monotonic()
         campaign_id = create_campaign_from_config(config, settings)
-        status = run_inline(campaign_id, settings, workers=8)
+        status = run_inline(campaign_id, settings, workers=_LARGE_WORKERS)
         elapsed = time.monotonic() - started
     if str(status) != "COMPLETED":
         msg = f"large campaign finished with status {status}"

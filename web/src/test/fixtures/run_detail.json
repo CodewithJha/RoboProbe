@@ -1,0 +1,202 @@
+{
+  "campaign_id": "01a1ee56-5e00-7001-9e37-79b97f4a7c15",
+  "id": "01a1ee56-5e00-7012-9fe6-8f0af33cb97a",
+  "manifest": {
+    "backend": {
+      "name": "kinematic2d"
+    },
+    "campaign_id": "01a1ee56-5e00-7001-9e37-79b97f4a7c15",
+    "config_snapshot": {
+      "oracles": {
+        "clear": {
+          "d_norm": 0.5,
+          "d_safe": 0.1,
+          "r_contact_base": 0.1,
+          "v_ref": 0.5
+        },
+        "goal": {
+          "r_min": 0.01
+        },
+        "infra": {
+          "max_gap_s": 1.0,
+          "min_rtf": 0.2,
+          "spawn_tolerance_m": 0.2,
+          "startup_timeout_s": 60.0
+        },
+        "loc": {
+          "e_max": 0.5,
+          "hold_s": 2.0
+        },
+        "nav": {
+          "r_abort": -0.5
+        },
+        "osc": {
+          "n_max": 6,
+          "omega_min": 0.3,
+          "window_s": 5.0
+        },
+        "prog": {
+          "delta_min": 0.05,
+          "delta_norm": 0.5,
+          "window_s": 10.0
+        },
+        "stab": {
+          "omega_max": 3.0,
+          "theta_max": 0.35
+        }
+      }
+    },
+    "experiment_id": null,
+    "host": {
+      "cores": 1,
+      "cpu": "fixture-cpu",
+      "hostname_hash": "a3b5bcb8ac41efac",
+      "ram_gb": 0.0
+    },
+    "manifest_schema_version": 1,
+    "materialized": {
+      "obstacle": "sha256:3ed3dc06ab88ae1bdbfbf02bffc2a4810e8ce5bb62365778b8ddd9d978b2bbf2",
+      "world": "sha256:3ace33b228eefeac636afeb5621e434daa648ba95dab27283ffa2ef44a7e02dc"
+    },
+    "roboprobe": {
+      "dirty": false,
+      "git_sha": "0000000000000000000000000000000000000000",
+      "uv_lock_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "version": "fixture"
+    },
+    "run_id": "01a1ee56-5e00-7012-9fe6-8f0af33cb97a",
+    "scenario": {
+      "hash": "159d10591decab5f",
+      "values": {
+        "comms.cmd_delay_ms": 249.5068877153961,
+        "env.floor_friction": 0.29232642278927445,
+        "env.illuminance": 125.23584989321186,
+        "obstacle.along_path": 0.5,
+        "obstacle.clearance": 0.9366358695752423,
+        "robot.max_speed": 0.24451155801952923,
+        "sensor.lidar_dropout": 0.0,
+        "sensor.lidar_noise_std": 0.09442692976598076
+      }
+    },
+    "seeds": {
+      "localization": 6885275037129894175,
+      "perception": 7788915388792322370,
+      "run": 1869288551729486571,
+      "sensor": 3304971589350065581,
+      "simulator": 8488063337115794718
+    },
+    "space": {
+      "id": "warehouse_v1",
+      "version": "09cf763f2e0d"
+    },
+    "sut_profile": {
+      "config_hash": "c213269ed695e9cbddf200c4f222bfecdc6ccbf794ce92975d0f15b25624f665",
+      "id": "k2d_default"
+    },
+    "task": {
+      "id": "warehouse_delivery_v1",
+      "sha256": "b5402145359b9660145a71ee0c471d90bc26f61bc22151405dd2711a8bda0ec5"
+    },
+    "timing": {
+      "rtf_mean": null,
+      "sim_s": 0.0,
+      "wall_s": 0.0
+    }
+  },
+  "metrics": {
+    "duration_s": 67.0,
+    "energy_proxy": 2.5991099078085105,
+    "goal_reached": 1.0,
+    "max_loc_error_m": 1.2317774839255111,
+    "max_speed": 0.22336621589525346,
+    "mean_loc_error_m": 0.6181206153504243,
+    "mean_speed": 0.19025125687112998,
+    "min_clearance_m": 0.465063401492508,
+    "n_recoveries": 0.0,
+    "n_replans": 0.0,
+    "path_length_m": 12.75634677320927,
+    "rtf_mean": -1.0,
+    "t_goal_s": 67.0,
+    "time_below_d_safe_s": 0.0
+  },
+  "mode": null,
+  "oracles": [
+    {
+      "first_violation_t": null,
+      "oracle_id": "O-CLEAR",
+      "robustness": 0.930126802985016,
+      "violated": false
+    },
+    {
+      "first_violation_t": null,
+      "oracle_id": "O-GOAL",
+      "robustness": 0.44166666666666665,
+      "violated": false
+    },
+    {
+      "first_violation_t": 23.700000000000003,
+      "oracle_id": "O-LOC",
+      "robustness": -1.0,
+      "violated": true
+    },
+    {
+      "first_violation_t": null,
+      "oracle_id": "O-NAV",
+      "robustness": 1.0,
+      "violated": false
+    },
+    {
+      "first_violation_t": null,
+      "oracle_id": "O-OSC",
+      "robustness": 1.0,
+      "violated": false
+    },
+    {
+      "first_violation_t": null,
+      "oracle_id": "O-PROG",
+      "robustness": 1.0,
+      "violated": false
+    },
+    {
+      "first_violation_t": null,
+      "oracle_id": "O-STAB",
+      "robustness": 0.9979686028231132,
+      "violated": false
+    }
+  ],
+  "ordinal": 4,
+  "phase": "baseline",
+  "primary_failure": "F-LOC",
+  "proposal": {
+    "acquisition_value": null,
+    "phase": "baseline",
+    "strategy": "S-RANDOM",
+    "tags": []
+  },
+  "repeat_index": 0,
+  "robustness": -1.0,
+  "scenario": {
+    "hash": "159d10591decab5f",
+    "values": {
+      "comms.cmd_delay_ms": 249.5068877153961,
+      "env.floor_friction": 0.29232642278927445,
+      "env.illuminance": 125.23584989321186,
+      "obstacle.along_path": 0.5,
+      "obstacle.clearance": 0.9366358695752423,
+      "robot.max_speed": 0.24451155801952923,
+      "sensor.lidar_dropout": 0.0,
+      "sensor.lidar_noise_std": 0.09442692976598076
+    }
+  },
+  "seed": 1869288551729486571,
+  "status": "DONE",
+  "tags": [],
+  "timing": {
+    "enqueued_at": "2026-11-19T00:00:00.016000Z",
+    "finished_at": "2026-11-19T00:00:00.019000Z",
+    "started_at": "2026-11-19T00:00:00.018000Z"
+  },
+  "verdict": "FAIL",
+  "warnings": [],
+  "worker_id": null
+}

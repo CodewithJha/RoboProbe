@@ -1,0 +1,48 @@
+{
+  "items": [
+    {
+      "backend": "kinematic2d",
+      "batch_size": 4,
+      "budget": 60,
+      "counts": {
+        "budget": 60,
+        "done": 60,
+        "fail": 36,
+        "first_failure_at": 1,
+        "invalid": 0,
+        "modes_found": 3,
+        "pass": 24,
+        "pending": 0,
+        "running": 0
+      },
+      "created_at": "2026-11-19T00:00:00Z",
+      "finished_at": "2026-11-19T00:00:00.241000Z",
+      "first_failure_at": 1,
+      "id": "01a1ee56-5e00-7001-9e37-79b97f4a7c15",
+      "links": {
+        "runs": "/api/v1/campaigns/01a1ee56-5e00-7001-9e37-79b97f4a7c15/runs",
+        "self": "/api/v1/campaigns/01a1ee56-5e00-7001-9e37-79b97f4a7c15"
+      },
+      "modes_found": 3,
+      "name": "seed_demo_small:S-RANDOM:rep0",
+      "pins": {},
+      "repeats": 1,
+      "space": {
+        "id": "warehouse_v1",
+        "version": "09cf763f2e0d"
+      },
+      "started_at": "2026-11-19T00:00:00.004000Z",
+      "status": "COMPLETED",
+      "strategy": {
+        "id": "S-RANDOM",
+        "params": {},
+        "seed": 20261119
+      },
+      "tags": [
+        "variant:S-RANDOM"
+      ],
+      "warnings": []
+    }
+  ],
+  "next_cursor": null
+}
