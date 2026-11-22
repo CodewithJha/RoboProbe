@@ -58,7 +58,7 @@ uploaded spaces and pins; factory tests verify effective selection snapshot rest
 |-----|--------|-------------|------|
 | NFR-PERF-001/002 | 07 §6.4, 10 §7 | pytest-benchmark | PR |
 | NFR-PERF-003 | 10 §8 | T-090 spike + nightly sim metrics | nightly |
-| NFR-PERF-004 | 11 §3 indexes, 12 §7 | locust | nightly |
+| NFR-PERF-004 | 11 §3 indexes, 12 §7 | `backend/tests/perf/locustfile.py` (T-106) | nightly and load-harness PRs |
 | NFR-SCAL-001/002 | 04 §7, 29 §5 | load test, remote-worker manual test | release |
 | NFR-REL-001/002 | 05 §5, 14 §5 | chaos tests | PR |
 | NFR-REP-001/002 | 21 §2–4 | replay tests, EXP-06 | PR / release |
