@@ -82,7 +82,10 @@ requests share a bounded cache for the current analysis. Earlier stored JSON sli
 available at their saved resolution.
 
 Report and bundle job status survives an API restart. The next API process marks interrupted
-jobs `ERROR`. Report generation failures return `FAILED`. `GET /workers` returns opaque worker identifiers for process-derived IDs.
+jobs `ERROR`. Report generation failures return `FAILED`.
+
+`GET /workers` returns opaque worker IDs and pagination cursors, a host hash, the current
+run ID, and heartbeat age in seconds when a heartbeat is available.
 
 ## 3. Key schemas (Pydantic DTOs; JSON shown)
 

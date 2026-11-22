@@ -170,22 +170,21 @@ def test_mapping_helpers() -> None:
         ).kind
         == "trace"
     )
-    assert (
-        worker_out(
-            type(
-                "W",
-                (),
-                {
-                    "id": "w",
-                    "backend": "kinematic2d",
-                    "status": "IDLE",
-                    "version": "1",
-                    "last_heartbeat": datetime.now(tz=UTC),
-                },
-            )()
-        ).id
-        == "w"
-    )
+    assert worker_out(
+        type(
+            "W",
+            (),
+            {
+                "id": "w",
+                "backend": "kinematic2d",
+                "status": "IDLE",
+                "version": "1",
+                "last_heartbeat": datetime.now(tz=UTC),
+                "current_run_id": None,
+            },
+        )(),
+        now=datetime.now(tz=UTC),
+    ).id.startswith("worker-")
 
 
 def test_report_job_store() -> None:

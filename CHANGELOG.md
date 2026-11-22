@@ -228,6 +228,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   New confirmation evidence keeps case edits and membership intact (T-110a, #176; T-111b, #179).
 - The campaign Console loads scenario bounds for run condition strips and shows selector
   predictions when the strategy supplies them (T-088b, #172).
+- Provide worker heartbeat age and current run with opaque IDs and pagination cursors. Apply
+  the configured report concurrency to the API executor (T-084a).
 
 ## [0.0.1] - 2026-11-19
 

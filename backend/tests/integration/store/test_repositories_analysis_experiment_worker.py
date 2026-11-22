@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import UTC, datetime
+from hashlib import sha256
 
 import pytest
 from tests.integration.store._seed import seed_campaign, seed_worker
@@ -15,6 +16,7 @@ from roboprobe.store.records import (
     FailureModeMemberRecord,
     FailureModeRecord,
     RiskMapRecord,
+    WorkerRecord,
 )
 from roboprobe.store.uow import SqlAlchemyUnitOfWork
 
@@ -101,3 +103,33 @@ def test_worker_heartbeat_and_experiment(uow_factory: Callable[[], SqlAlchemyUni
         )
         assert uow.risk_maps.latest(cid) is not None
         assert uow.workers.online("kinematic2d")
+
+
+def test_worker_cursor_hides_raw_identifier_and_keeps_its_position(
+    uow_factory: Callable[[], SqlAlchemyUnitOfWork],
+) -> None:
+    raw_ids = ["office-a.private:101:0", "office-b.private:101:0"]
+    with uow_factory() as uow:
+        for raw_id in raw_ids:
+            uow.workers.register(
+                WorkerRecord(
+                    id=raw_id,
+                    backend="kinematic2d",
+                    status="IDLE",
+                    capabilities={},
+                    version="1",
+                )
+            )
+        collected: list[WorkerRecord] = []
+        cursor: str | None = None
+        while True:
+            page = uow.workers.list(limit=1, cursor=cursor)
+            if page.items:
+                if page.next_cursor is not None:
+                    assert page.next_cursor == sha256(page.items[0].id.encode("utf-8")).hexdigest()
+                collected.append(page.items[0])
+            if page.next_cursor is None:
+                break
+            cursor = page.next_cursor
+        ours = [worker for worker in collected if worker.id in raw_ids]
+        assert sorted(worker.id for worker in ours) == raw_ids

@@ -2163,6 +2163,33 @@
             "title": "Backend",
             "type": "string"
           },
+          "current_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Run Id"
+          },
+          "heartbeat_age_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heartbeat Age S"
+          },
+          "host_hash": {
+            "title": "Host Hash",
+            "type": "string"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -2192,7 +2219,8 @@
           "id",
           "backend",
           "status",
-          "version"
+          "version",
+          "host_hash"
         ],
         "title": "WorkerOut",
         "type": "object"
