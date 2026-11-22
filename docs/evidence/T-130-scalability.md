@@ -46,3 +46,27 @@ All 600 expected runs completed with zero missing ordinals, duplicate ordinals, 
 Every worker claimed at least one completed run. The [pilot CSV](T-130-scalability-pilot.csv)
 includes the additional timing and database measurements. The 10,000-run matrix is required
 to evaluate the scalability acceptance criterion.
+
+## Full 10,000-run matrix
+
+Run on 2026-11-23 IST with PostgreSQL 17 in Docker Desktop on a shared Apple Silicon Mac.
+The database VM had 10 virtual CPUs and approximately 7.75 GiB of RAM. The backend workers
+ran on the host. The workload was the same seeded analytical benchmark in each arm, with
+10,000 runs per arm. The isolated database began empty; the four campaigns ran sequentially.
+Other development tests ran on the host during this measurement.
+
+| Workers | Completed | Runs/s | Speedup | Efficiency | Claim p50 (ms) | Claim p95 (ms) | Peak connections | Peak dead tuples |
+|---------|-----------|--------|---------|------------|----------------|----------------|------------------|------------------|
+| 1 | 10,000 | 8.77 | 1.00× | 100.0% | 9,401 | 49,292 | 5 | 60,006 |
+| 2 | 10,000 | 14.62 | 1.67× | 83.4% | 7,558 | 27,656 | 7 | 59,989 |
+| 4 | 10,000 | 23.52 | 2.68× | 67.1% | 3,393 | 82,360 | 11 | 59,991 |
+| 8 | 10,000 | 33.08 | 3.77× | 47.2% | 2,184 | 7,799 | 19 | 64,545 |
+
+Every configured worker finished runs. The database recorded zero missing runs, duplicate
+ordinals, and retries across 40,000 completed runs. The [full CSV](T-130-scalability-full.csv)
+includes unrounded measurements and per-arm baseline and ending dead-tuple estimates.
+
+Eight workers achieved 3.77× the one-worker throughput. The full matrix exited with status 1
+because the performance gate requires at least 6×. The claim-latency tail also increased at
+four workers. The cause of the nonlinear scaling remains unconfirmed. A dedicated-host rerun with worker
+CPU and PostgreSQL wait-event measurements can show where available capacity is spent.
