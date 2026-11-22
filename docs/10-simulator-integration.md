@@ -127,8 +127,9 @@ sequenceDiagram
     L->>G: gz sim -s -r --headless-rendering world.sdf
     L->>N: nav2 bringup with nav2_params.yaml
     L->>E: start nodes (perturber, degrader, delay, gt, recorder, manager)
-    E->>N: wait lifecycle ACTIVE (timeout startup_timeout_s)
-    E->>N: publish /initialpose (start pose)
+    E->>N: wait for AMCL lifecycle ACTIVE (startup_timeout_s)
+    E->>N: publish /initialpose and verify localization
+    E->>N: wait for BT navigator lifecycle ACTIVE
     E->>R: start recording
     E->>N: NavigateToPose(goal)
     loop until result, T_max, or wall timeout
@@ -147,6 +148,7 @@ not a live ROS connection — keeps the worker free of rclpy state and makes cra
 The [shared exit-code table](../ros_ws/src/roboprobe_ros/config/episode_exit_codes.yaml) defines
 `0` for completed episodes, `10` for startup timeouts, `11` for failed spawn validation, and `12`
 for internal errors. A navigation timeout is a completed episode with status `TIMEOUT`.
+The manager writes `episode_done.json` beside `episode.yaml` after the recorder flushes.
 
 ## 6. Ground truth & recording
 

@@ -4,11 +4,17 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING
 
 import pytest
 import yaml
-from roboprobe_ros.episode_config import EpisodeConfig, episode_exit_codes
+from roboprobe_ros.episode_config import (
+    EpisodeConfig,
+    EpisodeResult,
+    EpisodeTime,
+    episode_exit_codes,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -64,3 +70,22 @@ def test_exit_codes_are_packaged() -> None:
         "spawn_failed": 11,
         "internal_error": 12,
     }
+
+
+def test_writes_worker_result(tmp_path: Path) -> None:
+    """Publish one complete document with elapsed times across clock origins."""
+    result = tmp_path / "episode_done.json"
+    start = EpisodeTime(10.0, 20.0, "2026-11-22T20:00:00+00:00")
+    end = EpisodeTime(12.0, 21.0, "2026-11-22T20:00:01+00:00")
+    EpisodeResult("TIMEOUT", None, start, end, 2).write(result)
+    assert json.loads(result.read_text(encoding="utf-8")) == {
+        "status": "TIMEOUT",
+        "nav_result_code": None,
+        "t_start": start.utc,
+        "t_end": end.utc,
+        "sim_time_s": 2.0,
+        "wall_time_s": 1.0,
+        "rtf_mean": 2.0,
+        "recoveries": 2,
+    }
+    assert not result.with_suffix(".tmp").exists()

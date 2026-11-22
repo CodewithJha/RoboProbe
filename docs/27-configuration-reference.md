@@ -387,6 +387,7 @@ safety limit. `startup_timeout_s` and `spawn_tolerance_m` carry the typed settin
 | `topics_file` | Installed `roboprobe_ros/config/topics.yaml` | Logical names and QoS profiles for the node's topics |
 | `perturb_file` | Empty | YAML parameters written into the episode working directory |
 | `seed` | `0` | Initial PCG64 state for the node's random stream |
+| `episode_file` | Required by `episode_manager` | Path to the materialized `episode.yaml` |
 
 The lidar node reads a nonnegative episode `seed` from the `perturb_file`.
 `lidar.sigma_m` is the finite, nonnegative Gaussian standard deviation in metres.

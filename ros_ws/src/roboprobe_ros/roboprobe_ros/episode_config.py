@@ -1,10 +1,13 @@
-"""Read the episode inputs and exit codes shared by the worker and ROS manager."""
+"""Define episode inputs, results and exit codes shared by the worker and manager."""
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from math import isfinite
 from pathlib import Path
+from time import monotonic
 
 import yaml
 from ament_index_python.packages import get_package_share_directory
@@ -58,3 +61,46 @@ class EpisodeConfig:
             msg = "Episode time limits and spawn tolerance must be finite and positive"
             raise ValueError(msg)
         return cls(_pose(data["start"]), _pose(data["goal"]), *limits)
+
+
+@dataclass(frozen=True)
+class EpisodeTime:
+    """Capture the simulation, monotonic, and UTC clocks for a lifecycle event."""
+
+    sim: float
+    wall: float
+    utc: str
+
+    @classmethod
+    def capture(cls, sim_time: float) -> EpisodeTime:
+        """Record the current monotonic and UTC instants at a simulator time."""
+        return cls(sim_time, monotonic(), datetime.now(UTC).isoformat())
+
+
+@dataclass(frozen=True)
+class EpisodeResult:
+    """A terminal navigation outcome and its measured interval."""
+
+    status: str
+    nav_code: int | None
+    start: EpisodeTime
+    end: EpisodeTime
+    recoveries: int
+
+    def write(self, path: Path) -> None:
+        """Publish a complete result atomically after the recorder has flushed."""
+        sim_time = max(0.0, self.end.sim - self.start.sim)
+        wall_time = max(0.0, self.end.wall - self.start.wall)
+        details = {
+            "status": self.status,
+            "nav_result_code": self.nav_code,
+            "t_start": self.start.utc,
+            "t_end": self.end.utc,
+            "sim_time_s": sim_time,
+            "wall_time_s": wall_time,
+            "rtf_mean": sim_time / wall_time if wall_time else 0.0,
+            "recoveries": self.recoveries,
+        }
+        temporary = path.with_suffix(".tmp")
+        temporary.write_text(json.dumps(details, allow_nan=False) + "\n", encoding="utf-8")
+        temporary.replace(path)
