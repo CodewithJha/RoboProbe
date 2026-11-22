@@ -12,8 +12,7 @@ export function Component() {
   const { id = '' } = useParams();
   const campaign = useCampaign(id);
   const progress = useCampaignProgress(id);
-  const reference = campaign.data?.space;
-  const space = useSpace(reference?.id ?? '', reference?.version ?? '');
+  const space = useSpace('', '');
   const runs = useRuns(id, { sort: '-ordinal' });
 
   if (campaign.isError) return <ProblemView error={campaign.error} />;
