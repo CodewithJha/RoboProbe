@@ -13,10 +13,13 @@ from typing import Annotated
 
 import typer
 
-from roboprobe.bootstrap import build_orchestrator, build_worker
+from roboprobe.bootstrap import build_cli_services, build_orchestrator, build_worker
 from roboprobe.cli._context import get_state
 from roboprobe.cli.space import REPO_ROOT
+from roboprobe.core.clock import SystemClock
 from roboprobe.core.errors import ValidationError
+from roboprobe.core.metrics_registry import create_metrics
+from roboprobe.runner.heartbeat import HeartbeatService
 from roboprobe.runner.orchestrator import Orchestrator
 from roboprobe.scenario.space import ScenarioSpace
 
@@ -88,13 +91,37 @@ def worker_cmd(
         REPO_ROOT / "configs" / "scenario_spaces" / f"{space_id}.yaml",
         base_dir=REPO_ROOT,
     )
+    services = build_cli_services(settings)
+    clock = SystemClock()
+    metrics = create_metrics(enabled=settings.observability.metrics_enabled)
     stop = threading.Event()
     threads: list[threading.Thread] = []
+    heartbeats: list[HeartbeatService] = []
     workers = []
     try:
         for slot in range(concurrency):
-            worker = build_worker(settings, task=space.task, slot=slot)
+            slot_settings = settings.worker.model_copy(
+                update={"health_port": settings.worker.health_port + slot}
+            )
+            worker = build_worker(
+                settings.model_copy(update={"worker": slot_settings}),
+                task=space.task,
+                slot=slot,
+                infra=services.infra,
+            )
             workers.append(worker)
+            heartbeat = HeartbeatService(
+                worker=worker,
+                uow_factory=services.uow_factory,
+                clock=clock,
+                settings=slot_settings,
+                retry=settings.runner.retry,
+                heartbeat_timeout_s=settings.runner.heartbeat_timeout_s,
+                metrics=metrics,
+            )
+            heartbeats.append(heartbeat)
+            heartbeat.register()
+            heartbeat.start()
             threads.append(
                 threading.Thread(
                     target=worker.serve_forever,
@@ -112,6 +139,9 @@ def worker_cmd(
         stop.set()
         for worker in workers:
             worker.request_stop()
+        for heartbeat in heartbeats:
+            heartbeat.stop()
+        services.close()
 
 
 @api_app.callback(invoke_without_command=True)
