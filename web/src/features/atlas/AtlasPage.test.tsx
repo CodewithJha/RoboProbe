@@ -9,6 +9,8 @@ import { Component as ConsolePage } from '../console/ConsolePage';
 import { atlasConfig } from './atlasConfig';
 import { Component } from './AtlasPage';
 
+vi.mock('../../components/charts/plotlyBundle', () => ({ default: () => <div /> }));
+
 const campaign: Schema['CampaignOut'] = {
   id: 'c1',
   status: 'RUNNING',

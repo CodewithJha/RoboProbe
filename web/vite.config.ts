@@ -34,6 +34,10 @@ export default defineConfig(({ mode }) => {
     define: {
       'import.meta.env.VITE_API_BASE_URL': JSON.stringify(envOrDefault(env, 'VITE_API_BASE_URL')),
     },
+    optimizeDeps: {
+      // Plotly's hover-capability dependency expects the Node spelling of the browser global.
+      esbuildOptions: { define: { global: 'globalThis' } },
+    },
     server: {
       proxy: {
         [API_PROXY_PATH]: {
