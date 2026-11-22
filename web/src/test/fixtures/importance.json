@@ -3,8 +3,203 @@
   "campaign_id": "01a1ee56-5e00-7001-9e37-79b97f4a7c15",
   "importance": {
     "auc_mean": 0.9,
-    "low_confidence": false
+    "auc_std": 0.08944271909999157,
+    "balanced_acc_mean": 0.8692857142857143,
+    "balanced_acc_std": 0.016842608746502258,
+    "disagreement": [],
+    "gp_normalized": [
+      0.06272692560438944,
+      0.8204452401031731,
+      1.4198404629015339e-05,
+      0.07528186946850955,
+      0.041510960981404214,
+      2.080543789461287e-05
+    ],
+    "interactions": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.38821602460429766,
+        0.02055953249386644,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.11034193180252244,
+        0.0,
+        0.0,
+        0.05911927416202675
+      ],
+      [
+        0.0,
+        0.11034193180252243,
+        0.0,
+        0.0,
+        0.18093673435167607,
+        0.15573024386700904
+      ],
+      [
+        0.38821602460429766,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.02055953249386644,
+        0.0,
+        0.18093673435167607,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.05911927416202675,
+        0.15573024386700907,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "low_confidence": false,
+    "mean_abs_shap": [
+      2.073629405856055,
+      5.006776826165435,
+      0.6584443874763974,
+      0.9904377894336454,
+      0.8184202811702885,
+      0.4615565238580913
+    ],
+    "model_kind": "hist_gradient_boosting",
+    "names": [
+      "robot.max_speed",
+      "obstacle.clearance",
+      "env.illuminance",
+      "sensor.lidar_noise_std",
+      "env.floor_friction",
+      "comms.cmd_delay_ms"
+    ],
+    "per_mode": {
+      "FM-02": [
+        1.0925335205669235,
+        6.211855407468906,
+        1.2376572805647286,
+        1.4162315719196081,
+        1.1619502930135528,
+        0.07281924396941734
+      ]
+    }
   },
-  "interactions": null,
-  "rules": []
+  "interactions": {
+    "names": [
+      "robot.max_speed",
+      "obstacle.clearance",
+      "env.illuminance",
+      "sensor.lidar_noise_std",
+      "env.floor_friction",
+      "comms.cmd_delay_ms"
+    ],
+    "values": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.38821602460429766,
+        0.02055953249386644,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.11034193180252244,
+        0.0,
+        0.0,
+        0.05911927416202675
+      ],
+      [
+        0.0,
+        0.11034193180252243,
+        0.0,
+        0.0,
+        0.18093673435167607,
+        0.15573024386700904
+      ],
+      [
+        0.38821602460429766,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.02055953249386644,
+        0.0,
+        0.18093673435167607,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.05911927416202675,
+        0.15573024386700907,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  "rules": [
+    {
+      "conditions": [
+        {
+          "op": "<",
+          "param": "obstacle.clearance",
+          "threshold_physical": 0.5156778395175934,
+          "threshold_unit": 0.4297315329313278,
+          "unit": "m"
+        }
+      ],
+      "mode_code": "FM-02",
+      "precision": 1.0,
+      "primary_class": "F-STUCK",
+      "support": 1,
+      "text": "IF obstacle.clearance < 0.52 m THEN FAIL (precision 1.00, support 1 runs, class F-STUCK)"
+    },
+    {
+      "conditions": [
+        {
+          "op": "≥",
+          "param": "obstacle.clearance",
+          "threshold_physical": 0.5156778395175934,
+          "threshold_unit": 0.4297315329313278,
+          "unit": "m"
+        },
+        {
+          "op": "<",
+          "param": "robot.max_speed",
+          "threshold_physical": 0.1735861212015152,
+          "threshold_unit": 0.183965303003788,
+          "unit": "m/s"
+        },
+        {
+          "op": "<",
+          "param": "env.floor_friction",
+          "threshold_physical": 0.7514090597629547,
+          "threshold_unit": 0.7237878441810608,
+          "unit": "-"
+        }
+      ],
+      "mode_code": "FM-03",
+      "precision": 1.0,
+      "primary_class": "F-TIMEOUT",
+      "support": 1,
+      "text": "IF obstacle.clearance > 0.52 m AND robot.max_speed < 0.17 m/s AND env.floor_friction < 0.75 THEN FAIL (precision 1.00, support 1 runs, class F-TIMEOUT)"
+    }
+  ]
 }

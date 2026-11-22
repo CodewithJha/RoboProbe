@@ -15,6 +15,10 @@ setup(
         (f"share/{PACKAGE}", ["package.xml"]),
         (f"share/{PACKAGE}/config", [str(path) for path in sorted(Path("config").glob("*.yaml"))]),
         (
+            f"share/{PACKAGE}/models/dropped_pallet",
+            [str(path) for path in sorted(Path("models/dropped_pallet").glob("model.*"))],
+        ),
+        (
             f"share/{PACKAGE}/launch",
             [str(path) for path in sorted(Path("launch").glob("*.launch.py"))],
         ),
@@ -24,6 +28,7 @@ setup(
     entry_points={
         "console_scripts": [
             "cmd_delay = roboprobe_ros.cmd_delay:main",
+            "episode_manager = roboprobe_ros.episode_manager:main",
             "perception_degrader = roboprobe_ros.perception_degrader:main",
             "ground_truth_monitor = roboprobe_ros.ground_truth_node:main",
             "sensor_perturber = roboprobe_ros.sensor_perturber:main",

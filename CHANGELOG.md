@@ -8,6 +8,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 ### Added
 
 - The verified warehouse occupancy map, aligned kinematic map, and Nav2 nominal path for cross-backend pallet placement (T-092).
+- Deterministic Gazebo episode materialization for the warehouse world, Nav2, sensor perturbations, and bridge configuration (T-096a).
 - Verified TB4 Nav2 topic map (`ros_ws/src/roboprobe_ros/config/topics.yaml`), JSON Schema, and evidence capture script (T-091).
 - Playwright E2E harness and journeys (T-117, T-118, T-114): compose-backed global setup with
   seeded warehouse campaign, axe helper and page objects, journey specs, `e2e.yml`, Lighthouse
@@ -28,6 +29,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Jazzy lidar relay (T-093b) applies seeded Gaussian noise and dropout and publishes beam counters.
 - Jazzy depth relay (T-093c) applies seeded low-light dropout and radial range noise to
   PointCloud2 frames while preserving their timestamps and frames of reference.
+- Gazebo episode manager (T-094c) starts localization and navigation and records terminal status and timings.
 - Opt-in experiment API launch atomically creates the planned campaign matrix and runs it
   through the orchestrator and workers (T-084a).
 - Casebook and Insights (T-110a/b): filter and edit analyzed failure modes, replay or export
@@ -248,6 +250,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   and download completed reports.
 - Isolate seeded Playwright and Lighthouse runs, and report stale scenario versions as validation
   errors during campaign creation (T-117).
+- Reference-set generation writes the Parquet SHA-256 manifest and returns the same metadata via the CLI (T-103).
 - Embed the API comparison payload in offline experiment reports and surface restart-interrupted
   report jobs as errors (T-084a).
 - Casebook interaction checks, replays, and Atlas manual probes run after campaign completion.

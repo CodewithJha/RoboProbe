@@ -1,0 +1,26 @@
+# Lidar and camera declarations in the pinned robot Xacro
+13:  <xacro:property name="shell_z_offset"                value="${3*cm2m}" />
+31:  <xacro:property name="rplidar_x_offset"              value="${-4*cm2m}"/>
+32:  <xacro:property name="rplidar_y_offset"              value="${0*cm2m}"/>
+33:  <xacro:property name="rplidar_z_offset"              value="${9.8715*cm2m}"/>
+46:    <origin xyz="0 0 ${shell_z_offset + base_link_z_offset}" rpy="0 0 0"/>
+133:  <xacro:rplidar name="rplidar" parent_link="shell_link" gazebo="$(arg gazebo)">
+134:    <origin xyz="${rplidar_x_offset} ${rplidar_y_offset} ${rplidar_z_offset}"
+136:  </xacro:rplidar>
+142:  <xacro:oakd model="pro" parent_link="oakd_camera_bracket">
+144:  </xacro:oakd>
+38:  <xacro:property name="base_link_z_offset"     value="${6.42*cm2m}"/>
+43:      <origin xyz="0 0 ${body_z_offset + base_link_z_offset}" rpy="0 0 ${pi/2}"/>
+49:      <origin xyz="0 0 ${body_z_offset + body_collision_z_offset  + base_link_z_offset}" rpy="0 0 ${pi/2}"/>
+55:      <origin xyz="${body_cog_x_offset} 0 ${body_collision_z_offset + base_link_z_offset}"/>
+69:    <origin xyz="0 0 ${bumper_offset_z  + base_link_z_offset}"/>
+80:    <origin xyz="0 ${distance_between_wheels/2} ${wheel_drop_z  + base_link_z_offset}" rpy="${-pi/2} 0 0"/>
+84:    <origin xyz="0 ${-distance_between_wheels/2} ${wheel_drop_z  + base_link_z_offset}" rpy="${-pi/2} 0 0"/>
+89:    <origin xyz="${caster_position_x} 0 ${caster_position_z  + base_link_z_offset}" rpy="${-pi/2} 0 0"/>
+94:    <origin xyz="0.050613 0.043673 ${0.0202 + base_link_z_offset}"/>
+
+# Live laser and depth frame IDs
+/scan
+frame_id: rplidar_link
+/rgbd_camera/depth_image
+frame_id: oakd_rgb_camera_optical_frame

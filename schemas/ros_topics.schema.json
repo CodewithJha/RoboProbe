@@ -4,7 +4,7 @@
   "title": "RoboProbe Gazebo/ROS topic map",
   "description": "Verified topic and frame names for the TB4 Nav2 warehouse stack (docs/10 §3); loaded by roboprobe_ros nodes and GazeboNav2Backend.",
   "type": "object",
-  "required": ["schema_version", "topics", "frames", "stamped_cmd_vel"],
+  "required": ["schema_version", "topics", "frames", "stamped_cmd_vel", "geometry"],
   "additionalProperties": false,
   "properties": {
     "schema_version": {
@@ -26,10 +26,10 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "scan_raw": { "$ref": "#/$defs/ros_topic" },
-        "scan": { "$ref": "#/$defs/ros_topic" },
-        "depth_points_raw": { "$ref": "#/$defs/ros_topic" },
-        "depth_points": { "$ref": "#/$defs/ros_topic" },
+        "scan_raw": { "$ref": "#/$defs/laser_scan" },
+        "scan": { "$ref": "#/$defs/laser_scan" },
+        "depth_points_raw": { "$ref": "#/$defs/point_cloud" },
+        "depth_points": { "$ref": "#/$defs/point_cloud" },
         "cmd_vel_nav": { "$ref": "#/$defs/ros_topic" },
         "cmd_vel": { "$ref": "#/$defs/ros_topic" },
         "odom": { "$ref": "#/$defs/ros_topic" },
@@ -62,20 +62,47 @@
         "lidar_plane_height_m": {
           "type": "number",
           "exclusiveMinimum": 0,
-          "description": "2-D lidar scan plane height above ground (minimal TB4 URDF, spawn z=0.01 m)."
+          "description": "2-D lidar scan plane height above the floor for the settled robot."
         },
         "dropped_pallet_height_m": {
           "type": "number",
           "exclusiveMinimum": 0,
-          "description": "EUR pallet box height so the top sits below the lidar plane (docs/06 §1)."
+          "description": "Injected pallet box height so the top sits at least 0.05 m below the lidar plane (docs/06 §1)."
         }
       }
     }
   },
+  "if": { "properties": { "stamped_cmd_vel": { "const": true } } },
+  "then": {
+    "properties": { "topics": { "properties": {
+      "cmd_vel_nav": { "$ref": "#/$defs/stamped_twist" },
+      "cmd_vel": { "$ref": "#/$defs/stamped_twist" }
+    } } }
+  },
+  "else": {
+    "properties": { "topics": { "properties": {
+      "cmd_vel_nav": { "$ref": "#/$defs/twist" },
+      "cmd_vel": { "$ref": "#/$defs/twist" }
+    } } }
+  },
   "$defs": {
+    "laser_scan": {
+      "$ref": "#/$defs/ros_topic",
+      "properties": { "type": { "const": "sensor_msgs/msg/LaserScan" } }
+    },
+    "point_cloud": {
+      "$ref": "#/$defs/ros_topic",
+      "properties": { "type": { "const": "sensor_msgs/msg/PointCloud2" } }
+    },
+    "twist": {
+      "properties": { "type": { "const": "geometry_msgs/msg/Twist" } }
+    },
+    "stamped_twist": {
+      "properties": { "type": { "const": "geometry_msgs/msg/TwistStamped" } }
+    },
     "ros_topic": {
       "type": "object",
-      "required": ["name", "type"],
+      "required": ["name", "type", "qos"],
       "additionalProperties": false,
       "properties": {
         "name": {
@@ -87,7 +114,7 @@
           "pattern": "^[a-z0-9_]+/msg/[A-Za-z0-9_]+$"
         },
         "qos": {
-          "enum": ["default", "sensor_data", "system_default"]
+          "enum": ["default", "sensor_data", "system_default", "transient_local"]
         }
       }
     }
