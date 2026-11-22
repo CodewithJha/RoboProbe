@@ -22,7 +22,7 @@ pytestmark = pytest.mark.unit
 
 REPO = Path(__file__).resolve().parents[5]
 MODEL = Kinematic2DModel.from_yaml(REPO / "configs" / "backends" / "kinematic2d_v1.yaml")
-PERCEPTION = PerceptionModel.from_yaml(REPO / "configs" / "perception" / "oakd_lowlight_v1.yaml")
+PERCEPTION = PerceptionModel.from_yaml(REPO / "configs" / "perception" / "oakd_k2d_v1.yaml")
 WALL_BUDGET_S = 2.0
 SEED = 7
 

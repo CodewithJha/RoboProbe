@@ -21,6 +21,7 @@ from roboprobe.store.repositories.artifacts import SqlArtifactRepo
 from roboprobe.store.repositories.campaigns import SqlCampaignRepo
 from roboprobe.store.repositories.events import SqlEventRepo
 from roboprobe.store.repositories.experiments import SqlExperimentRepo
+from roboprobe.store.repositories.idempotency import SqlIdempotencyRepo
 from roboprobe.store.repositories.modes import SqlFailureModeRepo
 from roboprobe.store.repositories.oracle_results import SqlOracleResultRepo
 from roboprobe.store.repositories.risk_maps import SqlRiskMapRepo
@@ -48,6 +49,7 @@ class SqlAlchemyUnitOfWork:
     experiments: SqlExperimentRepo
     workers: SqlWorkerRepo
     artifacts: SqlArtifactRepo
+    idempotency: SqlIdempotencyRepo
     events: SqlEventRepo
 
     def __init__(self, factory: SessionFactory, *, notify_channel: str) -> None:
@@ -74,6 +76,7 @@ class SqlAlchemyUnitOfWork:
         self.workers = SqlWorkerRepo(session)
         self.artifacts = SqlArtifactRepo(session)
         self.events = SqlEventRepo(session, self._notify_channel)
+        self.idempotency = SqlIdempotencyRepo(session)
         return self
 
     def __exit__(

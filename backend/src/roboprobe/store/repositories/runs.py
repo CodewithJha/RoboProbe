@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -116,6 +116,41 @@ class SqlRunRepo:
         items, extra = extra_item([run_record(r) for r in rows], size)
         nxt = None if extra is None else str(items[-1].id)
         return Page(items=items, next_cursor=nxt)
+
+    def counts_for_campaigns(self, campaign_ids: Sequence[UUID]) -> dict[UUID, dict[str, int]]:
+        """Aggregate a whole campaign page without loading every run (T-081b/d)."""
+        if not campaign_ids:
+            return {}
+        rows = self._s.execute(
+            select(
+                RunRow.campaign_id,
+                RunRow.status,
+                RunRow.verdict,
+                func.count(),
+                func.min(RunRow.ordinal),
+            )
+            .where(RunRow.campaign_id.in_(campaign_ids))
+            .group_by(RunRow.campaign_id, RunRow.status, RunRow.verdict)
+        )
+        result: dict[UUID, dict[str, int]] = {}
+        for cid, status, verdict, count, first in rows:
+            stats = result.setdefault(cid, {})
+            name = (
+                "pending"
+                if status == "PENDING"
+                else "running"
+                if status in {"CLAIMED", "RUNNING", "EVALUATING"}
+                else "done"
+                if status == "DONE"
+                else None
+            )
+            if name is not None:
+                stats[name] = stats.get(name, 0) + count
+            if status == "DONE" and verdict is not None:
+                stats[verdict.lower()] = stats.get(verdict.lower(), 0) + count
+                if verdict == "FAIL":
+                    stats["first_failure_at"] = first
+        return result
 
     def query_for_campaign(  # noqa: PLR0913 - explicit run filters
         self,

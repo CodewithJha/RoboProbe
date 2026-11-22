@@ -15,6 +15,12 @@ class ReferenceSetSettings(SettingsSection):
 
     n: int = Field(default=20000, gt=0, description="Reference scenarios.")
     seed: int = Field(default=20261119, ge=0, description="Seed of the reference sample.")
+    space_id: str = Field(default="warehouse_v1", min_length=1, description="Scenario space id.")
+    artifact_relpath: str = Field(
+        default="reference/warehouse_v1_k2d.parquet",
+        min_length=1,
+        description="Relative path under artifact root.",
+    )
 
 
 class ExperimentSettings(SettingsSection):

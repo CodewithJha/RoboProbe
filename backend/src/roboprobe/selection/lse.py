@@ -16,7 +16,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from roboprobe.core import errors
 from roboprobe.core.errors import ModelFitError
 from roboprobe.core.seeding import STRATEGY, derive_seed
-from roboprobe.core.settings.selection import AcquisitionDefaults, GpDefaults, ProbeDefaults
 from roboprobe.core.types import Observation, Phase, Proposal, Verdict
 from roboprobe.selection._compat import AcquisitionFunction, torch
 from roboprobe.selection.acquisition import Straddle
@@ -51,7 +50,7 @@ class LevelSetStrategy(Strategy):
         """Bind warm-up cursor and straddle beta."""
         super().__init__(ctx)
         self.params: LevelSetParams
-        probe = ProbeDefaults()
+        probe = ctx.selection.probe
         self._n0 = warmup_size(
             ctx.budget,
             ctx.space.dim,
@@ -62,8 +61,8 @@ class LevelSetStrategy(Strategy):
             probe.beta_straddle if self.params.beta_straddle is None else self.params.beta_straddle
         )
         self._warmup = WarmupState(ctx.space.dim, ctx.seed)
-        self._gp_settings = GpDefaults()
-        self._acq_settings = AcquisitionDefaults()
+        self._gp_settings = ctx.selection.gp
+        self._acq_settings = ctx.selection.acq
         self._meta: list[dict[str, Any]] = []
 
     def propose(

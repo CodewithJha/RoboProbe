@@ -34,6 +34,14 @@ class Kinematic2DSettings(SettingsSection):
         default=Path("configs/backends/kinematic2d_v1.yaml"),
         description="Robot, controller and planner constants (calibrated in T-034) [path].",
     )
+    perception_model_file: Path = Field(
+        default=Path("configs/perception/oakd_k2d_v1.yaml"),
+        description="Perception degradation constants for depth simulation (T-034) [path].",
+    )
+    calibration_file: Path = Field(
+        default=Path("configs/reference/k2d_gt_canonical.yaml"),
+        description="Designed GT canonical unit-cube points (T-034) [path].",
+    )
 
 
 class GazeboPhysicsSettings(SettingsSection):

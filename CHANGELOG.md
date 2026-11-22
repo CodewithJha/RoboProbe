@@ -22,6 +22,10 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   analysis ids, bundle export jobs and durable report status across restart. Worker identifiers
   are opaque hashes. Migration `0003_api_state` adds report jobs and editable experiment notes.
 
+- Campaign creation and Idempotency-Key responses now commit together, including `start: true`;
+  filtered campaign pages use stable creation-time cursors and aggregated counters. Selection
+  snapshots are restored during execution, and uploaded campaign spaces retain their pins.
+
 - Campaign/run API completion (T-081b/c/d): entered request transactions, shared CLI/API
   validation and snapshots, idempotent creation, lifecycle warnings, mode-discovery progress,
   validated manual runs with derived seeds, and filtered stable SQL keyset pagination.
@@ -29,6 +33,12 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Catalogue API completion (T-081a, #146): bounded YAML/JSON uploads, semantic space
   validation with JSON pointers, idempotent registration, immutable validated SUT profiles,
   and shared CLI catalogue services.
+
+- kinematic2d calibration (T-034): tuned `kinematic2d_v1` + `oakd_k2d_v1`, sensor-informed
+  replanning, canonical GT scenarios in `configs/reference/k2d_gt_canonical.yaml`, and acceptance
+  test `test_calibration.py`.
+- k2d reference set CLI (T-103): `roboprobe reference generate|label`, Parquet export + manifest
+  hash for MET-02/MET-08 (`experiments.reference_set.*`).
 
 - M7 REST API (T-081/082/084): `/api/v1` CRUD for spaces, SUT profiles, campaigns (lifecycle
   commands), runs, artifacts, failure modes, importance/risk, experiments, reports, and workers.

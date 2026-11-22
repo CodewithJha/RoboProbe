@@ -17,11 +17,7 @@ from roboprobe.core import errors
 from roboprobe.core.errors import ModelFitError
 from roboprobe.core.seeding import STRATEGY, derive_seed
 from roboprobe.core.settings.selection import (
-    AcquisitionDefaults,
-    GpDefaults,
-    ProbeDefaults,
     ProbeWeights,
-    SelectionDefaults,
 )
 from roboprobe.core.types import Observation, Phase, Proposal, Verdict
 from roboprobe.selection._compat import AcquisitionFunction, torch
@@ -70,10 +66,10 @@ class ProbeStrategy(Strategy):
         """Wire GP, phase controller, refine queue and Sobol warm-up."""
         super().__init__(ctx)
         self.params: ProbeParams
-        probe = ProbeDefaults()
-        selection = SelectionDefaults()
-        self._gp_settings = GpDefaults()
-        self._acq_settings = AcquisitionDefaults()
+        probe = ctx.selection.probe
+        selection = ctx.selection
+        self._gp_settings = ctx.selection.gp
+        self._acq_settings = ctx.selection.acq
         self._n0 = warmup_size(
             ctx.budget,
             ctx.space.dim,

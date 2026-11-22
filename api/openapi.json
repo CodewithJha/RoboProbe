@@ -2118,6 +2118,54 @@
               ],
               "title": "Cursor"
             }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CampaignStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "strategy",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Strategy"
+            }
+          },
+          {
+            "in": "query",
+            "name": "backend",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Backend"
+            }
           }
         ],
         "responses": {
@@ -7029,7 +7077,7 @@
             }
           },
           "description": "Scenario-space document (YAML or JSON; JSON is valid YAML).",
-          "required": true
+          "required": false
         },
         "responses": {
           "201": {
@@ -7157,7 +7205,7 @@
             }
           },
           "description": "Scenario-space document (YAML or JSON; JSON is valid YAML).",
-          "required": true
+          "required": false
         },
         "responses": {
           "200": {
@@ -7562,7 +7610,7 @@
             }
           },
           "description": "SUT profile document (YAML or JSON; JSON is valid YAML).",
-          "required": true
+          "required": false
         },
         "responses": {
           "201": {

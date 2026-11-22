@@ -61,12 +61,8 @@ def _settings(tmp_path: Path, *, backend: str = "kinematic2d") -> RoboProbeSetti
         worker={"backend": backend, "id_prefix": "test"},
         backends={
             "kinematic2d": {
-                "model_file": str(REPO / "configs" / "backends" / "kinematic2d_v1.yaml")
-            },
-            "gazebo_nav2": {
-                "perception_model_file": str(
-                    REPO / "configs" / "perception" / "oakd_lowlight_v1.yaml"
-                )
+                "model_file": str(REPO / "configs/backends/kinematic2d_v1.yaml"),
+                "perception_model_file": str(REPO / "configs/perception/oakd_k2d_v1.yaml"),
             },
         },
         observability={"metrics_enabled": False},

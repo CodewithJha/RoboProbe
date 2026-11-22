@@ -20,7 +20,6 @@ from sqlalchemy.engine import Engine
 
 from roboprobe.backends.registry import ENTRY_POINT_GROUP, get_backend
 from roboprobe.bootstrap._infra import Infrastructure, UowFactory, build_infrastructure
-from roboprobe.bootstrap.idempotency import SqlAlchemyIdempotencyStore
 from roboprobe.bootstrap.report_jobs import SqlReportJobs
 from roboprobe.core.clock import SystemClock
 from roboprobe.core.errors import NotFoundError
@@ -52,7 +51,6 @@ class ApiServices:
     analysis: AnalysisJobRunner
     report_jobs: ReportJobStore
     space_root: Path
-    idempotency: object | None = None
     confirmations: object | None = None
     plugin_catalog: dict[str, Any] = field(default_factory=dict)
 
@@ -121,7 +119,6 @@ def build_api(settings: RoboProbeSettings) -> ApiServices:
             SqlReportJobs(session_factory(infra.engine)),
         ),
         space_root=discover_repo_root(),
-        idempotency=SqlAlchemyIdempotencyStore(session_factory(infra.engine)),
         confirmations=ConfirmationService(
             uow_factory,
             interaction=settings.analysis.interaction,

@@ -56,6 +56,12 @@ Analysis API verification (T-082a/b/c, T-084a; #151–#153, #157):
 and `tests/unit/reporting/test_report_persistence.py` cover optimistic mode edits, confirmation
 service delegation, exact NPZ slice/cache output, async request ids and restart recovery.
 
+Creation durability and scale follow-up (#147–#149):
+`tests/integration/store/test_atomic_creation.py` verifies rollback and transaction-scoped key locks;
+`test_campaign_http_queries.py` verifies campaign/run HTTP filters, bounded query counts and the
+200 ms p95 target at 10,000 runs. `tests/unit/runner/test_campaign_space_loader.py` covers stored
+uploaded spaces and pins; factory tests verify effective selection snapshot restoration.
+
 ## 2. Non-functional requirements → verification
 
 | NFR | Design | Verification | Gate |

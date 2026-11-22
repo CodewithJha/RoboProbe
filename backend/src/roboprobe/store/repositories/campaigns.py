@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from roboprobe.core.errors import ErrorCode, NotFoundError, ValidationError
 from roboprobe.core.types import CampaignStatus
+from roboprobe.store.campaign_queries import query_campaigns
 from roboprobe.store.flush import execute
 from roboprobe.store.mapping import campaign_record
 from roboprobe.store.orm import CampaignRow
@@ -78,6 +79,19 @@ class SqlCampaignRepo:
         items, extra = extra_item([campaign_record(r) for r in rows], size)
         nxt = None if extra is None else str(items[-1].id)
         return Page(items=items, next_cursor=nxt)
+
+    def query(
+        self,
+        *,
+        limit: int,
+        cursor: str | None = None,
+        status: str | None = None,
+        strategy: str | None = None,
+        backend: str | None = None,
+    ) -> Page[CampaignRecord]:
+        return query_campaigns(
+            self._s, limit=limit, cursor=cursor, status=status, strategy=strategy, backend=backend
+        )
 
     def list_for_experiment(self, experiment_id: UUID) -> tuple[CampaignRecord, ...]:
         rows = self._s.scalars(

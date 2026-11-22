@@ -56,28 +56,47 @@ def _load_runs(uow: Any, campaign_id: UUID) -> list[Any]:
 
 
 @router.get("")
-def list_campaigns(
+def list_campaigns(  # noqa: PLR0913, PLR0917 - public campaign filters
     request: Request,
     limit: int | None = None,
     cursor: str | None = None,
+    status: CampaignStatus | None = None,
+    strategy: str | None = None,
+    backend: str | None = None,
     uow: Any = Depends(get_uow),
 ) -> Page[CampaignOut]:
     settings = request.app.state.settings
-    page = uow.campaigns.list(
-        limit=clamp_limit(
-            limit,
-            default=settings.api.page_limit_default,
-            maximum=settings.api.page_limit_max,
-        ),
-        cursor=cursor,
+    size = clamp_limit(
+        limit, default=settings.api.page_limit_default, maximum=settings.api.page_limit_max
     )
+    query = getattr(uow.campaigns, "query", None)
+    if callable(query):
+        page = query(
+            limit=size,
+            cursor=cursor,
+            status=None if status is None else status.value,
+            strategy=strategy,
+            backend=backend,
+        )
+    else:
+        page = uow.campaigns.list(limit=size, cursor=cursor)
     base = _base_path(request)
+    run_counter = getattr(uow.runs, "counts_for_campaigns", None)
+    mode_counter = getattr(uow.modes, "counts_for_campaigns", None)
+    ids = [row.id for row in page.items]
+    run_counts = run_counter(ids) if callable(run_counter) else None
+    mode_counts = mode_counter(ids) if callable(mode_counter) else None
     items = []
     for row in page.items:
-        runs = _load_runs(uow, row.id)
-        counts = campaign_counts(runs, budget=row.budget)
-        modes = uow.modes.list_for_campaign(row.id)
-        counts["modes_found"] = len(modes)
+        if run_counts is None:
+            counts = campaign_counts(_load_runs(uow, row.id), budget=row.budget)
+        else:
+            counts = {**campaign_counts([], budget=row.budget), **run_counts.get(row.id, {})}
+        counts["modes_found"] = (
+            len(uow.modes.list_for_campaign(row.id))
+            if mode_counts is None
+            else mode_counts.get(row.id, 0)
+        )
         items.append(campaign_out(row, base_path=base, counts=counts))
     return Page(items=items, next_cursor=page.next_cursor)
 
@@ -90,7 +109,7 @@ async def create_campaign_route(
     uow: Any = Depends(get_uow),
 ) -> CampaignOut | JSONResponse:
     raw = await request.body()
-    cached = cached_campaign(request, raw)
+    cached = cached_campaign(request, raw, uow)
     if cached is not None:
         return cached
     services = get_services(request)
@@ -101,14 +120,14 @@ async def create_campaign_route(
         campaigns=services.campaigns,
         space_root=services.space_root,
     )
-    uow.commit()
     row = uow.campaigns.get(cid)
     if row is None:
         msg = "campaign not found after create"
         raise NotFoundError(msg, context={"campaign_id": str(cid)})
     response.headers["Location"] = f"{_base_path(request)}/campaigns/{cid}"
     payload = campaign_out(row, base_path=_base_path(request))
-    remember_campaign(request, raw, payload.model_dump(mode="json"))
+    remember_campaign(request, raw, payload.model_dump(mode="json"), uow)
+    uow.commit()
     return payload
 
 
@@ -323,7 +342,7 @@ async def add_manual_runs(
     from roboprobe.api._store import new_uuid, records
 
     raw = await request.body()
-    cached = cached_campaign(request, raw)
+    cached = cached_campaign(request, raw, uow)
     if cached is not None:
         return cached
 
@@ -371,7 +390,7 @@ async def add_manual_runs(
             )
         )
     ids = uow.runs.insert_batch(pending)
-    uow.commit()
     payload = {"created": len(ids), "run_ids": [str(rid) for rid in ids]}
-    remember_campaign(request, raw, payload)
+    remember_campaign(request, raw, payload, uow)
+    uow.commit()
     return payload

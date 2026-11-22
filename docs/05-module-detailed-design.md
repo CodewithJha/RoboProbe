@@ -257,6 +257,8 @@ interior vertex, repeated points are ignored, and `side_sign("left" | "right")` 
 class StrategyContext(BaseModel):
     space: ScenarioSpace; budget: int; seed: int; batch_size: int
     params: dict[str, Any]             # strategy hyper-parameters (07 §10)
+    selection: SelectionDefaults     # restored campaign snapshot, defaults for legacy contexts
+    scenario: ScenarioSettings       # constraint/de-duplication settings snapshot
 
 class Strategy(ABC):
     id: ClassVar[str]                  # "S-PROBE"

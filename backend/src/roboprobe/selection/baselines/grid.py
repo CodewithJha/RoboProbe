@@ -12,7 +12,6 @@ from typing import Any, ClassVar
 import numpy as np
 
 from roboprobe.core.seeding import STRATEGY, make_rng
-from roboprobe.core.settings.selection import SelectionDefaults
 from roboprobe.core.types import Observation
 from roboprobe.scenario.samplers import GridSampler
 from roboprobe.selection.base import FloatArray, Strategy, StrategyContext
@@ -34,7 +33,7 @@ class GridStrategy(Strategy):
     def _design_points(self) -> FloatArray:
         if self._design is None:
             dim = self.ctx.space.dim
-            min_levels = SelectionDefaults().grid.min_levels
+            min_levels = self.ctx.selection.grid.min_levels
             k = max(min_levels, math.floor(max(self.ctx.budget, 1) ** (1 / dim)))
             sampler = GridSampler(dim, k)
             if sampler.size > self.ctx.budget:
