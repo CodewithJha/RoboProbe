@@ -4,12 +4,22 @@ import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import reactHooks from 'eslint-plugin-react-hooks';
+import playwright from 'eslint-plugin-playwright';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'node_modules', 'src/api/schema.d.ts'] },
+  {
+    ignores: [
+      'dist',
+      'coverage',
+      'node_modules',
+      'src/api/schema.d.ts',
+      'playwright-report',
+      'e2e-results',
+    ],
+  },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -52,5 +62,10 @@ export default tseslint.config(
     files: ['eslint.config.js'],
     extends: [js.configs.recommended, prettier],
     languageOptions: { globals: globals.node },
+  },
+  {
+    files: ['e2e/**/*.ts', 'playwright.config.ts'],
+    extends: [playwright.configs['flat/recommended']],
+    rules: { 'playwright/no-wait-for-timeout': 'error' },
   },
 );

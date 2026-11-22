@@ -1,97 +1,91 @@
-name: API performance
+# Playwright E2E against compose core+app (T-117, T-118, T-114).
+name: e2e
 
 on:
-  schedule:
-    - cron: "17 2 * * *"
-  workflow_dispatch:
   pull_request:
     paths:
+      - 'web/**'
+      - 'backend/src/roboprobe/api/**'
+      - 'docker/**'
+      - 'scripts/e2e_stack.sh'
       - '.github/workflows/e2e.yml'
-      - 'backend/tests/perf/**'
+  schedule:
+    - cron: '30 20 * * *' # 02:00 IST
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: '3.12'
+  NODE_VERSION: '24'
+  E2E_BASE_URL: http://127.0.0.1:8080
+
 jobs:
-  api-perf:
-    name: Locust on 10,000 runs
+  playwright:
+    name: playwright
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: roboprobe
-          POSTGRES_PASSWORD: roboprobe-ci
-          POSTGRES_DB: roboprobe_perf
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U roboprobe -d roboprobe_perf"
-          --health-interval 5s --health-timeout 5s --health-retries 10
-    env:
-      PYTHON_VERSION: '3.12'
-      LOCUST_VERSION: '2.47.0'
-      OPENBLAS_NUM_THREADS: '1'
-      PGHOST: 127.0.0.1
-      PGUSER: roboprobe
-      PGPASSWORD: roboprobe-ci
-      PGDATABASE: roboprobe_perf
-      ROBOPROBE_ENV: ci
-      ROBOPROBE_DATABASE__URL: postgresql+psycopg://roboprobe:roboprobe-ci@127.0.0.1:5432/roboprobe_perf
-      ROBOPROBE_API__HOST: 127.0.0.1
-      ROBOPROBE_API__PORT: '8000'
-    defaults:
-      run:
-        working-directory: backend
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/setup-backend
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      - name: Seed and verify 10,000 completed runs
+      - uses: ./.github/actions/setup-web
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Install Playwright browsers
+        working-directory: web
+        run: pnpm exec playwright install --with-deps chromium firefox
+      - name: Stack up, seed DB, run Playwright
         run: |
-          set -euo pipefail
-          mkdir -p test-results/perf
-          export ROBOPROBE_STORAGE__WORKDIR_ROOT="$RUNNER_TEMP/roboprobe-perf-work"
-          export ROBOPROBE_STORAGE__ARTIFACT_ROOT="$RUNNER_TEMP/roboprobe-perf-artifacts"
-          printf '%s\n' "ROBOPROBE_STORAGE__WORKDIR_ROOT=$ROBOPROBE_STORAGE__WORKDIR_ROOT" \
-            "ROBOPROBE_STORAGE__ARTIFACT_ROOT=$ROBOPROBE_STORAGE__ARTIFACT_ROOT" >> "$GITHUB_ENV"
-          uv run --locked python ../scripts/seed_demo.py --size large \
-            --database-url "$ROBOPROBE_DATABASE__URL" \
-            --workdir-root "$ROBOPROBE_STORAGE__WORKDIR_ROOT" \
-            --artifact-root "$ROBOPROBE_STORAGE__ARTIFACT_ROOT" \
-            > test-results/perf/seed.log 2>&1 || { tail -50 test-results/perf/seed.log; exit 1; }
-          tail -8 test-results/perf/seed.log
-          campaign="$(psql -XAt -v ON_ERROR_STOP=1 -c "
-            SELECT c.id FROM campaigns AS c JOIN runs AS r ON r.campaign_id = c.id
-            WHERE c.backend = 'benchmark' AND c.status = 'COMPLETED'
-            GROUP BY c.id
-            HAVING count(*) = 10000 AND count(*) FILTER (WHERE r.status = 'DONE') = 10000;")"
-          [[ "$campaign" =~ ^[0-9a-f-]{36}$ ]]
-          echo "ROBOPROBE_PERF_CAMPAIGN_ID=$campaign" >> "$GITHUB_ENV"
-      - name: Explain the runs-list keyset query
+          make setup
+          cd web && pnpm exec playwright test --project=chromium
+      - name: Playwright summary
+        if: always()
+        working-directory: web
         run: |
-          set -euo pipefail
-          psql -X -v ON_ERROR_STOP=1 -v campaign_id="$ROBOPROBE_PERF_CAMPAIGN_ID" \
-            -f tests/perf/explain_runs.sql | tee test-results/perf/runs-explain.txt
-      - name: Run Locust and enforce per-endpoint p95 budgets
-        run: |
-          set -euo pipefail
-          uv run --locked roboprobe api > test-results/perf/api.log 2>&1 &
-          server=$!
-          trap 'kill "$server" 2>/dev/null || true' EXIT
-          host="http://$ROBOPROBE_API__HOST:$ROBOPROBE_API__PORT"
-          curl -fsS --retry 30 --retry-delay 1 --retry-connrefused "$host/health/ready"
-          locust_exit=0
-          uvx --python "$PYTHON_VERSION" "locust==$LOCUST_VERSION" \
-            --headless -u 20 -r 5 -t 60s --only-summary --host "$host" \
-            -f tests/perf/locustfile.py --csv test-results/perf/perf || locust_exit=$?
-          mv test-results/perf/perf_complete_stats.csv test-results/perf/perf_stats.csv
-          uv run --locked python tests/perf/check_stats.py test-results/perf/perf_stats.csv
-          exit "$locust_exit"
-      - name: Upload performance evidence
-        if: ${{ !cancelled() }}
+          if [[ -d playwright-report ]]; then
+            echo "### Playwright report" >>"$GITHUB_STEP_SUMMARY"
+            echo "Artefacts uploaded as playwright-report" >>"$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload Playwright report
+        if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: api-performance
-          path: backend/test-results/perf/
+          name: playwright-report
+          path: |
+            web/playwright-report/
+            web/e2e-results/
+            web/e2e-artifacts/
+          if-no-files-found: ignore
+
+  lighthouse:
+    name: lighthouse
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: ./.github/actions/setup-web
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Lighthouse on seeded stack
+        run: |
+          make setup
+          bash scripts/e2e_stack.sh up
+          cd web && pnpm exec lhci autorun --config=lighthouserc.live.json
+      - name: Collect compose logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-compose-logs
+          path: web/e2e-artifacts/compose.log
+          if-no-files-found: ignore
