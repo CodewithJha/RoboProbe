@@ -76,13 +76,6 @@ database_url() {
   printf 'postgresql+psycopg://roboprobe:%s@127.0.0.1:5432/roboprobe' "$db_pass"
 }
 
-migrate_on_host() {
-  local url
-  url="$(database_url)"
-  ROBOPROBE_DATABASE__URL="$url" ROBOPROBE_DATABASE__PASSWORD_FILE="$DB_PASSWORD_FILE" \
-    uv run --directory backend roboprobe db upgrade
-}
-
 seed_database() {
   rm -rf "$ARTIFACTS_DIR"
   mkdir -p "$ARTIFACTS_DIR"
@@ -95,10 +88,11 @@ case "$ACTION" in
     ensure_secret
     mkdir -p "$ARTIFACTS_DIR" "$LOG_DIR"
     compose down --remove-orphans -v || true
-    compose build postgres orchestrator worker-k2d api web
-    compose up -d --wait postgres postgres-port
+    compose build postgres migrate orchestrator worker-k2d api web
+    compose up -d postgres postgres-port
+    compose up -d migrate
+    compose wait migrate
     wait_loopback_postgres
-    migrate_on_host
     seed_database
     compose up -d --wait orchestrator worker-k2d api web
     wait_http "$READY_URL" "$READY_TIMEOUT_S"
