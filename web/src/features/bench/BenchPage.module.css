@@ -99,7 +99,20 @@
 }
 
 .loading {
+  align-content: start;
   min-height: 28rem;
+}
+
+.skeleton {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.skeleton > div {
+  min-height: 3.5rem;
+  border: var(--border-width) solid var(--grid-line);
+  border-radius: var(--radius-card);
+  background-color: var(--paper-raised);
 }
 
 @media (width < 40rem) {

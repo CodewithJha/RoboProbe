@@ -372,7 +372,7 @@ def create_cmd(  # noqa: PLR0913, PLR0917 - Typer option surface matches docs/05
     ctx: typer.Context,
     config: Annotated[
         Path | None,
-        typer.Option("--config", exists=True, dir_okay=False, help="Campaign YAML."),
+        typer.Option("--config", "-f", exists=True, dir_okay=False, help="Campaign YAML."),
     ] = None,
     space: Annotated[str | None, typer.Option("--space")] = None,
     backend: Annotated[str, typer.Option("--backend")] = "kinematic2d",

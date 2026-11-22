@@ -233,6 +233,28 @@ def test_campaign_create_from_flags(
     assert json.loads(result.stdout)["campaign_id"] == str(cid)
 
 
+def test_campaign_create_accepts_wizard_default_yaml(
+    monkeypatch: pytest.MonkeyPatch,
+    settings_env: Path,
+    cli_services: InMemoryUnitOfWork,
+) -> None:
+    source = REPO / "backend/tests/fixtures/campaigns/wizard-default.yaml"
+    monkeypatch.setattr("roboprobe.cli.campaign.register_space", lambda *_a, **_k: None)
+    _seed_campaign(cli_services)
+    result = runner.invoke(app, ["--json", "campaign", "create", "-f", str(source)])
+    assert result.exit_code == ExitCode.OK, result.output
+    created = cli_services.campaigns.get(UUID(json.loads(result.stdout)["campaign_id"]))
+    assert created is not None
+    config = yaml.safe_load(source.read_text(encoding="utf-8"))
+    assert created.backend == config["backend"]
+    assert created.space_version == config["space"]["version"]
+    assert created.sut_profile_id == config["sut_profile_id"]
+    assert created.seed == config["strategy"]["seed"]
+    assert created.budget == config["budget"]
+    assert created.batch_size == config["batch_size"]
+    assert created.status == CampaignStatus.RUNNING
+
+
 def test_campaign_status(cli_services: InMemoryUnitOfWork, settings_env: Path) -> None:
     cid = _seed_campaign(cli_services, status=CampaignStatus.RUNNING)
     result = runner.invoke(app, ["--json", "campaign", "status", str(cid)])
