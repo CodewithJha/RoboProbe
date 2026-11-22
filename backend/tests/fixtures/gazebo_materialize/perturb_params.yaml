@@ -1,0 +1,12 @@
+cmd_delay_ms: 50.0
+illuminance_lux: 150.0
+lidar:
+  dropout_p: 0.04
+  sigma_m: 0.01
+perception_model_file: perception_model.yaml
+rate_hz: 20.0
+seed: 5957242366569722094
+seeds:
+  cmd_delay: 3889710175154448791
+  perception_degrader: 610100211397079758
+  sensor_perturber: 5957242366569722094

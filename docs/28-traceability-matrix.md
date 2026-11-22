@@ -61,6 +61,10 @@ Creation durability and scale follow-up (#147–#149):
 200 ms p95 target at 10,000 runs. `tests/unit/runner/test_campaign_space_loader.py` covers stored
 uploaded spaces and pins; factory tests verify effective selection snapshot restoration.
 
+Gazebo materialization tests in `tests/unit/backends/gazebo/test_materialize.py` cover stable
+generated files, the individual effects of P1–P8, XML document restrictions and ROS topic and
+parameter contracts (T-096a, FR-SIM-003).
+
 ## 2. Non-functional requirements → verification
 
 | NFR | Design | Verification | Gate |

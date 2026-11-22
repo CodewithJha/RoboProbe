@@ -1,0 +1,30 @@
+footprint:
+  radius_m: 0.22
+goal:
+  x: 10.0
+  y: 0.0
+  yaw: 0.0
+map_file: map.yaml
+pallets:
+- pose:
+    x: 5.0
+    y: 0.5
+    yaw: 0.0
+  size:
+  - 0.8
+  - 0.6
+  - 0.135
+record_bag: always
+robot_name: turtlebot4
+sample_hz: 15.0
+simulator_seed: 2047656344537034507
+spawn_tolerance_m: 0.25
+start:
+  x: 0.0
+  y: 0.0
+  yaw: 0.0
+startup_timeout_s: 60.0
+teardown_grace_s: 10.0
+time_limit_s: 55.0
+wall_timeout_factor: 4.0
+world_name: warehouse
