@@ -20,6 +20,7 @@ const fixture: Campaign = {
   budget: 20,
   batch_size: 1,
   repeats: 1,
+  space: { id: 'warehouse', version: '0123456789ab' },
   modes_found: 0,
 };
 const run: Schema['RunOut'] = {
@@ -33,7 +34,7 @@ const run: Schema['RunOut'] = {
   verdict: 'FAIL',
   primary_failure: 'F-COL',
   robustness: -0.34,
-  scenario: {},
+  scenario: { values: { 'robot.speed': 2 } },
   proposal: {
     predicted_mean: -0.1,
     predicted_std: 0.21,
@@ -54,6 +55,23 @@ const server = setupServer(
     }),
   ),
   http.get(apiUrl('/campaigns/c1/runs'), () => HttpResponse.json({ items: runRows })),
+  http.get(apiUrl('/spaces/warehouse/versions/0123456789ab'), () =>
+    HttpResponse.json({
+      definition: {
+        parameters: [
+          {
+            id: 'robot.speed',
+            name: 'Speed',
+            type: 'float',
+            nominal: 2,
+            low: 1,
+            high: 3,
+            unit: 'm/s',
+          },
+        ],
+      },
+    }),
+  ),
 );
 
 beforeAll(() => {
@@ -112,6 +130,12 @@ it.each([
       .queryAllByRole('button')
       .map((button) => button.textContent),
   ).toEqual(actions);
+});
+
+it('shows the run conditions from the campaign’s registered space version', async () => {
+  openConsole();
+  const stream = await screen.findByRole('region', { name: 'Newest campaign runs' });
+  expect(await within(stream).findByRole('button', { name: 'Speed: 2 m/s' })).toBeInTheDocument();
 });
 
 it('updates live counters and entries and shows a dismissible scoped alert', async () => {

@@ -195,6 +195,16 @@ class CampaignLoop:
                 if key not in values:
                     values[key] = value  # type: ignore[assignment]
             x_unit = tuple(float(x) for x in self._space.to_unit(values))
+            rationale: dict[str, JsonValue] = {
+                "strategy": proposal.strategy,
+                "phase": proposal.phase,
+                "acquisition_value": proposal.acquisition_value,
+                "tags": list(proposal.tags),
+            }
+            if proposal.predicted_mean is not None:
+                rationale["predicted_mean"] = proposal.predicted_mean
+            if proposal.predicted_std is not None:
+                rationale["predicted_std"] = proposal.predicted_std
             for repeat_index in range(max(1, campaign.repeats)):
                 seed = derive_seed(campaign.seed, RUN, ordinal, repeat_index)
                 rows.append(
@@ -208,12 +218,7 @@ class CampaignLoop:
                         x_unit=x_unit,
                         seed=seed,
                         phase=str(proposal.phase),
-                        proposal={
-                            "strategy": proposal.strategy,
-                            "phase": proposal.phase,
-                            "acquisition_value": proposal.acquisition_value,
-                            "tags": list(proposal.tags),
-                        },
+                        proposal=rationale,
                     )
                 )
             ordinal += 1

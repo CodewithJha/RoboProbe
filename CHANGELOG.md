@@ -200,6 +200,11 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - README rewritten as a full project landing page; `CONTRIBUTING.md` and `SECURITY.md` expanded;
   PR template renamed to `.github/PULL_REQUEST_TEMPLATE.md`.
 
+### Fixed
+
+- The campaign Console loads scenario bounds for run condition strips and shows selector
+  predictions when the strategy supplies them (T-088b, #172).
+
 ## [0.0.1] - 2026-11-19
 
 ### Added
