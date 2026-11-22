@@ -38,6 +38,8 @@ _DEFAULT_RESOLUTION = int(RiskSettings.model_fields["slice_resolution"].default)
 _STD_FLOOR = 1e-12
 _MIN_FREE_DIM = 2
 _MIN_RESOLUTION = 2
+# GP implementations can materialize a dense covariance for each set of query points.
+_MAX_POSTERIOR_ROWS = 512
 
 
 class _GpPort(Protocol):
@@ -128,7 +130,7 @@ class RiskMapper:
         anchor: Mapping[str, Any],
         resolution: int = _DEFAULT_RESOLUTION,
     ) -> list[RiskSlice]:
-        """Every unordered free-parameter pair, one batched GP call."""
+        """Evaluate every unordered free-parameter pair using bounded GP batches."""
         if resolution < _MIN_RESOLUTION:
             msg = "slice resolution must be at least 2"
             raise ValidationError(msg, context={"resolution": resolution})
@@ -140,8 +142,8 @@ class RiskMapper:
         points = np.asarray(x_unit, dtype=np.float64)
         if points.ndim == 1:
             points = points.reshape(1, -1)
-        p_fail = self._p_fail(points)
-        return _regions(p_fail, self._thresholds)
+        mean, _, total_std = self._predict(points)
+        return _regions(_phi_neg(mean, total_std), self._thresholds)
 
     def _evaluate_pairs(
         self,
@@ -163,9 +165,8 @@ class RiskMapper:
             start = p_i * n_cell
             x_all[start : start + n_cell] = block
 
-        mean, std_latent = self._gp.predict(x_all)
-        std_tot = self._gp.predict_total_std(x_all)
-        p_fail = _phi_neg(mean, std_tot)
+        mean, std_latent, total_std = self._predict(x_all)
+        p_fail = _phi_neg(mean, total_std)
         regions = _regions(p_fail, self._thresholds)
 
         out: list[RiskSlice] = []
@@ -213,10 +214,18 @@ class RiskMapper:
         decoded = self._space.from_unit_batch(rows)
         return np.asarray([float(row[param_id]) for row in decoded], dtype=np.float64)
 
-    def _p_fail(self, x: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-        mean, _ = self._gp.predict(x)
-        std_tot = self._gp.predict_total_std(x)
-        return _phi_neg(mean, std_tot)
+    def _predict(
+        self, points: npt.NDArray[np.float64]
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+        count = points.shape[0]
+        mean = np.empty(count, dtype=np.float64)
+        latent_std = np.empty(count, dtype=np.float64)
+        total_std = np.empty(count, dtype=np.float64)
+        for start in range(0, count, _MAX_POSTERIOR_ROWS):
+            batch = slice(start, start + _MAX_POSTERIOR_ROWS)
+            mean[batch], latent_std[batch] = self._gp.predict(points[batch])
+            total_std[batch] = self._gp.predict_total_std(points[batch])
+        return mean, latent_std, total_std
 
 
 def _phi_neg(

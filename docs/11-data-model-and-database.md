@@ -396,6 +396,9 @@ artifacts/
   reference/warehouse_v1_k2d.parquet            # dense ground-truth set (evaluation)
 ```
 
+Gazebo MCAP bags share this content-addressed storage. Their SHA-256 and compressed byte size
+are registered with the run and count toward artifact garbage collection.
+
 ### 6.2 Trace Parquet schema (`trace_schema_version = 1`, zstd compression)
 
 | Column | Type | Unit |

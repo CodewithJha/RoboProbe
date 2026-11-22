@@ -20,6 +20,7 @@ from roboprobe.backends.base import (
     EpisodeResult,
     MaterializedScenario,
 )
+from roboprobe.backends.gazebo_nav2.bags import clear_episode_bag, find_episode_bag
 from roboprobe.backends.gazebo_nav2.materialize import (
     EpisodeSeeds,
     GazeboMaterializer,
@@ -64,6 +65,7 @@ class InfraReason(StrEnum):
     CANCELED = "gazebo_canceled"
     RESULT_INVALID = "gazebo_episode_result_invalid"
     TRACE_INVALID = "gazebo_trace_invalid"
+    BAG_INVALID = "gazebo_bag_invalid"
 
 
 class _Status(StrEnum):
@@ -177,11 +179,9 @@ class GazeboNav2Backend:
 
     def materialize(self, req: EpisodeRequest) -> MaterializedScenario:
         """Prepare the scenario input directory and apply the run's time and bag policy."""
-        gazebo = (
-            self._gazebo.model_copy(update={"record_bag": "always"})
-            if req.record_bag
-            else (self._gazebo)
-        )
+        policy = self._gazebo.record_bag
+        record = policy == "always" or (policy == "failures" and req.record_bag)
+        gazebo = self._gazebo.model_copy(update={"record_bag": "always" if record else "never"})
         return GazeboMaterializer(
             gazebo,
             req.sut_profile,
@@ -215,6 +215,10 @@ class GazeboNav2Backend:
         workdir = req.workdir.resolve()
         for stale_output in (_RESULT, _TRACE):
             (workdir / stale_output).unlink(missing_ok=True)
+        try:
+            clear_episode_bag(workdir)
+        except OSError:
+            return _failed(req, InfraReason.BAG_INVALID)
         timeout = min(
             req.wall_timeout_s,
             limit / self._gazebo.physics.real_time_factor
@@ -238,7 +242,9 @@ class GazeboNav2Backend:
             )
         except OSError:
             return _failed(req, InfraReason.LAUNCH_FAILED)
-        return self._result(req, process)
+        return self._result(
+            req, process, record_bag=materialized.payload.get("record_bag") == "always"
+        )
 
     def _episode_env(self, req: EpisodeRequest) -> dict[str, str]:
         env = dict(os.environ)
@@ -269,7 +275,9 @@ class GazeboNav2Backend:
         except (NotFoundError, PydanticValidationError, ValidationError):
             return InfraReason.RESULT_INVALID
 
-    def _result(self, req: EpisodeRequest, process: ProcessExit) -> EpisodeResult:
+    def _result(
+        self, req: EpisodeRequest, process: ProcessExit, *, record_bag: bool
+    ) -> EpisodeResult:
         reason = self._process_error(process)
         if reason is not None:
             return _failed(req, reason)
@@ -291,13 +299,22 @@ class GazeboNav2Backend:
             trace = read_trace(trace_path)
         except (OSError, NotFoundError, ValidationError):
             return _failed(req, InfraReason.TRACE_INVALID)
+        artifacts = {
+            "trace": trace_path,
+            "log": req.workdir / "episode.log",
+            "episode_done": result_path,
+        }
+        if record_bag:
+            try:
+                bag = find_episode_bag(req.workdir)
+            except OSError:
+                bag = None
+            if bag is None:
+                return _failed(req, InfraReason.BAG_INVALID)
+            artifacts["bag"] = bag
         return EpisodeResult(
             trace=trace,
-            artifacts={
-                "trace": trace_path,
-                "log": req.workdir / "episode.log",
-                "episode_done": result_path,
-            },
+            artifacts=artifacts,
             backend_meta={key: str(value) for key, value in summary.model_dump().items()}
             | {"backend": _BACKEND},
         )

@@ -82,6 +82,10 @@ Gazebo worker lifecycle tests in `tests/unit/backends/gazebo/test_process.py` an
 The simulator gate in `tests/sim/test_gazebo_backend.py` exercises loss of a running Gazebo
 process during navigation (T-096b, FR-SIM-003, FR-RUN-005).
 
+Gazebo bag policy and download (T-097b, #204, FR-SIM-005, FR-STO-002) are verified in
+`backend/tests/sim/test_bag_policy.py` with a policy truth table and a real failed-run replay
+whose MCAP is downloaded through the API and read by Jazzy rosbag2.
+
 ## 2. Non-functional requirements → verification
 
 | NFR | Design | Verification | Gate |

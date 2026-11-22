@@ -230,7 +230,8 @@
 # teardown_term_wait_s = 5.0
 # Trace sampling rate [Hz].
 # sample_hz = 20.0
-# When to record rosbag2 MCAP: never, failures, always.
+# MCAP recording policy. Choose never, always, or failures (confirmations, manual runs and replays
+# of a FAIL run).
 # record_bag = "failures"
 # Gazebo episodes allowed in parallel on one host.
 # max_parallel_per_host = 1

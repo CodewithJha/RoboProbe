@@ -101,7 +101,11 @@ class GazeboNav2Settings(SettingsSection):
     )
     sample_hz: float = Field(default=20.0, gt=0, description="Trace sampling rate [Hz].")
     record_bag: RecordBagPolicy = Field(
-        default="failures", description="When to record rosbag2 MCAP: never, failures, always."
+        default="failures",
+        description=(
+            "MCAP recording policy. Choose never, always, or failures (confirmations, "
+            "manual runs and replays of a FAIL run)."
+        ),
     )
     max_parallel_per_host: int = Field(
         default=1, gt=0, description="Gazebo episodes allowed in parallel on one host."

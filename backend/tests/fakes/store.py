@@ -745,6 +745,7 @@ class InMemoryRunQueue:
                     campaign_id=run.campaign_id,
                 )
                 uow.commit()
+                source = uow.runs.get(run.replay_of) if run.replay_of is not None else None
                 return ClaimedRun(
                     run_id=run.id,
                     campaign_id=run.campaign_id,
@@ -757,6 +758,8 @@ class InMemoryRunQueue:
                     worker_id=worker_id,
                     wall_timeout_s=self._wall,
                     sim_time_budget_s=self._sim,
+                    phase=run.phase,
+                    source_verdict=source.verdict if source is not None else None,
                 )
             return None
 

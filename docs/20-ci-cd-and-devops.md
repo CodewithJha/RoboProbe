@@ -9,11 +9,11 @@
 |----------|---------|------|-----------------|
 | `ci.yml` | push, pull_request | `lint` (ruff, mypy, import-linter, ESLint, Prettier), `test-backend` (matrix ubuntu/macos; unit, property, contract), `test-integration` (Postgres 17 service), `benchmark-smoke`, `test-web` (Vitest), `build-web`, `openapi-check`, `config-docs-check`, `license-check`, `security` (pip-audit, pnpm audit, gitleaks) | ≤ 10 min |
 | `docs.yml` | changes in `docs/**`, `*.md` | markdownlint, mermaid-cli render of every Mermaid block, lychee link check, ADR index check | ≤ 3 min |
-| `images.yml` | push to `main`, tags | build `backend`, `web`, `gazebo` images (Buildx + GHA cache), Trivy scan, push to GHCR (`:sha`, `:main`, `:vX.Y.Z`), SBOM (Syft) attached | ≤ 25 min (gazebo cached) |
+| `images.yml` | push to `main`, pull requests, verified release workflow | build `backend`, `web`, `gazebo` images (Buildx + GHA cache), Trivy scan, push to GHCR (`:sha`, `:main`, `:vX.Y.Z`), SBOM (Syft) attached | ≤ 25 min (gazebo cached) |
 | `e2e.yml` | dashboard/API PRs, nightly 02:00 IST, manual | locally built Compose stack, seeded campaigns, Chromium/Firefox + axe | < 10 min |
 | `nightly-sim.yml` | nightly / manual (`workflow_dispatch`) | pull gazebo image, `pytest -m sim` with 1 worker, upload artefacts | ≤ 60 min (hosted runner CPU) |
 | `benchmark-full.yml` | weekly, manual | EXP-02 analytic + reduced EXP-01 (10 seeds) → compare with baseline JSON, comment on regression | ≤ 45 min |
-| `release.yml` | tag `v*` | verify CHANGELOG entry, build/push images, create GitHub Release with notes, report bundle | ≤ 30 min |
+| `release.yml` | tag `v*`, manual verification | verify package versions and CHANGELOG, build and publish images for verified tags, create GitHub Release | ≤ 30 min |
 
 ## 2. PR pipeline
 
@@ -100,9 +100,12 @@ Secrets in CI: only `GITHUB_TOKEN` (GHCR push). No external secret is needed.
 ## 6. Release & deployment flow
 
 1. Merge to `main` → images `:main` and `:sha-<7>` pushed.
-2. Release: bump version (33), update `CHANGELOG.md`, tag `vX.Y.Z` → `release.yml` publishes images `:vX.Y.Z` and a GitHub Release.
-3. Deploy on a machine: `ROBOPROBE_IMAGE_TAG=vX.Y.Z make up` (migrations run automatically via the `migrate` one-shot service) — see 29.
-4. Rollback: set previous tag and `make up`; DB migrations are backward-compatible for one minor version (expand/contract pattern, 33 §5).
+2. Bump the package versions and update `CHANGELOG.md` before creating the `vX.Y.Z` tag.
+   The release workflow verifies both before publishing images and release notes.
+3. Pull the published images and start them without a source build. The `migrate` service
+   applies database migrations automatically. [Install and upgrade](29-deployment-guide.md#3-install--upgrade-t1)
+4. Roll back by pulling and starting the last known good tag. Database migrations support
+   the previous minor version under the expand/contract policy in doc 33 §5.
 
 ## 7. Dependency management
 
