@@ -20,14 +20,12 @@ setup(
         ),
     ],
     install_requires=["setuptools"],
+    extras_require={"recorder": ["pyarrow>=17"]},
     entry_points={
         "console_scripts": [
             "perception_degrader = roboprobe_ros.perception_degrader:main",
+            "sensor_perturber = roboprobe_ros.sensor_perturber:main",
         ],
-    },
-    extras_require={"recorder": ["pyarrow>=17"]},
-    entry_points={
-        "console_scripts": ["sensor_perturber = roboprobe_ros.sensor_perturber:main"],
     },
     zip_safe=False,
     maintainer="CodewithJha",
