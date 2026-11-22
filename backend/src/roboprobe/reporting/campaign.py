@@ -24,10 +24,16 @@ from roboprobe.metrics.campaign_metrics import CampaignRun, comparison_runs, fir
 from roboprobe.metrics.discovery_metrics import discovery_curve
 from roboprobe.reporting import figures
 from roboprobe.reporting._env import template_env
-from roboprobe.reporting.figures import _ImportanceLike
+from roboprobe.reporting.figures import _ImportanceLike, _RiskSlicePlot
 from roboprobe.reporting.ports import ReportArtifactStore, ReportUnitOfWork
 from roboprobe.reporting.theme import load_theme, tokens_path
-from roboprobe.risk.mapper import RiskSlice, load_slices
+from roboprobe.risk.mapper import (
+    REGION_FAILURE,
+    REGION_SAFE,
+    REGION_UNCERTAIN,
+    RiskSlice,
+    load_slices,
+)
 from roboprobe.risk.volume import RegionVolumes, robustness_score
 
 __all__ = ["CampaignReportContext", "render_campaign_report"]
@@ -135,9 +141,38 @@ def _volumes_from_summary(summary: Mapping[str, Any]) -> RegionVolumes | None:
         return None
 
 
+def _legacy_slice_plots(payload: object) -> list[_RiskSlicePlot]:
+    """Read only the chart coordinates present in JSON fixture and legacy records."""
+    if not isinstance(payload, list):
+        return []
+    plots: list[_RiskSlicePlot] = []
+    for row in payload:
+        if not isinstance(row, dict):
+            continue
+        x_param, y_param = row.get("x_param"), row.get("y_param")
+        if not isinstance(x_param, str) or not isinstance(y_param, str):
+            continue
+        x = np.asarray(row.get("x_values"), dtype=np.float64)
+        y = np.asarray(row.get("y_values"), dtype=np.float64)
+        region = np.asarray(row.get("region"), dtype=np.float64)
+        if (
+            x.ndim != 1
+            or y.ndim != 1
+            or not x.size
+            or not y.size
+            or not np.isfinite(x).all()
+            or not np.isfinite(y).all()
+            or region.shape != (x.size, y.size)
+            or not np.isin(region, (REGION_SAFE, REGION_UNCERTAIN, REGION_FAILURE)).all()
+        ):
+            continue
+        plots.append(_RiskSlicePlot(x_param, y_param, x, y, region.astype(np.int8)))
+    return plots
+
+
 def _load_slices_from_store(
     store: ReportArtifactStore, uow: ReportUnitOfWork, campaign_id: UUID
-) -> list[RiskSlice]:
+) -> Sequence[RiskSlice | _RiskSlicePlot]:
     latest = uow.risk_maps.latest(campaign_id)
     if latest is None or latest.slices_artifact is None:
         return []
@@ -149,9 +184,15 @@ def _load_slices_from_store(
         blob = store.path(ref)
     except Exception:
         return []
-    if not Path(blob).is_file():
+    try:
+        with Path(blob).open("rb") as stream:
+            prefix = stream.read(2)
+            stream.seek(0)
+            if prefix == b"PK":
+                return load_slices(stream)
+            return _legacy_slice_plots(json.load(stream))
+    except (OSError, KeyError, TypeError, ValueError):
         return []
-    return load_slices(Path(blob))
 
 
 def build_campaign_context(  # noqa: PLR0915
