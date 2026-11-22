@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, type KeyboardEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { type Campaign, useCampaignCommand } from '../../../api/hooks';
 import { ProblemView } from '../../../app/ProblemView';
@@ -18,8 +18,17 @@ type Command = keyof typeof labels;
 
 export function CampaignHeader({ campaign }: { campaign: Campaign }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const keepButton = useRef<HTMLButtonElement>(null);
+  const confirmButton = useRef<HTMLButtonElement>(null);
   const client = useQueryClient();
   const command = useCampaignCommand(campaign.id);
+
+  function cycleDialogFocus(event: KeyboardEvent<HTMLButtonElement>, backwards: boolean) {
+    if (event.key !== 'Tab' || event.shiftKey !== backwards) return;
+    event.preventDefault();
+    (backwards ? confirmButton.current : keepButton.current)?.focus();
+  }
+
   function send(action: Command) {
     command.mutate(action, {
       onSuccess: (updated) => client.setQueryData(['campaigns', campaign.id], updated),
@@ -55,8 +64,19 @@ export function CampaignHeader({ campaign }: { campaign: Campaign }) {
         <h2>Cancel campaign?</h2>
         <p>Pending runs will be cancelled. In-flight runs may still finish.</p>
         <form method="dialog">
-          <button>Keep campaign</button>
           <button
+            ref={keepButton}
+            onKeyDown={(event) => {
+              cycleDialogFocus(event, true);
+            }}
+          >
+            Keep campaign
+          </button>
+          <button
+            ref={confirmButton}
+            onKeyDown={(event) => {
+              cycleDialogFocus(event, false);
+            }}
             onClick={() => {
               send('cancel');
             }}

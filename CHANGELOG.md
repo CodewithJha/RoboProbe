@@ -199,6 +199,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   missing blank lines, bare URLs) and normalised formatting to pass markdownlint.
 - README rewritten as a full project landing page; `CONTRIBUTING.md` and `SECURITY.md` expanded;
   PR template renamed to `.github/PULL_REQUEST_TEMPLATE.md`.
+- The Console cancellation dialog wraps keyboard focus in both directions and returns focus
+  to the trigger when dismissed.
 
 ### Fixed
 
