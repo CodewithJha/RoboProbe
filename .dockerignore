@@ -8,6 +8,8 @@
 !configs/
 !tasks/
 !plugins/
+!web/
+!docker/web/
 **/__pycache__/
 **/*.py[cod]
 **/.DS_Store

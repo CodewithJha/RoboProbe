@@ -1,0 +1,39 @@
+# syntax=docker/dockerfile:1.7
+# RoboProbe dashboard production image (T-116, docs/17 §5, NFR-DEP-001 / NFR-SEC-001).
+# Build context: repository root (see docker/compose.yaml web.build).
+#
+#   docker build -f docker/web/Dockerfile \
+#     --build-arg VERSION="$(git describe --tags --always)" --build-arg REVISION="$(git rev-parse HEAD)" \
+#     -t roboprobe-web:dev .
+
+ARG NODE_IMAGE=node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
+ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:alpine3.24@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
+
+# hadolint ignore=DL3006
+FROM ${NODE_IMAGE} AS build
+WORKDIR /app/web
+RUN corepack enable
+COPY web/package.json web/pnpm-lock.yaml ./
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
+COPY schemas/ /app/schemas/
+COPY web/ ./
+RUN pnpm build
+
+# hadolint ignore=DL3006
+FROM ${NGINX_IMAGE} AS runtime
+USER root
+RUN apk upgrade --no-cache
+COPY docker/web/nginx.conf /etc/nginx/nginx.conf
+COPY --chmod=755 docker/web/40-config-json.sh /docker-entrypoint.d/40-config-json.sh
+COPY --from=build /app/web/dist /usr/share/nginx/html
+USER 101
+
+ARG VERSION=dev
+ARG REVISION=unknown
+LABEL org.opencontainers.image.title="roboprobe-web" \
+    org.opencontainers.image.version="${VERSION}" \
+    org.opencontainers.image.revision="${REVISION}"
+
+ENV NGINX_CONFIG_JSON_DIR=/var/lib/nginx/runtime
+EXPOSE 8080
