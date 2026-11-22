@@ -25,6 +25,8 @@ jobs:
     env:
       SIM_IMAGE: roboprobe-gazebo-nightly:${{ github.run_id }}-${{ github.run_attempt }}
       FUEL_VOLUME: roboprobe-gazebo-fuel-${{ github.run_id }}-${{ github.run_attempt }}
+      SIM_NETWORK: roboprobe-gazebo-net-${{ github.run_id }}-${{ github.run_attempt }}
+      SIM_POSTGRES: roboprobe-gazebo-pg-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -44,6 +46,15 @@ jobs:
           docker run --rm --read-only --tmpfs /tmp \
             --mount "type=volume,src=$FUEL_VOLUME,dst=/data/gazebo-fuel" \
             "$SIM_IMAGE" prefetch-fuel
+      - name: Start PostgreSQL for the replay and bag integration test
+        run: |
+          docker network create --internal "$SIM_NETWORK"
+          docker run --detach --rm --name "$SIM_POSTGRES" --network "$SIM_NETWORK" --network-alias postgres \
+            --env POSTGRES_USER=roboprobe --env POSTGRES_DB=roboprobe_test \
+            --env POSTGRES_PASSWORD=roboprobe-ci \
+            --health-cmd='pg_isready -h 127.0.0.1 -U roboprobe -d roboprobe_test' \
+            --health-interval=2s postgres:17
+          timeout 60 bash -c 'until [[ "$(docker inspect -f "{{.State.Health.Status}}" "$SIM_POSTGRES")" == healthy ]]; do sleep 2; done'
       - name: Run the marked simulator tests
         run: |
           results="$RUNNER_TEMP/roboprobe-sim"
@@ -54,7 +65,7 @@ jobs:
           if [[ "$RUNNER_ENVIRONMENT" == github-hosted ]]; then
             graphics=(--env LIBGL_ALWAYS_SOFTWARE=1 --env ROBOPROBE_BACKENDS__GAZEBO_NAV2__SOFTWARE_RENDERING=true)
           fi
-          docker run --rm --init --network none --read-only --tmpfs /tmp --shm-size=1g \
+          docker run --rm --init --network "$SIM_NETWORK" --read-only --tmpfs /tmp --shm-size=1g \
             --mount "type=bind,src=$GITHUB_WORKSPACE,dst=/checkout,readonly" \
             --mount "type=bind,src=$deps,dst=/nightly-deps,readonly" \
             --mount "type=bind,src=$results,dst=/results" \
@@ -62,6 +73,7 @@ jobs:
             --env HYPOTHESIS_PROFILE=nightly --env GZ_IP=127.0.0.1 \
             --env PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
             --env RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
+            --env ROBOPROBE_TEST_DATABASE_URL=postgresql+psycopg://roboprobe:roboprobe-ci@postgres/roboprobe_test \
             --env GZ_SIM_RESOURCE_PATH=/checkout/ros_ws/src/roboprobe_ros/models:/opt/ros/jazzy/share \
             --env ROBOPROBE_BACKENDS__GAZEBO_NAV2__STARTUP_TIMEOUT_S=150 \
             --env ROBOPROBE_BACKENDS__GAZEBO_NAV2__WALL_MARGIN_S=90 \
@@ -94,8 +106,10 @@ jobs:
             ${{ runner.temp }}/roboprobe-sim/episodes/**/episode_done.json
             ${{ runner.temp }}/roboprobe-sim/episodes/**/trace.parquet
             ${{ runner.temp }}/roboprobe-sim/episodes/**/*.mcap
-      - name: Remove the disposable simulator image and Fuel cache
+      - name: Remove the disposable database, network, simulator image, and Fuel cache
         if: ${{ always() }}
         run: |
+          docker rm -f "$SIM_POSTGRES" || true
+          docker network rm "$SIM_NETWORK" || true
           docker volume rm "$FUEL_VOLUME" || true
           docker image rm "$SIM_IMAGE" || true
