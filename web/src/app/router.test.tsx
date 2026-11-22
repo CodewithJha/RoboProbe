@@ -27,6 +27,20 @@ const server = setupServer(
     HttpResponse.json({ campaign_id: 'c1', counts: {} }),
   ),
   http.get(apiUrl('/campaigns/c1/runs'), () => HttpResponse.json({ items: [] })),
+  http.get(apiUrl('/runs/r1'), () =>
+    HttpResponse.json({
+      id: 'r1',
+      campaign_id: 'c1',
+      ordinal: 1,
+      repeat_index: 0,
+      status: 'DONE',
+      phase: 'explore',
+      seed: 1,
+      verdict: 'PASS',
+      scenario: { hash: 'abc', values: {} },
+      oracles: [],
+    }),
+  ),
 );
 beforeAll(() => {
   server.listen();
@@ -58,7 +72,6 @@ const ROUTES = [
   ['/campaigns/c1/atlas', 'Risk atlas'],
   ['/campaigns/c1/insights', 'Insights'],
   ['/campaigns/c1/settings', 'Settings'],
-  ['/runs/r1', 'Loading run…'],
   ['/trials', 'Trials'],
   ['/trials/e1', 'Experiment'],
   ['/spaces', 'Spaces'],
@@ -69,6 +82,10 @@ const ROUTES = [
   ['/reports/job1', 'Report'],
 ] as const;
 describe('notebook routes', () => {
+  it('renders /runs/r1', async () => {
+    mount('/runs/r1');
+    expect(await screen.findByRole('status', { name: 'Loading run…' })).toBeInTheDocument();
+  });
   it.each(ROUTES)('renders %s', async (path, heading) => {
     mount(path);
     expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument();
