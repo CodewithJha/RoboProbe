@@ -18,6 +18,7 @@ from roboprobe.api.schemas import (
     RiskOut,
     RunOut,
     SpaceOut,
+    SpaceRef,
     StrategyRef,
     SutProfileOut,
     WorkerOut,
@@ -83,6 +84,12 @@ def campaign_out(
             "self": f"{prefix}/campaigns/{cid}",
             "runs": f"{prefix}/campaigns/{cid}/runs",
         },
+        pins=dict(getattr(record, "pins", {}) or {}),
+        space=(
+            SpaceRef(id=record.space_id, version=record.space_version)
+            if getattr(record, "space_id", None) is not None
+            else None
+        ),
     )
 
 
@@ -178,6 +185,7 @@ def failure_mode_out(record: Any) -> FailureModeOut:
         primary_class=record.primary_class,
         status=record.status,
         interaction=None if record.interaction is None else dict(record.interaction),
+        medoid_run_id=getattr(record, "medoid_run_id", None),
     )
 
 

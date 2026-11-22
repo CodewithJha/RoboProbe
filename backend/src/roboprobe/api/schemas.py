@@ -81,6 +81,8 @@ class CampaignOut(BaseModel):
     started_at: datetime | None = None
     finished_at: datetime | None = None
     links: dict[str, str] = Field(default_factory=dict)
+    pins: dict[str, JsonValue] = Field(default_factory=dict)
+    space: SpaceRef | None = None
 
 
 class CampaignProgress(BaseModel):
@@ -180,6 +182,7 @@ class FailureModeOut(BaseModel):
     primary_class: str
     status: str
     interaction: dict[str, JsonValue] | None = None
+    medoid_run_id: UUID | None = None
 
 
 class FailureModePatch(BaseModel):
@@ -216,6 +219,13 @@ class RiskSliceOut(BaseModel):
     anchor: str
     resolution: int
     grid: dict[str, JsonValue] = Field(default_factory=dict)
+    log_x: bool | None = None
+    log_y: bool | None = None
+    x_values: list[float] | None = None
+    y_values: list[float] | None = None
+    p_fail: list[list[float | None]] | None = None
+    points: list[dict[str, JsonValue]] | None = None
+    region: list[list[JsonValue]] | None = None
 
 
 class ExperimentCreate(BaseModel):
@@ -234,6 +244,9 @@ class ExperimentOut(BaseModel):
     results: dict[str, JsonValue] | None = None
     created_at: datetime | None = None
     finished_at: datetime | None = None
+    notes: str | None = None
+    progress: dict[str, int] | None = None
+    cells: list[JsonValue] | None = None
 
 
 class ExperimentComparisonOut(BaseModel):

@@ -89,10 +89,25 @@ def risk_slice(  # noqa: PLR0913, PLR0917
     if selected is None:
         msg = "requested slice not found"
         raise NotFoundError(msg, context={"x_param": x, "y_param": y})
+    grid = selected if isinstance(selected, dict) else {}
+    extras = {
+        key: grid[key]
+        for key in (
+            "log_x",
+            "log_y",
+            "x_values",
+            "y_values",
+            "p_fail",
+            "points",
+            "region",
+        )
+        if key in grid
+    }
     return RiskSliceOut(
         x_param=x,
         y_param=y,
         anchor=anchor,
         resolution=resolution,
-        grid=selected,
+        grid=grid,
+        **extras,
     )
