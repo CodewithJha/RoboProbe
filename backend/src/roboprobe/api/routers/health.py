@@ -24,7 +24,12 @@ __all__ = ["router"]
 
 router = APIRouter(tags=["health"])
 
-_BACKEND_ROOT = discover_repo_root() / "backend"
+def _backend_root() -> Path:
+    """Alembic tree in dev checkouts and under ``/app/backend`` in the runtime image."""
+    docker = Path("/app/backend")
+    if (docker / "alembic.ini").is_file():
+        return docker
+    return discover_repo_root() / "backend"
 
 
 @router.get("/health/live")
@@ -57,8 +62,9 @@ def ready(request: Request) -> JSONResponse | dict[str, Any]:
                 conn.execute(text("SELECT 1"))
                 context = MigrationContext.configure(conn)
                 current = context.get_current_revision()
-            cfg = Config()
-            cfg.set_main_option("script_location", str(_BACKEND_ROOT / "alembic"))
+            root = _backend_root()
+            cfg = Config(str(root / "alembic.ini"))
+            cfg.set_main_option("script_location", str(root / "alembic"))
             head = ScriptDirectory.from_config(cfg).get_current_head()
             if current != head:
                 failures.append("migrations_behind")
