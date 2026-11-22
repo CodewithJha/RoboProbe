@@ -84,6 +84,25 @@ def test_classify_codes(branin: ScenarioSpace) -> None:
     assert codes.tolist() == [int(REGION_SAFE), int(REGION_UNCERTAIN), int(REGION_FAILURE)]
 
 
+def test_batches_realistic_atlas_queries_without_reordering(warehouse: ScenarioSpace) -> None:
+    class LimitedGP(_StubGP):
+        def predict(self, x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+            assert 0 < len(x) <= 512
+            return super().predict(x)
+
+    gp = LimitedGP(noise=0.25)
+    mapper = RiskMapper(gp, warehouse, RiskThresholds())
+    predict = _StubGP(noise=0.25)
+    for risk_slice in mapper.all_pair_slices(warehouse.nominal_values()):
+        points = risk_slice.grid_u.reshape(-1, warehouse.dim)
+        mean, latent_std = predict.predict(points)
+        total_std = predict.predict_total_std(points)
+        np.testing.assert_allclose(risk_slice.mean.ravel(), mean)
+        np.testing.assert_allclose(risk_slice.std.ravel(), latent_std)
+        np.testing.assert_allclose(risk_slice.p_fail.ravel(), norm.cdf(-mean / total_std))
+        np.testing.assert_array_equal(mapper.classify(points), risk_slice.region.ravel())
+
+
 def test_pins_respected(warehouse: ScenarioSpace) -> None:
     pinned = warehouse.with_pins({"env.illuminance": 50.0})
     assert pinned.dim == warehouse.dim - 1
