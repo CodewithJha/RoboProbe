@@ -67,10 +67,10 @@ Open the dashboard's Settings page to enter the API token for the browser sessio
 On a native Linux Docker host, grant the backend container user (UID/GID 10001) write access to `data/artifacts` before starting the app profile.
 
 Scale kinematic workers with `docker compose up -d --scale worker-k2d=6`.
-Start the Gazebo worker with `make up PROFILES="core gazebo"`. Compose gives it an init
-process, a read-only root filesystem, and the same artifact and database access as the
-kinematic worker. Its temporary workdirs stay under `/tmp`, and its Fuel model cache
-persists in the `gazebo-fuel` volume.
+After [populating the Fuel cache](#5-images), start the Gazebo worker with
+`make up PROFILES="core gazebo"`. Compose gives it an init process, a read-only root
+filesystem, and the same artifact and database access as the kinematic worker. Its temporary
+workdirs stay under `/tmp`, and the Fuel models persist in the `gazebo-fuel` volume.
 
 ### 4.1 Compose skeleton (illustrative; the real file is created in T-005)
 
@@ -116,12 +116,14 @@ services:
     deploy: {replicas: ${ROBOPROBE_K2D_REPLICAS:-2}}
     depends_on: {migrate: {condition: service_completed_successfully}}
   worker-gazebo:
+    <<: *backend
     image: ghcr.io/codewithjha/roboprobe-gazebo:${ROBOPROBE_IMAGE_TAG:-dev}
     profiles: [gazebo]
-    env_file: ../.env
-    command: ["roboprobe", "worker", "--backend", "gazebo_nav2"]
-    shm_size: "1gb"
-    volumes: ["../data/artifacts:/data/artifacts", "../data/workdirs:/work"]
+    init: true
+    read_only: true
+    tmpfs: [/tmp]
+    shm_size: ${ROBOPROBE_GZ_SHM_SIZE:-1gb}
+    volumes: ["../data/artifacts:/data/artifacts", "gazebo-fuel:/data/gazebo-fuel"]
     depends_on: {migrate: {condition: service_completed_successfully}}
   web:
     image: ghcr.io/codewithjha/roboprobe-web:${ROBOPROBE_IMAGE_TAG:-dev}
@@ -130,7 +132,7 @@ services:
     depends_on: [api]
 secrets:
   db_password: {file: ../secrets/db_password}
-volumes: {pgdata: {}}
+volumes: {pgdata: {}, gazebo-fuel: {}}
 ```
 
 ## 5. Images
