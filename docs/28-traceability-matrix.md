@@ -77,6 +77,11 @@ Gazebo materialization tests in `tests/unit/backends/gazebo/test_materialize.py`
 generated files, the individual effects of P1–P8, XML document restrictions and ROS topic and
 parameter contracts (T-096a, FR-SIM-003).
 
+Gazebo worker lifecycle tests in `tests/unit/backends/gazebo/test_process.py` and
+`tests/unit/backends/gazebo/test_backend.py` cover process-group cleanup and classification.
+The simulator gate in `tests/sim/test_gazebo_backend.py` exercises loss of a running Gazebo
+process during navigation (T-096b, FR-SIM-003, FR-RUN-005).
+
 ## 2. Non-functional requirements → verification
 
 | NFR | Design | Verification | Gate |

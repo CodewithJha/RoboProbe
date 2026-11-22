@@ -8,6 +8,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 ### Added
 
 - Package the Gazebo worker with pinned Jazzy and Harmonic dependencies and an isolated Compose profile (T-095).
+- Gazebo worker backend with process-group shutdown, cancellation, and typed infrastructure failures (T-096b).
 - Record Gazebo episodes as Trace v1 Parquet on simulation time, with optional MCAP bags (T-094b).
 - The verified warehouse occupancy map, aligned kinematic map, and Nav2 nominal path for cross-backend pallet placement (T-092).
 - Deterministic Gazebo episode materialization for the warehouse world, Nav2, sensor perturbations, and bridge configuration (T-096a).
@@ -17,6 +18,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   nightly gate, and `size-limit` bundle budget in `build-web`.
 - Reproducible headless Gazebo and Nav2 warehouse measurements with a one-worker laptop recommendation (T-090).
 - Nightly API load test (T-106) checks endpoint p95 with a 10,000-run PostgreSQL seed and uploads the Locust CSV and runs-list query plan.
+- Remote-worker Compose profiles enforce PostgreSQL certificate and hostname verification (T-129).
 - Campaign scalability harness (T-130) measures real worker throughput, queue latency, and PostgreSQL health.
 - Dashboard polish (T-113a/b, T-115): Spaces list with YAML view and validation,
   Workbench worker table, Settings (session token, theme, number locale, SSE reconnect),

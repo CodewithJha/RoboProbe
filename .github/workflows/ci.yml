@@ -348,3 +348,18 @@ jobs:
           else
             echo "base has no api/openapi.json; skipping oasdiff"
           fi
+
+  remote-worker-compose:
+    name: Remote worker Compose configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ROBOPROBE_IMAGE_TAG: config-test
+      ROBOPROBE_REMOTE_DATABASE_URL: postgresql+psycopg://roboprobe@db.lab.internal/roboprobe
+      ROBOPROBE_REMOTE_WORKER_ID: lint-worker
+      ROBOPROBE_REMOTE_ARTIFACT_ROOT: /tmp/roboprobe-artifacts
+      ROBOPROBE_REMOTE_CA_FILE: /tmp/roboprobe-ca.crt
+      ROBOPROBE_REMOTE_PASSWORD_FILE: /tmp/roboprobe-db-password
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: docker compose -f docker/compose.worker.yaml --profile '*' config --quiet

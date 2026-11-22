@@ -4,8 +4,8 @@ Layer: Kernel (L1).
 """
 
 from pathlib import Path
-from typing import Any, Self
-from urllib.parse import quote, urlsplit, urlunsplit
+from typing import Any, Literal, Self
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
 from pydantic import Field, SecretStr, model_validator
 
@@ -34,6 +34,12 @@ class DatabaseSettings(SettingsSection):
         default=None,
         description="File holding the database password; merged into `url` [path].",
     )
+    sslmode: Literal["disable", "allow", "prefer", "require", "verify-ca", "verify-full"] | None = (
+        Field(
+            default=None,
+            description="PostgreSQL TLS policy; overrides an sslmode in the DSN when set.",
+        )
+    )
     pool_size: int = Field(default=5, gt=0, description="Connection pool size per process.")
     statement_timeout_ms: int = Field(
         default=30000, gt=0, description="Server-side statement timeout [ms]."
@@ -46,18 +52,33 @@ class DatabaseSettings(SettingsSection):
 
     @model_validator(mode="before")
     @classmethod
-    def _merge_password_file(cls, data: Any) -> Any:  # noqa: ANN401 - pydantic raw input
-        if not isinstance(data, dict) or data.get("password_file") in (None, ""):
+    def _compose_connection_url(cls, data: Any) -> Any:  # noqa: ANN401 - pydantic raw input
+        if not isinstance(data, dict):
+            return data
+        secret_file = data.get("password_file")
+        sslmode = data.get("sslmode")
+        if secret_file in (None, "") and sslmode is None:
             return data
         raw_url = data.get("url", cls.model_fields["url"].default)
         url = raw_url.get_secret_value() if isinstance(raw_url, SecretStr) else str(raw_url)
-        password_path = Path(data["password_file"])
-        try:
-            password = password_path.read_text(encoding="utf-8").strip()
-        except OSError as exc:
-            msg = f"cannot read database.password_file {password_path}: {exc.strerror}"
-            raise ValueError(msg) from None
-        return {**data, "url": SecretStr(_with_password(url, password))}
+        if secret_file not in (None, ""):
+            password_path = Path(secret_file)
+            try:
+                password = password_path.read_text(encoding="utf-8").strip()
+            except OSError as exc:
+                msg = f"cannot read database.password_file {password_path}: {exc.strerror}"
+                raise ValueError(msg) from None
+            url = _with_password(url, password)
+        if sslmode is not None:
+            parts = urlsplit(url)
+            query = [
+                (key, value)
+                for key, value in parse_qsl(parts.query, keep_blank_values=True)
+                if key != "sslmode"
+            ]
+            query.append(("sslmode", str(sslmode)))
+            url = urlunsplit(parts._replace(query=urlencode(query)))
+        return {**data, "url": SecretStr(url)}
 
     @model_validator(mode="after")
     def _check_scheme(self) -> Self:

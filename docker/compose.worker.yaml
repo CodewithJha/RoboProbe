@@ -1,0 +1,75 @@
+# Run on the worker host. The database and artifact store are supplied by the operator.
+name: roboprobe-remote
+
+x-worker-env: &worker-env
+  ROBOPROBE_DATABASE__URL: ${ROBOPROBE_REMOTE_DATABASE_URL:?Set the private PostgreSQL DSN}
+  ROBOPROBE_DATABASE__SSLMODE: verify-full
+  ROBOPROBE_STORAGE__ARTIFACT_ROOT: /data/artifacts
+  ROBOPROBE_STORAGE__WORKDIR_ROOT: /tmp/roboprobe-work
+  MPLCONFIGDIR: /tmp/matplotlib
+  ROBOPROBE_WORKER__ID_PREFIX: ${ROBOPROBE_REMOTE_WORKER_ID:?Set a unique worker-host ID}
+  PGSSLROOTCERT: /run/secrets/postgres_ca
+
+x-worker: &worker
+  restart: unless-stopped
+  init: true
+  environment: *worker-env
+  read_only: true
+  tmpfs: [/tmp]
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  secrets: [db_password, postgres_ca]
+  volumes:
+    - &artifacts
+      type: bind
+      source: ${ROBOPROBE_REMOTE_ARTIFACT_ROOT:?Set the local mount of the shared artifact directory}
+      target: /data/artifacts
+      bind:
+        create_host_path: false
+
+services:
+  worker-k2d:
+    <<: *worker
+    profiles: [kinematic2d]
+    image: ghcr.io/codewithjha/roboprobe-backend:${ROBOPROBE_IMAGE_TAG:?Set a published RoboProbe image tag}
+    command: ["worker", "--backend", "kinematic2d", "--health"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os,urllib.request; p=os.environ.get('ROBOPROBE_WORKER__HEALTH_PORT','9101'); urllib.request.urlopen(f'http://127.0.0.1:{p}/healthz', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  worker-gazebo:
+    <<: *worker
+    profiles: [gazebo]
+    image: ghcr.io/codewithjha/roboprobe-gazebo:${ROBOPROBE_IMAGE_TAG:?Set a published RoboProbe image tag}
+    command: ["worker", "--backend", "gazebo_nav2", "--health"]
+    shm_size: 1gb
+    volumes:
+      - *artifacts
+      - remote-gazebo-fuel:/data/gazebo-fuel
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/roboprobe-gazebo", "healthcheck"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    environment:
+      <<: *worker-env
+      GZ_IP: 127.0.0.1
+      RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      ROS_AUTOMATIC_DISCOVERY_RANGE: LOCALHOST
+
+secrets:
+  db_password:
+    file: ${ROBOPROBE_REMOTE_PASSWORD_FILE:?Set the path to the worker's database password file}
+  postgres_ca:
+    file: ${ROBOPROBE_REMOTE_CA_FILE:?Set the path to the CA that signed the database certificate}
+
+volumes:
+  remote-gazebo-fuel: {}

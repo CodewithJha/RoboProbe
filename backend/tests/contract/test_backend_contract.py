@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 from typing import Protocol
 from uuid import uuid4
@@ -17,13 +18,15 @@ from roboprobe.backends.base import (
     assert_supports,
     episode_timeouts,
 )
+from roboprobe.backends.gazebo_nav2.backend import GazeboNav2Backend
 from roboprobe.backends.kinematic2d.backend import Kinematic2DBackend
 from roboprobe.backends.replay.backend import ReplayBackend
 from roboprobe.backends.trace_io import write_trace
 from roboprobe.core import errors
-from roboprobe.core.settings import RoboProbeSettings
+from roboprobe.core.settings import RoboProbeSettings, load_settings
 from roboprobe.core.types import NavStatus, SutProfile, Trace
 from roboprobe.scenario.space import ScenarioSpace
+from roboprobe.scenario.sut_profile import load_sut_profile
 from roboprobe.scenario.task import load_task
 
 pytestmark = pytest.mark.contract
@@ -108,8 +111,28 @@ def _scenario():
     ).nominal()
 
 
-def _request(tmp_path: Path, settings: RoboProbeSettings, *, seed: int = 1) -> EpisodeRequest:
+def _request(
+    tmp_path: Path, settings: RoboProbeSettings, *, seed: int = 1, backend_name: str = "fake"
+) -> EpisodeRequest:
     sim, wall = episode_timeouts(settings.worker)
+    if backend_name == "gazebo_nav2":
+        settings = load_settings()
+        sim, wall = episode_timeouts(settings.worker)
+        space = ScenarioSpace.from_yaml(
+            REPO / "configs/scenario_spaces/warehouse_v1.yaml", base_dir=REPO, strict_task=True
+        )
+        return EpisodeRequest(
+            run_id=uuid4(),
+            scenario=space.nominal(),
+            task=space.task,
+            sut_profile=load_sut_profile(
+                REPO / "configs/sut_profiles/tb4_nav2_default.yaml", strict=True
+            ),
+            seed=seed,
+            workdir=tmp_path,
+            sim_time_budget_s=min(sim, 10.0),
+            wall_timeout_s=wall,
+        )
     return EpisodeRequest(
         run_id=uuid4(),
         scenario=_scenario(),
@@ -122,9 +145,18 @@ def _request(tmp_path: Path, settings: RoboProbeSettings, *, seed: int = 1) -> E
     )
 
 
-@pytest.fixture(params=["fake", "replay", "kinematic2d"])
+# The ROS image runs the simulator case explicitly, keeping the fast CI tier runnable without ROS.
+@pytest.fixture(
+    params=["fake", "replay", "kinematic2d", pytest.param("gazebo_nav2", marks=pytest.mark.sim)]
+)
 def backend_name(request: pytest.FixtureRequest) -> str:
-    return str(request.param)
+    name = str(request.param)
+    requested = request.config.getoption("--backend")
+    if requested is None and name == "gazebo_nav2":
+        pytest.skip("Gazebo contract requires --backend gazebo_nav2")
+    if requested is not None and name != requested:
+        pytest.skip("backend not selected")
+    return name
 
 
 @pytest.fixture
@@ -134,6 +166,12 @@ def backend(backend_name: str, tmp_path: Path) -> _Backend:
         return FakeBackend(settings)
     if backend_name == "kinematic2d":
         return Kinematic2DBackend(settings)
+    if backend_name == "gazebo_nav2":
+        if shutil.which("ros2") is None:
+            pytest.skip("Jazzy simulator image is unavailable")
+        gazebo = GazeboNav2Backend(load_settings())
+        gazebo.prepare()
+        return gazebo
     source = tmp_path / "golden.parquet"
     write_trace(make_trace(), source)
     return ReplayBackend(settings, traces={})
@@ -143,8 +181,8 @@ def test_materialize_determinism(backend: _Backend, tmp_path: Path) -> None:
     if backend.capabilities.name == "replay":
         pytest.skip("replay materialize records a path, not generated world bytes")
     settings = _settings()
-    a = _request(tmp_path / "a", settings)
-    b = _request(tmp_path / "b", settings)
+    a = _request(tmp_path / "a", settings, backend_name=backend.capabilities.name)
+    b = _request(tmp_path / "b", settings, backend_name=backend.capabilities.name)
     ma, mb = backend.materialize(a), backend.materialize(b)
     for key in ma.files:
         assert ma.files[key].read_bytes() == mb.files[key].read_bytes()
@@ -152,7 +190,7 @@ def test_materialize_determinism(backend: _Backend, tmp_path: Path) -> None:
 
 def test_trace_schema_and_rate(backend: _Backend, tmp_path: Path) -> None:
     settings = _settings()
-    req = _request(tmp_path / "r", settings)
+    req = _request(tmp_path / "r", settings, backend_name=backend.capabilities.name)
     if backend.capabilities.name == "replay":
         source = tmp_path / "golden.parquet"
         write_trace(make_trace(), source)
