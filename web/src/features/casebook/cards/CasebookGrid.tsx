@@ -41,7 +41,7 @@ function CaseCard({
       requireData(
         await api.PATCH('/api/v1/modes/{mode_id}', {
           params: { path: { mode_id: mode.id } },
-          headers: { 'If-Match': `W/"${String(mode.version ?? 1)}"` },
+          headers: { 'If-Match': `W/"${String(number(mode.version) ?? 1)}"` },
           body,
         }),
       ),
