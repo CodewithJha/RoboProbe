@@ -48,6 +48,13 @@ jobs:
             echo "::error::Resolve TBD_T091 before merging (T-091)"
             exit 1
           fi
+      - name: No TBD_T092 placeholders remain (T-092)
+        run: |
+          paths=(tasks configs ros_ws schemas docs/06-scenario-parameter-space-and-schema.md)
+          if grep -R "TBD_T092" "${paths[@]}"; then
+            echo "::error::Resolve TBD_T092 before merging (T-092)"
+            exit 1
+          fi
       - name: mypy --strict, tsc
         run: make typecheck
       - name: Every test has a tier marker
