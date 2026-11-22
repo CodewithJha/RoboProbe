@@ -47,6 +47,10 @@ Gazebo velocity relay verification (T-093d, #195, FR-SIM-003):
 against a fake simulation clock and verifies both velocity message types, FIFO ordering,
 reported latency, zero-delay delivery and process shutdown.
 
+Gazebo episode recording (T-094b, #197, FR-RUN-004, FR-SIM-003, FR-SIM-005) is verified in
+`ros_ws/src/roboprobe_ros/test/test_episode_recorder.py` with the ROS simulation clock,
+shared Trace v1 fixtures, incomplete output, and real MCAP recording.
+
 Trace transport verification (T-081e, #150; FR-DSH-005, FR-STO-002, NFR-SEC-003):
 `tests/api/test_trace_artifacts.py` covers clearance minima, flag transitions, rate caps, column
 selection, Parquet/attachment headers, unknown ids, and malicious stored paths (TM-04).

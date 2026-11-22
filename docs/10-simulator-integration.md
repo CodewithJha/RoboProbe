@@ -162,6 +162,11 @@ not a live ROS connection — keeps the worker free of rclpy state and makes cra
   rectangle distances are exact, grid distances use the SciPy EDT minus half a cell (within one cell); points off
   the map count as distance 0; the package imports only NumPy/SciPy (enforced by a unit test).
 - Roll/pitch from ground-truth orientation; `nav_status` from the action feedback/result; recoveries from `/behavior_tree_log`.
+- The recorder starts on `/episode_recorder/start` (`Trigger`) and samples at the episode's
+  `sample_hz` using ROS simulation time. It writes `trace.parquet` beside `episode.yaml`, then
+  validates it using the vendored Trace v1 reader. `/episode_recorder/stop` (`SetBool`) receives
+  the manager's completeness flag. Interrupted recordings and invalid sampling carry
+  `complete=false` in trace metadata.
 - Optional rosbag2 (MCAP storage) of `/scan`, `/cmd_vel`, `/amcl_pose`, `/tf`, ground truth when `record_bag` (default: failures only — the worker re-records on confirmatory replays, since a run's verdict is unknown in advance; option `record_bag: always`).
 
 ## 7. kinematic2d backend (development & evaluation test double)
