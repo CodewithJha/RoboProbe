@@ -993,7 +993,7 @@ export interface components {
       /** Label */
       label?: string | null;
       /** Status */
-      status?: ('open' | 'accepted' | 'fixed' | 'duplicate') | null;
+      status?: string | null;
     };
     /**
      * FieldError

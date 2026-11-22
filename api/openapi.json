@@ -717,8 +717,6 @@
           "label": {
             "anyOf": [
               {
-                "maxLength": 80,
-                "minLength": 1,
                 "type": "string"
               },
               {
@@ -730,12 +728,6 @@
           "status": {
             "anyOf": [
               {
-                "enum": [
-                  "open",
-                  "accepted",
-                  "fixed",
-                  "duplicate"
-                ],
                 "type": "string"
               },
               {
