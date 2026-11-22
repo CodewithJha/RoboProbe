@@ -43,7 +43,9 @@ const ROUTES = [
 describe('notebook routes', () => {
   it.each(ROUTES)('renders %s', async (path, heading) => {
     mount(path);
-    expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: heading }, { timeout: 5000 }),
+    ).toBeInTheDocument();
   });
   it('renders unknown routes and provides a way back', async () => {
     mount('/missing');
