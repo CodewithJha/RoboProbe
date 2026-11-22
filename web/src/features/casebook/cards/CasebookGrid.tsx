@@ -41,7 +41,7 @@ function CaseCard({
       requireData(
         await api.PATCH('/api/v1/modes/{mode_id}', {
           params: { path: { mode_id: mode.id } },
-          headers: { 'If-Match': `W/"${String(mode.version)}"` },
+          headers: { 'If-Match': `W/"${String(mode.version ?? 1)}"` },
           body,
         }),
       ),
@@ -294,7 +294,7 @@ function CaseCard({
           {conditions
             .map(
               (condition) =>
-                `${String(condition['param'])} ${String(condition['op'])} ${display(condition['threshold_physical'])}`,
+                `${typeof condition['param'] === 'string' ? condition['param'] : 'param'} ${typeof condition['op'] === 'string' ? condition['op'] : 'op'} ${display(condition['threshold_physical'])}`,
             )
             .join(' ∧ ')}{' '}
           · Precision {display(best['precision'])} · Support {display(best['support'])}

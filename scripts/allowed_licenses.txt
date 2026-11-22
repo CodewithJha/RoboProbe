@@ -13,13 +13,16 @@ BSD-3-Clause
 BSL-1.0
 ISC
 MIT
+MIT-0
 MIT-CMU
+# Mapbox GL JS 1.x (BSD-3-Clause); npm metadata often reports Unknown (plotly dev bundle).
 PSF-2.0
 Python-2.0
 Unlicense
 Zlib
 # Public-domain dedication (FSF free, GPL-compatible); appears in bundled-component expressions.
 CC0-1.0
+CC-BY-4.0
 
 # --- Weak copyleft (SPDX); dynamic linking/import only, no modification of the dependency ---
 LGPL-2.1-only
