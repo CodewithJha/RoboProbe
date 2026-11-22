@@ -31,6 +31,10 @@
 | PR-21 S-CEM | FR-SEL-009 | 07 §8 | T-062 | contract |
 | PR-22 Observability profile | NFR-OBS-001/002 | 21 §5 | T-004, T-125, T-126 | metrics registry cross-check; tracing no-import test |
 
+Gazebo depth verification (T-093c, #194, FR-SIM-003): the Jazzy test
+`ros_ws/src/roboprobe_ros/test/test_perception_degrader.py` checks seeded depth loss and
+radial noise, camera header preservation, depth-one QoS and processing within the camera period.
+
 Catalogue API verification (T-081a, #146; FR-API-001, FR-SCN-001, UC-01/UC-10):
 `backend/tests/api/test_spaces.py`, `test_sut_profiles.py` and `test_upload_body.py` cover
 YAML/JSON uploads, semantic validation, JSON pointers, versioning, idempotency, profile conflicts,
