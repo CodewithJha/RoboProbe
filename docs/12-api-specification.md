@@ -229,6 +229,19 @@ resolve by id through the confined artifact-store path, stream as attachments, s
 SHA-256 `ETag` and `X-Content-Type-Options: nosniff`, and sanitize filenames. Unsafe or missing
 stored paths return 404 and emit `artifact.path_rejected` without revealing the path.
 
+### 3.10 Failure modes and importance
+
+Mode lists include the persisted `version`, representative run IDs, parameter ranges, and
+provisional status. Mode detail responses include `ETag`. Send that version as `If-Match`
+when editing a label or status. A duplicate status requires `duplicate_of`, the code of a
+different mode in the same campaign. `POST /api/v1/modes/{mode_id}:confirm-interaction`
+returns the scheduled `run_ids` alongside the accepted status.
+
+For newly analyzed campaigns, `importance` includes parameter names, SHAP scores,
+interactions, per-mode rankings, and classifier confidence. GP rankings are available when
+the analysis successfully fits a robustness GP. Re-run analysis for older summaries that
+only contain confidence metadata.
+
 ## 4. Server-Sent Events
 
 `GET /api/v1/events?campaign_id=<id>` → `text/event-stream`; supports `Last-Event-ID` resume (event ids are `events.id`).

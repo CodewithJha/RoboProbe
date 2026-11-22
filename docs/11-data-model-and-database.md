@@ -287,9 +287,11 @@ CREATE TABLE failure_modes (
     interaction      jsonb,                           -- {status, order, params, evidence_run_ids}
     reproducibility  double precision,
     status           text NOT NULL DEFAULT 'open' CHECK (status IN ('open','accepted','fixed','duplicate')),
+    duplicate_of     text,                            -- target mode code in the same campaign
     first_seen_run   uuid REFERENCES runs(id),
     analysis_id      uuid REFERENCES analyses(id),
     updated_at       timestamptz NOT NULL DEFAULT now(),
+    etag_version     int NOT NULL DEFAULT 1,
     UNIQUE (campaign_id, code)
 );
 

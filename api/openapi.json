@@ -549,9 +549,38 @@
             "title": "Campaign Id",
             "type": "string"
           },
+          "characteristic": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Characteristic",
+            "type": "array"
+          },
           "code": {
             "title": "Code",
             "type": "string"
+          },
+          "duplicate_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of"
+          },
+          "first_seen_ordinal": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen Ordinal"
           },
           "id": {
             "format": "uuid",
@@ -576,6 +605,11 @@
             "title": "Label",
             "type": "string"
           },
+          "label_is_user": {
+            "default": false,
+            "title": "Label Is User",
+            "type": "boolean"
+          },
           "medoid_run_id": {
             "anyOf": [
               {
@@ -588,9 +622,51 @@
             ],
             "title": "Medoid Run Id"
           },
+          "minimal_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimal Run Id"
+          },
+          "param_ranges": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Param Ranges",
+            "type": "object"
+          },
           "primary_class": {
             "title": "Primary Class",
             "type": "string"
+          },
+          "provisional": {
+            "default": false,
+            "title": "Provisional",
+            "type": "boolean"
+          },
+          "reproducibility": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reproducibility"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Rules",
+            "type": "array"
           },
           "size": {
             "title": "Size",
@@ -599,6 +675,11 @@
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
           }
         },
         "required": [
@@ -616,6 +697,17 @@
       "FailureModePatch": {
         "additionalProperties": false,
         "properties": {
+          "duplicate_of": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of"
+          },
           "label": {
             "anyOf": [
               {
@@ -5185,7 +5277,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/FailureModeOut"
+                }
               }
             },
             "description": "Successful Response"
@@ -5284,6 +5378,7 @@
     },
     "/api/v1/modes/{mode_id}:confirm-interaction": {
       "post": {
+        "description": "Enqueue the actual idempotent confirmation plan instead of acknowledging a no-op.",
         "operationId": "confirm_interaction_api_v1_modes__mode_id__confirm_interaction_post",
         "parameters": [
           {
@@ -5302,9 +5397,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
+                  "additionalProperties": true,
                   "title": "Response Confirm Interaction Api V1 Modes  Mode Id  Confirm Interaction Post",
                   "type": "object"
                 }

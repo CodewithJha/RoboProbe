@@ -5,7 +5,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import type { Schema } from '../../../api/client';
 import { CasebookGrid } from './CasebookGrid';
 
-const items = [
+const items: Schema['FailureModeOut'][] = [
   {
     id: 'mode-a',
     campaign_id: 'campaign-a',
@@ -15,6 +15,7 @@ const items = [
     size: 12,
     version: 3,
     status: 'open',
+    label_is_user: false,
     provisional: true,
   },
   {
@@ -26,6 +27,7 @@ const items = [
     size: 8,
     version: 1,
     status: 'open',
+    label_is_user: false,
     provisional: false,
   },
   {
@@ -37,9 +39,10 @@ const items = [
     size: 6,
     version: 1,
     status: 'open',
+    label_is_user: false,
     provisional: false,
   },
-] as unknown as Schema['FailureModeOut'][];
+];
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();

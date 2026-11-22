@@ -43,6 +43,7 @@ class AnalysisRun(_Frozen):
     phase: Phase
     primary_failure: FailureClass | None
     values: dict[str, ParamValue]
+    ordinal: int | None = None
     metrics: dict[str, float] = Field(default_factory=dict)
     oracle_thresholds: OracleThresholds = Field(default_factory=OracleThresholds)
     subset: frozenset[str] | None = None

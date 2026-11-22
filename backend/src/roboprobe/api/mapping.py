@@ -175,17 +175,29 @@ def sut_out(record: Any) -> SutProfileOut:
     )
 
 
-def failure_mode_out(record: Any) -> FailureModeOut:
+def failure_mode_out(
+    record: Any, *, provisional: bool = False, first_seen_ordinal: int | None = None
+) -> FailureModeOut:
     return FailureModeOut(
         id=record.id,
         campaign_id=record.campaign_id,
         code=record.code,
         label=record.label,
+        label_is_user=getattr(record, "label_is_user", False),
+        provisional=provisional,
+        first_seen_ordinal=first_seen_ordinal,
+        reproducibility=getattr(record, "reproducibility", None),
+        version=getattr(record, "etag_version", 1),
+        duplicate_of=getattr(record, "duplicate_of", None),
+        param_ranges=dict(getattr(record, "param_ranges", {})),
+        characteristic=list(getattr(record, "characteristic", ())),
+        rules=list(getattr(record, "rules", ())),
+        medoid_run_id=getattr(record, "medoid_run_id", None),
+        minimal_run_id=getattr(record, "minimal_run_id", None),
         size=record.size,
         primary_class=record.primary_class,
         status=record.status,
         interaction=None if record.interaction is None else dict(record.interaction),
-        medoid_run_id=getattr(record, "medoid_run_id", None),
     )
 
 
