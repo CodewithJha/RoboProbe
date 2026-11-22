@@ -1,0 +1,101 @@
+name: Gazebo simulation nightly
+
+on:
+  schedule:
+    - cron: "30 20 * * *"
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: Linux runner for the Gazebo simulation suite
+        type: choice
+        options: [ubuntu-24.04, self-hosted]
+        default: ubuntu-24.04
+
+permissions:
+  contents: read
+
+jobs:
+  ros-package:
+    uses: ./.github/workflows/ros-package.yml
+
+  simulate:
+    name: Gazebo backend simulation
+    runs-on: ${{ fromJSON(inputs.runner == 'self-hosted' && '["self-hosted","linux"]' || '["ubuntu-24.04"]') }}
+    timeout-minutes: 120
+    env:
+      SIM_IMAGE: roboprobe-gazebo-nightly:${{ github.run_id }}-${{ github.run_attempt }}
+      FUEL_VOLUME: roboprobe-gazebo-fuel-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Build the Gazebo image and install test dependencies
+        run: |
+          docker build --build-arg "REVISION=$GITHUB_SHA" -f docker/gazebo/Dockerfile -t "$SIM_IMAGE" .
+          uv sync --locked --no-install-project --extra dev --directory backend
+      - name: Fetch the pinned warehouse models into a disposable Fuel volume
+        run: |
+          docker volume create "$FUEL_VOLUME"
+          docker run --rm --read-only --tmpfs /tmp \
+            --mount "type=volume,src=$FUEL_VOLUME,dst=/data/gazebo-fuel" \
+            "$SIM_IMAGE" prefetch-fuel
+      - name: Run the marked simulator tests
+        run: |
+          results="$RUNNER_TEMP/roboprobe-sim"
+          mkdir -p "$results"
+          chmod 1777 "$results"
+          deps="$(uv run --no-sync --directory backend python -c 'import sysconfig; print(sysconfig.get_path("purelib"))')"
+          graphics=()
+          if [[ "$RUNNER_ENVIRONMENT" == github-hosted ]]; then
+            graphics=(--env LIBGL_ALWAYS_SOFTWARE=1 --env ROBOPROBE_BACKENDS__GAZEBO_NAV2__SOFTWARE_RENDERING=true)
+          fi
+          docker run --rm --init --network none --read-only --tmpfs /tmp --shm-size=1g \
+            --mount "type=bind,src=$GITHUB_WORKSPACE,dst=/checkout,readonly" \
+            --mount "type=bind,src=$deps,dst=/nightly-deps,readonly" \
+            --mount "type=bind,src=$results,dst=/results" \
+            --mount "type=volume,src=$FUEL_VOLUME,dst=/data/gazebo-fuel,readonly" \
+            --env HYPOTHESIS_PROFILE=nightly --env GZ_IP=127.0.0.1 \
+            --env PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
+            --env RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
+            --env GZ_SIM_RESOURCE_PATH=/checkout/ros_ws/src/roboprobe_ros/models:/opt/ros/jazzy/share \
+            --env ROBOPROBE_BACKENDS__GAZEBO_NAV2__STARTUP_TIMEOUT_S=150 \
+            --env ROBOPROBE_BACKENDS__GAZEBO_NAV2__WALL_MARGIN_S=90 \
+            "${graphics[@]}" --entrypoint /bin/bash "$SIM_IMAGE" -eo pipefail -c '
+              trap "chmod -R a+rX /results" EXIT
+              mkdir -p "$HOME" "$ROS_HOME" "$XDG_RUNTIME_DIR"
+              chmod 700 "$XDG_RUNTIME_DIR"
+              source /opt/ros/jazzy/setup.bash
+              source /opt/roboprobe/ros_ws/install/setup.bash
+              cd /checkout/backend
+              status=0
+              /opt/roboprobe/venv/bin/python -c "import sys; sys.path.append(\"/nightly-deps\"); import pytest; raise SystemExit(pytest.main(sys.argv[1:]))" \
+                -p pytest_timeout -m sim --backend gazebo_nav2 \
+                -p no:cacheprovider --basetemp=/results/episodes --junitxml=/results/simulation.xml \
+                tests/contract/test_backend_contract.py tests/sim || status=$?
+              python3 /checkout/scripts/sim_nightly_summary.py /results --annotate-junit >/dev/null || status=1
+              exit "$status"
+            '
+      - name: Summarize simulator results
+        if: ${{ always() }}
+        run: python3 scripts/sim_nightly_summary.py "$RUNNER_TEMP/roboprobe-sim" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ failure() }}
+        with:
+          name: gazebo-simulation-failure
+          if-no-files-found: ignore
+          path: |
+            ${{ runner.temp }}/roboprobe-sim/simulation.xml
+            ${{ runner.temp }}/roboprobe-sim/episodes/**/episode.log
+            ${{ runner.temp }}/roboprobe-sim/episodes/**/episode_done.json
+            ${{ runner.temp }}/roboprobe-sim/episodes/**/trace.parquet
+            ${{ runner.temp }}/roboprobe-sim/episodes/**/*.mcap
+      - name: Remove the disposable simulator image and Fuel cache
+        if: ${{ always() }}
+        run: |
+          docker volume rm "$FUEL_VOLUME" || true
+          docker image rm "$SIM_IMAGE" || true
