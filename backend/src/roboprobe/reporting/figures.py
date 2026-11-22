@@ -8,6 +8,7 @@ Implements: T-078a, T-079, FR-DSH-007
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from io import StringIO
 from typing import TYPE_CHECKING, Any, Protocol
 
@@ -28,6 +29,17 @@ if TYPE_CHECKING:
 class _ImportanceLike(Protocol):
     names: Sequence[str]
     mean_abs_shap: Sequence[float]
+
+
+@dataclass(frozen=True, slots=True)
+class _RiskSlicePlot:
+    """Axis and region data needed to render a persisted slice."""
+
+    x_param: str
+    y_param: str
+    x_values: npt.NDArray[np.float64]
+    y_values: npt.NDArray[np.float64]
+    region: npt.NDArray[np.int8]
 
 
 __all__ = [
@@ -309,7 +321,7 @@ def interaction_heatmap_svg(
 
 
 def risk_slice_svg(
-    slice_: RiskSlice | None,
+    slice_: RiskSlice | _RiskSlicePlot | None,
     *,
     settings: ReportingSettings | None = None,
 ) -> str:
@@ -335,11 +347,10 @@ def risk_slice_svg(
     )
     uncertain = slice_.region == REGION_UNCERTAIN
     if np.any(uncertain):
-        yy, xx = np.meshgrid(slice_.y_values, slice_.x_values, indexing="ij")
         ax.contourf(
-            xx,
-            yy,
-            uncertain.astype(np.float64),
+            slice_.x_values,
+            slice_.y_values,
+            uncertain.T.astype(np.float64),
             levels=[0.5, 1.5],
             colors=["none"],
             hatches=["//"],

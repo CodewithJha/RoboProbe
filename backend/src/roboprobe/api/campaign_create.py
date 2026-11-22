@@ -113,6 +113,11 @@ def resolve_campaign_space(ref: SpaceRef, *, uow: Any, root: Path) -> ScenarioSp
         space = ScenarioSpace.from_text(
             yaml.safe_dump(existing.definition), source="registered space", base_dir=root
         )
+        if (space.id, space.version) != (space_id, ref.version):
+            msg = "Task files changed for this space version. Register the current definition."
+            raise ValidationError(
+                msg, context={"errors": [{"path": "/space/version", "message": msg}]}
+            )
     else:
         space_yaml = _config_path(root, "scenario_spaces", space_id)
         if not space_yaml.is_file():

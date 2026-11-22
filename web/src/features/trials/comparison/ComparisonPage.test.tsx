@@ -247,10 +247,9 @@ it('generates a report, polls until complete, and opens the report view', async 
     await vi.waitFor(() => {
       expect(view.state.location.pathname).toBe('/reports/r1');
     });
-    expect(await screen.findByTitle('Report preview')).toHaveAttribute(
-      'sandbox',
-      'allow-same-origin',
-    );
+    const preview = await screen.findByTitle('Report preview');
+    expect(preview).toHaveAttribute('sandbox', 'allow-same-origin allow-modals');
+    expect(preview.getAttribute('srcdoc')).toContain('<h1>Experiment report</h1>');
     expect(authored).toHaveBeenCalledWith('Bearer test-report-token', {
       kind: 'experiment',
       id: 'e1',

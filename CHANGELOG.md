@@ -241,6 +241,10 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Fixed
 
+- Campaign reports render legacy risk slices, and authenticated dashboard sessions can preview
+  and download completed reports.
+- Isolate seeded Playwright and Lighthouse runs, and report stale scenario versions as validation
+  errors during campaign creation (T-117).
 - Embed the API comparison payload in offline experiment reports and surface restart-interrupted
   report jobs as errors (T-084a).
 - Casebook interaction checks, replays, and Atlas manual probes run after campaign completion.
