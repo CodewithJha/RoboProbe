@@ -14,6 +14,7 @@ from tests.fakes.store import InMemoryUnitOfWork, _Runs
 from typer.testing import CliRunner
 
 from roboprobe.cli.main import ExitCode, app
+from roboprobe.core.settings.worker import WorkerSettings
 from roboprobe.core.types import CampaignStatus, RunOutcome, RunStatus, Verdict
 from roboprobe.oracles.reevaluate import ReevaluateDiff
 from roboprobe.runner.lifecycle import CampaignService
@@ -407,21 +408,46 @@ def test_orchestrator_service(monkeypatch: pytest.MonkeyPatch, settings_env: Pat
 
 
 def test_worker_service(monkeypatch: pytest.MonkeyPatch, settings_env: Path) -> None:
+    calls: list[str] = []
+    health_ports: list[int] = []
+
     class _Worker:
         def serve_forever(self, stop: object) -> None:
             del stop
 
         def request_stop(self) -> None: ...
 
+    class _Heartbeat:
+        def __init__(self, *, settings: WorkerSettings, **_kwargs: object) -> None:
+            health_ports.append(settings.health_port)
+
+        def register(self) -> None:
+            calls.append("register")
+
+        def start(self) -> None:
+            calls.append("start")
+
+        def stop(self) -> None:
+            calls.append("stop")
+
     monkeypatch.setattr(
         "roboprobe.cli.services.ScenarioSpace.from_yaml",
         lambda *_a, **_k: SimpleNamespace(task=object()),
     )
     monkeypatch.setattr("roboprobe.cli.services.build_worker", lambda *_a, **_k: _Worker())
+    monkeypatch.setattr(
+        "roboprobe.cli.services.build_cli_services",
+        lambda _settings: SimpleNamespace(
+            infra=object(), uow_factory=object(), close=lambda: calls.append("close")
+        ),
+    )
+    monkeypatch.setattr("roboprobe.cli.services.HeartbeatService", _Heartbeat)
     result = runner.invoke(
-        app, ["--json", "worker", "--backend", "kinematic2d", "--concurrency", "1"]
+        app, ["--json", "worker", "--backend", "kinematic2d", "--concurrency", "2"]
     )
     assert result.exit_code == ExitCode.OK, result.output
+    assert calls == ["register", "start", "register", "start", "stop", "stop", "close"]
+    assert health_ports[1] == health_ports[0] + 1
 
 
 def test_api_service_starts(monkeypatch: pytest.MonkeyPatch, settings_env: Path) -> None:

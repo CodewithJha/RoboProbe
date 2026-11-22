@@ -62,23 +62,27 @@ export function strategies(meta: unknown): Strategy[] {
 }
 // Strategy schemas arrive at runtime. Interpret them under the production CSP.
 const validateCampaign = new Validator(campaignSchema as JsonSchema, '2020-12', false);
+function validationErrors(validator: Validator, data: unknown, prefix = '') {
+  return validator
+    .validate(data)
+    .errors.filter((error) => error.keyword !== 'properties')
+    .map((error) => ({
+      pointer: `${prefix}${error.instanceLocation.replace(/^#/, '')}`,
+      detail: error.error,
+    }));
+}
+
 export function validateRequest(
   payload: CampaignRequest,
   strategy?: Strategy,
 ): { pointer: string; detail: string }[] {
-  const errors = validateCampaign.validate(payload).errors.map((error) => ({
-    pointer: error.instanceLocation.replace(/^#/, ''),
-    detail: error.error,
-  }));
+  const errors = validationErrors(validateCampaign, payload);
   if (strategy && Object.keys(strategy.schema).length) {
     try {
       const validator = new Validator(strategy.schema, '2020-12', false);
-      for (const error of validator.validate(payload.strategy.params ?? {}).errors) {
-        errors.push({
-          pointer: `/strategy/params${error.instanceLocation.replace(/^#/, '')}`,
-          detail: error.error,
-        });
-      }
+      errors.push(
+        ...validationErrors(validator, payload.strategy.params ?? {}, '/strategy/params'),
+      );
     } catch {
       errors.push({
         pointer: '/strategy/params',
