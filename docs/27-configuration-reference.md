@@ -340,6 +340,9 @@ fails on drift. `.env.example` and `roboprobe.example.toml` are generated the sa
 | `sseUrl` | `ROBOPROBE_WEB_SSE_URL` | `/api/v1/events` |
 | `defaultTheme` | `ROBOPROBE_WEB_DEFAULT_THEME` | `system` |
 | `featureFlags` | `ROBOPROBE_WEB_FEATURES` | `trials,reports` |
+| `queryStaleTimeMs` | – | `10000` milliseconds |
+
+The dashboard uses `queryStaleTimeMs` to poll active experiment reports.
 
 Build/dev-time variables (Vite, `web/.env.example`; read in `web/vite.config.ts`, never in components):
 

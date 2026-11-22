@@ -162,6 +162,13 @@ Validation: space exists; backend registered and supports all enabled, unpinned 
             "p": 0.00012, "p_holm": 0.00048, "a12": 0.81, "effect": "large"}]}
 ```
 
+`GET /api/v1/experiments/{id}/comparison/charts` returns per-strategy samples and step points
+from completed cells with adjudicated runs. Discovery counts the earliest eligible member of each
+mode from the final analysis. All discovery series stop at the common observed horizon. The
+pointwise bootstrap band uses `experiments.alpha` and `experiments.bootstrap_resamples` and is
+available for strategies with at least two analyzed cells. The survival series marks an observed
+cell as right-censored at its last comparison run when no failure occurred.
+
 ### 3.6 `SpaceValidationResult`
 
 `POST /api/v1/spaces/validate` is a query: it returns HTTP 200 with `valid: false` rather than 422.
