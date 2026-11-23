@@ -40,6 +40,4 @@ clock after the images are pulled and stop it when the first campaign is created
 | Image tag exercised | `main` (pre-v1.0.0 merge) |
 | Platform | `ubuntu-24.04` GitHub Actions |
 | Time to first campaign | Observed in smoke metrics (job log); **≤ 5 min** for pull+start+demo path |
-| v1.0.0 RC pull + checklist | **PENDING** | Re-run README quick-start with `ROBOPROBE_IMAGE_TAG=v1.0.0` after release workflow publishes images |
-
-[Deployment checklist](../29-deployment-guide.md#10-post-deployment-verification-checklist)
+| v1.0.0 RC pull + checklist | **PENDING** — re-run README with `ROBOPROBE_IMAGE_TAG=v1.0.0` after release workflow (see [deployment checklist](../29-deployment-guide.md#10-post-deployment-verification-checklist)) |
