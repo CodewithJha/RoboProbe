@@ -23,7 +23,8 @@ run or timed log. Use a clean machine and follow the README. Start the five-minu
 clock after the images are pulled and stop it when the first campaign is created.
 
 - [ ] API readiness succeeds and Workbench shows the expected workers.
-- [ ] The 50-run demo completes and Casebook shows at least one case.
+- [ ] The 50-run demo completes. Run the campaign analysis from the deployment
+  checklist and verify that Casebook shows at least one case.
 - [ ] A Gazebo nominal scenario passes the warehouse acceptance oracle.
 - [ ] Idle logs are JSON without errors and artifact storage has free space
   above `storage.min_free_gb`.

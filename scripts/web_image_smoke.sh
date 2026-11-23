@@ -161,6 +161,8 @@ print(f"First failure observed after {first_failure_s} seconds. Demo completed {
 print(campaign_id)
 PYTHON
 )"
+    # The Compose orchestrator finishes simulation separately from on-demand analysis.
+    "${compose[@]}" exec -T orchestrator roboprobe --json analyze "$campaign_id" --wait
     worker_count="$("${compose[@]}" ps -q worker-k2d | wc -l | tr -d '[:space:]')"
     WEB_SMOKE_URL="$base" WEB_SMOKE_TOKEN_FILE="$scratch/api_token" \
         WEB_SMOKE_CAMPAIGN_ID="$campaign_id" WEB_SMOKE_WORKER_COUNT="$worker_count" \
