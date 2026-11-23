@@ -23,7 +23,7 @@ from roboprobe.cli.space import REPO_ROOT, register_space
 from roboprobe.core.clock import SystemClock
 from roboprobe.core.errors import NotFoundError, ValidationError
 from roboprobe.core.types import CampaignStatus
-from roboprobe.experiments.planner import ComparabilityKey, load_design
+from roboprobe.experiments.planner import ComparabilityKey, load_design, sut_profile_ids
 from roboprobe.experiments.runner import ExperimentRunner
 from roboprobe.oracles import __version__ as oracle_set_version
 from roboprobe.reporting.ports import ReportArtifactStore, ReportUnitOfWork
@@ -73,16 +73,17 @@ def experiment_run(
     register_space(space_yaml, settings, base_dir=REPO_ROOT)
     space = ScenarioSpace.from_yaml(space_yaml, base_dir=REPO_ROOT)
     sut_id = design.sut_profile_id or "k2d_default"
-    sut_path = _SUT_DIR / f"{sut_id}.yaml"
-    if not sut_path.is_file():
-        msg = f"SUT profile not found: {sut_path}"
-        raise NotFoundError(msg, context={"sut_profile_id": sut_id})
-    profile_source = str(sut_path)
-    profile_document = read_document(sut_path)
-    profile = load_sut_profile_text(profile_document, source=profile_source)
-    if profile.id != sut_id:
-        msg = f"SUT profile id {profile.id!r} does not match file name {sut_id!r}"
-        raise ValidationError(msg, context={"sut_profile_id": sut_id})
+    for pid in sorted(sut_profile_ids(design)):
+        sut_path = _SUT_DIR / f"{pid}.yaml"
+        if not sut_path.is_file():
+            msg = f"SUT profile not found: {sut_path}"
+            raise NotFoundError(msg, context={"sut_profile_id": pid})
+        loaded = load_sut_profile_text(read_document(sut_path), source=str(sut_path))
+        if loaded.id != pid:
+            msg = f"SUT profile id {loaded.id!r} does not match file name {pid!r}"
+            raise ValidationError(msg, context={"sut_profile_id": pid})
+    primary_path = _SUT_DIR / f"{sut_id}.yaml"
+    profile = load_sut_profile_text(read_document(primary_path), source=str(primary_path))
     key = _resolve_key(space, profile.config_hash, design.backend)
     services = build_cli_services(settings)
     clock = SystemClock()
@@ -105,7 +106,9 @@ def experiment_run(
     )
     try:
         profiles = SutProfileService(services.uow_factory)
-        profiles.create_bytes(profile_document, source=profile_source)
+        for pid in sorted(sut_profile_ids(design)):
+            sut_path = _SUT_DIR / f"{pid}.yaml"
+            profiles.create_bytes(read_document(sut_path), source=str(sut_path))
         eid, comparison = runner.start(design, key, experiment_id=resume, raw_parquet=raw_out)
     finally:
         services.close()

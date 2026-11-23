@@ -11,7 +11,13 @@ from roboprobe.api.deps import ServicesProto
 from roboprobe.api.schemas import CampaignCreate, SpaceRef, StrategyRef
 from roboprobe.core.errors import ValidationError
 from roboprobe.core.types import JsonValue
-from roboprobe.experiments.planner import CampaignSpec, ComparabilityKey, ExperimentDesign, plan
+from roboprobe.experiments.planner import (
+    CampaignSpec,
+    ComparabilityKey,
+    ExperimentDesign,
+    plan,
+    sut_profile_ids,
+)
 from roboprobe.experiments.runner import VARIANT_TAG_PREFIX
 from roboprobe.oracles import __version__ as oracle_set_version
 from roboprobe.scenario._documents import validate_document
@@ -43,7 +49,8 @@ def plan_experiment(
     if not profile_id:
         msg = "sut_profile_id is required for this experiment backend"
         raise ValidationError(msg)
-    _ensure_sut(uow, profile_id, design.backend, services.space_root)
+    for pid in sorted(sut_profile_ids(design)):
+        _ensure_sut(uow, pid, design.backend, services.space_root)
     profile = uow.sut_profiles.get(profile_id)
     key = ComparabilityKey(
         space_version=space.version,

@@ -1,0 +1,28 @@
+# EXP-05 profile B (T-120b): Nav2 stack tuned after kinematic EXP-01 rules (doc 09 §4.3).
+# Rule FM-03 (F-COL): robot.max_speed > 0.38 m/s AND env.illuminance < 32 lux.
+# Pending EXP-04 Gazebo modes may adjust (docs/evidence/EXP-04.md).
+schema_version: 1
+id: tb4_nav2_tuned
+backend: gazebo_nav2
+name: TurtleBot 4 Nav2 tuned (EXP-05 profile B)
+description: Conservative speed cap and wider costmap inflation for low-light / noisy warehouse corners.
+config:
+  base_nav2_params: nav2_bringup/params/nav2_params.yaml
+  speed_param_paths:
+    - controller_server.ros__parameters.FollowPath.vx_max
+    - velocity_smoother.ros__parameters.max_velocity[0]
+  nav2_overrides:
+    controller_server:
+      ros__parameters:
+        FollowPath:
+          vx_max: 0.38
+    local_costmap:
+      local_costmap:
+        ros__parameters:
+          inflation_layer:
+            inflation_radius: 0.78
+    global_costmap:
+      global_costmap:
+        ros__parameters:
+          inflation_layer:
+            inflation_radius: 0.78

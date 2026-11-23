@@ -69,6 +69,16 @@ def test_exp03_ablations_are_probe_param_overrides() -> None:
     assert labels["PROBE-refine"]["weights"]["refine"] == 0
 
 
+def test_exp05_profile_b_uses_tuned_nav2_stack() -> None:
+    design = load_design(_EXPERIMENTS / "exp05_profiles.yaml")
+    specs = plan(design, default_seeds=design.seeds.count or 30, key=_KEY)
+    by_label: dict[str, set[str | None]] = {}
+    for spec in specs:
+        by_label.setdefault(spec.strategy_label, set()).add(spec.sut_profile_id)
+    assert by_label["profile_A"] == {"tb4_nav2_default"}
+    assert by_label["profile_B"] == {"tb4_nav2_tuned"}
+
+
 def test_exp06_is_a_replay_of_exp04() -> None:
     design = load_design(_EXPERIMENTS / "exp06_gz_replay.yaml")
     assert "exp04" in design.tags
