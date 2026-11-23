@@ -7,6 +7,10 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- EXP-02 and EXP-07 evidence reports (T-105a): template-backed `docs/evidence/EXP-02.md`
+  and `EXP-07.md`, committed EXP-02 pipeline pilot artefacts, EXP-07 smoke design,
+  and preregistered deviation log entries.
+
 - Attach the backend, web, and Gazebo SBOMs and the published warehouse demo report to
   tagged GitHub Releases (T-123).
 
