@@ -8,7 +8,9 @@ import { chromium } from '@playwright/test';
 
 const baseUrl = process.env.WEB_SMOKE_URL;
 const tokenFile = process.env.WEB_SMOKE_TOKEN_FILE;
-const outPath = process.env.SC6_EVIDENCE_MD ?? resolve(import.meta.dirname, '../../docs/evidence/SC-6-hallway.md');
+const outPath =
+  process.env.SC6_EVIDENCE_MD ??
+  resolve(import.meta.dirname, '../../docs/evidence/SC-6-hallway.md');
 const sessions = Number(process.env.SC6_SESSIONS ?? '3');
 const fast = process.env.SC6_FAST === '1';
 
@@ -46,7 +48,10 @@ async function runSession(browser, index) {
   await sleep(thinkMs[1]);
 
   await page.getByLabel(/Scenario space/).selectOption(spaceValue);
-  await page.getByRole('status').filter({ hasText: /\d+ free parameters/ }).waitFor();
+  await page
+    .getByRole('status')
+    .filter({ hasText: /\d+ free parameters/ })
+    .waitFor();
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByLabel('Backend').selectOption('kinematic2d');
   await page.getByLabel('Robot profile').selectOption('k2d_default');
