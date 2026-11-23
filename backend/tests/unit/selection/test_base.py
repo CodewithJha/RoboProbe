@@ -13,7 +13,7 @@ from tests.unit.selection.conftest import load_space
 from roboprobe.core import errors
 from roboprobe.core.types import Observation, Verdict
 from roboprobe.scenario.space import Constraint
-from roboprobe.selection.base import HISTORY_LINF_TOL, PLUGIN_API_VERSION, Strategy
+from roboprobe.selection.base import HISTORY_LINF_TOL, PLUGIN_API_VERSION, Strategy, _linf_dup
 
 pytestmark = pytest.mark.unit
 
@@ -94,6 +94,25 @@ def test_batch_pairwise_dedupe() -> None:
     units = [space.to_unit(p.scenario.values) for p in proposals]
     assert len(proposals) == 2
     assert float(np.max(np.abs(units[0] - units[1]))) > 1e-3
+
+
+@pytest.mark.parametrize("as_matrix", [False, True])
+def test_duplicate_distance_matches_scalar_rule(as_matrix: bool) -> None:
+    tol = HISTORY_LINF_TOL
+    candidate = np.zeros(2, dtype=np.float64)
+    boundary = np.array([tol, -tol])
+    just_outside = np.array([np.nextafter(tol, np.inf), 0.0])
+    nan_row = np.array([0.0, np.nan])
+    for rows in (
+        [],
+        [boundary],
+        [just_outside],
+        [nan_row],
+        [just_outside, nan_row, boundary],
+    ):
+        expected = any(float(np.max(np.abs(candidate - row))) <= tol for row in rows)
+        points = np.asarray(rows, dtype=np.float64) if as_matrix else rows
+        assert _linf_dup(candidate, points, tol) is expected
 
 
 def test_invalid_observations_do_not_change_proposals() -> None:
