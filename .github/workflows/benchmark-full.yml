@@ -109,7 +109,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 2
+          fetch-depth: 0
           persist-credentials: false
       - name: Verify current-main preflight provenance and wait for its result
         env:
@@ -118,12 +118,13 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$PREFLIGHT_RUN" =~ ^[0-9]+$ ]]
-          base=$(git rev-parse HEAD^)
           while :; do
             result=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PREFLIGHT_RUN")
-            jq -e --arg base "$base" \
-              '.head_sha==$base and .head_branch=="main" and .path==".github/workflows/sim-nightly.yml"' \
-              <<<"$result" >/dev/null
+            jq -e '.head_branch=="main" and .path==".github/workflows/sim-nightly.yml"' <<<"$result" >/dev/null
+            base=$(jq -r .head_sha <<<"$result")
+            [[ "$base" =~ ^[0-9a-f]{40}$ ]]
+            git merge-base --is-ancestor "$base" HEAD
+            git diff --quiet "$base" HEAD -- backend configs docker tasks schemas ros_ws
             if [[ $(jq -r .status <<<"$result") == completed ]]; then
               jq -e '.conclusion=="success"' <<<"$result" >/dev/null
               break
@@ -181,7 +182,7 @@ jobs:
             docker image inspect --format '{{.Id}}' "$STUDY_IMAGE"
             docker image inspect --format '{{index .RepoDigests 0}}' postgres:17
           } >"$STUDY_OUTPUT/environment.txt"
-          docker run --rm --entrypoint /bin/bash "$STUDY_IMAGE" -c 'dpkg-query -W ros-jazzy-navigation2 ros-jazzy-nav2-bringup gz-harmonic' \
+          docker run --rm --entrypoint /bin/bash "$STUDY_IMAGE" -c 'dpkg-query -W ros-jazzy-navigation2 ros-jazzy-nav2-bringup ros-jazzy-gz-sim-vendor' \
             >>"$STUDY_OUTPUT/environment.txt"
       - name: Collect the full registered cell with one Gazebo worker
         timeout-minutes: 310
