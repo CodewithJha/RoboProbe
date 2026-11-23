@@ -11,7 +11,10 @@ and event-stream checks passed.
 
 The published-app smoke logs distinguish Compose readiness, campaign creation,
 the first observed failure, Workbench registration, a visible Casebook entry,
-and the browser's completed HTML report download. Campaign and failure timings
+and the browser's completed HTML report download. The smoke also checks free
+space on the mounted artifact filesystem against `storage.min_free_gb` and
+checks the API, orchestrator, and worker logs for JSON records without errors
+during a 15-second idle window after the demo. Campaign and failure timings
 are observed from the beginning of the app smoke after the pull step. They
 include the automated checks ahead of the demo. Workbench and report timings
 measure their own browser actions.
