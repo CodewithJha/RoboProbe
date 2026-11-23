@@ -16,10 +16,12 @@ from typing import Protocol
 from uuid import UUID
 
 from roboprobe.core.types import (
+    CampaignSchedulingSnapshot,
     CampaignStatus,
     JsonValue,
     Observation,
     RunOutcome,
+    RunStatus,
     Scenario,
     SutProfile,
     TaskSpec,
@@ -265,6 +267,10 @@ class RunRepoPort(Protocol):
     ) -> _RunPage: ...
 
     def history(self, campaign_id: UUID) -> list[Observation]: ...
+
+    def scheduling_snapshot(
+        self, campaign_id: UUID, *, inflight_statuses: frozenset[RunStatus], count_invalid: bool
+    ) -> CampaignSchedulingSnapshot: ...
 
     def cancel_pending(self, campaign_id: UUID) -> int: ...
 
