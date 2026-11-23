@@ -8,7 +8,7 @@ from __future__ import annotations
 import importlib
 import threading
 from collections.abc import Callable, Sequence
-from typing import Any, Final, cast
+from typing import Any, Final
 from uuid import UUID
 
 import numpy as np
@@ -25,10 +25,9 @@ from roboprobe.core.types import (
     Observation,
     Proposal,
     RunStatus,
-    Verdict,
 )
 from roboprobe.observability.tracing import span
-from roboprobe.runner.ports import CampaignView, RunView, UowFactory
+from roboprobe.runner.ports import CampaignView, UowFactory
 from roboprobe.runner.scheduler import Scheduler
 from roboprobe.scenario.space import ScenarioSpace
 from roboprobe.selection.base import Strategy, StrategyContext
@@ -88,20 +87,24 @@ class CampaignLoop:
             campaign = uow.campaigns.get(self._campaign_id)
             if campaign is None or campaign.status is not CampaignStatus.RUNNING:
                 return 0
-            runs = _load_all_runs(uow, self._campaign_id)
-            inflight = [r for r in runs if _status(r) in _INFLIGHT]
+            snapshot = uow.runs.scheduling_snapshot(
+                self._campaign_id,
+                inflight_statuses=_INFLIGHT,
+                count_invalid=self._settings.count_invalid_in_budget,
+            )
             workers = uow.workers.online(campaign.backend)
             target = self._scheduler.target_inflight(len(workers), campaign.batch_size)
-            free = target - len(inflight)
+            free = target - len(snapshot.inflight_vectors)
             if free <= 0:
                 return 0
-            budget_left = _budget_remaining(campaign, runs, self._settings)
+            budget_left = campaign.budget - snapshot.budget_used
             if budget_left <= 0:
                 return 0
             q = min(free, budget_left, self._settings.max_batch_size)
             history = uow.runs.history(self._campaign_id)
-            pending_unit = [np.asarray(r.x_unit, dtype=np.float64) for r in inflight]
-            next_ordinal = max((r.ordinal for r in runs), default=-1) + 1
+            pending_unit = [
+                np.asarray(point, dtype=np.float64) for point in snapshot.inflight_vectors
+            ]
             proposals, used_fallback = self._propose(history, pending_unit, q)
             if used_fallback:
                 self._consecutive_fallbacks += 1
@@ -109,7 +112,7 @@ class CampaignLoop:
                 self._consecutive_fallbacks = 0
             if not proposals:
                 return 0
-            new_runs = self._build_runs(campaign, proposals, next_ordinal)
+            new_runs = self._build_runs(campaign, proposals, snapshot.next_ordinal)
             ids = uow.runs.insert_batch(new_runs)
             state = self._strategy.state_dict()
             uow.strategy_states.upsert(
@@ -223,47 +226,6 @@ class CampaignLoop:
                 )
             ordinal += 1
         return rows
-
-
-def _budget_remaining(
-    campaign: CampaignView, runs: Sequence[RunView], settings: RunnerSettings
-) -> int:
-    counted = 0
-    for run in runs:
-        status = _status(run)
-        if status in _INFLIGHT:
-            counted += 1
-            continue
-        verdict = getattr(run, "verdict", None)
-        if isinstance(verdict, str):
-            verdict = Verdict(verdict)
-        if status is RunStatus.DONE:
-            if verdict is Verdict.INVALID and not settings.count_invalid_in_budget:
-                continue
-            counted += 1
-            continue
-        if status is RunStatus.ERROR and settings.count_invalid_in_budget:
-            counted += 1
-    return max(0, campaign.budget - counted)
-
-
-def _status(run: RunView) -> RunStatus:
-    raw = run.status
-    return raw if isinstance(raw, RunStatus) else RunStatus(str(raw))
-
-
-def _load_all_runs(uow: object, campaign_id: UUID) -> list[RunView]:
-    """Paginate ``runs.list_for_campaign`` until the cursor is exhausted."""
-    runs_repo = cast(Any, uow).runs
-    collected: list[RunView] = []
-    cursor: str | None = None
-    while True:
-        page = runs_repo.list_for_campaign(campaign_id, limit=None, cursor=cursor)
-        collected.extend(cast(list[RunView], list(page.items)))
-        cursor = page.next_cursor
-        if cursor is None:
-            break
-    return collected
 
 
 def _jsonable(state: dict[str, Any]) -> dict[str, JsonValue]:
