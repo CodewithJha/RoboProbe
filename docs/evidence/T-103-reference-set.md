@@ -11,6 +11,9 @@ uv run roboprobe reference generate --output ./data/artifacts/reference/warehous
 
 Manifest is written beside the parquet (``.manifest.json``) with the SHA-256 digest.
 
+The [EXP-01 warehouse reference](EXP-01-reference.md) records the recovered
+20,000-row Parquet, its checksum, and sample verification.
+
 ## Import reviewed mode assignments
 
 Cluster the failing rows and inspect representative scenarios and traces before
