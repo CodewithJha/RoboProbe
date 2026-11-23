@@ -8,14 +8,16 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping, Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
-from typing import Any, cast
+from typing import Annotated, Any, cast
 from uuid import uuid4
 
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
+from pydantic import BaseModel, Field
+from pydantic import ValidationError as PydanticValidationError
 
 from roboprobe.backends.base import EpisodeRequest, episode_timeouts
 from roboprobe.backends.kinematic2d.backend import Kinematic2DBackend
@@ -58,6 +60,13 @@ class ReferenceManifest:
     space_id: str
     space_version: str
     k2d_model_version: str
+
+
+class _ReviewedLabels(BaseModel):
+    source_sha256: Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
+    labels: dict[
+        Annotated[int, Field(ge=0)], Annotated[str, Field(pattern=r"^GT-[A-Z][A-Z0-9_-]*$")]
+    ]
 
 
 def sha256_file(path: Path) -> str:
@@ -120,12 +129,7 @@ def generate_rows(  # noqa: PLR0913
         rows.append(
             {
                 "ordinal": index,
-                "u0": float(u[0]),
-                "u1": float(u[1]),
-                "u2": float(u[2]),
-                "u3": float(u[3]),
-                "u4": float(u[4]),
-                "u5": float(u[5]),
+                **{f"u{i}": float(value) for i, value in enumerate(u)},
                 "verdict": outcome.verdict.value,
                 "robustness": outcome.robustness,
                 "primary_failure": (
@@ -221,14 +225,48 @@ def label_parquet(
     source: Path,
     *,
     output: Path | None,
+    reviewed_labels: Path | None = None,
 ) -> tuple[Path, int]:
-    """Label failures in ``source`` and write to ``output`` (default in-place)."""
-    calibration = load_calibration(
-        resolve_repo_path(Path(settings.backends.kinematic2d.calibration_file))
-    )
-    table = pq.read_table(source)
-    rows = table.to_pylist()
-    label_rows(rows, calibration, radius=settings.experiments.mode_match_radius)
+    """Label failures from an explicit review or the calibrated six-dimensional baseline."""
+    rows = pq.read_table(source).to_pylist()
+    if reviewed_labels is None:
+        calibration = load_calibration(
+            resolve_repo_path(Path(settings.backends.kinematic2d.calibration_file))
+        )
+        label_rows(rows, calibration, radius=settings.experiments.mode_match_radius)
+    else:
+        try:
+            review = _ReviewedLabels.model_validate_json(
+                reviewed_labels.read_text(encoding="utf-8")
+            )
+        except PydanticValidationError as exc:
+            msg = "invalid reviewed reference labels"
+            raise errors.ValidationError(msg, context={"path": str(reviewed_labels)}) from exc
+        if sha256_file(source) != review.source_sha256:
+            msg = "reviewed labels refer to a different reference Parquet digest"
+            raise errors.ValidationError(msg)
+        _apply_reviewed_labels(rows, review.labels)
     dest = output or source
+    manifest_path = source.with_suffix(".manifest.json")
+    manifest = (
+        ReferenceManifest(**json.loads(manifest_path.read_text(encoding="utf-8")))
+        if manifest_path.exists()
+        else None
+    )
     write_parquet(dest, rows)
+    if manifest is not None:
+        write_manifest(
+            dest.with_suffix(".manifest.json"),
+            replace(manifest, path=str(dest), sha256=sha256_file(dest), n=len(rows)),
+        )
     return dest, sum(1 for row in rows if row.get("gt_label"))
+
+
+def _apply_reviewed_labels(rows: list[dict[str, Any]], labels: Mapping[int, str]) -> None:
+    failures = {row["ordinal"] for row in rows if row["verdict"] == Verdict.FAIL.value}
+    invalid = sorted(labels.keys() - failures)
+    if invalid:
+        msg = "reviewed labels must refer only to failing reference rows"
+        raise errors.ValidationError(msg, context={"ordinal": invalid[0], "count": len(invalid)})
+    for row in rows:
+        row["gt_label"] = labels.get(row["ordinal"])
