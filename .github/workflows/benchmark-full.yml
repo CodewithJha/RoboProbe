@@ -28,6 +28,11 @@ on:
         type: boolean
         default: false
 
+      exp06_mode:
+        description: Optional single verified mode to recover an incomplete replay batch
+        required: false
+        type: string
+
 permissions:
   contents: read
   pull-requests: write
@@ -258,6 +263,7 @@ jobs:
         id: inventory
         env:
           GH_TOKEN: ${{ github.token }}
+          SELECTED_MODE: ${{ inputs.exp06_mode }}
         run: |
           set -euo pipefail
           manifest=scripts/exp06_medoids.json
@@ -273,7 +279,10 @@ jobs:
             $n > 0 and ($n == ([.medoids[].mode] | unique | length))
             and ($n == ([.medoids[].run_id] | unique | length))
           ' "$manifest" >/dev/null
-          printf 'cells=%s\n' "$(jq -c .medoids "$manifest")" >>"$GITHUB_OUTPUT"
+          cells=$(jq -c --arg selected "$SELECTED_MODE" '
+            [.medoids[]|select($selected=="" or .mode==$selected)]' "$manifest")
+          jq -e 'length > 0' <<<"$cells" >/dev/null
+          printf 'cells=%s\n' "$cells" >>"$GITHUB_OUTPUT"
           printf 'source=%s\n' "$source" >>"$GITHUB_OUTPUT"
 
   exp06:
@@ -341,6 +350,7 @@ jobs:
             -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__STARTUP_TIMEOUT_S=150 \
             -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__WALL_MARGIN_S=90 \
             -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__IMAGE="$STUDY_IMAGE" \
+            -e ROBOPROBE_WORKER__DRAIN_TIMEOUT_S=1800 \
             -e GZ_SIM_RESOURCE_PATH=/checkout/ros_ws/src/roboprobe_ros/models:/opt/ros/jazzy/share \
             --entrypoint /bin/bash "$STUDY_IMAGE" -eo pipefail -c '
               install -d -m 700 "$HOME" "$ROS_HOME" "$XDG_RUNTIME_DIR"
@@ -354,6 +364,8 @@ jobs:
         run: |
           sudo chmod -R a+rX "$REPLAY_OUTPUT"
           for phase in same-seeds fresh-seeds; do
+            jq '{source_run_id,agreements,disagreements,verdicts:[.rows[].verdict]}' \
+              "$REPLAY_OUTPUT/$phase.json"
             jq -e --arg source "$MEDOID_ID" '
               .source_run_id==$source and .source_verdict=="FAIL"
               and (.rows | length)==5 and (.replay_ids | unique | length)==5
