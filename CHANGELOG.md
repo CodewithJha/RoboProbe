@@ -264,6 +264,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 - Bound Gaussian-process prediction batches so a full Risk Atlas can be generated on a laptop.
 
+- Resume strategies from saved checkpoints and complete finite campaigns after their last in-flight run.
+
 - Campaign reports render legacy risk slices, and authenticated dashboard sessions can preview
   and download completed reports.
 - Isolate seeded Playwright and Lighthouse runs, and report stale scenario versions as validation
