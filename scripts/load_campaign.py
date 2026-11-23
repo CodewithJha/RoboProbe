@@ -9,12 +9,14 @@ import os
 import subprocess
 import sys
 import time
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 from tempfile import mkdtemp
 from uuid import UUID
 
+import psutil  # type: ignore[import-untyped]
 from sqlalchemy import Engine, MetaData, Table, exists, inspect, select, text
 
 from roboprobe.cli.campaign import create_campaign_from_config
@@ -35,7 +37,16 @@ SELECT
      WHERE datname = current_database() AND backend_type = 'client backend'
        AND pid <> pg_backend_pid()),
     (SELECT COALESCE(max(n_dead_tup), 0) FROM pg_stat_user_tables
-     WHERE schemaname = 'public' AND relname = 'runs')
+     WHERE schemaname = 'public' AND relname = 'runs'),
+    (SELECT COALESCE(jsonb_object_agg(activity, samples), '{}'::jsonb)
+     FROM (
+         SELECT COALESCE(wait_event_type || ':' || wait_event, 'no wait reported') AS activity,
+                count(*) AS samples
+         FROM pg_stat_activity
+         WHERE datname = current_database() AND backend_type = 'client backend'
+           AND pid <> pg_backend_pid() AND state = 'active'
+         GROUP BY 1
+     ) AS active_clients)
 """)
 _RUN_QUERY = text("""
 SELECT
@@ -69,6 +80,10 @@ class Measurement:
     duplicates: int
     retries: int
     participating_workers: int
+    worker_cpu_seconds: float
+    orchestrator_cpu_seconds: float
+    db_activity_observations: int
+    active_db_wait_samples: str
 
 
 def _worker_counts(value: str) -> tuple[int, ...]:
@@ -107,10 +122,19 @@ def _wait_for_workers(
     raise RuntimeError(msg)
 
 
-def _db_sample(engine: Engine) -> tuple[int, int]:
+def _db_sample(engine: Engine) -> tuple[int, int, dict[str, int]]:
     with engine.connect() as conn:
-        connections, dead_tuples = conn.execute(_DB_QUERY).one()
-    return int(connections), int(dead_tuples)
+        connections, dead_tuples, active = conn.execute(_DB_QUERY).one()
+    return int(connections), int(dead_tuples), dict(active)
+
+
+def _cpu_seconds(process: subprocess.Popen[bytes]) -> float:
+    try:
+        usage = psutil.Process(process.pid).cpu_times()
+    except psutil.NoSuchProcess as exc:
+        msg = "A RoboProbe subprocess exited before its final CPU measurement."
+        raise RuntimeError(msg) from exc
+    return float(usage.user + usage.system)
 
 
 def _run_process(
@@ -159,21 +183,24 @@ def _await_completion(
     campaign_id: UUID,
     processes: Sequence[subprocess.Popen[bytes]],
     args: argparse.Namespace,
-) -> tuple[int, int, int]:
+) -> tuple[int, int, int, int, Counter[str]]:
     query = text("SELECT status FROM campaigns WHERE id = :id")
     deadline = time.monotonic() + args.timeout
-    peak_connections = peak_dead_tuples = 0
+    peak_connections = peak_dead_tuples = observations = 0
+    active_waits: Counter[str] = Counter()
     while time.monotonic() < deadline:
         if any(process.poll() is not None for process in processes):
             msg = "A RoboProbe subprocess exited before campaign completion."
             raise RuntimeError(msg)
-        connections, dead_tuples = _db_sample(engine)
+        connections, dead_tuples, active = _db_sample(engine)
+        observations += 1
+        active_waits.update(active)
         peak_connections = max(peak_connections, connections)
         peak_dead_tuples = max(peak_dead_tuples, dead_tuples)
         with engine.connect() as conn:
             status = conn.scalar(query, {"id": campaign_id})
         if status == "COMPLETED":
-            return peak_connections, peak_dead_tuples, dead_tuples
+            return peak_connections, peak_dead_tuples, dead_tuples, observations, active_waits
         if status in {"FAILED", "CANCELLED", "PAUSED"}:
             msg = f"Campaign {campaign_id} stopped with status {status}."
             raise RuntimeError(msg)
@@ -213,13 +240,18 @@ def _measure(
         _wait_for_workers(
             engine, args.backend, count, time.monotonic() + args.startup_timeout, args.tick
         )
-        _, initial_dead_tuples = _db_sample(engine)
+        _, initial_dead_tuples, _ = _db_sample(engine)
+        initial_cpu = [_cpu_seconds(process) for process in processes]
         started = time.monotonic()
         campaign = _campaign(output / "campaign.json", settings, args, count)
-        peak_connections, peak_dead_tuples, final_dead_tuples = _await_completion(
-            engine, campaign, processes, args
+        peak_connections, peak_dead_tuples, final_dead_tuples, observations, waits = (
+            _await_completion(engine, campaign, processes, args)
         )
         duration = time.monotonic() - started
+        cpu = [
+            _cpu_seconds(process) - initial
+            for process, initial in zip(processes, initial_cpu, strict=True)
+        ]
         with engine.connect() as conn:
             done, distinct, duplicates, retries, participants, invalid_claims, p50, p95 = (
                 conn.execute(_RUN_QUERY, {"campaign_id": campaign, "last": args.runs - 1}).one()
@@ -242,6 +274,10 @@ def _measure(
             int(duplicates),
             int(retries),
             int(participants),
+            sum(cpu[1:]),
+            cpu[0],
+            observations,
+            json.dumps(waits, sort_keys=True),
         )
     finally:
         _stop_processes(processes)

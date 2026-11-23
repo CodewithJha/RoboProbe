@@ -129,10 +129,34 @@ jobs:
         with:
           sarif_file: trivy.sarif
       - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
-        if: steps.gate.outputs.present == 'true' && github.event_name != 'pull_request'
+        if: steps.gate.outputs.present == 'true'
         with:
           image: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
           format: spdx-json
+          output-file: ${{ runner.temp }}/roboprobe-${{ matrix.name }}.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: steps.gate.outputs.present == 'true'
+        with:
+          name: roboprobe-sbom-${{ matrix.name }}
+          path: ${{ runner.temp }}/roboprobe-${{ matrix.name }}.spdx.json
+          if-no-files-found: error
+
+  verify-sboms:
+    name: Verify image SBOMs
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: roboprobe-sbom-*
+          path: ${{ runner.temp }}/release-sboms
+          merge-multiple: true
+      - name: Check the three SPDX files
+        run: python3 scripts/check_release_assets.py --sboms "$RUNNER_TEMP/release-sboms"
 
   web-smoke:
     name: Production web Compose smoke

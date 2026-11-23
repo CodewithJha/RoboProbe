@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Audit the release traceability matrix against the SRS, test sources and GitHub (T-121).
+"""Audit the release traceability matrix against checked-in evidence and completed issues.
 
 Exit status is 0 for complete evidence, 1 for gaps, or 2 for invalid inputs. Test IDs
-are checked against source declarations so the audit does not need ROS or browser runtimes.
+and the import-linter CI gate are checked in source without running ROS or a browser.
 """
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ import json
 import re
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 REPOSITORY = "CodewithJha/RoboProbe"
@@ -22,6 +23,7 @@ MATRIX_PATH = Path("docs/28-traceability-matrix.md")
 BEGIN = "<!-- BEGIN REQUIREMENT EVIDENCE -->"
 END = "<!-- END REQUIREMENT EVIDENCE -->"
 _GH_TIMEOUT_S = 45
+_IMPORT_LINT_GATE = "ci:.github/workflows/ci.yml::lint::make lint"
 
 _REQUIREMENT = re.compile(r"^(?:- \*\*(FR-[A-Z]+-\d{3})|\| (NFR-[A-Z]+-\d{3})) \[", re.MULTILINE)
 _ROW = re.compile(
@@ -85,6 +87,80 @@ def test_node_exists(root: Path, node: str) -> bool:
     return False
 
 
+def _indented_block(source: str, heading: str) -> str:
+    """Read a block at its exact indentation in the checked-in workflow or Makefile."""
+    match = re.search(rf"(?m)^{re.escape(heading)}[ \t]*(?:#[^\n]*)?\n", source)
+    if match is None:
+        return ""
+    indent = len(heading) - len(heading.lstrip())
+    return re.split(
+        rf"(?m)^(?=[ \t]{{0,{indent}}}[^ \t\r\n#])",
+        source[match.end() :],
+        maxsplit=1,
+    )[0]
+
+
+def _workflow_runs_required_import_lint(source: str) -> bool:
+    """Check the lint job's ordinary, blocking invocation of the Make lint recipe."""
+    if not re.search(r"(?m)^  pull_request:[ \t]*$", _indented_block(source, "on:")):
+        return False
+    job = _indented_block(_indented_block(source, "jobs:"), "  lint:")
+    nonblocking = r"(?:if|continue-on-error):"
+    if re.search(rf"(?m)^    {nonblocking}", job):
+        return False
+    steps = _indented_block(job, "    steps:")
+    return any(
+        re.search(r"(?m)^(?: {8})?run: make lint[ \t]*(?:#[^\n]*)?$", step)
+        and not re.search(rf"(?m)^(?: {{8}})?{nonblocking}", step)
+        for step in re.split(r"(?m)^      - ", steps)[1:]
+    )
+
+
+def _import_lint_gate_exists(root: Path) -> bool:
+    """Resolve the single architecture gate through CI, Make, and Import Linter config."""
+    root = root.resolve()
+    workflow = root / ".github/workflows/ci.yml"
+    makefile = root / "Makefile"
+    tool_config = root / "backend/pyproject.toml"
+    try:
+        if any(path.resolve() != path for path in (workflow, makefile, tool_config)):
+            return False
+        if not _workflow_runs_required_import_lint(workflow.read_text(encoding="utf-8")):
+            return False
+        make = makefile.read_text(encoding="utf-8")
+        if (
+            "\t$(UV_RUN) lint-imports" not in _indented_block(make, "lint:").splitlines()
+            or not re.search(r"(?m)^BACKEND_DIR[ \t]*\?= backend[ \t]*$", make)
+            or not re.search(
+                r"(?m)^UV_RUN[ \t]*:= \$\(UV\) run --directory \$\(BACKEND_DIR\)[ \t]*$",
+                make,
+            )
+        ):
+            return False
+        config = tomllib.loads(tool_config.read_text(encoding="utf-8"))
+        import_linter = config["tool"]["importlinter"]
+        contracts = {contract["id"]: contract for contract in import_linter["contracts"]}
+        layers = contracts["layers"]
+        domain = contracts["domain-independence"]
+        return bool(
+            import_linter.get("root_packages") == ["roboprobe"]
+            and layers.get("type") == "layers"
+            and layers.get("layers")
+            and domain.get("type") == "forbidden"
+            and domain.get("source_modules")
+            and domain.get("forbidden_modules")
+            and domain.get("allow_indirect_imports") is False
+        )
+    except (KeyError, OSError, TypeError, ValueError):
+        return False
+
+
+def _evidence_exists(root: Path, requirement: str, reference: str) -> bool:
+    if reference == _IMPORT_LINT_GATE:
+        return requirement == "NFR-EXT-002" and _import_lint_gate_exists(root)
+    return test_node_exists(root, reference)
+
+
 def _matrix_rows(text: str) -> list[tuple[str, str, str]]:
     if text.count(BEGIN) != 1 or text.count(END) != 1 or text.find(BEGIN) > text.find(END):
         msg = "traceability matrix must contain one bounded requirement evidence table"
@@ -115,10 +191,11 @@ def audit(root: Path, closed_issues: set[str]) -> tuple[int, list[str]]:
             problems.append(f"{identifier} is not declared in the SRS")
             continue
         test_ids = _NODE.findall(test_cell)
-        stale_nodes = [node for node in test_ids if not test_node_exists(root, node)]
+        stale_nodes = [node for node in test_ids if not _evidence_exists(root, identifier, node)]
         if stale_nodes or not test_ids:
             detail = f" ({', '.join(stale_nodes)})" if stale_nodes else ""
-            problems.append(f"{identifier} has no existing test node for listed evidence{detail}")
+            kind = "test node or accepted CI gate" if identifier == "NFR-EXT-002" else "test node"
+            problems.append(f"{identifier} has no existing {kind} for listed evidence{detail}")
         issue_urls = _LINK.findall(issue_cell)
         invalid_urls = [url for url in issue_urls if url.lower() not in closed_issues]
         if invalid_urls or not issue_urls:
@@ -195,7 +272,7 @@ def main(argv: list[str] | None = None) -> int:
         for problem in problems:
             print(problem, file=sys.stderr)
         return 1
-    print(f"All {total} requirements have a checked-in test node and a closed GitHub issue.")
+    print(f"All {total} requirements have checked-in verification and a completed GitHub issue.")
     return 0
 
 

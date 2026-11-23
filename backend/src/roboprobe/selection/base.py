@@ -121,7 +121,8 @@ class Strategy(ABC):
         valid = tuple(obs for obs in history if obs.verdict is not Verdict.INVALID)
         rng = make_rng(self.ctx.seed, STRATEGY, len(valid))
         pending_unit = [_as_unit(p, self.ctx.space.dim) for p in pending]
-        history_unit = [_as_unit(obs.x_unit, self.ctx.space.dim) for obs in valid]
+        pending_points = np.asarray(pending_unit)
+        history_points = np.asarray([_as_unit(obs.x_unit, self.ctx.space.dim) for obs in valid])
         accepted: list[FloatArray] = []
         attempts = 0
         while len(accepted) < q and attempts < self._max_attempts:
@@ -137,7 +138,7 @@ class Strategy(ABC):
                 if not self._feasible(candidate):
                     continue
                 if self._is_duplicate(
-                    candidate, history_unit, pending_unit, accepted, self._allow_repeats
+                    candidate, history_points, pending_points, accepted, self._allow_repeats
                 ):
                     continue
                 accepted.append(candidate)
@@ -189,8 +190,8 @@ class Strategy(ABC):
     def _is_duplicate(
         self,
         candidate: FloatArray,
-        history: Sequence[FloatArray],
-        pending: Sequence[FloatArray],
+        history: Sequence[FloatArray] | FloatArray,
+        pending: Sequence[FloatArray] | FloatArray,
         batch: Sequence[FloatArray],
         allow_repeats: bool,
     ) -> bool:
@@ -215,5 +216,8 @@ def _as_unit(point: npt.ArrayLike, dim: int) -> FloatArray:
     return array.copy()
 
 
-def _linf_dup(candidate: FloatArray, others: Sequence[FloatArray], tol: float) -> bool:
-    return any(float(np.max(np.abs(candidate - other))) <= tol for other in others)
+def _linf_dup(candidate: FloatArray, others: Sequence[FloatArray] | FloatArray, tol: float) -> bool:
+    if len(others) == 0:
+        return False
+    gaps = np.max(np.abs(candidate - np.asarray(others)), axis=1)
+    return bool(np.any(gaps <= tol))

@@ -38,12 +38,18 @@ Notation: campaign runs `1..B` in proposal order; valid runs `V` (verdict ≠ IN
 
 Reference set `REF` (k2d): 20 000 scrambled-Sobol scenarios, seed 20261119, each run once (deterministic backend), stored as artefact with hash; GT modes = HDBSCAN clusters of `REF_fail` reviewed manually and mapped to GT-A…GT-D (+ any emergent mode, recorded).
 
-The EXP-02 `multi_mode_6d` arm labels observed failures with the benchmark's noise-free
-canonical modes A–D ([07 §9](07-intelligent-test-selection-algorithms.md)).
-An observed failure outside all four modes does not increase MET-02 or the MET-09 discovery
-curve. The raw experiment Parquet includes the unit-cube vector and a comparison-run flag so a
-reader can recompute these results. The Branin and warehouse variants require their own reviewed
-mode assignments before the comparison can accept MET-02 or MET-09.
+The EXP-02 `multi_mode_6d` arm uses the benchmark's four noise-free canonical modes A–D
+([07 §9](07-intelligent-test-selection-algorithms.md)). The Branin arm uses the three
+noise-free failure lobes around the minima at physical `x1 = −π, π, 3π`, labelled A, B, C
+in ascending order. The lines `x1 = 0` and `x1 = 2π` separate these lobes. At either line,
+the cosine term is maximal and the squared term is non-negative, so the Branin value
+exceeds the failure cutoff of 1.5 for every `x2`.
+
+A discovery requires an observed FAIL at a point with strictly negative noise-free robustness.
+An observed failure outside the canonical modes still counts toward MET-01 and MET-03.
+MET-09 divides by the total number of canonical modes for the arm. The raw experiment Parquet
+contains the unit-cube vector and comparison-run flag needed to recompute the metrics.
+Warehouse variants still require independently reviewed reference mode assignments.
 
 ## 4. Experiment matrix
 
@@ -56,6 +62,10 @@ mode assignments before the comparison can accept MET-02 or MET-09.
 | EXP-05 | gazebo_nav2 (+ k2d) | d=6 | PROBE on profile A (default Nav2) and profile B (tuned after EXP-04) | 3 | 80 | ≈ 7 h | robustness improvement H6 |
 | EXP-06 | gazebo_nav2 | – | replay of each EXP-04 mode medoid × 5 | – | – | ≈ 2 h | reproducibility H6 |
 | EXP-07 | kinematic2d | d=6 vs d=8; noise ×2 | RANDOM, PROBE | 30 | 300 | ≈ 2 h | scalability with dimension/noise |
+
+Budgets are upper bounds. The preregistered S-GRID design has 64 scenarios per seed for
+EXP-01 and the 6-D EXP-02 arm, and 144 per seed for the 2-D EXP-02 arm.
+Report the number of episodes actually collected for each arm.
 
 Experiment YAMLs: `configs/experiments/exp01_k2d_main.yaml` …, executed with `roboprobe experiment run`;
 validated by `schemas/experiment.schema.json`. Example (EXP-01, abridged):
@@ -76,6 +86,10 @@ seeds: {root: 20261119, count: 30}   # campaign seed k = derive_seed(root, "rep"
 budget: 200
 metrics: [MET-01, MET-02, MET-03]
 ```
+
+Run the Branin arm with `ROBOPROBE_SELECTION__BENCHMARKS__FUNCTION=branin_falsify` for
+the inline CLI process or its dedicated benchmark workers. Branin is deterministic and
+ignores the benchmark observation-noise setting.
 
 ## 5. Statistical analysis protocol
 

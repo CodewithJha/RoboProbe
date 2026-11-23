@@ -29,6 +29,13 @@ The script checks each expected run ordinal, duplicate ordinals, retried claims,
 worker participation. The full four-level matrix also requires at least 6× throughput at
 eight workers.
 
+New measurements also include combined worker CPU seconds, orchestrator CPU seconds, and
+the number of PostgreSQL activity observations. The CSV's `active_db_wait_samples` column
+is a JSON object keyed by PostgreSQL wait event. Each poll counts active client sessions in
+the test database, excluding the observer. A session with no reported wait may be running
+or ready to run. Sample counts describe observations of activity and do not measure
+cumulative time spent waiting.
+
 ## Pilot measurements
 
 The local pilot used PostgreSQL 17 in Docker Desktop on an Apple Silicon Mac with 150

@@ -33,6 +33,7 @@ from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import CampaignStatus, JsonValue, RunStatus, Verdict
 from roboprobe.runner.campaign_factory import CampaignFactory
 from roboprobe.runner.campaign_spec import CampaignCreate
+from roboprobe.runner.checkpoint import CheckpointStore
 from roboprobe.runner.heartbeat import HeartbeatService
 from roboprobe.runner.lifecycle import CampaignService
 from roboprobe.runner.loop import CampaignLoop
@@ -243,6 +244,7 @@ def run_inline(  # noqa: PLR0912,PLR0915 - inline supervisor wires loop, workers
             params=dict(campaign.strategy_params),
         )
         strategy = create_strategy(campaign.strategy_id, ctx)
+        CheckpointStore(orch.uow_factory).restore(campaign_id, strategy)
         loop = CampaignLoop(
             campaign_id,
             uow_factory=orch.uow_factory,
@@ -314,7 +316,9 @@ def run_inline(  # noqa: PLR0912,PLR0915 - inline supervisor wires loop, workers
                     now=clock.now(),
                     stop_rules=dict(current.stop_rules),
                 )
-                decision = evaluate_stop_rules(counters, settings.runner)
+                decision = evaluate_stop_rules(
+                    counters, settings.runner, strategy_exhausted=strategy.is_exhausted()
+                )
             if decision.action == "analyze":
                 campaigns.mark_analyzing(campaign_id, reason=decision.reason)
                 campaigns.complete(campaign_id, reason=decision.reason)

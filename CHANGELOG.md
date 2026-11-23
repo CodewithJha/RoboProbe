@@ -7,12 +7,20 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- EXP-02 and EXP-07 evidence reports (T-105a): template-backed `docs/evidence/EXP-02.md`
+  and `EXP-07.md`, committed EXP-02 pipeline pilot artefacts, EXP-07 smoke design,
+  and preregistered deviation log entries.
+
+- Attach the backend, web, and Gazebo SBOMs and the published warehouse demo report to
+  tagged GitHub Releases (T-123).
+
 - Record Gazebo confirmations, manual runs, and replays of failed runs as downloadable MCAP
   artifacts by default (T-097b).
 
 - Gazebo worker backend with process-group shutdown, cancellation, and typed infrastructure failures (T-096b).
 - Gazebo workers lease host-local slots with distinct ROS domains and transport partitions (T-097a).
 - Gazebo nightly workflow runs the simulator suite and Jazzy package tests and reports episode timings (T-098).
+- T-098 sign-off evidence, simulator quarantine registry, and doc 18 §4.8 nightly close-out (closes #205).
 - Record Gazebo episodes as Trace v1 Parquet on simulation time, with optional MCAP bags (T-094b).
 - The verified warehouse occupancy map, aligned kinematic map, and Nav2 nominal path for cross-backend pallet placement (T-092).
 - Deterministic Gazebo episode materialization for the warehouse world, Nav2, sensor perturbations, and bridge configuration (T-096a).
@@ -241,6 +249,14 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Changed
 
+- Load only selector observation fields when reading campaign history (T-130).
+- Compare proposal distances to history and pending runs in vectorized batches (T-130).
+
+- Add an opt-in Gazebo Nav2 profile with a longer action acknowledgement window and a real
+  warehouse collision test (T-098).
+- Add a Gazebo warehouse acceptance profile with a tighter estimated goal tolerance and a
+  five-seed nominal test judged against the original ground-truth tolerance (T-098).
+
 - Risk Atlas loads Plotly for the full heatmap and static previews, with responsive uncertainty hatches and keyboard-accessible probe controls (T-111a).
 - Risk atlas off-axis controls now query and update the share URL after edits settle (T-111b).
 - The Bench reserves space while campaigns load. The campaign wizard prevents repeated
@@ -257,9 +273,13 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Fixed
 
+- Compute EXP-02 Branin discovery metrics and report curves from the three canonical failure lobes.
+
 - Keep reference Parquet manifests current and allow import of reviewed failure-mode assignments.
 
 - Bound Gaussian-process prediction batches so a full Risk Atlas can be generated on a laptop.
+
+- Resume strategies from saved checkpoints and complete finite campaigns after their last in-flight run.
 
 - Campaign reports render legacy risk slices, and authenticated dashboard sessions can preview
   and download completed reports.
