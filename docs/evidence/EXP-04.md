@@ -34,7 +34,7 @@ campaign cells). File SHA-256:
 Complete before starting the ≈22 h campaign matrix (doc 19 §4):
 
 1. [T-098 nightly sign-off](T-098-nightly-signoff.md) green on `main` ([#205](https://github.com/CodewithJha/RoboProbe/issues/205) closed).
-2. `make gz-build` and Fuel prefetch per [doc 17 §5](../../docs/17-dev-environment-and-docker.md#5-docker-images).
+2. `make gz-build` and Fuel prefetch per [doc 17 §5](../../docs/17-dev-environment-and-docker.md#5-images).
 3. Compose `core` + `gazebo` profiles; set
    `ROBOPROBE_BACKENDS__GAZEBO_NAV2__MAX_PARALLEL_PER_HOST` to what the host sustains
    (see [RB-02](../../docs/30-operations-runbook.md#rb-02-gazebo-episodes-slow-rtf--05)).
