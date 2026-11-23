@@ -62,6 +62,11 @@ To upgrade, set `ROBOPROBE_IMAGE_TAG` to the next published version, pull the im
 
 ## 4. Configuration in deployment
 
+Compose applies read-only roots, non-root users, dropped capabilities, and
+[configurable resource limits](../.env.example). PostgreSQL keeps its durable volume and
+stores its socket on tmpfs. Application services wait for the one-shot migration.
+Run `python3 scripts/check_compose_policy.py` to check every rendered profile.
+
 - All settings via `.env` / environment (27). Production-like (`ROBOPROBE_ENV=lab|prod`) enables: token required if API not on loopback, JSON logs, stricter CORS.
 - Secrets: Docker secrets (`secrets/` directory, git-ignored) mounted at `/run/secrets`.
 - Web runtime config comes from the `ROBOPROBE_WEB_*` environment at container start. The dashboard

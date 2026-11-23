@@ -374,6 +374,10 @@ Set `ROBOPROBE_API_TOKEN_FILE` to override the source file for the shared API an
 Set `ROBOPROBE_GZ_SHM_SIZE` to change the Gazebo worker container's shared-memory allocation.
 It defaults to `1gb`.
 
+`.env.example` lists the per-service `ROBOPROBE_*_MEM` and `ROBOPROBE_*_CPUS`
+defaults and the shared `ROBOPROBE_PIDS_LIMIT` (512). These set hard container quotas.
+Set memory in Compose units such as `2g` and CPU as a number of cores such as `1.5`.
+
 Browser tests default to `E2E_BASE_URL=http://127.0.0.1:8080`. Use HTTP on `localhost` or
 `127.0.0.1` to change the port. `E2E_COMPOSE_PROJECT` defaults to
 `roboprobe-e2e-<process-id>`. Use a different `roboprobe-e2e-*` project for each concurrent test.

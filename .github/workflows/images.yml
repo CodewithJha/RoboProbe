@@ -11,6 +11,15 @@ permissions:
   contents: read
 
 jobs:
+  compose-policy:
+    name: Compose runtime policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python3 -m unittest discover -s scripts/tests -p test_check_compose_policy.py
+      - run: python3 scripts/check_compose_policy.py
+
   build:
     name: image ${{ matrix.name }}
     runs-on: ubuntu-latest

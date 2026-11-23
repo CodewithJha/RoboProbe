@@ -6,7 +6,13 @@
 # gazebo: T-095, observability: T-125). Orchestrator and worker-k2d: T-047.
 name: roboprobe
 
+x-hardened: &hardened
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: ${ROBOPROBE_PIDS_LIMIT:-512}
+
 x-backend: &backend
+  <<: *hardened
   image: ghcr.io/codewithjha/roboprobe-backend:${ROBOPROBE_IMAGE_TAG:-dev}
   build:
     context: ..
@@ -24,11 +30,20 @@ x-backend: &backend
   read_only: true
   tmpfs: [/tmp]
   restart: unless-stopped
+  user: "10001:10001"
+  mem_limit: ${ROBOPROBE_WORKER_MEM:-2g}
+  cpus: ${ROBOPROBE_WORKER_CPUS:-2}
 
 services:
   postgres:
+    <<: *hardened
     image: postgres:17@sha256:b60e90042aa6b8dbecd58e224b3e36114dbf8ad754465264c2476ad58a86e45c
     profiles: [core, dev, app]
+    user: "999:999"
+    read_only: true
+    tmpfs: [/tmp, "/var/run/postgresql:mode=3777,uid=999,gid=999"]
+    mem_limit: ${ROBOPROBE_DB_MEM:-1g}
+    cpus: ${ROBOPROBE_DB_CPUS:-2}
     environment:
       POSTGRES_DB: ${ROBOPROBE_DB_NAME:-roboprobe}
       POSTGRES_USER: ${ROBOPROBE_DB_USER:-roboprobe}
@@ -45,11 +60,18 @@ services:
   # Dev-only host access to Postgres (Compose cannot publish a port per profile, so a tiny TCP
   # forwarder carries it). Bound to loopback only (docs/21 §1).
   postgres-port:
+    <<: *hardened
     image: alpine/socat:1.8.0.3@sha256:beb4a68d9e4fe6b0f21ea774a0fde6c31f580dde6368939ed70100c5385b015e
     profiles: [dev]
     command: ["TCP-LISTEN:5432,fork,reuseaddr", "TCP:postgres:5432"]
     ports: ["127.0.0.1:${ROBOPROBE_DB_PORT:-5432}:5432"]
     read_only: true
+    tmpfs: [/tmp]
+    user: "65534:65534"
+    mem_limit: ${ROBOPROBE_DB_PROXY_MEM:-64m}
+    cpus: ${ROBOPROBE_DB_PROXY_CPUS:-0.5}
+    healthcheck:
+      test: ["CMD", "socat", "-T2", "-u", "OPEN:/dev/null", "TCP:127.0.0.1:5432,connect-timeout=2"]
     depends_on: {postgres: {condition: service_healthy}}
     restart: unless-stopped
 
@@ -57,6 +79,8 @@ services:
     <<: *backend
     profiles: [core, app]
     command: ["db", "upgrade"]
+    mem_limit: ${ROBOPROBE_MIGRATE_MEM:-512m}
+    cpus: ${ROBOPROBE_MIGRATE_CPUS:-1}
     restart: "no"
     depends_on: {postgres: {condition: service_healthy}}
 
@@ -66,6 +90,8 @@ services:
     <<: *backend
     profiles: [core, app]
     command: ["orchestrator"]
+    mem_limit: ${ROBOPROBE_ORCHESTRATOR_MEM:-2g}
+    cpus: ${ROBOPROBE_ORCHESTRATOR_CPUS:-2}
     healthcheck:
       test:
         [
@@ -111,6 +137,13 @@ services:
       <<: *backend-environment
       ROBOPROBE_BACKENDS__GAZEBO_NAV2__IMAGE: *gazebo-image
     shm_size: ${ROBOPROBE_GZ_SHM_SIZE:-1gb}
+    mem_limit: ${ROBOPROBE_GAZEBO_MEM:-4g}
+    cpus: ${ROBOPROBE_GAZEBO_CPUS:-4}
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/roboprobe-gazebo", "healthcheck"]
+      interval: 5s
+      timeout: 5s
+      start_period: 60s
     volumes:
       - ../data/artifacts:/data/artifacts
       - gazebo-fuel:/data/gazebo-fuel
@@ -123,6 +156,7 @@ services:
   # internal metrics port (worker.health_port, default 9101). Those services join this
   # network when the core profile defines them; until then the targets stay down.
   prometheus:
+    <<: *hardened
     image: prom/prometheus@sha256:63805ebb8d2b3920190daf1cb14a60871b16fd38bed42b857a3182bc621f4996
     profiles: [observability]
     entrypoint: ["/bin/sh", "/etc/prometheus/render_and_run.sh"]
@@ -132,11 +166,16 @@ services:
     secrets: [api_token]
     ports: ["127.0.0.1:${ROBOPROBE_PROMETHEUS_PORT:-9090}:9090"]
     read_only: true
-    tmpfs: [/tmp, /prometheus]
+    tmpfs: [/tmp, "/prometheus:mode=755,uid=65534,gid=65534"]
     user: "65534:65534"
     restart: unless-stopped
+    mem_limit: ${ROBOPROBE_PROMETHEUS_MEM:-1g}
+    cpus: ${ROBOPROBE_PROMETHEUS_CPUS:-1}
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:9090/-/ready"]
 
   grafana:
+    <<: *hardened
     image: grafana/grafana-oss@sha256:62d2b9d20a19714ebfe48d1bb405086081bc602aa053e28cf6d73c7537640dfb
     profiles: [observability]
     environment:
@@ -154,12 +193,20 @@ services:
       - ./observability/grafana/dashboards:/etc/grafana/dashboards:ro
     ports: ["127.0.0.1:${ROBOPROBE_GRAFANA_PORT:-3000}:3000"]
     read_only: true
-    tmpfs: [/tmp]
+    user: "472:472"
+    tmpfs: [/tmp, "/tmp/grafana:mode=755,uid=472,gid=472"]
+    mem_limit: ${ROBOPROBE_GRAFANA_MEM:-512m}
+    cpus: ${ROBOPROBE_GRAFANA_CPUS:-1}
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/api/health"]
     depends_on: [prometheus]
     restart: unless-stopped
 
   otel-collector:
-    image: otel/opentelemetry-collector@sha256:580cc87f5ea6c9e3969c37f3c5394b7a8385abb8189df0ddc63b9575a00f52fc
+    <<: *hardened
+    build:
+      context: ./observability
+      dockerfile: health.Dockerfile
     profiles: [observability]
     command: ["--config=/etc/otel/config.yaml"]
     volumes:
@@ -167,9 +214,19 @@ services:
     read_only: true
     tmpfs: [/tmp]
     restart: unless-stopped
+    user: "10001:10001"
+    mem_limit: ${ROBOPROBE_OTEL_MEM:-256m}
+    cpus: ${ROBOPROBE_OTEL_CPUS:-1}
+    healthcheck:
+      test: ["CMD", "/roboprobe-health/busybox", "wget", "-qO", "/dev/null", "http://127.0.0.1:13133/"]
 
   jaeger:
-    image: jaegertracing/all-in-one@sha256:836e9b69c88afbedf7683ea7162e179de63b1f981662e83f5ebb68badadc710f
+    <<: *hardened
+    build:
+      context: ./observability
+      dockerfile: health.Dockerfile
+      args:
+        UPSTREAM_IMAGE: jaegertracing/all-in-one@sha256:836e9b69c88afbedf7683ea7162e179de63b1f981662e83f5ebb68badadc710f
     profiles: [observability]
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
@@ -177,11 +234,18 @@ services:
     read_only: true
     tmpfs: [/tmp]
     restart: unless-stopped
+    user: "10001:10001"
+    mem_limit: ${ROBOPROBE_JAEGER_MEM:-512m}
+    cpus: ${ROBOPROBE_JAEGER_CPUS:-1}
+    healthcheck:
+      test: ["CMD", "/roboprobe-health/busybox", "wget", "-qO", "/dev/null", "http://127.0.0.1:14269/"]
 
   api:
     <<: *backend
     profiles: [app]
     command: ["api", "--host", "0.0.0.0", "--port", "8000"]
+    mem_limit: ${ROBOPROBE_API_MEM:-2g}
+    cpus: ${ROBOPROBE_API_CPUS:-4}
     secrets: [db_password, api_token]
     healthcheck:
       test:
@@ -198,6 +262,7 @@ services:
     depends_on: {migrate: {condition: service_completed_successfully}}
 
   web:
+    <<: *hardened
     image: ghcr.io/codewithjha/roboprobe-web:${ROBOPROBE_IMAGE_TAG:-dev}
     profiles: [app]
     build:
@@ -216,6 +281,9 @@ services:
       api:
         condition: service_healthy
     read_only: true
+    user: "101:101"
+    mem_limit: ${ROBOPROBE_WEB_MEM:-256m}
+    cpus: ${ROBOPROBE_WEB_CPUS:-1}
     tmpfs:
       - /tmp:mode=1777
       - /var/cache/nginx:mode=755,uid=101,gid=101

@@ -23,6 +23,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Reproducible headless Gazebo and Nav2 warehouse measurements with a one-worker laptop recommendation (T-090).
 - Nightly API load test (T-106) checks endpoint p95 with a 10,000-run PostgreSQL seed and uploads the Locust CSV and runs-list query plan.
 - Remote-worker Compose profiles enforce PostgreSQL certificate and hostname verification (T-129).
+- Compose runtime policy and CI checks enforce non-root services, file-based credentials and resource limits (T-127).
 - Campaign scalability harness (T-130) measures real worker throughput, queue latency, and PostgreSQL health.
 - Dashboard polish (T-113a/b, T-115): Spaces list with YAML view and validation,
   Workbench worker table, Settings (session token, theme, number locale, SSE reconnect),
