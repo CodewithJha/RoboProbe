@@ -7,11 +7,18 @@ from __future__ import annotations
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.elements import ColumnElement
 
-from roboprobe.core.types import FailureClass, Observation, RunStatus, Verdict
+from roboprobe.core.types import (
+    CampaignSchedulingSnapshot,
+    FailureClass,
+    Observation,
+    RunStatus,
+    Verdict,
+)
 from roboprobe.store.flush import execute
 from roboprobe.store.ids import new_uuid
 from roboprobe.store.mapping import run_record
@@ -220,6 +227,37 @@ class SqlRunRepo:
                 )
             )
         return out
+
+    def scheduling_snapshot(
+        self, campaign_id: UUID, *, inflight_statuses: frozenset[RunStatus], count_invalid: bool
+    ) -> CampaignSchedulingSnapshot:
+        """Aggregate budget and ordinals without loading full terminal run rows."""
+        campaign = RunRow.campaign_id == campaign_id
+        inflight = RunRow.status.in_(inflight_statuses)
+        spent: ColumnElement[bool]
+        if count_invalid:
+            spent = RunRow.status.in_((RunStatus.DONE, RunStatus.ERROR))
+        else:
+            spent = and_(
+                RunRow.status == RunStatus.DONE, RunRow.verdict.is_distinct_from(Verdict.INVALID)
+            )
+        summary = (
+            select(
+                func.count().filter(or_(inflight, spent)).label("budget_used"),
+                func.max(RunRow.ordinal).label("last_ordinal"),
+            )
+            .where(campaign)
+            .cte()
+        )
+        rows = self._s.execute(
+            select(summary.c.budget_used, summary.c.last_ordinal, RunRow.x_unit)
+            .select_from(summary.outerjoin(RunRow, and_(campaign, inflight)))
+            .order_by(RunRow.id)
+        ).all()
+        budget_used, last_ordinal, _ = rows[0]
+        next_ordinal = int(last_ordinal) + 1 if last_ordinal is not None else 0
+        points = tuple(tuple(unit) for _, _, unit in rows if unit is not None)
+        return CampaignSchedulingSnapshot(int(budget_used), next_ordinal, points)
 
     def cancel_pending(self, campaign_id: UUID) -> int:
         result = execute(
