@@ -1,6 +1,6 @@
 [project]
 name = "roboprobe"
-version = "0.0.1"
+version = "1.0.0"
 description = "Intelligent, simulation-based robustness testing for autonomous mobile robots."
 license = "MIT"
 authors = [{ name = "CodewithJha" }]

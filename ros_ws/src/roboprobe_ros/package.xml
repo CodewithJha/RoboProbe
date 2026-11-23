@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>roboprobe_ros</name>
-  <version>0.0.1</version>
+  <version>1.0.0</version>
   <description>RoboProbe nodes for Gazebo and Nav2 episodes</description>
   <maintainer email="155089480+CodewithJha@users.noreply.github.com">CodewithJha</maintainer>
   <license>MIT</license>

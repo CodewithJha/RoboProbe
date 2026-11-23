@@ -19,20 +19,25 @@ are observed from the beginning of the app smoke after the pull step. They
 include the automated checks ahead of the demo. Workbench and report timings
 measure their own browser actions.
 
-## Release-candidate checklist
+## Release-candidate checklist (doc 29 §10)
 
 Record the release-candidate tag, image digests, platform, and a link to the
 run or timed log. Use a clean machine and follow the README. Start the five-minute
 clock after the images are pulled and stop it when the first campaign is created.
 
-- [ ] API readiness succeeds and Workbench shows the expected workers.
-- [ ] The 50-run demo completes. Run the campaign analysis from the deployment
-  checklist and verify that Casebook shows at least one case.
-- [ ] A Gazebo nominal scenario passes the warehouse acceptance oracle.
-- [ ] Idle logs are JSON without errors and artifact storage has free space
-  above `storage.min_free_gb`.
-- [ ] The report opens and downloads. Record the dashboard, campaign,
-  first-failure, and report times.
+| Item | Status | Evidence |
+|------|--------|----------|
+| `/health/ready` 200; Workbench shows expected workers | **PASS** (main images) | CI published-app job (link above) |
+| 50-run demo completes; analyze; Casebook ≥ 1 case | **PASS** (main images) | Same job — 37 failures, Casebook entry |
+| Gazebo nominal `configs/scenarios/nominal.yaml` PASS | **PENDING** | Requires owner laptop / Gazebo profile; not run on CI runner |
+| Idle logs JSON, no ERROR; disk > `storage.min_free_gb` | **PASS** (main images) | Smoke idle window + free-space check |
+| Report opens and downloads; timing recorded | **PASS** (main images) | Smoke HTML report download |
 
-A release-candidate run and the first-time user evidence are pending.
-[Deployment checklist](../29-deployment-guide.md#10-post-deployment-verification-checklist)
+### RC tag verification (SC-6 clock)
+
+| Field | Value |
+|-------|--------|
+| Image tag exercised | `main` (pre-v1.0.0 merge) |
+| Platform | `ubuntu-24.04` GitHub Actions |
+| Time to first campaign | Observed in smoke metrics (job log); **≤ 5 min** for pull+start+demo path |
+| v1.0.0 RC pull + checklist | **PENDING** — re-run README with `ROBOPROBE_IMAGE_TAG=v1.0.0` after release workflow (see [deployment checklist](../29-deployment-guide.md#10-post-deployment-verification-checklist)) |
