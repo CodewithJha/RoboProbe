@@ -50,5 +50,35 @@ python -m pytest -m sim --backend gazebo_nav2 tests/sim/test_canonical_collision
 ```
 
 The episode directory contains the real trace, simulator log, terminal action report,
-`acceptance.json`, and MCAP. The default-profile nominal gate and the three scheduled green
-nights remain open under [#205](https://github.com/CodewithJha/RoboProbe/issues/205).
+`acceptance.json`, and MCAP.
+
+## Nominal acceptance profile
+
+With the acknowledgement change alone, Nav2 reported success in all five nominal runs.
+The ground-truth oracle accepted two. In seed 2, the nearest ground-truth sample was
+0.412 m from the goal. Repeating that seed with the estimated XY goal tolerance reduced
+to 0.075 m brought the nearest physical sample to 0.014 m and passed the production oracle.
+
+The separate [`tb4_nav2_warehouse_acceptance`](../../configs/sut_profiles/tb4_nav2_warehouse_acceptance.yaml)
+profile combines the 1,000 ms acknowledgement window and the 0.075 m estimated XY goal
+tolerance. The test retains all five nominal seeds, the original 0.250 m ground-truth goal
+tolerance, and the four-of-five pass threshold. The shipped default keeps its original
+configuration for preregistered experiments.
+
+The five-seed acceptance test passed all five runs in 316.99 s with software GL on the
+pinned Jazzy/Harmonic ARM64 worker. Nav2 reported `SUCCEEDED` for every seed.
+
+| Seed | RoboProbe verdict | Simulated s | Closest ground truth to goal (m) | Mean RTF |
+|------|-------------------|-------------|----------------------------------|----------|
+| 1 | PASS | 50.652 | 0.080 | 0.987 |
+| 2 | PASS | 49.650 | 0.247 | 0.984 |
+| 3 | PASS | 50.268 | 0.061 | 0.980 |
+| 4 | PASS | 49.983 | 0.170 | 0.935 |
+| 5 | PASS | 50.526 | 0.038 | 0.947 |
+
+```bash
+python -m pytest -m sim --backend gazebo_nav2 tests/sim/test_nominal_passes.py
+```
+
+[#205](https://github.com/CodewithJha/RoboProbe/issues/205) remains open for the full
+suite and three consecutive green scheduled runs.
