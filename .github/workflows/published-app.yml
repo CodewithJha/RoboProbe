@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/workflows/published-app.yml"
       - "scripts/web_image_smoke.sh"
+      - "web/scripts/check-published-quickstart.mjs"
   workflow_dispatch:
     inputs:
       image_tag:
