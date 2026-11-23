@@ -226,7 +226,7 @@ python3 scripts/check_traceability.py --closed-issues /tmp/roboprobe-closed-issu
 | NFR-REP-002 | — | — |
 | NFR-MNT-001 | — | [#28](https://github.com/CodewithJha/RoboProbe/issues/28) |
 | NFR-MNT-002 | — | [#12](https://github.com/CodewithJha/RoboProbe/issues/12) |
-| NFR-USE-001 | — | — |
+| NFR-USE-001 | [Hallway protocol and simulated rehearsal](evidence/SC-6-hallway.md). First-time user sessions pending. | [#213](https://github.com/CodewithJha/RoboProbe/issues/213) |
 | NFR-ACC-001 | `web/src/components/accessibility.test.tsx::has no axe violations across the shared components (NFR-ACC-001)`, `web/src/styles/tokens.test.ts::checks every text colour against every surface` | [#188](https://github.com/CodewithJha/RoboProbe/issues/188) |
 | NFR-SEC-001 | `backend/tests/security/test_tm01_auth.py::test_missing_and_wrong_token`, `backend/tests/unit/core/test_settings_validation.py::test_non_loopback_host_requires_token` | [#144](https://github.com/CodewithJha/RoboProbe/issues/144) |
 | NFR-SEC-002 | `backend/tests/security/test_tm10_supply_chain.py::test_lockfile_and_audit_job_exist` | [#30](https://github.com/CodewithJha/RoboProbe/issues/30) |

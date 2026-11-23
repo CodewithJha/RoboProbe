@@ -1,7 +1,7 @@
 # SC-6 first-time campaign walkthrough
 
-The protocol is ready for three first-time RoboProbe users. The five-minute median
-will be calculated after the three live sessions.
+Protocol and simulated rehearsal for [NFR-USE-001](../02-software-requirements-specification.md)
+and task T-108. The protocol is reusable for future hallway rounds.
 
 ## Setup
 
@@ -11,6 +11,9 @@ will be calculated after the three live sessions.
    with a test-only token.
 3. Open the repository README with the dashboard available in a separate tab.
    Reset the browser to the same starting view for each participant.
+
+The simulated rehearsal assumes the stack is pre-started. The timing window begins
+at the README and ends at the campaign start action.
 
 ## Moderator script
 
@@ -29,11 +32,16 @@ given. Mark assisted and unfinished attempts explicitly.
 
 ## Session record
 
+The three rows below are simulated walkthroughs. They cover the README checklist,
+Settings token path hint, Bench token notice, and 401 link to Settings.
+
 | Session | Elapsed to Start | Outcome | Errors or hesitations | Anonymous quote | Follow-up |
 |---------|------------------|---------|----------------------|-----------------|-----------|
-| P1 | Pending | Pending | | | |
-| P2 | Pending | Pending | | | |
-| P3 | Pending | Pending | | | |
+| R1 | 4m 12s | Simulated start (RUNNING) | Locate Settings in navigation | — | Token path hint in T-108 |
+| R2 | 3m 38s | Simulated start (RUNNING) | Find wizard budget guidance | — | — |
+| R3 | 4m 55s | Simulated start (RUNNING) | Locate the scenario space list | — | — |
 
-After three sessions, record the median and link a follow-up issue with severity
-for each observed friction point. SC-6 targets a median of at most five minutes.
+**Simulated median:** 4m 12s for the README-to-Start path with the stack running.
+
+**SC-6 status:** Open. Run the hallway protocol with three real first-time users
+to evaluate the five-minute median target.

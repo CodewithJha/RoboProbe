@@ -22,6 +22,11 @@ export function Component() {
       <p className="page-label">RoboProbe / Settings</p>
       <h1>Settings</h1>
       <p className="page-description">Session credentials, display and live connection.</p>
+      <p>
+        Local installs: after <code>make up</code>, copy the token from{' '}
+        <code>secrets/api_token</code> in the repository root, paste it below, then choose{' '}
+        <strong>Save token</strong>.
+      </p>
       <form
         onSubmit={(event) => {
           event.preventDefault();

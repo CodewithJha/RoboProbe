@@ -7,6 +7,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- In-dashboard token hints and a simulated first-campaign walkthrough for SC-6 (T-108).
 - EXP-04 Gazebo evidence scaffold (T-120a): `docs/evidence/EXP-04.md`, reduced
   `exp04-pilot/design.yaml`, pre-flight and SC-4 **PENDING** record (closes #210).
 - Kinematic2d SC-5 replay evidence (T-105c): `scripts/replay_agreement.py` batches
@@ -276,6 +277,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   PR template renamed to `.github/PULL_REQUEST_TEMPLATE.md`.
 - The Console cancellation dialog wraps keyboard focus in both directions and returns focus
   to the trigger when dismissed.
+- README five-minute first-campaign checklist; Settings and Bench guide users to `secrets/api_token` (T-108).
 
 ### Fixed
 

@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { MemoryRouter } from 'react-router-dom';
-import { afterAll, afterEach, beforeAll, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from 'vitest';
 import { apiUrl } from '../../api/client';
 import { AppProviders } from '../../app/providers';
 import campaigns from '../../test/fixtures/campaigns.json';
@@ -26,8 +26,12 @@ const server = setupServer(
 beforeAll(() => {
   server.listen();
 });
+beforeEach(() => {
+  sessionStorage.setItem('roboprobe.api-token', 'test-token');
+});
 afterEach(() => {
   server.resetHandlers();
+  sessionStorage.clear();
 });
 afterAll(() => {
   server.close();
@@ -83,7 +87,16 @@ it('keeps the loading state accessible and displays the empty state when the que
   expect(status.closest('[aria-busy="true"]')).toBeInTheDocument();
   resolve();
   expect(await screen.findByRole('heading', { name: 'No campaigns yet' })).toBeInTheDocument();
-  expect(status).not.toBeInTheDocument();
+  expect(screen.queryByText('Opening your campaigns…')).not.toBeInTheDocument();
+});
+
+it('prompts for an API token when none is stored', async () => {
+  sessionStorage.clear();
+  server.use(http.get(apiUrl('/campaigns'), () => HttpResponse.json(empty)));
+  renderBench();
+  expect(
+    await screen.findByText(/Set your API token in/, { selector: '[role="status"]' }),
+  ).toBeInTheDocument();
 });
 
 it('displays the API error with the standard problem view', async () => {
