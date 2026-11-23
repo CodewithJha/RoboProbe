@@ -154,7 +154,7 @@ Images are immutable tags. Roll back by setting the previous `ROBOPROBE_IMAGE_TA
 
 - [ ] `/health/ready` 200; Workbench shows expected workers.
 - [ ] `make demo PROFILES=app` (50-run k2d campaign) completes. Use the printed
-  campaign ID in `docker compose -f docker/compose.yaml --profile app exec -T orchestrator roboprobe analyze <campaign-id> --wait`,
+  campaign ID in `docker compose -f docker/compose.yaml --profile app exec -T orchestrator roboprobe analyze --wait <campaign-id>`,
   then open Casebook and verify that it shows at least one case.
 - [ ] Gazebo: `roboprobe run --scenario configs/scenarios/nominal.yaml --backend gazebo_nav2` → PASS.
 - [ ] Logs JSON, no ERROR lines at idle; disk free > `storage.min_free_gb`.
