@@ -78,6 +78,23 @@ because the performance gate requires at least 6×. The claim-latency tail also 
 four workers. The cause of the nonlinear scaling remains unconfirmed. A dedicated-host rerun with worker
 CPU and PostgreSQL wait-event measurements can show where available capacity is spent.
 
+## Cloud agent VM (2026-11-23 IST)
+
+Isolated PostgreSQL 17 on loopback, four vCPUs, `benchmark` backend, 10,000 runs per arm.
+40,000 completed runs with zero missing ordinals, duplicate ordinals, and retries.
+[CSV](T-130-scalability-cloud-vm.csv).
+
+| Workers | Runs/s | Speedup | Efficiency |
+|---------|--------|---------|------------|
+| 1 | 56.30 | 1.00× | 100% |
+| 2 | 107.59 | 1.91× | 88% |
+| 4 | 130.42 | 2.32× | 58% |
+| 8 | 150.65 | 2.68× | 33% |
+
+The 6× gate was not met on this host (2.68× at eight workers). Integrity gates passed.
+Scale-out remains CPU-limited on four vCPUs; follow the isolated Ubuntu guidance for hosts
+with ≥12 cores before treating the 6× requirement as failed for operations.
+
 ## Isolated Ubuntu comparisons
 
 Each GitHub-hosted Ubuntu 24.04 VM ran the same full benchmark command and kept its
