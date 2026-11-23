@@ -63,6 +63,11 @@ image workflow to build the pinned Jazzy and Harmonic stack and smoke-test the n
 runtime. `tests/unit/runner/test_manifest.py` verifies the image version metadata is
 included in each Gazebo manifest.
 
+Compose policy verification (T-127, #219, NFR-DEP-001 and NFR-DEP-002) runs in the
+[image workflow](../.github/workflows/images.yml). It tests the validator and checks the
+rendered Compose profiles for non-root users, filesystem and capability restrictions,
+resource limits, health checks, and successful migration before application startup.
+
 Trace transport verification (T-081e, #150; FR-DSH-005, FR-STO-002, NFR-SEC-003):
 `tests/api/test_trace_artifacts.py` covers clearance minima, flag transitions, rate caps, column
 selection, Parquet/attachment headers, unknown ids, and malicious stored paths (TM-04).
@@ -221,8 +226,8 @@ python3 scripts/check_traceability.py --closed-issues /tmp/roboprobe-closed-issu
 | NFR-CFG-001 | `backend/tests/unit/core/test_settings_validation.py::test_unknown_nested_keys_are_rejected` | [#19](https://github.com/CodewithJha/RoboProbe/issues/19) |
 | NFR-CFG-002 | `backend/tests/unit/core/test_settings_precedence.py::test_precedence_each_layer_removed_yields_next`, `backend/tests/unit/core/test_settings_validation.py::test_all_errors_are_reported_together` | [#19](https://github.com/CodewithJha/RoboProbe/issues/19) |
 | NFR-CFG-003 | `backend/tests/unit/scripts/test_gen_config_docs.py::test_repository_files_are_up_to_date` | [#22](https://github.com/CodewithJha/RoboProbe/issues/22) |
-| NFR-DEP-001 | `backend/tests/unit/deploy/test_compose_demo.py::test_compose_smoke_script_accepts_the_core_file` | [#27](https://github.com/CodewithJha/RoboProbe/issues/27), [#97](https://github.com/CodewithJha/RoboProbe/issues/97) |
-| NFR-DEP-002 | `backend/tests/security/test_tm07_container.py::test_backend_image_is_non_root` | [#26](https://github.com/CodewithJha/RoboProbe/issues/26), [#185](https://github.com/CodewithJha/RoboProbe/issues/185) |
+| NFR-DEP-001 | `backend/tests/unit/deploy/test_compose_demo.py::test_compose_smoke_script_accepts_the_core_file`, `scripts/tests/test_check_compose_policy.py::ComposePolicyTest::test_requires_successful_one_shot_migration` | [#27](https://github.com/CodewithJha/RoboProbe/issues/27), [#97](https://github.com/CodewithJha/RoboProbe/issues/97), [#219](https://github.com/CodewithJha/RoboProbe/issues/219) |
+| NFR-DEP-002 | `backend/tests/security/test_tm07_container.py::test_backend_image_is_non_root`, `scripts/tests/test_check_compose_policy.py::ComposePolicyTest::test_rejects_removed_controls` | [#26](https://github.com/CodewithJha/RoboProbe/issues/26), [#185](https://github.com/CodewithJha/RoboProbe/issues/185), [#219](https://github.com/CodewithJha/RoboProbe/issues/219) |
 | NFR-DEP-003 | `backend/tests/unit/test_release_check.py::test_release_workflows_pin_actions` | [#189](https://github.com/CodewithJha/RoboProbe/issues/189), [#221](https://github.com/CodewithJha/RoboProbe/issues/221) |
 | NFR-EXT-001 | `backend/tests/unit/backends/test_registry.py::test_registry_loads_monkeypatched_entry_point` | [#48](https://github.com/CodewithJha/RoboProbe/issues/48), [#94](https://github.com/CodewithJha/RoboProbe/issues/94) |
 | NFR-EXT-002 | — | [#14](https://github.com/CodewithJha/RoboProbe/issues/14) |
