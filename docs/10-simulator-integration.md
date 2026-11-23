@@ -147,6 +147,12 @@ The standard Gazebo SUT profile uses the worker’s `backends.gazebo_nav2.base_n
 as its base. A profile that names a different parameter file uses that file before merging
 `nav2_overrides` and applying the episode speed and topic routing.
 
+The [warehouse acceptance profile](../configs/sut_profiles/tb4_nav2_warehouse_acceptance.yaml)
+sets a 1,000 ms Nav2 action acknowledgement window for software rendering and a 0.075 m
+estimated XY goal tolerance. The tighter estimate leaves room for localization error before
+RoboProbe judges the physical pose against the task’s 0.250 m ground-truth tolerance. The
+preregistered Gazebo experiments still use the shipped default profile.
+
 ## 5. Episode lifecycle (Gazebo)
 
 ```mermaid
