@@ -17,8 +17,8 @@ on:
         default: "10"
         type: string
 
-      exp04_preflight:
-        description: Successful current-main native Gazebo preflight run ID for EXP-04
+      exp05_source:
+        description: Completed EXP-04 run that motivates the experimental profile B
         required: false
         type: string
 
@@ -40,7 +40,7 @@ env:
 
 jobs:
   analytic:
-    if: ${{ inputs.exp04_preflight == '' }}
+    if: ${{ inputs.exp05_source == '' }}
     name: analytic-exp02
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -95,12 +95,12 @@ jobs:
           PR_NUMBER: ${{ github.event.inputs.pr_number }}
 
 
-  exp04-preflight:
+  exp05-preflight:
     if: >-
       github.event_name == 'workflow_dispatch'
       && github.repository == 'CodewithJha/RoboProbe'
-      && github.ref == 'refs/heads/compute/t-120-gazebo-studies'
-      && inputs.exp04_preflight != ''
+      && github.ref == 'refs/heads/compute/t-120b-exp05-profile-pair'
+      && inputs.exp05_source != ''
     permissions:
       actions: read
       contents: read
@@ -111,30 +111,24 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify current-main preflight provenance and wait for its result
+      - name: Validate the completed EXP-04 source study
         env:
           GH_TOKEN: ${{ github.token }}
-          PREFLIGHT_RUN: ${{ inputs.exp04_preflight }}
+          PREFLIGHT_RUN: ${{ inputs.exp05_source }}
         run: |
           set -euo pipefail
           [[ "$PREFLIGHT_RUN" =~ ^[0-9]+$ ]]
-          while :; do
-            result=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PREFLIGHT_RUN")
-            jq -e '.head_branch=="main" and .path==".github/workflows/sim-nightly.yml"' <<<"$result" >/dev/null
-            base=$(jq -r .head_sha <<<"$result")
-            [[ "$base" =~ ^[0-9a-f]{40}$ ]]
-            git merge-base --is-ancestor "$base" HEAD
-            git diff --quiet "$base" HEAD -- backend configs docker tasks schemas ros_ws
-            if [[ $(jq -r .status <<<"$result") == completed ]]; then
-              jq -e '.conclusion=="success"' <<<"$result" >/dev/null
-              break
-            fi
-            sleep 30
-          done
+          result=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PREFLIGHT_RUN")
+          jq -e '.head_branch=="compute/t-120-gazebo-studies" and .conclusion=="success"' <<<"$result" >/dev/null
+          base=$(jq -r .head_sha <<<"$result")
+          [[ "$base" == "79b3c3e91a9ac1eb251e74a147754d9f2f410471" ]]
+          git merge-base --is-ancestor "$base" HEAD
+          git diff --quiet "$base" HEAD -- backend configs docker tasks schemas ros_ws \
+            ':(exclude)configs/sut_profiles/tb4_nav2_tuned.yaml'
 
-  exp04:
-    name: EXP-04 ${{ matrix.strategy }} rep ${{ matrix.replicate }}
-    needs: exp04-preflight
+  exp05:
+    name: EXP-05 ${{ matrix.strategy }} rep ${{ matrix.replicate }}
+    needs: exp05-preflight
     permissions:
       contents: read
     runs-on: ubuntu-24.04
@@ -142,38 +136,35 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        strategy: [S-RANDOM, S-PROBE]
-        replicate: [0, 1, 2, 3, 4]
-        include:
-          - strategy: S-OFAT
-            replicate: 0
+        strategy: [profile_A, profile_B]
+        replicate: [0, 1, 2]
     env:
-      STUDY_IMAGE: roboprobe-gazebo-exp04:${{ github.sha }}
-      EXP04_STRATEGY: ${{ matrix.strategy }}
-      EXP04_REPLICATE: ${{ matrix.replicate }}
-      EXP04_PREFLIGHT: ${{ inputs.exp04_preflight }}
+      STUDY_IMAGE: roboprobe-gazebo-exp05:${{ github.sha }}
+      EXP05_STRATEGY: ${{ matrix.strategy }}
+      EXP05_REPLICATE: ${{ matrix.replicate }}
+      EXP05_SOURCE: ${{ inputs.exp05_source }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Build the exact Gazebo source and prefetch pinned models
         run: |
-          STUDY_OUTPUT="$RUNNER_TEMP/exp04-output"
+          STUDY_OUTPUT="$RUNNER_TEMP/exp05-output"
           printf 'STUDY_OUTPUT=%s\n' "$STUDY_OUTPUT" >>"$GITHUB_ENV"
           mkdir -p "$STUDY_OUTPUT"
           chmod 1777 "$STUDY_OUTPUT"
           docker build --build-arg "REVISION=$GITHUB_SHA" -f docker/gazebo/Dockerfile -t "$STUDY_IMAGE" .
-          docker volume create exp04-fuel
-          docker run --rm --read-only --tmpfs /tmp -v exp04-fuel:/data/gazebo-fuel "$STUDY_IMAGE" prefetch-fuel
+          docker volume create exp05-fuel
+          docker run --rm --read-only --tmpfs /tmp -v exp05-fuel:/data/gazebo-fuel "$STUDY_IMAGE" prefetch-fuel
       - name: Create a PostgreSQL instance and record the runner environment
         run: |
-          docker network create --internal exp04-net
-          docker run --detach --name exp04-db --network exp04-net --network-alias postgres \
+          docker network create --internal exp05-net
+          docker run --detach --name exp05-db --network exp05-net --network-alias postgres \
             -e POSTGRES_USER=roboprobe -e POSTGRES_DB=roboprobe \
             -e POSTGRES_PASSWORD=roboprobe-ci postgres:17
-          timeout 90 bash -c 'until docker exec exp04-db pg_isready -h 127.0.0.1 -U roboprobe -d roboprobe; do sleep 2; done'
+          timeout 90 bash -c 'until docker exec exp05-db pg_isready -h 127.0.0.1 -U roboprobe -d roboprobe; do sleep 2; done'
           {
-            printf 'preflight_run_id=%s\n' "$EXP04_PREFLIGHT"
+            printf 'exp04_source_run_id=%s\n' "$EXP05_SOURCE"
             printf 'git_sha=%s\n' "$GITHUB_SHA"
             printf 'software_rendering=true\nstartup_timeout_s=150\nwall_margin_s=90\n'
             uname -a
@@ -184,15 +175,15 @@ jobs:
           } >"$STUDY_OUTPUT/environment.txt"
           docker run --rm --entrypoint /bin/bash "$STUDY_IMAGE" -c 'dpkg-query -W ros-jazzy-navigation2 ros-jazzy-nav2-bringup ros-jazzy-gz-sim-vendor' \
             >>"$STUDY_OUTPUT/environment.txt"
-      - name: Collect the full registered cell with one Gazebo worker
+      - name: Collect the registered profile cell and estimate its risk volumes
         timeout-minutes: 310
         run: |
           set -o pipefail
-          docker run --name exp04-collector --init --network exp04-net --read-only --tmpfs /tmp --shm-size=1g \
+          docker run --name exp05-collector --init --network exp05-net --read-only --tmpfs /tmp --shm-size=1g \
             --mount "type=bind,src=$GITHUB_WORKSPACE,dst=/checkout,readonly" \
             --mount "type=bind,src=$STUDY_OUTPUT,dst=/results" \
-            --mount "type=volume,src=exp04-fuel,dst=/data/gazebo-fuel,readonly" \
-            -e EXP04_STRATEGY -e EXP04_REPLICATE -e GZ_IP=127.0.0.1 -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
+            --mount "type=volume,src=exp05-fuel,dst=/data/gazebo-fuel,readonly" \
+            -e EXP05_STRATEGY -e EXP05_REPLICATE -e GZ_IP=127.0.0.1 -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
             -e PYTHONPATH=/checkout/backend/src -e LIBGL_ALWAYS_SOFTWARE=1 -e OPENBLAS_NUM_THREADS=1 \
             -e OMP_NUM_THREADS=1 -e MKL_NUM_THREADS=1 \
             -e ROBOPROBE_DATABASE__URL=postgresql+psycopg://roboprobe:roboprobe-ci@postgres/roboprobe \
@@ -208,15 +199,17 @@ jobs:
               source /opt/roboprobe/ros_ws/install/setup.bash
               cd /checkout/backend
               /opt/roboprobe/venv/bin/roboprobe db upgrade
-              /opt/roboprobe/venv/bin/python /checkout/scripts/collect_exp04.py \
-                "$EXP04_STRATEGY" "$EXP04_REPLICATE" /results
+              /opt/roboprobe/venv/bin/python /checkout/scripts/collect_exp05.py \
+                "$EXP05_STRATEGY" "$EXP05_REPLICATE" /results
+              campaign=$(/opt/roboprobe/venv/bin/python -c "import json; print(json.load(open(\"/results/collection.json\"))[\"campaign_id\"])")
+              /opt/roboprobe/venv/bin/roboprobe --json analyze --kind full --wait "$campaign" >/results/risk-analysis.json
             ' 2>&1 | tee "$STUDY_OUTPUT/collection.log"
       - name: Preserve the independent campaign database and any partial artifacts
         if: ${{ always() }}
         run: |
-          docker stop -t 20 exp04-collector 2>/dev/null || true
-          if docker inspect exp04-db >/dev/null 2>&1; then
-            docker exec exp04-db pg_dump -Fc -U roboprobe -d roboprobe >"$STUDY_OUTPUT/campaign.dump"
+          docker stop -t 20 exp05-collector 2>/dev/null || true
+          if docker inspect exp05-db >/dev/null 2>&1; then
+            docker exec exp05-db pg_dump -Fc -U roboprobe -d roboprobe >"$STUDY_OUTPUT/campaign.dump"
           fi
           if [[ -d "${STUDY_OUTPUT:-}" ]]; then
             sudo chmod -R a+rX "$STUDY_OUTPUT"
@@ -224,7 +217,7 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ always() }}
         with:
-          name: exp04-${{ matrix.strategy }}-rep${{ matrix.replicate }}-attempt${{ github.run_attempt }}
+          name: exp05-${{ matrix.strategy }}-rep${{ matrix.replicate }}-attempt${{ github.run_attempt }}
           path: ${{ env.STUDY_OUTPUT }}
           if-no-files-found: error
           retention-days: 14

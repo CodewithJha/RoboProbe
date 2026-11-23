@@ -1,4 +1,4 @@
-"""Collect one preregistered EXP-04 cell without running its post-collection analysis."""
+"""Collect one preregistered EXP-05 cell without running its post-collection analysis."""
 
 from __future__ import annotations
 
@@ -19,20 +19,18 @@ from roboprobe.experiments.planner import (
     CampaignSpec,
     ComparabilityKey,
     ExperimentDesign,
-    StrategyVariant,
     load_design,
     plan,
 )
-from roboprobe.experiments.runner import _as_campaign_row, export_raw_parquet
+from roboprobe.experiments.runner import VARIANT_TAG_PREFIX, _as_campaign_row, export_raw_parquet
 from roboprobe.runner.catalog import SutProfileService
 from roboprobe.scenario._documents import read_document
 from roboprobe.scenario.repo_root import discover_repo_root
 from roboprobe.scenario.space import ScenarioSpace
 from roboprobe.scenario.sut_profile import load_sut_profile_text
 
-_DESIGN_SHA256 = "1e5b74000d42ae4b2be121d5d94aec31e55c97c915e1733e110f07129fb34d7a"
-_OFAT_BUDGET = 30
-_OFAT = "S-OFAT"
+_DESIGN_SHA256 = "ce40a7f73893dc10f1ae04c5af53f04bb4f31cc723d3f142c6692705db10b24a"
+_PROFILES = {"profile_A": "tb4_nav2_default", "profile_B": "tb4_nav2_tuned"}
 
 
 def _cell(
@@ -43,23 +41,16 @@ def _cell(
     key: ComparabilityKey,
     default_seeds: int,
 ) -> CampaignSpec:
-    if strategy == _OFAT:
-        design = design.model_copy(
-            update={
-                "strategies": (StrategyVariant(id=_OFAT),),
-                "seeds": design.seeds.model_copy(update={"count": 1}),
-                "budget": _OFAT_BUDGET,
-            }
-        )
     matches = [
         spec
         for spec in plan(design, default_seeds=default_seeds, key=key)
-        if (spec.strategy_id, spec.experiment_rep) == (strategy, replicate)
+        if (spec.strategy_label, spec.experiment_rep) == (strategy, replicate)
     ]
     if len(matches) != 1:
-        msg = "requested cell is outside the registered EXP-04 plan"
+        msg = "requested cell is outside the registered EXP-05 plan"
         raise ValueError(msg)
-    return matches[0]
+    spec = matches[0]
+    return spec.model_copy(update={"tags": (*spec.tags, f"{VARIANT_TAG_PREFIX}{strategy}")})
 
 
 def _write_json(path: Path, value: object) -> None:
@@ -69,25 +60,25 @@ def _write_json(path: Path, value: object) -> None:
 def main(argv: Sequence[str] | None = None) -> int:
     """Resolve the locked cell and export its proposal-ordered outcomes and provenance."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("strategy", choices=("S-RANDOM", "S-PROBE", _OFAT))
+    parser.add_argument("strategy", choices=tuple(_PROFILES))
     parser.add_argument("replicate", type=int)
     parser.add_argument("output", type=Path)
     parser.add_argument("--plan-only", action="store_true")
     args = parser.parse_args(argv)
     root = discover_repo_root()
-    frozen = root / "configs/experiments/exp04_gazebo.yaml"
+    frozen = root / "configs/experiments/exp05_profiles.yaml"
     if hashlib.sha256(frozen.read_bytes()).hexdigest() != _DESIGN_SHA256:
-        msg = "EXP-04 YAML differs from the preregistered bytes"
+        msg = "EXP-05 YAML differs from the preregistered bytes"
         raise ValueError(msg)
     design = load_design(frozen)
     space_path = root / "configs/scenario_spaces" / f"{design.space.id}.yaml"
     space = ScenarioSpace.from_yaml(space_path, base_dir=root)
-    profile_path = root / "configs/sut_profiles" / f"{design.sut_profile_id}.yaml"
+    profile_path = root / "configs/sut_profiles" / f"{_PROFILES[args.strategy]}.yaml"
     profile_source = read_document(profile_path)
     profile = load_sut_profile_text(profile_source, source=str(profile_path))
     settings = load_settings()
     spec = _cell(
-        design,
+        design.model_copy(update={"sut_profile_id": profile.id}),
         args.strategy,
         args.replicate,
         key=_resolve_key(space, profile.config_hash, design.backend),
@@ -99,9 +90,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         "design": design.model_dump(mode="json"),
         "cell": spec.model_dump(mode="json"),
         "profile_sha256": hashlib.sha256(profile_path.read_bytes()).hexdigest(),
-        "ofat_note": "Separate doc 19 cell, first registered CRN seed"
-        if spec.strategy_id == _OFAT
-        else None,
     }
     _write_json(args.output / "registered-cell.json", provenance)
     if args.plan_only:
@@ -123,7 +111,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             status="RUNNING",
         )
         campaign_id = writer.add_campaign(spec, experiment_id)
-        print(f"EXP-04 cell {spec.name}: campaign {campaign_id}", flush=True)
+        print(f"EXP-05 cell {spec.name}: campaign {campaign_id}", flush=True)
         status = run_inline(campaign_id, settings, workers=1, serve_probe=False)
         with services.make_uow() as uow:
             campaign = uow.campaigns.get(campaign_id)
@@ -145,7 +133,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "observed_episodes": len(observed),
                 "expected_episodes": spec.budget,
                 "raw_parquet_sha256": hashlib.sha256(raw.read_bytes()).hexdigest(),
-                "pooled_analysis": "pending",
+                "risk_analysis": "pending",
             },
         )
         return 0 if complete else 1
