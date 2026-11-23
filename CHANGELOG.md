@@ -240,6 +240,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Changed
 
+- Add an opt-in Gazebo Nav2 profile with a longer action acknowledgement window and a real
+  warehouse collision test (T-098).
+
 - Risk Atlas loads Plotly for the full heatmap and static previews, with responsive uncertainty hatches and keyboard-accessible probe controls (T-111a).
 - Risk atlas off-axis controls now query and update the share URL after edits settle (T-111b).
 - The Bench reserves space while campaigns load. The campaign wizard prevents repeated
