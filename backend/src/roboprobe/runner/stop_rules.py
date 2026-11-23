@@ -44,6 +44,7 @@ class CampaignCounters:
     started_at: datetime | None
     now: datetime
     stop_rules: dict[str, object]
+    has_inflight: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,7 +133,9 @@ def max_consecutive_invalid_pause(
     return None
 
 
-def evaluate_stop_rules(counters: CampaignCounters, settings: RunnerSettings) -> StopDecision:
+def evaluate_stop_rules(
+    counters: CampaignCounters, settings: RunnerSettings, *, strategy_exhausted: bool = False
+) -> StopDecision:
     """Evaluate stop then auto-pause rules; first match wins."""
     for rule in (budget_exhausted, max_modes_reached, max_wall_reached):
         decision = rule(counters)
@@ -145,6 +148,10 @@ def evaluate_stop_rules(counters: CampaignCounters, settings: RunnerSettings) ->
         decision = rule(counters)
         if decision is not None:
             return decision
+    if strategy_exhausted and not counters.has_inflight:
+        return StopDecision(
+            action="analyze", reason="strategy_exhausted", code="STRATEGY_EXHAUSTED"
+        )
     return StopDecision(action="continue")
 
 
@@ -162,6 +169,7 @@ def counters_from_runs(  # noqa: PLR0913 - counters need the full campaign snaps
     invalid = 0
     consecutive = 0
     streak = 0
+    has_inflight = False
     ordered = list(runs)
     for run in ordered:
         status = run.status if isinstance(run.status, RunStatus) else RunStatus(str(run.status))
@@ -170,6 +178,7 @@ def counters_from_runs(  # noqa: PLR0913 - counters need the full campaign snaps
             verdict = Verdict(verdict)
         is_terminal = status in {RunStatus.DONE, RunStatus.ERROR, RunStatus.CANCELLED}
         if not is_terminal:
+            has_inflight = True
             continue
         if status is RunStatus.CANCELLED:
             streak = 0
@@ -191,4 +200,5 @@ def counters_from_runs(  # noqa: PLR0913 - counters need the full campaign snaps
         started_at=started_at,
         now=now,
         stop_rules=stop_rules,
+        has_inflight=has_inflight,
     )

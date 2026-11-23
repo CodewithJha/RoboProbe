@@ -63,6 +63,25 @@ def test_invalid_ratio_and_consecutive() -> None:
     assert d.action == "pause" and d.code == "INFRA_UNHEALTHY"
 
 
+@pytest.mark.parametrize(
+    ("status", "action"),
+    [(RunStatus.EVALUATING, "continue"), (RunStatus.DONE, "analyze")],
+)
+def test_exhausted_strategy_finishes_after_its_final_run(status: RunStatus, action: str) -> None:
+    counters = counters_from_runs(
+        budget=5,
+        runs=[SimpleNamespace(status=status, verdict=Verdict.PASS)],
+        modes_found=0,
+        started_at=None,
+        now=datetime(2020, 1, 1, tzinfo=UTC),
+        stop_rules={},
+    )
+    decision = evaluate_stop_rules(counters, RunnerSettings(), strategy_exhausted=True)
+    assert decision.action == action
+    if action == "analyze":
+        assert decision.reason == "strategy_exhausted"
+
+
 def test_counters_from_runs_streak() -> None:
     runs = [
         SimpleNamespace(status=RunStatus.DONE, verdict=Verdict.PASS),

@@ -2,12 +2,19 @@
 
 > **Project:** RoboProbe — Intelligent Virtual Robotics Testing & Failure Discovery Platform
 > **Author / Owner:** Priyanshu Jha ([@CodewithJha](https://github.com/CodewithJha))
-> **Doc set version:** 1.1.0 (Phase 0 — Specification) · **Status:** Approved for implementation
+> **Doc set version:** 1.1.0 · **Status:** v1.0 verification in progress
 > **Audience:** AI coding agents (primary), the project owner, reviewers/evaluators
 
-This folder is the **single source of truth** for RoboProbe. No application code exists yet; every
-module, interface, table, endpoint and screen that will be built is specified here. When code and docs
-disagree, the docs win until a change is recorded (see [§4 Change control](#4-change-control)).
+This folder is the **single source of truth** for RoboProbe requirements and design decisions.
+When code and docs disagree, the docs win until a change is recorded
+(see [§4 Change control](#4-change-control)).
+
+Start with the [dashboard quickstart](../README.md#try-the-dashboard-locally) to run the
+application. For the implemented interfaces, see the [OpenAPI snapshot](../api/openapi.json),
+the [generated settings tables in section 4](27-configuration-reference.md),
+and the [dashboard router](../web/src/app/router.tsx).
+The [traceability matrix](28-traceability-matrix.md#21-evidence-links-for-individual-requirements) records
+checked-in tests and completed issues. The [evidence index](evidence/README.md) records measured results.
 
 ## 1. Document map
 
@@ -81,7 +88,7 @@ flowchart TD
 
 **Project owner / evaluator:** 01 → 26 → 19 → 22 → 23.
 
-**Operator (running RoboProbe):** 17 → 29 → 27 → 30 → 21 → 31.
+**Operator (running RoboProbe):** [Deployment guide](29-deployment-guide.md) → [Configuration](27-configuration-reference.md) → [Runbook](30-operations-runbook.md) → 21 → 31.
 
 ## 3. Conventions used across all documents
 
@@ -155,4 +162,4 @@ inside node labels.
 3. Requirement IDs are never reused. A removed requirement is marked `~~FR-XXX-NNN~~ (withdrawn: reason)`.
 4. The traceability matrix in 02 §7 must stay consistent with 22.
 
-*Last updated: 2026-11-19 by Priyanshu Jha.*
+*Last updated: 2026-11-23 by Priyanshu Jha.*

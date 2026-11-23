@@ -71,19 +71,30 @@ def test_campaign_create_start_status(db_url: str, tmp_path: Path) -> None:
     assert json.loads(status.stdout)["status"] == "RUNNING"
 
 
-def test_campaign_run_inline_completes(db_url: str, tmp_path: Path) -> None:
+@pytest.mark.timeout(30)
+@pytest.mark.parametrize("finite_grid", [False, True], ids=["random", "finite-grid"])
+def test_campaign_run_inline_completes(
+    db_url: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, finite_grid: bool
+) -> None:
     del db_url
+    strategy, budget, backend, space, profile = (
+        ("S-GRID", 5, "benchmark", "branin_2d", "benchmark_default")
+        if finite_grid
+        else ("S-RANDOM", 4, "kinematic2d", "warehouse_v1", "k2d_default")
+    )
+    if finite_grid:
+        monkeypatch.setenv("ROBOPROBE_SELECTION__BENCHMARKS__FUNCTION", "branin_falsify")
     cfg = tmp_path / "inline.yaml"
     cfg.write_text(
         yaml.safe_dump(
             {
                 "schema_version": 1,
                 "name": "inline4",
-                "space": {"id": "warehouse_v1"},
-                "sut_profile_id": "k2d_default",
-                "backend": "kinematic2d",
-                "strategy": {"id": "S-RANDOM", "seed": 3},
-                "budget": 4,
+                "space": {"id": space},
+                "sut_profile_id": profile,
+                "backend": backend,
+                "strategy": {"id": strategy, "seed": 3},
+                "budget": budget,
                 "batch_size": 2,
                 "start": True,
             }

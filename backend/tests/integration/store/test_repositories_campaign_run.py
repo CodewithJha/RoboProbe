@@ -5,9 +5,12 @@ from __future__ import annotations
 from collections.abc import Callable
 
 import pytest
+from sqlalchemy import event
+from sqlalchemy.orm import Session
 from tests.integration.store._seed import seed_campaign
 
-from roboprobe.core.types import CampaignStatus
+from roboprobe.core.types import CampaignStatus, FailureClass, Verdict
+from roboprobe.store.orm import RunRow
 from roboprobe.store.records import NewRun, OracleResultRecord, StrategyStateRecord
 from roboprobe.store.uow import SqlAlchemyUnitOfWork
 
@@ -66,3 +69,63 @@ def test_uow_rollback(uow_factory: Callable[[], SqlAlchemyUnitOfWork]) -> None:
         # Nested transaction rollback on the test connection: the outer pytest
         # transaction still isolates tests; the UoW rollback drops the save.
         assert uow.campaigns.get(cid_holder["id"]) is None  # type: ignore[arg-type]
+
+
+def test_history_projects_ordered_observations(store_session: Session) -> None:
+    uow = SqlAlchemyUnitOfWork(lambda: store_session, notify_channel="roboprobe_events")
+    uow.bind_session(store_session)
+    cid, _ = seed_campaign(uow)
+    rows = [
+        RunRow(
+            campaign_id=cid,
+            ordinal=ordinal,
+            repeat_index=repeat,
+            backend="kinematic2d",
+            scenario_hash=f"h{ordinal}",
+            scenario_values={},
+            x_unit=[0.25],
+            seed=ordinal,
+            phase=phase,
+            status=status,
+            verdict=verdict,
+            primary_failure=failure,
+            robustness=-0.25,
+            manifest={"evidence": "stored independently of the observation"},
+        )
+        for ordinal, repeat, phase, status, verdict, failure in (
+            (4, 0, "manual", "DONE", "PASS", None),
+            (0, 1, "explore", "DONE", "FAIL", "F-COL"),
+            (1, 0, "confirm", "DONE", "FAIL", "F-COL"),
+            (0, 0, "replay", "DONE", "FAIL", "unknown"),
+            (2, 0, "explore", "DONE", "INVALID", None),
+            (3, 0, "explore", "RUNNING", None, None),
+        )
+    ]
+    store_session.add_all(rows)
+    store_session.flush()
+    ids = [row.id for row in rows]
+    store_session.expunge_all()
+    loaded_runs: list[RunRow] = []
+
+    def record_loaded_run(_session: Session, instance: object) -> None:
+        if isinstance(instance, RunRow):
+            loaded_runs.append(instance)
+
+    event.listen(store_session, "loaded_as_persistent", record_loaded_run)
+    history = uow.runs.history(cid)
+    assert [item.run_id for item in history] == [ids[3], ids[1]]
+    assert history[0].failure_class is None
+    assert history[1].failure_class is FailureClass.COL
+    assert history[1].x_unit == (0.25,)
+    assert history[1].robustness == -0.25
+    assert history[1].verdict is Verdict.FAIL
+    assert [item.run_id for item in uow.runs.history(cid, exclude_phases=frozenset())] == [
+        ids[3],
+        ids[1],
+        ids[2],
+        ids[0],
+    ]
+    assert [
+        item.run_id for item in uow.runs.history(cid, exclude_phases=frozenset({"replay"}))
+    ] == [ids[1], ids[2], ids[0]]
+    assert loaded_runs == []

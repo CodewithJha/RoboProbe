@@ -7,7 +7,7 @@
 *Intelligent Virtual Robotics Testing & Failure Discovery Platform*
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Status: design phase](https://img.shields.io/badge/status-design%20phase%20%28pre--alpha%29-orange.svg)](#project-status--roadmap)
+[![Status: v1.0 verification](https://img.shields.io/badge/status-v1.0%20verification-orange.svg)](#project-status--roadmap)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-3776AB.svg?logo=python&logoColor=white)](docs/15-tech-stack-and-adrs.md)
 [![ROS 2 Jazzy](https://img.shields.io/badge/ROS%202-Jazzy-22314E.svg?logo=ros&logoColor=white)](docs/10-simulator-integration.md)
 [![Docs](https://img.shields.io/badge/docs-35%20documents-brightgreen.svg)](docs/00-index.md)
@@ -18,10 +18,11 @@
 
 </div>
 
-> [!IMPORTANT]
-> **RoboProbe is in the design phase.** This repository currently contains the complete engineering
-> specification (35 documents + 16 ADRs). **There is no runnable code yet** — implementation starts with
-> milestone M1. Star/watch the repo to follow progress, and feedback on the design is very welcome.
+> [!NOTE]
+> Run the Field Notebook dashboard and a 50-run warehouse campaign locally with the built-in
+> `kinematic2d` backend. The Gazebo warehouse backend is also runnable. Preregistered evaluation
+> and v1.0 release verification are in progress.
+> [Try the dashboard](#try-the-dashboard-locally).
 
 ## Table of contents
 
@@ -144,7 +145,7 @@ Rationale and alternatives for each choice: [15 Tech stack & ADRs](docs/15-tech-
 | M0–M3 | Specification, settings, storage, CLI, runner and deterministic `kinematic2d` backend | Complete |
 | M4–M6 | Baselines, metrics, S-PROBE, failure analysis and risk mapping | Complete |
 | M7–M8 | REST/SSE API and Field Notebook dashboard | Complete |
-| M9 | Gazebo, ROS 2 Jazzy and Nav2 warehouse integration | Warehouse launch and backend verified. Packaging and nightly tests in progress. |
+| M9 | Gazebo, ROS 2 Jazzy and Nav2 warehouse integration | Warehouse launch and worker packaging verified. Scheduled acceptance is in progress. |
 | M10 | Preregistered experiments and reproducibility | In progress |
 | M11 | Deployment verification and v1.0 release | In progress |
 
@@ -200,37 +201,52 @@ Start at [docs/00-index.md](docs/00-index.md) for reading paths and conventions.
 
 ## Try the dashboard locally
 
-Install Docker Engine with Compose v2, Git, Make, and Python 3. Then build and start
-the dashboard, authenticated API, PostgreSQL, orchestrator, and kinematic2d workers.
+Install Docker with Compose v2, Git, Make, and Python 3. The `app` profile builds and starts
+the dashboard, authenticated API, PostgreSQL, orchestrator, and `kinematic2d` workers.
 
 ```bash
 git clone https://github.com/CodewithJha/RoboProbe.git && cd RoboProbe
 cp .env.example .env
+mkdir -p data/artifacts
+```
+
+On native Linux, run `sudo chown 10001:10001 data/artifacts` to give the container user
+write access. Then start the app and run the demo.
+
+```bash
 make up PROFILES=app
 make demo PROFILES=app
 ```
 
-Open `http://127.0.0.1:8080`, enter the token from `secrets/api_token` in
-**Settings**, and open **Bench** to inspect the example warehouse campaign.
-Choose **New campaign** to run your own warehouse scenarios. Use `make down`
-when you finish. The [deployment guide](docs/29-deployment-guide.md) covers
-installation details and artifact permissions on native Linux.
+`make up` creates the local database password and API token. `make demo` starts a 50-run
+warehouse campaign, prints its ID, and waits for it to finish.
+
+1. Open `http://127.0.0.1:8080`. In **Settings**, paste the token from `secrets/api_token`
+   into **Bearer token (session only)** and select **Save token**.
+2. Open the demo from **Bench** or **Campaigns**. **Console** shows campaign progress,
+   **Casebook** groups failures, and **Atlas** shows estimated failure risk.
+3. Select **New campaign** on **Bench** to run your own warehouse scenarios.
+
+Use `make down` to stop the stack. See the [deployment guide](docs/29-deployment-guide.md)
+for installation from published images.
 
 ![RoboProbe Bench showing warehouse campaigns and connected workers](docs/assets/dashboard/bench.png)
 
 ![RoboProbe Risk Atlas showing the probability of failure across speed and obstacle lateral clearance](docs/assets/dashboard/risk-atlas.png)
 
-### Backend development
+### Development
 
-Requires `git`, `make` and [`uv`](https://docs.astral.sh/uv/) (uv installs Python 3.12 itself).
+The development targets also require Node.js 24 and pnpm. Install [`uv`](https://docs.astral.sh/uv/)
+to manage Python 3.12. See the [development prerequisites](docs/17-dev-environment-and-docker.md#2-prerequisites).
 
 ```bash
 cp .env.example .env                        # environment template (docs/27)
 cp roboprobe.example.toml roboprobe.toml    # optional config file template (docs/27 §5)
-make setup        # uv sync --locked --all-extras in backend/ + pre-commit hooks
-make lint         # ruff check + ruff format --check
-make typecheck    # mypy --strict on backend/src
-make test         # pytest (excludes `sim` and `slow` markers); `make test-fast` runs in parallel
+make setup        # install locked backend and web dependencies and Git hooks
+make lint         # run backend and web lint checks
+make typecheck    # run strict Python and TypeScript checks
+make test         # run default pytest and Vitest suites
+make test-fast    # run backend unit, property and contract tests in parallel
 make help         # list every target
 ```
 

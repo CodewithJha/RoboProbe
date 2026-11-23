@@ -1,0 +1,15 @@
+# Opt-in Gazebo profile for the T-098 software-rendered warehouse diagnostic.
+schema_version: 1
+id: tb4_nav2_ack_1000ms
+backend: gazebo_nav2
+name: TurtleBot 4 Nav2 with 1 s action acknowledgement
+description: Increases the Nav2 behavior-tree action acknowledgement window for software-rendered tests.
+config:
+  base_nav2_params: nav2_bringup/params/nav2_params.yaml
+  speed_param_paths:
+    - controller_server.ros__parameters.FollowPath.vx_max
+    - velocity_smoother.ros__parameters.max_velocity[0]
+  nav2_overrides:
+    bt_navigator:
+      ros__parameters:
+        default_server_timeout: 1000

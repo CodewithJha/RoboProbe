@@ -185,33 +185,38 @@ class SqlRunRepo:
         exclude_phases: frozenset[str] | None = None,
     ) -> list[Observation]:
         skipped = frozenset({"confirm", "manual"}) if exclude_phases is None else exclude_phases
-        rows = self._s.scalars(
-            select(RunRow)
+        rows = self._s.execute(
+            select(
+                RunRow.id,
+                RunRow.x_unit,
+                RunRow.robustness,
+                RunRow.verdict,
+                RunRow.primary_failure,
+            )
             .where(
                 RunRow.campaign_id == campaign_id,
                 RunRow.status == "DONE",
                 RunRow.verdict.is_not(None),
                 RunRow.verdict != Verdict.INVALID.value,
+                RunRow.phase.not_in(skipped),
             )
             .order_by(RunRow.ordinal, RunRow.repeat_index)
-        ).all()
+        )
         out: list[Observation] = []
-        for row in rows:
-            if row.phase in skipped:
-                continue
+        for run_id, x_unit, robustness, verdict, primary_failure in rows:
             failure = None
-            if row.primary_failure:
+            if primary_failure:
                 try:
-                    failure = FailureClass(row.primary_failure)
+                    failure = FailureClass(primary_failure)
                 except ValueError:
                     failure = None
             out.append(
                 Observation(
-                    x_unit=tuple(row.x_unit),
-                    robustness=row.robustness,
-                    verdict=Verdict(row.verdict) if row.verdict else Verdict.PASS,
+                    x_unit=tuple(x_unit),
+                    robustness=robustness,
+                    verdict=Verdict(verdict) if verdict else Verdict.PASS,
                     failure_class=failure,
-                    run_id=row.id,
+                    run_id=run_id,
                 )
             )
         return out

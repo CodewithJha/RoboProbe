@@ -29,6 +29,7 @@ from roboprobe.core.metrics_registry import Metrics
 from roboprobe.core.settings import RoboProbeSettings
 from roboprobe.core.types import CampaignStatus, RunStatus
 from roboprobe.observability.tracing import span
+from roboprobe.runner.checkpoint import CheckpointStore
 from roboprobe.runner.lifecycle import CampaignService
 from roboprobe.runner.loop import CampaignLoop
 from roboprobe.runner.ports import UowFactory
@@ -190,6 +191,7 @@ class Orchestrator:
             params=dict(campaign.strategy_params),
         )
         strategy = create_strategy(campaign.strategy_id, ctx)
+        CheckpointStore(self.uow_factory).restore(campaign_id, strategy)
         loop = CampaignLoop(
             campaign_id,
             uow_factory=self.uow_factory,
@@ -218,7 +220,9 @@ class Orchestrator:
                     now=self.clock.now(),
                     stop_rules=dict(current.stop_rules),
                 )
-                decision = evaluate_stop_rules(counters, self.settings.runner)
+                decision = evaluate_stop_rules(
+                    counters, self.settings.runner, strategy_exhausted=strategy.is_exhausted()
+                )
             if decision.action == "analyze":
                 self.campaigns.mark_analyzing(campaign_id, reason=decision.reason)
                 self.campaigns.complete(campaign_id, reason=decision.reason)

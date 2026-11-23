@@ -1,0 +1,25 @@
+backend: kinematic2d
+batch_size: 4
+budget: 16
+description: Scalability arm (docs/19 section 4 EXP-07). Strategies RANDOM and PROBE,
+  reduced smoke for pipeline evidence.
+id: exp07_pipeline_smoke
+metrics:
+- MET-02
+- MET-03
+- MET-09
+name: EXP-07 pipeline smoke, d=6 reduced design
+schema_version: 1
+seeds:
+  count: 1
+  root: 20261119
+space:
+  id: warehouse_v1
+strategies:
+- id: S-RANDOM
+- id: S-PROBE
+  params:
+    epsilon: 0.05
+sut_profile_id: k2d_default
+tags:
+- scalability

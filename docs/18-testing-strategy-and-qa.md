@@ -86,12 +86,29 @@ Determinism (bit-identical trace hash); speed (NFR-PERF-001 benchmark); designed
 
 Nominal scenario passes in ≥ 4/5 runs; canonical collision scenario (P2 = 0, P3 = 5 lux) fails; every parameter visibly changes the materialised files; teardown leaves no processes; RTF recorded.
 
+The nominal check runs seeds 1 through 5 with the opt-in
+[`tb4_nav2_warehouse_acceptance`](../configs/sut_profiles/tb4_nav2_warehouse_acceptance.yaml)
+profile. The production oracle judges the original warehouse task and its ground-truth goal
+tolerance. The [acceptance evidence](evidence/T-098-warehouse-acceptance.md) records the
+tuned and shipped-profile results separately.
+
 The Gazebo nightly runs at 02:00 IST. It builds the worker from that revision and runs
 the marked backend tests against the pinned warehouse cache. A disposable PostgreSQL service
 supports the replay and bag integration test. The same workflow runs the Jazzy package tests
 with colcon. GitHub's job summary reports the per-test durations and
 measured episode real-time factors, and the failing jobs retain their logs and traces.
-Milestone sign-off requires three consecutive green scheduled runs.
+Milestone sign-off requires three consecutive green scheduled runs. The
+[nightly sign-off evidence](evidence/T-098-nightly-signoff.md) records the
+bootstrap `workflow_dispatch` chain on `main` before the first cron.
+
+**Teardown:** `test_gazebo_launch.py` asserts that `_orphan_pids` is empty after a live
+`episode.launch.py` run (doc 18 §4.8 "teardown leaves no processes").
+
+**Quarantine:** do not disable a flaky simulator test in the default nightly without a
+linked GitHub issue. Register it in [`backend/tests/sim/quarantine.yaml`](../backend/tests/sim/quarantine.yaml)
+with the node id, issue reference, and reason; mark the test `@pytest.mark.quarantine` and
+exclude quarantined tests from `sim-nightly` (`-m "sim and not quarantine"`). An empty
+registry is valid.
 
 ### 4.9 API
 

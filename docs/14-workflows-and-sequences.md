@@ -53,7 +53,7 @@ stateDiagram-v2
     CREATED --> RUNNING: start
     RUNNING --> PAUSED: pause, or auto-pause on infra alert
     PAUSED --> RUNNING: resume
-    RUNNING --> ANALYZING: budget exhausted or stop rule met
+    RUNNING --> ANALYZING: budget or finite strategy exhausted, or stop rule met
     ANALYZING --> COMPLETED: analysis done
     ANALYZING --> FAILED: analysis error after retries
     RUNNING --> FAILED: unrecoverable orchestrator error

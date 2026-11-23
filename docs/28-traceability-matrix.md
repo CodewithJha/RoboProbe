@@ -35,6 +35,12 @@ Gazebo depth verification (T-093c, #194, FR-SIM-003): the Jazzy test
 `ros_ws/src/roboprobe_ros/test/test_perception_degrader.py` checks seeded depth loss and
 radial noise, camera header preservation, depth-one QoS and processing within the camera period.
 
+Gazebo nominal acceptance (T-098, #205, FR-SIM-003 and NFR-REL-001) uses
+`backend/tests/sim/test_nominal_passes.py` to run the real warehouse episode five times
+and check the production ground-truth verdict. The [warehouse evidence](evidence/T-098-warehouse-acceptance.md)
+identifies the profile used by each run; [nightly sign-off](evidence/T-098-nightly-signoff.md)
+records the green `sim-nightly` rehearsal chain and quarantine registry.
+
 Catalogue API verification (T-081a, #146; FR-API-001, FR-SCN-001, UC-01/UC-10):
 `backend/tests/api/test_spaces.py`, `test_sut_profiles.py` and `test_upload_body.py` cover
 YAML/JSON uploads, semantic validation, JSON pointers, versioning, idempotency, profile conflicts,
@@ -62,6 +68,11 @@ Gazebo worker packaging (T-095, #200, FR-SIM-003, NFR-DEP-001, NFR-REP-001) uses
 image workflow to build the pinned Jazzy and Harmonic stack and smoke-test the non-root
 runtime. `tests/unit/runner/test_manifest.py` verifies the image version metadata is
 included in each Gazebo manifest.
+
+Compose policy verification (T-127, #219, NFR-DEP-001 and NFR-DEP-002) runs in the
+[image workflow](../.github/workflows/images.yml). It tests the validator and checks the
+rendered Compose profiles for non-root users, filesystem and capability restrictions,
+resource limits, health checks, and successful migration before application startup.
 
 Trace transport verification (T-081e, #150; FR-DSH-005, FR-STO-002, NFR-SEC-003):
 `tests/api/test_trace_artifacts.py` covers clearance minima, flag transitions, rate caps, column
@@ -110,10 +121,17 @@ whose MCAP is downloaded through the API and read by Jazzy rosbag2.
 ### 2.1 Evidence links for individual requirements
 
 The rows below link each FR and NFR in [the specification](02-software-requirements-specification.md)
-to named tests and completed implementation issues. A dash records a pending evidence link. Test
-nodes use repository-relative paths followed by the test function or literal browser test title.
-The checker verifies source declarations and current GitHub closure. Release measurements and
-manual acceptance results are recorded separately.
+to checked-in verification and completed implementation issues. A dash records a pending evidence
+link. Test nodes use repository-relative paths followed by the test function or literal browser test
+title. For NFR-EXT-002, the checker follows the CI lint job through `make lint` to the Import Linter
+layer and domain-independence contracts. The checker verifies source references and current GitHub
+closure. Release measurements and manual acceptance results are recorded separately.
+
+For NFR-MNT-001, CI checks mypy strict and 70% web line coverage. The backend gate combines
+statement and branch coverage at 85%. The separate backend line threshold is pending. For
+NFR-MNT-002, the Google-style Ruff and annotation checks run in CI. Existing public docstring
+suppressions still need review. The native backend CI matrix covers Ubuntu and macOS. WSL2
+verification for NFR-PORT-001 is pending.
 
 Run the strict audit from the repository root with an authenticated GitHub CLI.
 
@@ -130,7 +148,7 @@ python3 scripts/check_traceability.py --closed-issues /tmp/roboprobe-closed-issu
 
 <!-- BEGIN REQUIREMENT EVIDENCE -->
 
-| Requirement | Test nodes | Completed GitHub issues |
+| Requirement | Test nodes or CI gate | Completed GitHub issues |
 |-------------|------------|-------------------------|
 | FR-SCN-001 | `backend/tests/unit/cli/test_m3_commands.py::test_space_validate` | [#89](https://github.com/CodewithJha/RoboProbe/issues/89) |
 | FR-SCN-002 | `backend/tests/unit/scenario/test_schemas.py::test_removing_a_required_field_fails_with_json_pointer` | [#32](https://github.com/CodewithJha/RoboProbe/issues/32) |
@@ -150,7 +168,7 @@ python3 scripts/check_traceability.py --closed-issues /tmp/roboprobe-closed-issu
 | FR-SEL-008 | `backend/tests/unit/runner/test_campaign_loop.py::test_enqueued_proposal_keeps_predictions`, `web/src/features/console/ConsolePage.test.tsx::virtualizes 10,000 entries and shows available rationale fields` | [#119](https://github.com/CodewithJha/RoboProbe/issues/119), [#172](https://github.com/CodewithJha/RoboProbe/issues/172) |
 | FR-SEL-009 | `backend/tests/unit/selection/test_cem_plugin.py::test_s_cem_loaded_via_entry_point` | [#124](https://github.com/CodewithJha/RoboProbe/issues/124) |
 | FR-RUN-001 | `backend/tests/integration/store/test_queue_exactly_once.py::test_four_claimers_hundred_runs` | [#64](https://github.com/CodewithJha/RoboProbe/issues/64) |
-| FR-RUN-002 | `backend/tests/unit/runner/test_reaper.py::test_default_timeout_requeues`, `backend/tests/unit/runner/test_reaper.py::test_overridden_timeout_and_schedule` | [#82](https://github.com/CodewithJha/RoboProbe/issues/82) |
+| FR-RUN-002 | `backend/tests/unit/runner/test_reaper.py::test_default_timeout_requeues`, `backend/tests/unit/runner/test_reaper.py::test_overridden_timeout_and_schedule`, `backend/tests/unit/runner/test_stop_rules.py::test_exhausted_strategy_finishes_after_its_final_run` | [#82](https://github.com/CodewithJha/RoboProbe/issues/82) |
 | FR-RUN-003 | `backend/tests/unit/backends/gazebo/test_process.py::test_cancel_or_timeout_cleans_the_entire_process_group` | [#80](https://github.com/CodewithJha/RoboProbe/issues/80), [#202](https://github.com/CodewithJha/RoboProbe/issues/202) |
 | FR-RUN-004 | `backend/tests/contract/test_backend_contract.py::test_trace_schema_and_rate`, `ros_ws/src/roboprobe_ros/test/test_episode_recorder.py::test_simulation_trace_and_bag` | [#57](https://github.com/CodewithJha/RoboProbe/issues/57), [#197](https://github.com/CodewithJha/RoboProbe/issues/197) |
 | FR-RUN-005 | `backend/tests/unit/runner/test_replay_service.py::test_enqueue_replays_fresh_seeds`, `backend/tests/unit/runner/test_manifest.py::test_derived_seeds_match_derive_seed` | [#17](https://github.com/CodewithJha/RoboProbe/issues/17), [#85](https://github.com/CodewithJha/RoboProbe/issues/85) |
@@ -177,7 +195,7 @@ python3 scripts/check_traceability.py --closed-issues /tmp/roboprobe-closed-issu
 | FR-RSK-003 | `backend/tests/unit/risk/test_mapper.py::test_all_pair_slices_six_d_under_one_second` | [#135](https://github.com/CodewithJha/RoboProbe/issues/135) |
 | FR-RSK-004 | `backend/tests/unit/risk/test_volume.py::test_estimate_reproducible_and_fractions_sum` | [#136](https://github.com/CodewithJha/RoboProbe/issues/136) |
 | FR-RSK-005 | `backend/tests/unit/risk/test_volume.py::test_robustness_score_in_unit_interval` | [#136](https://github.com/CodewithJha/RoboProbe/issues/136) |
-| FR-EXP-001 | `backend/tests/integration/experiments/test_experiment_runner.py::test_branin_experiment_completes_and_stores_comparison` | [#109](https://github.com/CodewithJha/RoboProbe/issues/109) |
+| FR-EXP-001 | `backend/tests/integration/experiments/test_experiment_runner.py::test_branin_experiment_completes_and_stores_comparison` and `backend/tests/unit/experiments/test_analytic_discovery.py::test_analytic_comparison_counts_each_verified_ground_truth_mode_once`, `backend/tests/unit/experiments/test_analytic_discovery.py::test_branin_comparison_counts_three_noise_free_modes_in_proposal_order` (MET-02/09) | [#109](https://github.com/CodewithJha/RoboProbe/issues/109) |
 | FR-EXP-002 | `backend/tests/unit/metrics/test_statistics.py::test_compare_holm_and_a12_against_reference`, `backend/tests/unit/metrics/test_statistics.py::test_bootstrap_ci_deterministic_and_degenerate` | [#106](https://github.com/CodewithJha/RoboProbe/issues/106) |
 | FR-EXP-003 | `backend/tests/unit/reporting/test_figures.py::test_experiment_figures`, `web/src/features/trials/comparison/ComparisonPage.test.tsx::plots empirical samples, mode bands and right-censored survival for completed cells` | [#141](https://github.com/CodewithJha/RoboProbe/issues/141), [#181](https://github.com/CodewithJha/RoboProbe/issues/181) |
 | FR-DSH-001 | `web/e2e/specs/create-campaign.spec.ts::wizard creates a k2d campaign and console streams runs` | [#170](https://github.com/CodewithJha/RoboProbe/issues/170), [#187](https://github.com/CodewithJha/RoboProbe/issues/187) |
@@ -221,11 +239,11 @@ python3 scripts/check_traceability.py --closed-issues /tmp/roboprobe-closed-issu
 | NFR-CFG-001 | `backend/tests/unit/core/test_settings_validation.py::test_unknown_nested_keys_are_rejected` | [#19](https://github.com/CodewithJha/RoboProbe/issues/19) |
 | NFR-CFG-002 | `backend/tests/unit/core/test_settings_precedence.py::test_precedence_each_layer_removed_yields_next`, `backend/tests/unit/core/test_settings_validation.py::test_all_errors_are_reported_together` | [#19](https://github.com/CodewithJha/RoboProbe/issues/19) |
 | NFR-CFG-003 | `backend/tests/unit/scripts/test_gen_config_docs.py::test_repository_files_are_up_to_date` | [#22](https://github.com/CodewithJha/RoboProbe/issues/22) |
-| NFR-DEP-001 | `backend/tests/unit/deploy/test_compose_demo.py::test_compose_smoke_script_accepts_the_core_file` | [#27](https://github.com/CodewithJha/RoboProbe/issues/27), [#97](https://github.com/CodewithJha/RoboProbe/issues/97) |
-| NFR-DEP-002 | `backend/tests/security/test_tm07_container.py::test_backend_image_is_non_root` | [#26](https://github.com/CodewithJha/RoboProbe/issues/26), [#185](https://github.com/CodewithJha/RoboProbe/issues/185) |
+| NFR-DEP-001 | `backend/tests/unit/deploy/test_compose_demo.py::test_compose_smoke_script_accepts_the_core_file`, `scripts/tests/test_check_compose_policy.py::ComposePolicyTest::test_requires_successful_one_shot_migration` | [#27](https://github.com/CodewithJha/RoboProbe/issues/27), [#97](https://github.com/CodewithJha/RoboProbe/issues/97), [#219](https://github.com/CodewithJha/RoboProbe/issues/219) |
+| NFR-DEP-002 | `backend/tests/security/test_tm07_container.py::test_backend_image_is_non_root`, `scripts/tests/test_check_compose_policy.py::ComposePolicyTest::test_rejects_removed_controls` | [#26](https://github.com/CodewithJha/RoboProbe/issues/26), [#185](https://github.com/CodewithJha/RoboProbe/issues/185), [#219](https://github.com/CodewithJha/RoboProbe/issues/219) |
 | NFR-DEP-003 | `backend/tests/unit/test_release_check.py::test_release_workflows_pin_actions` | [#189](https://github.com/CodewithJha/RoboProbe/issues/189), [#221](https://github.com/CodewithJha/RoboProbe/issues/221) |
 | NFR-EXT-001 | `backend/tests/unit/backends/test_registry.py::test_registry_loads_monkeypatched_entry_point` | [#48](https://github.com/CodewithJha/RoboProbe/issues/48), [#94](https://github.com/CodewithJha/RoboProbe/issues/94) |
-| NFR-EXT-002 | — | [#14](https://github.com/CodewithJha/RoboProbe/issues/14) |
+| NFR-EXT-002 | `ci:.github/workflows/ci.yml::lint::make lint` | [#14](https://github.com/CodewithJha/RoboProbe/issues/14) |
 | NFR-EXT-003 | `backend/tests/unit/backends/test_registry.py::test_version_mismatch_is_plugin_error`, `backend/tests/unit/oracles/test_oracle_contract.py::test_plugin_api_version` | [#48](https://github.com/CodewithJha/RoboProbe/issues/48) |
 
 <!-- END REQUIREMENT EVIDENCE -->

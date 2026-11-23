@@ -1,5 +1,7 @@
 # EXP-02 pipeline pilot
 
+> Canonical evidence: [EXP-02.md](EXP-02.md).
+
 ## Design and hypotheses
 
 This pilot checked that an analytical experiment could start, persist its

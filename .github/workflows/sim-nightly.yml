@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           python-version: "3.12"
           enable-cache: true
@@ -88,7 +88,7 @@ jobs:
               cd /checkout/backend
               status=0
               /opt/roboprobe/venv/bin/python -c "import sys; sys.path.append(\"/nightly-deps\"); import pytest; raise SystemExit(pytest.main(sys.argv[1:]))" \
-                -p pytest_timeout -m sim --backend gazebo_nav2 \
+                -p pytest_timeout -m "sim and not quarantine" --backend gazebo_nav2 \
                 -p no:cacheprovider --basetemp=/tmp/episodes --junitxml=/results/simulation.xml \
                 tests/contract/test_backend_contract.py tests/sim || status=$?
               if [[ -d /tmp/episodes ]]; then
@@ -110,6 +110,7 @@ jobs:
             ${{ runner.temp }}/roboprobe-sim/simulation.xml
             ${{ runner.temp }}/roboprobe-sim/episodes/**/episode.log
             ${{ runner.temp }}/roboprobe-sim/episodes/**/episode_done.json
+            ${{ runner.temp }}/roboprobe-sim/episodes/**/acceptance.json
             ${{ runner.temp }}/roboprobe-sim/episodes/**/trace.parquet
             ${{ runner.temp }}/roboprobe-sim/episodes/**/*.mcap
       - name: Remove the disposable database, network, simulator image, and Fuel cache

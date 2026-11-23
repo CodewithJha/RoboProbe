@@ -17,6 +17,7 @@ checker = load_script("check_traceability")
 REPO = "CodewithJha/RoboProbe"
 FIRST = f"https://github.com/{REPO}/issues/101"
 SECOND = f"https://github.com/{REPO}/issues/102"
+IMPORT_GATE = "ci:.github/workflows/ci.yml::lint::make lint"
 
 
 class CheckTraceabilityTest(unittest.TestCase):
@@ -138,6 +139,94 @@ class CheckTraceabilityTest(unittest.TestCase):
         ):
             with self.subTest(ref=ref):
                 self.assertFalse(checker.test_node_exists(self.root, ref))
+
+    def _import_gate(self) -> tuple[str, str, str]:
+        workflow = (
+            "on:\n  pull_request:\njobs:\n  lint:\n    steps:\n"
+            "      - name: Check Python imports\n        run: make lint\n"
+            "  test-backend:\n    steps:\n      - run: pytest\n"
+        )
+        makefile = (
+            "BACKEND_DIR ?= backend\n"
+            "UV_RUN := $(UV) run --directory $(BACKEND_DIR)\n"
+            "lint: ## Run linters\n\t$(UV_RUN) lint-imports\n"
+        )
+        config = (
+            '[tool.importlinter]\nroot_packages = ["roboprobe"]\n'
+            '[[tool.importlinter.contracts]]\nid = "layers"\ntype = "layers"\n'
+            'layers = ["api", "core"]\n'
+            '[[tool.importlinter.contracts]]\nid = "domain-independence"\n'
+            'type = "forbidden"\nsource_modules = ["roboprobe.core"]\n'
+            'forbidden_modules = ["roboprobe.store"]\nallow_indirect_imports = false\n'
+        )
+        self._write(".github/workflows/ci.yml", workflow)
+        self._write("Makefile", makefile)
+        self._write("backend/pyproject.toml", config)
+        self._write(
+            "docs/02-software-requirements-specification.md",
+            "| NFR-EXT-002 [MVP] | Modularity | Layer checks | CI |\n",
+        )
+        self._matrix(f"| NFR-EXT-002 | `{IMPORT_GATE}` | [#101]({FIRST}) |\n")
+        return workflow, makefile, config
+
+    def test_import_gate_counts_with_a_completed_issue(self) -> None:
+        """Accept the actual workflow step, recipe and contracts as architecture evidence."""
+        self._import_gate()
+        code, output = self._check()
+        self.assertEqual(code, 0, output)
+        self._matrix(f"| NFR-EXT-002 | `{IMPORT_GATE}` | — |\n")
+        code, output = self._check()
+        self.assertEqual(code, 1, output)
+        self.assertIn("no verified closed GitHub issue", output)
+
+    def test_rejects_missing_or_nonblocking_import_gate(self) -> None:
+        """Reject a disabled or misplaced step and stale Makefile or tool evidence."""
+        workflow, makefile, config = self._import_gate()
+        for path, value in (
+            (
+                ".github/workflows/ci.yml",
+                workflow.replace("  pull_request:", "  workflow_dispatch:"),
+            ),
+            (".github/workflows/ci.yml", workflow.replace("  lint:", "  wrong-job:")),
+            (
+                ".github/workflows/ci.yml",
+                workflow.replace("        run:", "        if: false\n        run:"),
+            ),
+            (
+                ".github/workflows/ci.yml",
+                workflow.replace("        run:", "        continue-on-error: true\n        run:"),
+            ),
+            (
+                ".github/workflows/ci.yml",
+                workflow.replace("    steps:", "    if: false\n    steps:", 1),
+            ),
+            (
+                ".github/workflows/ci.yml",
+                workflow.replace("        run: make lint", "        # run: make lint"),
+            ),
+            ("Makefile", makefile.replace("\t$(UV_RUN) lint-imports", "\t-$(UV_RUN) lint-imports")),
+            ("Makefile", makefile.replace("lint: ## Run linters", "another-target:")),
+            (
+                "backend/pyproject.toml",
+                config.replace('id = "domain-independence"', 'id = "other"'),
+            ),
+        ):
+            with self.subTest(path=path, value=value):
+                self._import_gate()
+                self._write(path, value)
+                self.assertEqual(self._check()[0], 1)
+
+    def test_import_gate_cannot_substitute_for_unrelated_evidence(self) -> None:
+        """Require another valid source for requirements outside the dedicated import gate."""
+        self._import_gate()
+        self._write(
+            "docs/02-software-requirements-specification.md",
+            "| NFR-PORT-001 [MVP] | Portability | Native builds | CI |\n",
+        )
+        self._matrix(f"| NFR-PORT-001 | `{IMPORT_GATE}` | [#101]({FIRST}) |\n")
+        code, output = self._check()
+        self.assertEqual(code, 1, output)
+        self.assertIn("NFR-PORT-001 has no existing test node", output)
 
     def test_live_github_query_and_error(self) -> None:
         """Use a read-only issue query and report GitHub unavailability."""
