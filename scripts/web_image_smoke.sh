@@ -63,7 +63,9 @@ EOF
 if [[ ${WEB_SMOKE_BUILD:-1} == 1 ]]; then
     "${compose[@]}" build api web
 fi
+startup_started=$SECONDS
 "${compose[@]}" up -d --no-build --wait --wait-timeout 180
+printf 'Compose ready with migrations applied after %s seconds.\n' "$((SECONDS - startup_started))"
 base="http://$("${compose[@]}" port web 8080)"
 web_id="$("${compose[@]}" ps -q web)"
 [[ "$(docker inspect --format '{{ .HostConfig.ReadonlyRootfs }}' "$web_id")" == true ]]
@@ -124,7 +126,47 @@ grep -q '^: ping' "$scratch/events"
 WEB_SMOKE_URL="$base" WEB_SMOKE_TOKEN_FILE="$scratch/api_token" node web/scripts/check-production-csp.mjs
 
 if [[ ${WEB_SMOKE_DEMO:-0} == 1 ]]; then
-    COMPOSE_PROJECT_NAME="$project" PROFILES=app scripts/demo.sh
+    COMPOSE_PROJECT_NAME="$project" PROFILES=app scripts/demo.sh |
+        while IFS= read -r line; do
+            printf '%s\n' "$line"
+            printf '%s\t%s\n' "$SECONDS" "$line" >> "$scratch/demo.log"
+        done
+    campaign_id="$(python3 - "$scratch/demo.log" <<'PYTHON'
+import json
+import re
+import sys
+from pathlib import Path
+
+campaign_id = None
+first_failure_s = None
+final = None
+for row in Path(sys.argv[1]).read_text(encoding="utf-8").splitlines():
+    elapsed, line = row.split("\t", 1)
+    match = re.fullmatch(r"demo campaign ([a-f0-9-]{36})", line)
+    if match:
+        campaign_id = match[1]
+        print(f"First campaign created {elapsed} seconds after smoke start.", file=sys.stderr)
+        continue
+    if not line.startswith("{"):
+        continue
+    state = json.loads(line)
+    if state.get("campaign_id") != campaign_id or "fail" not in state:
+        continue
+    final = state
+    if first_failure_s is None and state["fail"]:
+        first_failure_s = elapsed
+assert campaign_id is not None and first_failure_s is not None, "missing campaign or failure"
+assert final is not None and final["status"] == "COMPLETED" and final["done"] == final["budget"], final
+print(f"First failure observed after {first_failure_s} seconds. Demo completed {final['done']} runs.", file=sys.stderr)
+print(campaign_id)
+PYTHON
+)"
+    # The Compose orchestrator finishes simulation separately from on-demand analysis.
+    "${compose[@]}" exec -T orchestrator roboprobe --json analyze --wait "$campaign_id"
+    worker_count="$("${compose[@]}" ps -q worker-k2d | wc -l | tr -d '[:space:]')"
+    WEB_SMOKE_URL="$base" WEB_SMOKE_TOKEN_FILE="$scratch/api_token" \
+        WEB_SMOKE_CAMPAIGN_ID="$campaign_id" WEB_SMOKE_WORKER_COUNT="$worker_count" \
+        node web/scripts/check-published-quickstart.mjs
 fi
 
 # EventSource sends its bearer in the query. Even an upstream outage must keep it out of logs.
