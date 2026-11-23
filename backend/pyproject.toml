@@ -182,6 +182,7 @@ markers = [
     "integration: tests touching real infrastructure (PostgreSQL via Testcontainers, filesystem)",
     "benchmark: pytest-benchmark performance and scientific-regression gates",
     "sim: tests that need a simulator backend (Gazebo); excluded by default",
+    "quarantine: sim test excluded from sim-nightly until a linked GitHub issue exists (T-098)",
     "slow: long-running tests; excluded by default",
     "security: doc 31 threat-model tests (T-109)",
 ]

@@ -1,0 +1,6 @@
+# Gazebo simulator tests temporarily excluded from sim-nightly.
+# Each entry MUST include a GitHub issue URL or number — never quarantine without one.
+# Nightly excludes these nodeids in addition to the default `-m sim` selection.
+#
+# Implements: T-098 (#205), doc 18 §4.8
+entries: []
