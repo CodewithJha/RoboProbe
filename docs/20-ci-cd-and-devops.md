@@ -13,7 +13,7 @@
 | `e2e.yml` | dashboard/API PRs, nightly 02:00 IST, manual | locally built Compose stack, seeded campaigns, Chromium/Firefox + axe | < 10 min |
 | `sim-nightly.yml` | nightly 02:00 IST / manual | build the Gazebo worker, run `pytest -m sim` and Jazzy colcon tests, upload failure artifacts | ≤ 120 min |
 | `benchmark-full.yml` | weekly, manual | EXP-02 analytic + reduced EXP-01 (10 seeds) → compare with baseline JSON, comment on regression | ≤ 45 min |
-| `release.yml` | tag `v*`, manual verification | verify package versions and CHANGELOG, build and publish images for verified tags, create GitHub Release | ≤ 30 min |
+| `release.yml` | tag `v*`, manual verification | verify package versions and CHANGELOG, publish tagged images, run the published demo, attach three SPDX SBOMs and the demo HTML to the GitHub Release | ≤ 30 min |
 
 The Gazebo replay check runs a canonical collision and five repeats with the same seed
 and SUT profile. It requires at least four matches on verdict and primary failure class

@@ -34,6 +34,10 @@ Release checklist:
 5. Verify deployment from the tag on a clean machine (29 §10) for MINOR/MAJOR.
 6. Update 00 doc version if docs changed materially.
 
+The release workflow runs the published-image demo using the exact release tag after the
+images are available. It verifies the demo export and the backend, web, and Gazebo SPDX
+documents from that workflow run before attaching the four files to the release.
+
 ## 3. CHANGELOG format
 
 `CHANGELOG.md` follows **Keep a Changelog 1.1.0**: sections `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security` under `[Unreleased]` and each version. Entries are user-facing, reference task/issue ids, and call out behaviour changes of oracles/strategies explicitly (they affect result comparability).
