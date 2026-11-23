@@ -21,6 +21,11 @@ on:
         required: false
         default: false
         type: boolean
+      t105a_reference:
+        description: Collect the three EXP-07 reference sets for independent human review
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -41,7 +46,7 @@ env:
 jobs:
   analytic:
     name: analytic-exp02
-    if: ${{ !inputs.t105a_evaluation }}
+    if: ${{ !inputs.t105a_evaluation && !inputs.t105a_reference }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -191,5 +196,70 @@ jobs:
         with:
           name: t105a-${{ matrix.arm }}-${{ matrix.shard }}-attempt-${{ github.run_attempt }}
           path: ${{ runner.temp }}/t105a/
+          retention-days: 5
+          if-no-files-found: error
+
+  reference-variants:
+    name: T-105a reference ${{ matrix.space }}
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      && inputs.t105a_reference
+      && github.repository == 'CodewithJha/RoboProbe'
+      && github.ref_name == 'compute/T-105a-reference-variants'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        space: [warehouse_v1, warehouse_v1_d8, warehouse_v1_noise2]
+    env:
+      SPACE: ${{ matrix.space }}
+      OPENBLAS_NUM_THREADS: "1"
+      ROBOPROBE_OBSERVABILITY__METRICS_ENABLED: "false"
+      ROBOPROBE_LOGGING__LEVEL: "WARNING"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Record reference environment
+        run: |
+          mkdir -p "$RUNNER_TEMP/t105a-reference"
+          echo "ROBOPROBE_STORAGE__WORKDIR_ROOT=$RUNNER_TEMP/t105a-reference-workdirs" >>"$GITHUB_ENV"
+          echo "ROBOPROBE_STORAGE__ARTIFACT_ROOT=$RUNNER_TEMP/t105a-reference-episode-artifacts" >>"$GITHUB_ENV"
+          {
+            git rev-parse HEAD
+            uname -a
+            lscpu
+            free -b
+            df -h "$RUNNER_TEMP"
+            uv run --directory backend python --version
+            uv pip freeze --python backend/.venv/bin/python
+            sha256sum backend/uv.lock "configs/scenario_spaces/$SPACE.yaml"
+          } >"$RUNNER_TEMP/t105a-reference/environment.txt"
+      - name: Generate every frozen reference sample
+        run: |
+          timeout --signal=TERM --kill-after=45s 315m backend/.venv/bin/roboprobe --json reference generate \
+            --space "$SPACE" --seed 20261119 --n 20000 \
+            --output "$RUNNER_TEMP/t105a-reference/reference.parquet"
+      - name: Verify and preserve candidate review evidence
+        run: |
+          backend/.venv/bin/python scripts/prepare_t105a_reference_review.py \
+            --reference "$RUNNER_TEMP/t105a-reference/reference.parquet" \
+            --trace-root "$ROBOPROBE_STORAGE__WORKDIR_ROOT/reference-generate" \
+            --out "$RUNNER_TEMP/t105a-reference" --space "$SPACE"
+          cd "$RUNNER_TEMP/t105a-reference"
+          find . -type f -print0 | sort -z | xargs -0 sha256sum >"$RUNNER_TEMP/t105a-reference-checksums.txt"
+          mv "$RUNNER_TEMP/t105a-reference-checksums.txt" SHA256SUMS
+      - name: Upload unlabelled reference and representative traces
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: t105a-reference-${{ matrix.space }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/t105a-reference/
           retention-days: 5
           if-no-files-found: error
