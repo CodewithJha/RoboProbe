@@ -1,0 +1,20 @@
+{
+  "reference_parquet_sha256": "7f4bf51b1809e7f850a9ad9b6020958a22c056f1f48c2864104b5017d0f77729",
+  "preregistered_episodes": 20000,
+  "seed": 20261119,
+  "space_version": "d098010f625c",
+  "model_version": "kinematic2d_v1",
+  "preserved_traces": 16241,
+  "regenerated_traces": 3759,
+  "verdict_counts": {
+    "PASS": 9087,
+    "FAIL": 10913
+  },
+  "failure_class_counts": {
+    "F-LOC": 1050,
+    "F-PLAN": 20,
+    "F-STUCK": 7457,
+    "F-TIMEOUT": 2386
+  },
+  "reviewed_ground_truth_labels": 0
+}
