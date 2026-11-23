@@ -109,7 +109,7 @@ Secrets in CI: only `GITHUB_TOKEN` (GHCR push). No external secret is needed.
 
 ## 7. Dependency management
 
-Dependabot weekly for `uv`, `npm`, `github-actions`, `docker`; grouped minor/patch updates; major updates as separate PRs with a changelog review. ROS/Gazebo base images pinned by digest and updated monthly via a manual PR after `nightly-sim` passes.
+Dependabot weekly for `uv`, `npm`, `github-actions`, `docker`; grouped minor/patch updates; major updates as separate PRs with a changelog review. ROS/Gazebo base images pinned by digest and updated monthly via a manual PR after `sim-nightly` passes.
 
 ## 8. Observability of CI
 

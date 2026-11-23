@@ -54,7 +54,10 @@ jobs:
             --env POSTGRES_PASSWORD=roboprobe-ci \
             --health-cmd='pg_isready -h 127.0.0.1 -U roboprobe -d roboprobe_test' \
             --health-interval=2s postgres:17
-          timeout 60 bash -c 'until [[ "$(docker inspect -f "{{.State.Health.Status}}" "$SIM_POSTGRES")" == healthy ]]; do sleep 2; done'
+          if ! timeout 60 bash -c 'until [[ "$(docker inspect -f "{{.State.Health.Status}}" "$SIM_POSTGRES")" == healthy ]]; do sleep 2; done'; then
+            docker logs "$SIM_POSTGRES"
+            exit 1
+          fi
       - name: Run the marked simulator tests
         run: |
           results="$RUNNER_TEMP/roboprobe-sim"
@@ -87,8 +90,11 @@ jobs:
               status=0
               /opt/roboprobe/venv/bin/python -c "import sys; sys.path.append(\"/nightly-deps\"); import pytest; raise SystemExit(pytest.main(sys.argv[1:]))" \
                 -p pytest_timeout -m sim --backend gazebo_nav2 \
-                -p no:cacheprovider --basetemp=/results/episodes --junitxml=/results/simulation.xml \
+                -p no:cacheprovider --basetemp=/tmp/episodes --junitxml=/results/simulation.xml \
                 tests/contract/test_backend_contract.py tests/sim || status=$?
+              if [[ -d /tmp/episodes ]]; then
+                cp -R /tmp/episodes /results
+              fi
               python3 /checkout/scripts/sim_nightly_summary.py /results --annotate-junit >/dev/null || status=1
               exit "$status"
             '
