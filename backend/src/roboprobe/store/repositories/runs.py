@@ -7,9 +7,9 @@ from __future__ import annotations
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import and_, func, or_, select, update
+from sqlalchemy import and_, func, or_, select, true, update
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 from sqlalchemy.sql.elements import ColumnElement
 
 from roboprobe.core.types import (
@@ -123,6 +123,44 @@ class SqlRunRepo:
         items, extra = extra_item([run_record(r) for r in rows], size)
         nxt = None if extra is None else str(items[-1].id)
         return Page(items=items, next_cursor=nxt)
+
+    def stop_rule_counts(self, campaign_id: UUID) -> tuple[int, int, int, bool]:
+        """Return finished, invalid, trailing invalid and in-flight status in one snapshot."""
+        done, error, cancelled = (
+            RunStatus.DONE.value,
+            RunStatus.ERROR.value,
+            RunStatus.CANCELLED.value,
+        )
+        finished = RunRow.status.in_((done, error))
+        invalid = (RunRow.status == error) | (
+            (RunRow.status == done) & (RunRow.verdict == Verdict.INVALID.value)
+        )
+        previous = aliased(RunRow)
+        # In-flight rows leave the streak unchanged. A cancellation or a valid completion resets it.
+        last_reset = (
+            select(previous.id)
+            .where(
+                previous.campaign_id == campaign_id,
+                (previous.status == cancelled)
+                | (
+                    (previous.status == done)
+                    & previous.verdict.is_distinct_from(Verdict.INVALID.value)
+                ),
+            )
+            .order_by(previous.id.desc())
+            .limit(1)
+            .scalar_subquery()
+        )
+        result = self._s.execute(
+            select(
+                func.count().filter(finished),
+                func.count().filter(invalid),
+                func.count().filter(invalid, func.coalesce(RunRow.id > last_reset, true())),
+                func.count().filter(RunRow.status.not_in((done, error, cancelled))) > 0,
+            ).where(RunRow.campaign_id == campaign_id)
+        ).one()
+        n_finished, n_invalid, trailing, inflight = result
+        return int(n_finished), int(n_invalid), int(trailing), bool(inflight)
 
     def counts_for_campaigns(self, campaign_ids: Sequence[UUID]) -> dict[UUID, dict[str, int]]:
         """Aggregate a whole campaign page without loading every run (T-081b/d)."""
