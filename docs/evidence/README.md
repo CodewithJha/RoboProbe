@@ -8,6 +8,7 @@ Results and records produced during implementation and evaluation (kept in git w
 - `T-061-benchmark-calibration.md` — frozen selector thresholds/hyper-parameters.
 - `T-131-mutation.md` — mutation-testing kill-rate baseline.
 - [EXP-02 analytic](EXP-02.md) and [EXP-07 scalability](EXP-07.md) — experiment evidence (T-105a, doc 19).
+- [SC-5 kinematic2d replay](SC-5-k2d.md) — MET-06 reproducibility on k2d (T-105c, `scripts/replay_agreement.py`).
 - `exp01/` … `exp07/` — additional experiment reports (19).
 - `deviations.md` — deviations from the pre-registered evaluation protocol.
 - `traceability.html` — generated traceability report (28).
