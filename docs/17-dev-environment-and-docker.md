@@ -15,31 +15,30 @@ Minimum hardware: 4 cores, 16 GB RAM, 25 GB free disk (Gazebo image ≈ 3–4 GB
 
 ## 2. Prerequisites
 
-`git`, Docker Engine ≥ 24 + Compose v2, `uv` (installs Python 3.12 automatically), Node.js 24 LTS + `pnpm` (via `corepack enable`), `make`.
+The Compose demo requires Git, Docker Engine ≥ 24 with Compose v2, Make, and Python 3.
+Running source checks on the host also requires `uv` (installs Python 3.12), Node.js 24,
+and pnpm (via `corepack enable`).
 
-## 3. First-time setup (one command each)
+## 3. First-time setup
 
-```bash
-git clone https://github.com/CodewithJha/RoboProbe.git && cd RoboProbe
-cp .env.example .env                       # edit only if you need non-defaults
-make setup        # uv sync --all-extras (backend), pnpm install (web), pre-commit install
-make up PROFILES=app  # postgres, api, orchestrator, worker-k2d x2, web
-make demo         # registers warehouse_v1, runs a 50-run kinematic2d S-PROBE campaign
-open http://localhost:8080
-```
+Follow the [dashboard quickstart](../README.md#try-the-dashboard-locally) to build the stack
+and run the 50-run warehouse demo. From the repository root, run `make setup` to install
+the locked backend and web dependencies and Git hooks for host development.
 
-Native (no Docker) inner loop for core work:
+For core development, run PostgreSQL in Compose and use the CLI on the host:
 
 ```bash
-make db-up PROFILES=dev                     # only postgres in Docker, published on 127.0.0.1:5432
-export ROBOPROBE_DATABASE__PASSWORD_FILE=secrets/db_password
-uv run roboprobe db upgrade
-uv run roboprobe campaign run configs/campaigns/k2d_probe_smoke.yaml --inline --workers 4
-uv run pytest -m "not sim"                   # fast tests
-pnpm --dir web dev                           # Vite dev server on :5173, proxies /api to :8000
+make db-up PROFILES=dev                     # Postgres on 127.0.0.1:5432
+export ROBOPROBE_DATABASE__PASSWORD_FILE="$PWD/secrets/db_password"
+uv run --project backend roboprobe db upgrade
+uv run --project backend roboprobe campaign run configs/campaigns/k2d_probe_smoke.yaml --inline --workers 4
+make test-fast
 ```
 
-## 4. Compose services (`docker/compose.yaml`)
+For dashboard development, run `(cd web && pnpm dev)` to start Vite on port 5173.
+The dev server proxies `/api` to the local API on port 8000 by default.
+
+## 4. Compose services
 
 | Service | Image | Profile | Env (key ones) | Ports | Depends on |
 |---------|-------|---------|----------------|-------|-----------|
@@ -58,7 +57,7 @@ and internal `/healthz` for workers (heartbeat age). Compose stores temporary ba
 For a worker started directly on the host, pass `roboprobe worker --backend kinematic2d --health`
 to expose its probe. Set `ROBOPROBE_WORKER__HEALTH_PORT` for that process if an orchestrator or
 another worker already uses the default port.
-Make targets (T-005b): `make up` (builds the backend image unless `UP_FLAGS=` is given, starts `PROFILES`, default `core`, and fails if the
+Make targets (T-005b): `make up` (builds images by default, starts `PROFILES`, default `core`, and fails if the
 one-shot `migrate` job fails), `make down` (removes containers and network, keeps `pgdata`), `make db-up`, `make logs`, `make ps`.
 Postgres is reachable from the host only with the `dev` profile (`PROFILES=dev` or `PROFILES="core dev"`): a loopback-bound TCP forwarder
 (`postgres-port`) publishes `127.0.0.1:${ROBOPROBE_DB_PORT:-5432}`, because Compose cannot publish a port per profile.
@@ -66,73 +65,19 @@ Postgres is reachable from the host only with the `dev` profile (`PROFILES=dev` 
 Open the dashboard's Settings page to enter the API token for the browser session.
 On a native Linux Docker host, grant the backend container user (UID/GID 10001) write access to `data/artifacts` before starting the app profile.
 
-Scale kinematic workers with `docker compose up -d --scale worker-k2d=6`.
+Scale kinematic workers with `docker compose -f docker/compose.yaml --profile app up -d --scale worker-k2d=6`.
 After [populating the Fuel cache](#5-images), start the Gazebo worker with
 `make up PROFILES="core gazebo"`. Compose gives it an init process, a read-only root
 filesystem, and the same artifact and database access as the kinematic worker. Its temporary
 workdirs stay under `/tmp`, and the Fuel models persist in the `gazebo-fuel` volume.
 
-### 4.1 Compose skeleton (illustrative; the real file is created in T-005)
+### 4.1 Inspect the Compose model
 
-```yaml
-name: roboprobe
-x-backend: &backend
-  image: ghcr.io/codewithjha/roboprobe-backend:${ROBOPROBE_IMAGE_TAG:-dev}
-  env_file: ../.env
-  volumes: ["../data/artifacts:/data/artifacts"]
-  restart: unless-stopped
-services:
-  postgres:
-    image: postgres:17
-    profiles: [core]
-    environment:
-      POSTGRES_DB: ${ROBOPROBE_DB_NAME:-roboprobe}
-      POSTGRES_USER: ${ROBOPROBE_DB_USER:-roboprobe}
-      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
-    secrets: [db_password]
-    volumes: ["pgdata:/var/lib/postgresql/data"]
-    healthcheck: {test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"], interval: 5s, retries: 20}
-  migrate:
-    <<: *backend
-    profiles: [core]
-    command: ["db", "upgrade"]
-    restart: "no"
-    depends_on: {postgres: {condition: service_healthy}}
-  api:
-    <<: *backend
-    profiles: [core]
-    command: ["api"]
-    ports: ["127.0.0.1:${ROBOPROBE_API_PORT:-8000}:8000"]
-    depends_on: {migrate: {condition: service_completed_successfully}}
-  orchestrator:
-    <<: *backend
-    profiles: [core]
-    command: ["orchestrator"]
-    depends_on: {migrate: {condition: service_completed_successfully}}
-  worker-k2d:
-    <<: *backend
-    profiles: [core]
-    command: ["worker", "--backend", "kinematic2d", "--health"]
-    deploy: {replicas: ${ROBOPROBE_K2D_REPLICAS:-2}}
-    depends_on: {migrate: {condition: service_completed_successfully}}
-  worker-gazebo:
-    <<: *backend
-    image: ghcr.io/codewithjha/roboprobe-gazebo:${ROBOPROBE_IMAGE_TAG:-dev}
-    profiles: [gazebo]
-    init: true
-    read_only: true
-    tmpfs: [/tmp]
-    shm_size: ${ROBOPROBE_GZ_SHM_SIZE:-1gb}
-    volumes: ["../data/artifacts:/data/artifacts", "gazebo-fuel:/data/gazebo-fuel"]
-    depends_on: {migrate: {condition: service_completed_successfully}}
-  web:
-    image: ghcr.io/codewithjha/roboprobe-web:${ROBOPROBE_IMAGE_TAG:-dev}
-    profiles: [core]
-    ports: ["127.0.0.1:${ROBOPROBE_WEB_PORT:-8080}:8080"]
-    depends_on: [api]
-secrets:
-  db_password: {file: ../secrets/db_password}
-volumes: {pgdata: {}, gazebo-fuel: {}}
+The [checked-in Compose file](../docker/compose.yaml) defines the services, profile membership,
+health checks, and dependencies. To list the services enabled by the app profile:
+
+```bash
+docker compose -f docker/compose.yaml --profile app config --services
 ```
 
 ## 5. Images
