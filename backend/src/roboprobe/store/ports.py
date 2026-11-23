@@ -14,7 +14,14 @@ from types import TracebackType
 from typing import Protocol
 from uuid import UUID
 
-from roboprobe.core.types import CampaignStatus, JsonValue, Observation, RunOutcome
+from roboprobe.core.types import (
+    CampaignSchedulingSnapshot,
+    CampaignStatus,
+    JsonValue,
+    Observation,
+    RunOutcome,
+    RunStatus,
+)
 from roboprobe.store.pagination import Page
 from roboprobe.store.records import (
     AnalysisRecord,
@@ -120,6 +127,12 @@ class RunRepo(Protocol):
         ``exclude_phases`` defaults to ``{\"confirm\", \"manual\"}`` so strategy
         history and MET metrics ignore confirmatory / ad-hoc runs (docs/09 §6).
         """
+        ...
+
+    def scheduling_snapshot(
+        self, campaign_id: UUID, *, inflight_statuses: frozenset[RunStatus], count_invalid: bool
+    ) -> CampaignSchedulingSnapshot:
+        """Read the budget and ordered in-flight vectors at one database snapshot."""
         ...
 
     def cancel_pending(self, campaign_id: UUID) -> int:
