@@ -38,12 +38,18 @@ Notation: campaign runs `1..B` in proposal order; valid runs `V` (verdict ≠ IN
 
 Reference set `REF` (k2d): 20 000 scrambled-Sobol scenarios, seed 20261119, each run once (deterministic backend), stored as artefact with hash; GT modes = HDBSCAN clusters of `REF_fail` reviewed manually and mapped to GT-A…GT-D (+ any emergent mode, recorded).
 
-The EXP-02 `multi_mode_6d` arm labels observed failures with the benchmark's noise-free
-canonical modes A–D ([07 §9](07-intelligent-test-selection-algorithms.md)).
-An observed failure outside all four modes does not increase MET-02 or the MET-09 discovery
-curve. The raw experiment Parquet includes the unit-cube vector and a comparison-run flag so a
-reader can recompute these results. The Branin and warehouse variants require their own reviewed
-mode assignments before the comparison can accept MET-02 or MET-09.
+The EXP-02 `multi_mode_6d` arm uses the benchmark's four noise-free canonical modes A–D
+([07 §9](07-intelligent-test-selection-algorithms.md)). The Branin arm uses the three
+noise-free failure lobes around the minima at physical `x1 = −π, π, 3π`, labelled A, B, C
+in ascending order. The lines `x1 = 0` and `x1 = 2π` separate these lobes. At either line,
+the cosine term is maximal and the squared term is non-negative, so the Branin value
+exceeds the failure cutoff of 1.5 for every `x2`.
+
+A discovery requires an observed FAIL at a point with strictly negative noise-free robustness.
+An observed failure outside the canonical modes still counts toward MET-01 and MET-03.
+MET-09 divides by the total number of canonical modes for the arm. The raw experiment Parquet
+contains the unit-cube vector and comparison-run flag needed to recompute the metrics.
+Warehouse variants still require independently reviewed reference mode assignments.
 
 ## 4. Experiment matrix
 
@@ -76,6 +82,10 @@ seeds: {root: 20261119, count: 30}   # campaign seed k = derive_seed(root, "rep"
 budget: 200
 metrics: [MET-01, MET-02, MET-03]
 ```
+
+Run the Branin arm with `ROBOPROBE_SELECTION__BENCHMARKS__FUNCTION=branin_falsify` for
+the inline CLI process or its dedicated benchmark workers. Branin is deterministic and
+ignores the benchmark observation-noise setting.
 
 ## 5. Statistical analysis protocol
 

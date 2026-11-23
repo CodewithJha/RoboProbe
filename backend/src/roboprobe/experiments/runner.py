@@ -17,6 +17,7 @@ from uuid import UUID
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
+from numpy.typing import ArrayLike
 
 from roboprobe.core.clock import Clock
 from roboprobe.core.errors import NotFoundError, ValidationError
@@ -33,14 +34,21 @@ from roboprobe.metrics.campaign_metrics import (
 )
 from roboprobe.metrics.discovery_metrics import discovery_auc
 from roboprobe.metrics.statistics import compare
-from roboprobe.selection.benchmarks import MODE_CANONICAL, label_mode
+from roboprobe.selection.benchmarks import (
+    BRANIN_MODES,
+    MODE_CANONICAL,
+    label_branin_mode,
+    label_mode,
+)
 
 __all__ = [
     "EXPERIMENT_TERMINAL",
     "N_MULTIMODE_TARGETS",
+    "AnalyticGroundTruth",
     "CampaignDriver",
     "ExperimentRunner",
     "ExperimentWriter",
+    "analytic_ground_truth",
     "analytic_mode_labels",
     "build_comparison",
     "export_raw_parquet",
@@ -56,7 +64,7 @@ _MET_02 = "MET-02"
 _MET_03 = "MET-03"
 _MET_09 = "MET-09"
 _DEFAULT_METRICS = (_MET_01, _MET_03)
-_MULTIMODE_METRICS = (_MET_02, _MET_09)
+_DISCOVERY_METRICS = (_MET_02, _MET_09)
 VARIANT_TAG_PREFIX = "variant:"
 N_MULTIMODE_TARGETS = len(MODE_CANONICAL)
 
@@ -99,28 +107,50 @@ class _CampaignRow:
     experiment_rep: int | None
 
 
-def is_analytic_multimode(design: Mapping[str, JsonValue]) -> bool:
-    """Select only the unpinned experiment with an available analytical ground truth."""
+@dataclass(frozen=True, slots=True)
+class AnalyticGroundTruth:
+    """Exact failure-mode classifier and denominator for a known benchmark."""
+
+    label: Callable[[ArrayLike], str | None]
+    n_modes: int
+
+
+_MULTIMODE = AnalyticGroundTruth(label_mode, N_MULTIMODE_TARGETS)
+_ANALYTIC_SPACES = {
+    "branin_2d": AnalyticGroundTruth(label_branin_mode, len(BRANIN_MODES)),
+    "multi_mode_6d": _MULTIMODE,
+}
+
+
+def analytic_ground_truth(design: Mapping[str, JsonValue]) -> AnalyticGroundTruth | None:
+    """Select ground truth only for supported, unpinned benchmark designs."""
     space = design.get("space")
-    return (
-        design.get("backend") == "benchmark"
-        and isinstance(space, dict)
-        and space.get("id") == "multi_mode_6d"
-        and not design.get("pins")
-    )
+    if design.get("backend") != "benchmark" or not isinstance(space, dict) or design.get("pins"):
+        return None
+    space_id = space.get("id")
+    return _ANALYTIC_SPACES.get(space_id) if isinstance(space_id, str) else None
 
 
-def analytic_mode_labels(runs: Sequence[CampaignRun]) -> list[str | None]:
+def is_analytic_multimode(design: Mapping[str, JsonValue]) -> bool:
+    """Return whether the design uses the unpinned six-dimensional benchmark."""
+    return analytic_ground_truth(design) is _MULTIMODE
+
+
+def analytic_mode_labels(
+    runs: Sequence[CampaignRun], ground_truth: AnalyticGroundTruth = _MULTIMODE
+) -> list[str | None]:
     """Label observed failures with the benchmark's noise-free mode classifier."""
     return [
-        label_mode(run.x_unit) if run.verdict is Verdict.FAIL else None
+        ground_truth.label(run.x_unit) if run.verdict is Verdict.FAIL else None
         for run in comparison_runs(runs)
     ]
 
 
-def _available_metrics(metrics: Sequence[str], *, analytic_multimode: bool) -> tuple[str, ...]:
+def _available_metrics(
+    metrics: Sequence[str], ground_truth: AnalyticGroundTruth | None
+) -> tuple[str, ...]:
     requested = tuple(metrics) or _DEFAULT_METRICS
-    supported = _DEFAULT_METRICS + (_MULTIMODE_METRICS if analytic_multimode else ())
+    supported = _DEFAULT_METRICS + (_DISCOVERY_METRICS if ground_truth is not None else ())
     for metric in requested:
         if metric not in supported:
             msg = f"unsupported experiment metric {metric}"
@@ -128,17 +158,22 @@ def _available_metrics(metrics: Sequence[str], *, analytic_multimode: bool) -> t
     return requested
 
 
-def _metric_value(metric: str, runs: Sequence[CampaignRun], budget: int) -> float:
+def _metric_value(
+    metric: str, runs: Sequence[CampaignRun], budget: int, ground_truth: AnalyticGroundTruth | None
+) -> float:
     if metric == _MET_01:
         fdr, _fdr_h = failure_discovery_rate(runs)
         return float(fdr)
     if metric == _MET_03:
         first = first_failure(runs, budget=budget)
         return float(first.n1 + 1 if first.censored else first.n1)
-    labels = analytic_mode_labels(runs)
+    if ground_truth is None:
+        msg = "discovery metrics require analytical ground truth"
+        raise ValidationError(msg, context={"metric": metric})
+    labels = analytic_mode_labels(runs, ground_truth)
     if metric == _MET_02:
         return float(len({label for label in labels if label is not None}))
-    return discovery_auc(labels, N_MULTIMODE_TARGETS, budget=budget)
+    return discovery_auc(labels, ground_truth.n_modes, budget=budget)
 
 
 def build_comparison(  # noqa: PLR0913 - comparison inputs are independent axes
@@ -150,9 +185,12 @@ def build_comparison(  # noqa: PLR0913 - comparison inputs are independent axes
     settings: ExperimentSettings,
     rng: np.random.Generator,
     analytic_multimode: bool = False,
+    ground_truth: AnalyticGroundTruth | None = None,
 ) -> dict[str, JsonValue]:
     """Assemble docs/12 §3.5 ``ExperimentComparison`` from finished campaigns."""
-    metric_ids = _available_metrics(metrics, analytic_multimode=analytic_multimode)
+    if ground_truth is None and analytic_multimode:
+        ground_truth = _MULTIMODE
+    metric_ids = _available_metrics(metrics, ground_truth)
     by_label: dict[str, list[_CampaignRow]] = {}
     for camp in campaigns:
         by_label.setdefault(camp.strategy_label, []).append(camp)
@@ -165,7 +203,7 @@ def build_comparison(  # noqa: PLR0913 - comparison inputs are independent axes
         samples: dict[str, list[float]] = {}
         for label, rows in by_label.items():
             samples[label] = [
-                _metric_value(metric, runs_by_campaign.get(row.id, ()), row.budget)
+                _metric_value(metric, runs_by_campaign.get(row.id, ()), row.budget, ground_truth)
                 for row in sorted(rows, key=lambda r: r.experiment_rep or 0)
             ]
         reference = next(iter(samples))
@@ -310,8 +348,8 @@ class ExperimentRunner:
             ``(experiment_id, ExperimentComparison)``.
         """
         design_doc = design.model_dump(mode="json")
-        analytic_multimode = is_analytic_multimode(design_doc)
-        _available_metrics(design.metrics, analytic_multimode=analytic_multimode)
+        ground_truth = analytic_ground_truth(design_doc)
+        _available_metrics(design.metrics, ground_truth)
         specs = plan(design, default_seeds=self._settings.default_seeds, key=key)
         if experiment_id is None:
             experiment_id = self._create(design, specs)
@@ -341,7 +379,7 @@ class ExperimentRunner:
             metrics=design.metrics,
             settings=self._settings,
             rng=rng,
-            analytic_multimode=analytic_multimode,
+            ground_truth=ground_truth,
         )
         self._writer.set_experiment_results(experiment_id, comparison)
         self._writer.set_experiment_status(experiment_id, "COMPLETED", finished=True)

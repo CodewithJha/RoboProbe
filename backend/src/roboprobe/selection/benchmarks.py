@@ -6,16 +6,19 @@ Implements: FR-SEL-002, FR-SEL-003
 from __future__ import annotations
 
 import math
+from bisect import bisect_right
 from typing import Literal
 
 import numpy as np
 from numpy.typing import ArrayLike
 
 __all__ = [
+    "BRANIN_MODES",
     "MODE_CANONICAL",
     "NOMINAL_POINT",
     "ModeLabel",
     "branin_falsify",
+    "label_branin_mode",
     "label_mode",
     "multi_mode_6d",
 ]
@@ -34,6 +37,9 @@ _BRANIN_X1_SHIFT = -5.0
 _BRANIN_X2_SCALE = 15.0
 _BRANIN_OFFSET = 1.5
 _BRANIN_DIV = 50.0
+_BRANIN_MODE_SPLITS = (0.0, math.tau)
+BRANIN_MODES: tuple[ModeLabel, ...] = ("A", "B", "C")
+"""The Branin failure lobes in order of increasing physical x1."""
 
 # multi_mode_6d soft-threshold definition (docs/07 §9). Thresholds calibrated so
 # noise-free failure volume ≈ 0.7 % of the unit cube under Sobol QMC.
@@ -79,6 +85,19 @@ def branin_falsify(u: ArrayLike) -> float:
         + _BRANIN_S
     )
     return float(np.clip((branin - _BRANIN_OFFSET) / _BRANIN_DIV, -1.0, 1.0))
+
+
+def label_branin_mode(u: ArrayLike) -> ModeLabel | None:
+    """Assign a noise-free Branin failure to the lobe containing its minimum.
+
+    At physical x1 of 0 or 2π the cosine is one, so the Branin score is
+    above 1.5 for every x2. The two lines separate the three failure lobes.
+    """
+    vec = _as_unit_vector(u, _UNIT_DIM_BRANIN)
+    if not branin_falsify(vec) < 0.0:
+        return None
+    x1 = _BRANIN_X1_SCALE * float(vec[0]) + _BRANIN_X1_SHIFT
+    return BRANIN_MODES[bisect_right(_BRANIN_MODE_SPLITS, x1)]
 
 
 def multi_mode_6d(

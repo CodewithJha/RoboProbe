@@ -158,7 +158,7 @@ def _design() -> ExperimentDesign:
             "strategies": [{"id": "S-RANDOM"}, {"id": "S-BO"}],
             "seeds": {"root": 7, "count": 3},
             "budget": 30,
-            "metrics": ["MET-01", "MET-03"],
+            "metrics": ["MET-01", "MET-02", "MET-03", "MET-09"],
         }
     )
 
@@ -249,7 +249,7 @@ def test_branin_experiment_completes_and_stores_comparison(tmp_path: Path) -> No
     eid, comparison = runner.start(_design(), KEY, raw_parquet=raw)
     assert len(driven) == 6
     assert comparison["experiment_id"] == str(eid)
-    assert set(comparison["metrics"]) == {"MET-01", "MET-03"}
+    assert set(comparison["metrics"]) == {"MET-01", "MET-02", "MET-03", "MET-09"}
     assert set(comparison["strategies"]) == {"S-RANDOM", "S-BO"}
     for block in comparison["strategies"].values():
         assert isinstance(block, dict)

@@ -260,6 +260,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Fixed
 
+- Compute EXP-02 Branin discovery metrics and report curves from the three canonical failure lobes.
+
 - Keep reference Parquet manifests current and allow import of reviewed failure-mode assignments.
 
 - Bound Gaussian-process prediction batches so a full Risk Atlas can be generated on a laptop.
