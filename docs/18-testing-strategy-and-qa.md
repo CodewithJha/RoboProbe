@@ -86,6 +86,13 @@ Determinism (bit-identical trace hash); speed (NFR-PERF-001 benchmark); designed
 
 Nominal scenario passes in ≥ 4/5 runs; canonical collision scenario (P2 = 0, P3 = 5 lux) fails; every parameter visibly changes the materialised files; teardown leaves no processes; RTF recorded.
 
+The Gazebo nightly runs at 02:00 IST. It builds the worker from that revision and runs
+the marked backend tests against the pinned warehouse cache. A disposable PostgreSQL service
+supports the replay and bag integration test. The same workflow runs the Jazzy package tests
+with colcon. GitHub's job summary reports the per-test durations and
+measured episode real-time factors, and the failing jobs retain their logs and traces.
+Milestone sign-off requires three consecutive green scheduled runs.
+
 ### 4.9 API
 
 Schema conformance (`schemathesis` against OpenAPI, nightly); error envelope; pagination; ETag/If-Match; auth token on/off; OpenAPI snapshot unchanged unless intended.

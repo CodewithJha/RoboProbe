@@ -11,7 +11,7 @@
 | `docs.yml` | changes in `docs/**`, `*.md` | markdownlint, mermaid-cli render of every Mermaid block, lychee link check, ADR index check | ≤ 3 min |
 | `images.yml` | push to `main`, pull requests, verified release workflow | build `backend`, `web`, `gazebo` images (Buildx + GHA cache), Trivy scan, push to GHCR (`:sha`, `:main`, `:vX.Y.Z`), SBOM (Syft) attached | ≤ 25 min (gazebo cached) |
 | `e2e.yml` | dashboard/API PRs, nightly 02:00 IST, manual | locally built Compose stack, seeded campaigns, Chromium/Firefox + axe | < 10 min |
-| `nightly-sim.yml` | nightly / manual (`workflow_dispatch`) | pull gazebo image, `pytest -m sim` with 1 worker, upload artefacts | ≤ 60 min (hosted runner CPU) |
+| `sim-nightly.yml` | nightly 02:00 IST / manual | build the Gazebo worker, run `pytest -m sim` and Jazzy colcon tests, upload failure artifacts | ≤ 120 min |
 | `benchmark-full.yml` | weekly, manual | EXP-02 analytic + reduced EXP-01 (10 seeds) → compare with baseline JSON, comment on regression | ≤ 45 min |
 | `release.yml` | tag `v*`, manual verification | verify package versions and CHANGELOG, build and publish images for verified tags, create GitHub Release | ≤ 30 min |
 
@@ -109,7 +109,7 @@ Secrets in CI: only `GITHUB_TOKEN` (GHCR push). No external secret is needed.
 
 ## 7. Dependency management
 
-Dependabot weekly for `uv`, `npm`, `github-actions`, `docker`; grouped minor/patch updates; major updates as separate PRs with a changelog review. ROS/Gazebo base images pinned by digest and updated monthly via a manual PR after `nightly-sim` passes.
+Dependabot weekly for `uv`, `npm`, `github-actions`, `docker`; grouped minor/patch updates; major updates as separate PRs with a changelog review. ROS/Gazebo base images pinned by digest and updated monthly via a manual PR after `sim-nightly` passes.
 
 ## 8. Observability of CI
 

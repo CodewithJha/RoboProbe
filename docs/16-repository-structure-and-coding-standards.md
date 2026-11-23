@@ -52,7 +52,7 @@ RoboProbe/
 │   ├── backend.Dockerfile  gazebo.Dockerfile  web.Dockerfile  nginx.conf
 ├── scripts/                       # gen_config_docs.py, check_mermaid.sh, seed_demo.py, …
 └── .github/
-    ├── workflows/                 # ci.yml, docs.yml, images.yml, nightly-sim.yml, release.yml (20)
+    ├── workflows/                 # ci.yml, docs.yml, images.yml, sim-nightly.yml, release.yml (20)
     ├── ISSUE_TEMPLATE/  PULL_REQUEST_TEMPLATE.md  CODEOWNERS  dependabot.yml
 ```
 
