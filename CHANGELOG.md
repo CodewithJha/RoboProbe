@@ -7,6 +7,10 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Kinematic2d SC-5 replay evidence (T-105c): `scripts/replay_agreement.py` batches
+  deterministic medoid replays and records MET-06; `docs/evidence/SC-5-k2d.md` reports
+  PASS on the pilot plus five completed EXP-01 `S-PROBE` campaigns (MET-06 = 1.0).
+
 - EXP-02 and EXP-07 evidence reports (T-105a): template-backed `docs/evidence/EXP-02.md`
   and `EXP-07.md`, committed EXP-02 pipeline pilot artefacts, EXP-07 smoke design,
   and preregistered deviation log entries.
