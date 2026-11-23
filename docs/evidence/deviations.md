@@ -21,3 +21,11 @@ Log every post-freeze change to S-PROBE defaults or benchmark thresholds here
 | Experiment | Deviation | Rationale |
 |------------|-----------|-----------|
 | EXP-04 | Preregistered 5×80 Gazebo matrix not executed; committed smoke design and SC-4 **PENDING** evidence only | Long compute runs on owner hardware; EXP-01 ([#208](https://github.com/CodewithJha/RoboProbe/issues/208)) not required to schedule Gazebo campaigns |
+
+## T-120b / T-120c EXP-05 and EXP-06 (2026-11-23)
+
+| Experiment | Deviation | Rationale |
+|------------|-----------|-----------|
+| EXP-05 | Profile B derived from k2d rule (doc 09 §4.3), not yet from Gazebo EXP-04 modes; MET-07 **PENDING** | EXP-04 medoids not available; tuned profile ships for compute lane |
+| EXP-05 | Preregistered 3×80 Gazebo matrix not executed | ≈7 h compute on owner hardware |
+| EXP-06 | No medoid replays; MET-06 **PENDING** | Blocked on EXP-04 completion and medoid export |

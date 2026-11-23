@@ -7,6 +7,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- EXP-05 / EXP-06 evidence (T-120b, T-120c): `tb4_nav2_tuned` SUT profile, per-arm
+  `sut_profile_id` in experiment planning, and honest **MET-07 / MET-06 PENDING** records in
+  `docs/evidence/EXP-05.md` and `EXP-06.md`.
 - In-dashboard token hints and a simulated first-campaign walkthrough for SC-6 (T-108).
 - EXP-04 Gazebo evidence scaffold (T-120a): `docs/evidence/EXP-04.md`, reduced
   `exp04-pilot/design.yaml`, pre-flight and SC-4 **PENDING** record (closes #210).

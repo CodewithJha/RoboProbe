@@ -219,6 +219,9 @@ def test_provisional_rejected_only_when_strict(tmp_path: Path) -> None:
 def test_shipped_nav2_profile_speed_paths_verified_t091() -> None:
     profile = load_sut_profile(PROFILES_DIR / "tb4_nav2_default.yaml", strict=True)
     assert profile.id == "tb4_nav2_default"
+    tuned = load_sut_profile(PROFILES_DIR / "tb4_nav2_tuned.yaml", strict=True)
+    assert tuned.id == "tb4_nav2_tuned"
+    assert tuned.config_hash != profile.config_hash
     assert load_sut_profile(PROFILES_DIR / "k2d_default.yaml", strict=True).id == "k2d_default"
 
 

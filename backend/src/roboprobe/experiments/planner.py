@@ -22,9 +22,11 @@ __all__ = [
     "check_comparable",
     "load_design",
     "plan",
+    "sut_profile_ids",
 ]
 
 _SCHEMA = "experiment"
+_SUT_PROFILE_PARAM = "sut_profile_id"
 
 
 class _Frozen(BaseModel):
@@ -210,6 +212,11 @@ def plan(
     specs: list[CampaignSpec] = []
     for variant in design.strategies:
         label = variant.display_label
+        raw_params = dict(variant.params)
+        profile_override = raw_params.pop(_SUT_PROFILE_PARAM, None)
+        sut_profile_id = (
+            profile_override if isinstance(profile_override, str) else design.sut_profile_id
+        )
         for rep in range(count):
             seed = derive_seed(design.seeds.root, REP, rep)
             specs.append(
@@ -219,7 +226,7 @@ def plan(
                     name=f"{design.id}:{label}:rep{rep}",
                     strategy_id=variant.id,
                     strategy_label=label,
-                    strategy_params=dict(variant.params),
+                    strategy_params=raw_params,
                     seed=seed,
                     budget=design.budget,
                     repeats=design.repeats,
@@ -227,7 +234,7 @@ def plan(
                     backend=design.backend,
                     space_id=design.space.id,
                     space_version=key.space_version,
-                    sut_profile_id=design.sut_profile_id,
+                    sut_profile_id=sut_profile_id,
                     pins=dict(design.pins),
                     oracle_overrides=dict(design.oracle_overrides),
                     stop_rules=dict(design.stop_rules),
@@ -237,3 +244,14 @@ def plan(
                 )
             )
     return specs
+
+
+def sut_profile_ids(design: ExperimentDesign) -> frozenset[str]:
+    """Collect SUT profile ids referenced by ``design`` (EXP-05 profile arms)."""
+    default = design.sut_profile_id or "k2d_default"
+    ids: set[str] = {default}
+    for variant in design.strategies:
+        override = variant.params.get(_SUT_PROFILE_PARAM)
+        if isinstance(override, str):
+            ids.add(override)
+    return frozenset(ids)

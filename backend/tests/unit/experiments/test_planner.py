@@ -93,6 +93,29 @@ def test_plan_rejects_space_version_mismatch_in_design() -> None:
         plan(design, default_seeds=DEFAULT_SEEDS, key=KEY)
 
 
+def test_strategy_may_override_sut_profile_for_exp05_arms() -> None:
+    design = _design(
+        backend="gazebo_nav2",
+        space={"id": "warehouse_v1", "version": KEY.space_version},
+        sut_profile_id="tb4_nav2_default",
+        strategies=[
+            {"id": "S-PROBE", "label": "profile_A", "params": {"epsilon": 0.05}},
+            {
+                "id": "S-PROBE",
+                "label": "profile_B",
+                "params": {"epsilon": 0.05, "sut_profile_id": "tb4_nav2_tuned"},
+            },
+        ],
+        seeds={"root": ROOT, "count": 2},
+    )
+    specs = plan(design, default_seeds=DEFAULT_SEEDS, key=KEY)
+    arm_a = [s for s in specs if s.strategy_label == "profile_A"]
+    arm_b = [s for s in specs if s.strategy_label == "profile_B"]
+    assert all(s.sut_profile_id == "tb4_nav2_default" for s in arm_a)
+    assert all(s.sut_profile_id == "tb4_nav2_tuned" for s in arm_b)
+    assert all("sut_profile_id" not in s.strategy_params for s in specs)
+
+
 def test_load_design_from_yaml(tmp_path: Path) -> None:
     path = tmp_path / "exp.yaml"
     path.write_text(
