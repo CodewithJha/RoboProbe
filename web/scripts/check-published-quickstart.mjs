@@ -7,6 +7,7 @@ const {
   WEB_SMOKE_TOKEN_FILE: tokenFile,
   WEB_SMOKE_CAMPAIGN_ID: campaignId,
   WEB_SMOKE_WORKER_COUNT: workerCount,
+  WEB_SMOKE_REPORT_PATH: reportPath,
 } = process.env;
 assert(
   baseUrl && tokenFile && campaignId && Number(workerCount) > 0,
@@ -45,6 +46,7 @@ try {
   ]);
   assert.match(download.suggestedFilename(), /\.html$/);
   assert.equal(await download.failure(), null);
+  if (reportPath) await download.saveAs(reportPath);
   const reportMs = Math.round(performance.now() - reportStarted);
   console.log(`Downloaded the campaign HTML report after ${reportMs} ms.`);
 } finally {

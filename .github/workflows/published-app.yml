@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/published-app.yml"
+      - "scripts/check_release_assets.py"
       - "scripts/web_image_smoke.sh"
       - "web/scripts/check-published-quickstart.mjs"
   workflow_dispatch:
@@ -12,6 +13,12 @@ on:
         description: Published RoboProbe image tag
         type: string
         default: main
+  workflow_call:
+    inputs:
+      image_tag:
+        description: Published RoboProbe image tag
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -42,7 +49,16 @@ jobs:
             "ghcr.io/codewithjha/roboprobe-web:$ROBOPROBE_IMAGE_TAG"
           printf 'Image tag: `%s`\n\nPull: %s seconds\n' "$ROBOPROBE_IMAGE_TAG" "$((SECONDS - started))" >> "$GITHUB_STEP_SUMMARY"
       - name: Verify dashboard and warehouse campaign
+        env:
+          WEB_SMOKE_REPORT_PATH: ${{ runner.temp }}/roboprobe-demo.html
         run: |
           started=$SECONDS
           bash scripts/web_image_smoke.sh
           printf 'App smoke and warehouse demo: %s seconds\n' "$((SECONDS - started))" >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify the exported HTML
+        run: python3 scripts/check_release_assets.py --demo "$RUNNER_TEMP/roboprobe-demo.html"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: roboprobe-demo
+          path: ${{ runner.temp }}/roboprobe-demo.html
+          if-no-files-found: error

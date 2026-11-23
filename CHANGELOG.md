@@ -7,6 +7,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Attach the backend, web, and Gazebo SBOMs and the published warehouse demo report to
+  tagged GitHub Releases (T-123).
+
 - Record Gazebo confirmations, manual runs, and replays of failed runs as downloadable MCAP
   artifacts by default (T-097b).
 
