@@ -19,6 +19,7 @@ from uuid import UUID
 from roboprobe.core.errors import ConflictError, ErrorCode, NotFoundError, ValidationError
 from roboprobe.core.idempotency import IdempotencyRecord
 from roboprobe.core.types import (
+    CampaignSchedulingSnapshot,
     CampaignStatus,
     FailureClass,
     JsonValue,
@@ -342,6 +343,27 @@ class _Runs:
                 )
             )
         return out
+
+    def scheduling_snapshot(
+        self, campaign_id: UUID, *, inflight_statuses: frozenset[RunStatus], count_invalid: bool
+    ) -> CampaignSchedulingSnapshot:
+        runs = sorted(
+            (run for run in self._db.runs.values() if run.campaign_id == campaign_id),
+            key=lambda run: run.id,
+        )
+        inflight = tuple(run.x_unit for run in runs if run.status in inflight_statuses)
+        used = sum(
+            run.status in inflight_statuses
+            or (
+                run.status is RunStatus.DONE
+                and (count_invalid or run.verdict is not Verdict.INVALID)
+            )
+            or (count_invalid and run.status is RunStatus.ERROR)
+            for run in runs
+        )
+        return CampaignSchedulingSnapshot(
+            used, max((run.ordinal for run in runs), default=-1) + 1, inflight
+        )
 
     def cancel_pending(self, campaign_id: UUID) -> int:
         n = 0

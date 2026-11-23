@@ -17,6 +17,7 @@ from roboprobe.core.types.enums import (
     Verdict,
 )
 from roboprobe.core.types.models import (
+    CampaignSchedulingSnapshot,
     GoalTolerance,
     InjectedObstacle,
     Observation,
@@ -37,6 +38,7 @@ from roboprobe.core.types.models import (
 from roboprobe.core.types.trace import FloatArray, Trace
 
 __all__ = [
+    "CampaignSchedulingSnapshot",
     "CampaignStatus",
     "FailureClass",
     "FloatArray",

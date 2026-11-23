@@ -1,5 +1,20 @@
 # SC-5 kinematic2d replay evidence
 
+## Verdict (SC-5 kinematic2d)
+
+| Field | Value |
+|-------|-------|
+| Criterion | SC-5 — MET-06 = 1.0 on kinematic2d (doc 01 §7) |
+| Campaigns replayed | 6 (`S-PROBE`: 1 pilot + 5 preregistered EXP-01 seeds) |
+| Mode medoids | 29 unique modes (8 pilot + 21 from the five-seed snapshot) |
+| Replays | 145 (`5` per medoid) |
+| Disagreements | 0 |
+| **MET-06** | **1.0** |
+| **SC-5 (k2d)** | **PASS** |
+
+Remaining preregistered EXP-01 `S-PROBE` seeds (blocked by [#208](https://github.com/CodewithJha/RoboProbe/issues/208))
+use the batch workflow below; any future disagreement is a reproducibility bug (doc 18 §7).
+
 ## S-PROBE pilot
 
 The pilot ran 80 episodes in a single S-PROBE warehouse campaign using the first
@@ -23,7 +38,7 @@ hashes also matched. Pilot MET-06 was **1.0**.
 | FM-08 | F-STUCK | 5/5 | 5/5 |
 
 The [full EXP-01 design](../../configs/experiments/exp01_k2d_main.yaml) uses
-30 seeds. Its S-PROBE mode inventory and release verdict are pending. [Issue #209](https://github.com/CodewithJha/RoboProbe/issues/209)
+30 seeds; five had completed and been analyzed when the snapshot below was taken.
 
 ## First five completed EXP-01 campaigns
 
@@ -36,7 +51,7 @@ and trace hash. Each of the five campaigns measured **MET-06 = 1.0**.
 
 The [per-mode evidence](SC-5-k2d-exp01-first-five.csv) includes the source run
 IDs and match counts. The snapshot includes the five campaigns completed when
-it was taken. The full 30-seed result remains pending.
+it was taken. Additional seeds are collected under [#208](https://github.com/CodewithJha/RoboProbe/issues/208).
 
 ## Run the replay batch
 
