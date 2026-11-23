@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import cProfile
 import pstats
+import signal
 import sys
 from pathlib import Path
 
@@ -27,6 +28,10 @@ def run_worker(profile_path: str) -> None:
     def profiled_execute(worker, *args, **kwargs):
         return profile.runcall(original_execute, worker, *args, **kwargs)
 
+    def stop_profile(_signum, _frame):
+        raise SystemExit(0)
+
+    signal.signal(signal.SIGTERM, stop_profile)
     WorkerProcess.execute = profiled_execute
     try:
         app()
