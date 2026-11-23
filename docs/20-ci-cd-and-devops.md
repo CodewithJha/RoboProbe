@@ -15,6 +15,11 @@
 | `benchmark-full.yml` | weekly, manual | EXP-02 analytic + reduced EXP-01 (10 seeds) → compare with baseline JSON, comment on regression | ≤ 45 min |
 | `release.yml` | tag `v*`, manual verification | verify package versions and CHANGELOG, build and publish images for verified tags, create GitHub Release | ≤ 30 min |
 
+The Gazebo replay check runs a canonical collision and five repeats with the same seed
+and SUT profile. It requires at least four matches on verdict and primary failure class
+using [MET-06](19-evaluation-and-experiment-plan.md#3-metric-definitions). On failure, the workflow
+retains each episode's `acceptance.json` alongside the simulator logs and traces.
+
 ## 2. PR pipeline
 
 ```mermaid

@@ -110,6 +110,7 @@ jobs:
             ${{ runner.temp }}/roboprobe-sim/simulation.xml
             ${{ runner.temp }}/roboprobe-sim/episodes/**/episode.log
             ${{ runner.temp }}/roboprobe-sim/episodes/**/episode_done.json
+            ${{ runner.temp }}/roboprobe-sim/episodes/**/acceptance.json
             ${{ runner.temp }}/roboprobe-sim/episodes/**/trace.parquet
             ${{ runner.temp }}/roboprobe-sim/episodes/**/*.mcap
       - name: Remove the disposable database, network, simulator image, and Fuel cache
