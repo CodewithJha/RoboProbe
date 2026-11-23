@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from uuid import UUID
 
 import pytest
 from sqlalchemy import event
@@ -69,6 +70,41 @@ def test_uow_rollback(uow_factory: Callable[[], SqlAlchemyUnitOfWork]) -> None:
         # Nested transaction rollback on the test connection: the outer pytest
         # transaction still isolates tests; the UoW rollback drops the save.
         assert uow.campaigns.get(cid_holder["id"]) is None  # type: ignore[arg-type]
+
+
+def test_stop_rule_counts_preserve_run_id_order(store_session: Session) -> None:
+    uow = SqlAlchemyUnitOfWork(lambda: store_session, notify_channel="roboprobe_events")
+    uow.bind_session(store_session)
+    campaign_id, _ = seed_campaign(uow)
+    assert uow.runs.stop_rule_counts(campaign_id) == (0, 0, 0, False)
+    cases = (
+        ("DONE", "INVALID", (1, 1, 1, False)),
+        ("DONE", "FAIL", (2, 1, 0, False)),
+        ("DONE", "INVALID", (3, 2, 1, False)),
+        ("CANCELLED", None, (3, 2, 0, False)),
+        ("ERROR", None, (4, 3, 1, False)),
+        ("RUNNING", None, (4, 3, 1, True)),
+        ("DONE", "INVALID", (5, 4, 2, True)),
+        ("DONE", None, (6, 4, 0, True)),
+    )
+    for index, (status, verdict, expected) in enumerate(cases, start=1):
+        store_session.add(
+            RunRow(
+                id=UUID(int=index),
+                campaign_id=campaign_id,
+                ordinal=len(cases) - index,
+                backend="kinematic2d",
+                scenario_hash=f"h{index}",
+                scenario_values={},
+                x_unit=[0.25],
+                seed=index,
+                phase="explore",
+                status=status,
+                verdict=verdict,
+            )
+        )
+        store_session.flush()
+        assert uow.runs.stop_rule_counts(campaign_id) == expected
 
 
 def test_history_projects_ordered_observations(store_session: Session) -> None:

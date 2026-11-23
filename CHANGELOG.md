@@ -9,6 +9,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 - EXP-04 Gazebo evidence scaffold (T-120a): `docs/evidence/EXP-04.md`, reduced
   `exp04-pilot/design.yaml`, pre-flight and SC-4 **PENDING** record (closes #210).
+- Kinematic2d SC-5 replay evidence (T-105c): `scripts/replay_agreement.py` batches
+  deterministic medoid replays and records MET-06; `docs/evidence/SC-5-k2d.md` reports
+  PASS on the pilot plus five completed EXP-01 `S-PROBE` campaigns (MET-06 = 1.0).
 
 - EXP-02 and EXP-07 evidence reports (T-105a): template-backed `docs/evidence/EXP-02.md`
   and `EXP-07.md`, committed EXP-02 pipeline pilot artefacts, EXP-07 smoke design,
@@ -283,6 +286,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 - Bound Gaussian-process prediction batches so a full Risk Atlas can be generated on a laptop.
 
 - Resume strategies from saved checkpoints and complete finite campaigns after their last in-flight run.
+- Compute PostgreSQL campaign stop counters without loading run records into the orchestrator (T-130).
+- Read campaign budget and in-flight vectors from one PostgreSQL snapshot (T-130).
 
 - Campaign reports render legacy risk slices, and authenticated dashboard sessions can preview
   and download completed reports.
