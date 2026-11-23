@@ -32,11 +32,11 @@ from roboprobe.observability.tracing import span
 from roboprobe.runner.checkpoint import CheckpointStore
 from roboprobe.runner.lifecycle import CampaignService
 from roboprobe.runner.loop import CampaignLoop
-from roboprobe.runner.ports import UowFactory
+from roboprobe.runner.ports import CampaignView, RunView, UnitOfWorkPort, UowFactory
 from roboprobe.runner.reaper import Reaper
 from roboprobe.runner.scheduler import Scheduler
 from roboprobe.runner.space_loader import load_campaign_space
-from roboprobe.runner.stop_rules import counters_from_runs, evaluate_stop_rules
+from roboprobe.runner.stop_rules import CampaignCounters, counters_from_runs, evaluate_stop_rules
 from roboprobe.selection.base import StrategyContext
 from roboprobe.selection.registry import create as create_strategy
 
@@ -211,15 +211,7 @@ class Orchestrator:
                 if current.status is not CampaignStatus.RUNNING:
                     self.clock.sleep(self.settings.runner.tick_interval_s)
                     continue
-                runs = _load_runs(uow, campaign_id)
-                counters = counters_from_runs(
-                    budget=current.budget,
-                    runs=runs,  # type: ignore[arg-type]
-                    modes_found=0,
-                    started_at=current.started_at,
-                    now=self.clock.now(),
-                    stop_rules=dict(current.stop_rules),
-                )
+                counters = _read_stop_counters(uow, current, self.clock.now())
                 decision = evaluate_stop_rules(
                     counters, self.settings.runner, strategy_exhausted=strategy.is_exhausted()
                 )
@@ -309,11 +301,40 @@ class Orchestrator:
             raise RuntimeError(msg)
 
 
-def _load_runs(uow: object, campaign_id: UUID) -> list[object]:
-    runs: list[object] = []
+def _read_stop_counters(
+    uow: UnitOfWorkPort, campaign: CampaignView, now: datetime
+) -> CampaignCounters:
+    read_counts = getattr(uow.runs, "stop_rule_counts", None)
+    if callable(read_counts):
+        finished, invalid, trailing, inflight = cast(
+            tuple[int, int, int, bool], read_counts(campaign.id)
+        )
+        return CampaignCounters(
+            budget=campaign.budget,
+            finished=finished,
+            invalid=invalid,
+            consecutive_invalid=trailing,
+            modes_found=0,
+            started_at=campaign.started_at,
+            now=now,
+            stop_rules=dict(campaign.stop_rules),
+            has_inflight=inflight,
+        )
+    return counters_from_runs(
+        budget=campaign.budget,
+        runs=_load_runs(uow, campaign.id),
+        modes_found=0,
+        started_at=campaign.started_at,
+        now=now,
+        stop_rules=dict(campaign.stop_rules),
+    )
+
+
+def _load_runs(uow: UnitOfWorkPort, campaign_id: UUID) -> list[RunView]:
+    runs: list[RunView] = []
     cursor = None
     while True:
-        page = uow.runs.list_for_campaign(campaign_id, limit=None, cursor=cursor)  # type: ignore[attr-defined]
+        page = uow.runs.list_for_campaign(campaign_id, limit=None, cursor=cursor)
         runs.extend(page.items)
         cursor = page.next_cursor
         if cursor is None:
