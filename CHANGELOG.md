@@ -281,6 +281,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 - Resume strategies from saved checkpoints and complete finite campaigns after their last in-flight run.
 - Compute PostgreSQL campaign stop counters without loading run records into the orchestrator (T-130).
+- Read campaign budget and in-flight vectors from one PostgreSQL snapshot (T-130).
 
 - Campaign reports render legacy risk slices, and authenticated dashboard sessions can preview
   and download completed reports.
