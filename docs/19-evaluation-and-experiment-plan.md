@@ -63,6 +63,10 @@ Warehouse variants still require independently reviewed reference mode assignmen
 | EXP-06 | gazebo_nav2 | – | replay of each EXP-04 mode medoid × 5 | – | – | ≈ 2 h | reproducibility H6 |
 | EXP-07 | kinematic2d | d=6 vs d=8; noise ×2 | RANDOM, PROBE | 30 | 300 | ≈ 2 h | scalability with dimension/noise |
 
+Budgets are upper bounds. The preregistered S-GRID design has 64 scenarios per seed for
+EXP-01 and the 6-D EXP-02 arm, and 144 per seed for the 2-D EXP-02 arm.
+Report the number of episodes actually collected for each arm.
+
 Experiment YAMLs: `configs/experiments/exp01_k2d_main.yaml` …, executed with `roboprobe experiment run`;
 validated by `schemas/experiment.schema.json`. Example (EXP-01, abridged):
 

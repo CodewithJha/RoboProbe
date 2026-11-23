@@ -46,6 +46,7 @@ consumes in order (balance properties hold for prefixes of size `2^m`).
 
 **S-GRID.** Levels `k = floor(B^(1/d))` (min 2) per dimension at `u ∈ {0, 1/(k−1), …, 1}`;
 if `k^d > B`, a seeded random permutation of grid points is consumed until the budget is exhausted.
+When `k^d < B`, the campaign completes after its finite grid and all queued episodes finish.
 
 **S-OFAT.** For each enabled parameter `i` and levels `L = {0, 0.25, 0.5, 0.75, 1.0}` (unit scale):
 `x = nominal` with `x_i = ℓ`. Total `d·|L|` distinct scenarios (30 for d = 6); the design is cycled with
