@@ -1,0 +1,66 @@
+{
+  "source_run": 45108261669,
+  "source_commit": "79b3c3e91a9ac1eb251e74a147754d9f2f410471",
+  "medoids": [
+    {
+      "mode": "EXP04-R0-FM01",
+      "run_id": "01a206b8-bcb9-7023-9fe3-54fba31e4736",
+      "artifact": "exp04-S-PROBE-rep0-attempt1",
+      "source_raw_sha256": "ef95e579ec0fb6c9752de520f6de8a2f944697821b173fd3c704bb44cabf2020"
+    },
+    {
+      "mode": "EXP04-R0-FM02",
+      "run_id": "01a2069d-17ab-77bb-aa96-d6b49e87cea4",
+      "artifact": "exp04-S-RANDOM-rep0-attempt1",
+      "source_raw_sha256": "ca2f18b1348e3bdede4679c59f2a82e654ce1f654d5da741c35ceb8fbb1ce322"
+    },
+    {
+      "mode": "EXP04-R1-FM01",
+      "run_id": "01a206ab-c990-73a9-9c0c-347b4b0f9051",
+      "artifact": "exp04-S-PROBE-rep1-attempt1",
+      "source_raw_sha256": "2959fca85930d02626b10437813cbeca97f1960fbf4e1bbe91287caa8b2eefed"
+    },
+    {
+      "mode": "EXP04-R1-FM02",
+      "run_id": "01a20690-56ba-75af-91ae-4428f3ec53ff",
+      "artifact": "exp04-S-RANDOM-rep1-attempt1",
+      "source_raw_sha256": "1b3041757d5f89af4f106ea5c5e9b071a8a35091044ffa3c60053d9eeba42077"
+    },
+    {
+      "mode": "EXP04-R2-FM01",
+      "run_id": "01a206a7-d28f-77b1-bef0-866908ceba47",
+      "artifact": "exp04-S-RANDOM-rep2-attempt1",
+      "source_raw_sha256": "ee43cdf14a28d2b37273513a25382e7b45f8b674ae0ffbd7066989f47cbf3f0a"
+    },
+    {
+      "mode": "EXP04-R2-FM02",
+      "run_id": "01a206cc-2ca2-728d-94bf-a61deaa2eeff",
+      "artifact": "exp04-S-PROBE-rep2-attempt1",
+      "source_raw_sha256": "21e8c733fba576e733e9d8459fbdffa31f4a308cc5a330cb55bbbf15a2663417"
+    },
+    {
+      "mode": "EXP04-R3-FM01",
+      "run_id": "01a206ba-a9d0-7420-8b7b-c4b00be4b560",
+      "artifact": "exp04-S-RANDOM-rep3-attempt1",
+      "source_raw_sha256": "bb42ec4886fa7d1ef0eda8cd1ba03cc8fd9ec05a0a110e7476a92bf58fa3e5c7"
+    },
+    {
+      "mode": "EXP04-R3-FM02",
+      "run_id": "01a206a0-e62f-7649-a412-6dc6837604ae",
+      "artifact": "exp04-S-PROBE-rep3-attempt1",
+      "source_raw_sha256": "38f96e8a801469eeaea94156fdba14723830b0526661629e3df607740f334741"
+    },
+    {
+      "mode": "EXP04-R4-FM01",
+      "run_id": "01a206ac-14ad-756f-82ba-d6c14b0d42af",
+      "artifact": "exp04-S-RANDOM-rep4-attempt1",
+      "source_raw_sha256": "55dcba0736b3c7f19e195565d9acedc5b0159b43b2c3633d6a1f6425138c3b3a"
+    },
+    {
+      "mode": "EXP04-R4-FM02",
+      "run_id": "01a20691-62bb-76e4-9ffd-ba4dd3bccddd",
+      "artifact": "exp04-S-PROBE-rep4-attempt1",
+      "source_raw_sha256": "fe59f31d5504c5ba93e4fc06b8f00c03a41c2abfaa8684c40d789a5916b05d9e"
+    }
+  ]
+}

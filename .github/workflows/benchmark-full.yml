@@ -22,6 +22,12 @@ on:
         required: false
         type: string
 
+      exp06_replay:
+        description: Replay the verified EXP-04 medoid inventory
+        required: false
+        type: boolean
+        default: false
+
 permissions:
   contents: read
   pull-requests: write
@@ -40,7 +46,7 @@ env:
 
 jobs:
   analytic:
-    if: ${{ inputs.exp04_preflight == '' }}
+    if: ${{ inputs.exp04_preflight == '' && !inputs.exp06_replay }}
     name: analytic-exp02
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -227,4 +233,148 @@ jobs:
           name: exp04-${{ matrix.strategy }}-rep${{ matrix.replicate }}-attempt${{ github.run_attempt }}
           path: ${{ env.STUDY_OUTPUT }}
           if-no-files-found: error
+          retention-days: 14
+
+
+  exp06-inventory:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      && github.repository == 'CodewithJha/RoboProbe'
+      && github.ref == 'refs/heads/compute/t-120-gazebo-studies'
+      && inputs.exp06_replay
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      cells: ${{ steps.inventory.outputs.cells }}
+      source: ${{ steps.inventory.outputs.source }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate the completed EXP-04 source and medoids
+        id: inventory
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          manifest=scripts/exp06_medoids.json
+          source=$(jq -r .source_run "$manifest")
+          sha=$(jq -r .source_commit "$manifest")
+          [[ "$source" =~ ^[0-9]+$ && "$sha" =~ ^[0-9a-f]{40}$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$source" \
+            | jq -e --arg sha "$sha" '.conclusion=="success" and .head_sha==$sha' >/dev/null
+          git merge-base --is-ancestor "$sha" HEAD
+          git diff --quiet "$sha" HEAD -- backend configs docker tasks schemas ros_ws
+          jq -e '
+            (.medoids | length) as $n |
+            $n > 0 and ($n == ([.medoids[].mode] | unique | length))
+            and ($n == ([.medoids[].run_id] | unique | length))
+          ' "$manifest" >/dev/null
+          printf 'cells=%s\n' "$(jq -c .medoids "$manifest")" >>"$GITHUB_OUTPUT"
+          printf 'source=%s\n' "$source" >>"$GITHUB_OUTPUT"
+
+  exp06:
+    name: EXP-06 ${{ matrix.cell.mode }}
+    needs: exp06-inventory
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        cell: ${{ fromJSON(needs.exp06-inventory.outputs.cells) }}
+    env:
+      STUDY_IMAGE: roboprobe-gazebo-exp06:${{ github.sha }}
+      MEDOID_ID: ${{ matrix.cell.run_id }}
+      SOURCE_SHA: ${{ matrix.cell.source_raw_sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ matrix.cell.artifact }}
+          run-id: ${{ needs.exp06-inventory.outputs.source }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/exp06-source
+      - name: Verify the original dataset and prepare a private replay copy
+        run: |
+          set -euo pipefail
+          [[ "$MEDOID_ID" =~ ^[0-9a-f-]{36}$ && "$SOURCE_SHA" =~ ^[0-9a-f]{64}$ ]]
+          source="$RUNNER_TEMP/exp06-source"
+          printf '%s  %s\n' "$SOURCE_SHA" "$source/runs.parquet" | sha256sum --check
+          output="$RUNNER_TEMP/exp06-output"
+          printf 'REPLAY_OUTPUT=%s\n' "$output" >>"$GITHUB_ENV"
+          mkdir -p "$output"
+          cp -a "$source/artifacts" "$output/artifacts"
+          sudo chown -R 10001:10001 "$output"
+          docker network create --internal exp06-net
+          docker run -d --name exp06-db --network exp06-net --network-alias postgres \
+            -e POSTGRES_USER=roboprobe -e POSTGRES_DB=roboprobe \
+            -e POSTGRES_PASSWORD=roboprobe-ci postgres:17
+          timeout 90 bash -c 'until docker exec exp06-db pg_isready -h 127.0.0.1 -U roboprobe -d roboprobe; do sleep 2; done'
+          docker exec -i exp06-db pg_restore --exit-on-error --no-owner --no-privileges \
+            -U roboprobe -d roboprobe <"$source/campaign.dump"
+      - name: Build and warm the same pinned native Gazebo runtime
+        run: |
+          docker build --build-arg "REVISION=$GITHUB_SHA" -f docker/gazebo/Dockerfile -t "$STUDY_IMAGE" .
+          docker volume create exp06-fuel
+          docker run --rm --read-only --tmpfs /tmp -v exp06-fuel:/data/gazebo-fuel "$STUDY_IMAGE" prefetch-fuel
+      - name: Replay the original medoid with five same seeds and five fresh seeds
+        timeout-minutes: 65
+        run: |
+          docker run --name exp06-replayer --init --network exp06-net --read-only --tmpfs /tmp --shm-size=1g \
+            --mount "type=bind,src=$GITHUB_WORKSPACE,dst=/checkout,readonly" \
+            --mount "type=bind,src=$REPLAY_OUTPUT,dst=/results" \
+            --mount "type=volume,src=exp06-fuel,dst=/data/gazebo-fuel,readonly" \
+            -e MEDOID_ID -e GZ_IP=127.0.0.1 -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
+            -e PYTHONPATH=/checkout/backend/src -e LIBGL_ALWAYS_SOFTWARE=1 -e OPENBLAS_NUM_THREADS=1 \
+            -e OMP_NUM_THREADS=1 -e MKL_NUM_THREADS=1 \
+            -e ROBOPROBE_DATABASE__URL=postgresql+psycopg://roboprobe:roboprobe-ci@postgres/roboprobe \
+            -e ROBOPROBE_STORAGE__ARTIFACT_ROOT=/results/artifacts \
+            -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__SOFTWARE_RENDERING=true \
+            -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__STARTUP_TIMEOUT_S=150 \
+            -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__WALL_MARGIN_S=90 \
+            -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__IMAGE="$STUDY_IMAGE" \
+            -e GZ_SIM_RESOURCE_PATH=/checkout/ros_ws/src/roboprobe_ros/models:/opt/ros/jazzy/share \
+            --entrypoint /bin/bash "$STUDY_IMAGE" -eo pipefail -c '
+              install -d -m 700 "$HOME" "$ROS_HOME" "$XDG_RUNTIME_DIR"
+              source /opt/ros/jazzy/setup.bash
+              source /opt/roboprobe/ros_ws/install/setup.bash
+              cd /checkout/backend
+              /opt/roboprobe/venv/bin/roboprobe --json replay --repeats 5 "$MEDOID_ID" >/results/same-seeds.json
+              /opt/roboprobe/venv/bin/roboprobe --json replay --repeats 5 --fresh-seeds "$MEDOID_ID" >/results/fresh-seeds.json
+            '
+      - name: Verify complete paired replay evidence
+        run: |
+          sudo chmod -R a+rX "$REPLAY_OUTPUT"
+          for phase in same-seeds fresh-seeds; do
+            jq -e --arg source "$MEDOID_ID" '
+              .source_run_id==$source and .source_verdict=="FAIL"
+              and (.rows | length)==5 and (.replay_ids | unique | length)==5
+              and (.agreements+.disagreements)==5
+              and all(.rows[]; .verdict!=null)
+            ' "$REPLAY_OUTPUT/$phase.json" >/dev/null
+          done
+          jq -e -s '([.[].replay_ids[]] | unique | length)==10' \
+            "$REPLAY_OUTPUT/same-seeds.json" "$REPLAY_OUTPUT/fresh-seeds.json" >/dev/null
+      - name: Preserve replay and failure artifacts
+        if: ${{ always() }}
+        run: |
+          docker stop -t 20 exp06-replayer 2>/dev/null || true
+          if docker inspect exp06-db >/dev/null 2>&1 && [[ -d "${REPLAY_OUTPUT:-}" ]]; then
+            docker exec exp06-db pg_dump -Fc -U roboprobe -d roboprobe >"$RUNNER_TEMP/exp06-replays.dump"
+            sudo mv "$RUNNER_TEMP/exp06-replays.dump" "$REPLAY_OUTPUT/replays.dump"
+            sudo chmod -R a+rX "$REPLAY_OUTPUT"
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ always() }}
+        with:
+          name: exp06-${{ matrix.cell.mode }}-attempt${{ github.run_attempt }}
+          path: ${{ env.REPLAY_OUTPUT }}
           retention-days: 14
