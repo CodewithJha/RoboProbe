@@ -7,7 +7,7 @@ Results and records produced during implementation and evaluation (kept in git w
 - [T-092 warehouse map & path](T-092.md) — k2d/Gazebo maps, nominal path, IoU follow-up ([#331]).
 - `T-061-benchmark-calibration.md` — frozen selector thresholds/hyper-parameters.
 - `T-131-mutation.md` — mutation-testing kill-rate baseline.
-- [EXP-02 analytic](EXP-02.md) and [EXP-07 scalability](EXP-07.md) — experiment evidence (T-105a, doc 19).
+- [EXP-02 analytic](EXP-02.md), [EXP-04 Gazebo / SC-4](EXP-04.md), and [EXP-07 scalability](EXP-07.md) — experiment evidence (doc 19).
 - `exp01/` … `exp07/` — additional experiment reports (19).
 - `deviations.md` — deviations from the pre-registered evaluation protocol.
 - `traceability.html` — generated traceability report (28).

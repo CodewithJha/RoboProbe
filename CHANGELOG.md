@@ -7,6 +7,9 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- EXP-04 Gazebo evidence scaffold (T-120a): `docs/evidence/EXP-04.md`, reduced
+  `exp04-pilot/design.yaml`, pre-flight and SC-4 **PENDING** record (closes #210).
+
 - EXP-02 and EXP-07 evidence reports (T-105a): template-backed `docs/evidence/EXP-02.md`
   and `EXP-07.md`, committed EXP-02 pipeline pilot artefacts, EXP-07 smoke design,
   and preregistered deviation log entries.
