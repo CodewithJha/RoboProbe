@@ -201,10 +201,9 @@ Start at [docs/00-index.md](docs/00-index.md) for reading paths and conventions.
 
 ## Try the dashboard locally
 
-### First campaign in five minutes
+### Start your first campaign
 
-With the stack already running (`make up PROFILES=app`), a new user should reach a started
-campaign in about five minutes:
+With the stack already running (`make up PROFILES=app`), use these steps to start a warehouse campaign.
 
 1. Open this README and note the dashboard URL (`http://127.0.0.1:8080`).
 2. Copy the API token from `secrets/api_token` (created by `make up`).
@@ -213,7 +212,7 @@ campaign in about five minutes:
 5. Accept the warehouse scenario defaults: **Space** → **Robot & backend** (`kinematic2d`) →
    **Strategy** (`S-RANDOM`, small budget) → **Review** → **Create campaign**.
 
-The walkthrough protocol and hallway timings are recorded in
+The hallway protocol and simulated walkthrough timings are recorded in
 [`docs/evidence/SC-6-hallway.md`](docs/evidence/SC-6-hallway.md).
 
 Install Docker with Compose v2, Git, Make, and Python 3. The `app` profile builds and starts

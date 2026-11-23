@@ -7,7 +7,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
-- SC-6 hallway evidence with median time-to-first-campaign and in-dashboard token hints (T-108).
+- In-dashboard token hints and a simulated first-campaign walkthrough for SC-6 (T-108).
 - Kinematic2d SC-5 replay evidence (T-105c): `scripts/replay_agreement.py` batches
   deterministic medoid replays and records MET-06; `docs/evidence/SC-5-k2d.md` reports
   PASS on the pilot plus five completed EXP-01 `S-PROBE` campaigns (MET-06 = 1.0).

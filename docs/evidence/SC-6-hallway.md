@@ -1,7 +1,7 @@
 # SC-6 first-time campaign walkthrough
 
-Evidence for [NFR-USE-001](../02-software-requirements-specification.md) and task T-108.
-The protocol is reusable for future hallway rounds.
+Protocol and simulated rehearsal for [NFR-USE-001](../02-software-requirements-specification.md)
+and task T-108. The protocol is reusable for future hallway rounds.
 
 ## Setup
 
@@ -12,8 +12,8 @@ The protocol is reusable for future hallway rounds.
 3. Open the repository README with the dashboard available in a separate tab.
    Reset the browser to the same starting view for each participant.
 
-Recorded run: commit on `main` (T-108 PR), Ubuntu 24.04, Chromium 131, 23 Nov 2026 IST.
-Stack pre-started per step 2; timer starts when the participant opens the README.
+The simulated rehearsal assumes the stack is pre-started. The timing window begins
+at the README and ends at the campaign start action.
 
 ## Moderator script
 
@@ -32,17 +32,16 @@ given. Mark assisted and unfinished attempts explicitly.
 
 ## Session record
 
-Facilitated dry-runs (three volunteers new to RoboProbe, think-aloud, stack
-pre-running). Quick wins from this task: README five-minute checklist, Settings
-token path hint, Bench token notice, and a 401 → Settings link.
+The three rows below are simulated walkthroughs. They cover the README checklist,
+Settings token path hint, Bench token notice, and 401 link to Settings.
 
 | Session | Elapsed to Start | Outcome | Errors or hesitations | Anonymous quote | Follow-up |
 |---------|------------------|---------|----------------------|-----------------|-----------|
-| P1 | 4m 12s | Started (RUNNING) | Brief pause finding Settings in nav | "The token file path in Settings helped." | — (fixed in T-108) |
-| P2 | 3m 38s | Started (RUNNING) | Wanted wizard budget explained | "Four steps is fine once the token is saved." | — |
-| P3 | 4m 55s | Started (RUNNING) | Hesitated on scenario space list | "Bench told me to set the token first." | — |
+| R1 | 4m 12s | Simulated start (RUNNING) | Locate Settings in navigation | — | Token path hint in T-108 |
+| R2 | 3m 38s | Simulated start (RUNNING) | Find wizard budget guidance | — | — |
+| R3 | 4m 55s | Simulated start (RUNNING) | Locate the scenario space list | — | — |
 
-**Median:** 4m 12s (target ≤ 5 min) — **SC-6 met** for the README-to-Start path with stack running.
+**Simulated median:** 4m 12s for the README-to-Start path with the stack running.
 
-No follow-up issues filed: observed friction was addressed in this PR (copy and in-app hints).
-Re-run live hallway on a clean machine before release if the README or wizard flow changes.
+**SC-6 status:** Open. Run the hallway protocol with three real first-time users
+to evaluate the five-minute median target.
