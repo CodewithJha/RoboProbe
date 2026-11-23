@@ -167,6 +167,46 @@ PYTHON
     WEB_SMOKE_URL="$base" WEB_SMOKE_TOKEN_FILE="$scratch/api_token" \
         WEB_SMOKE_CAMPAIGN_ID="$campaign_id" WEB_SMOKE_WORKER_COUNT="$worker_count" \
         node web/scripts/check-published-quickstart.mjs
+
+    "${compose[@]}" exec -T api python - <<'PYTHON'
+import shutil
+
+from roboprobe.core.settings import load_settings
+
+storage = load_settings().storage
+free_gib = shutil.disk_usage(storage.artifact_root).free / 1024**3
+if free_gib <= storage.min_free_gb:
+    raise SystemExit(f"Artifact storage has {free_gib:.2f} GiB free; needs > {storage.min_free_gb:g} GiB.")
+print(f"Artifact storage has {free_gib:.2f} GiB free (minimum {storage.min_free_gb:g} GiB).")
+PYTHON
+
+    idle_since="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+    sleep 15  # Include multiple API health checks at the Compose interval.
+    "${compose[@]}" logs --no-log-prefix --since "$idle_since" api orchestrator worker-k2d \
+        >"$scratch/idle.log" 2>&1
+    python3 - "$scratch/idle.log" <<'PYTHON'
+import json
+import sys
+from pathlib import Path
+
+lines = Path(sys.argv[1]).read_text(encoding="utf-8").splitlines()
+records = 0
+for number, line in enumerate(lines, start=1):
+    if not line.strip():
+        continue
+    try:
+        entry = json.loads(line)
+    except json.JSONDecodeError:
+        raise SystemExit(f"Idle backend log line {number} is not JSON.") from None
+    if not isinstance(entry, dict) or not isinstance(entry.get("level"), str):
+        raise SystemExit(f"Idle backend log line {number} is missing a log level.")
+    if entry["level"].lower() in {"error", "critical", "fatal"}:
+        raise SystemExit(f"Idle backend log line {number} reports an error.")
+    records += 1
+if records == 0:
+    raise SystemExit("No idle backend logs were captured.")
+print(f"Verified {records} JSON backend log records with no errors during 15 seconds of idle time.")
+PYTHON
 fi
 
 # EventSource sends its bearer in the query. Even an upstream outage must keep it out of logs.
