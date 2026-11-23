@@ -41,6 +41,7 @@ __all__ = [
     "generate_rows",
     "label_parquet",
     "label_rows",
+    "read_reviewed_labels",
     "sha256_file",
     "write_manifest",
     "write_parquet",
@@ -65,7 +66,7 @@ class ReferenceManifest:
 class _ReviewedLabels(BaseModel):
     source_sha256: Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
     labels: dict[
-        Annotated[int, Field(ge=0)], Annotated[str, Field(pattern=r"^GT-[A-Z][A-Z0-9_-]*$")]
+        Annotated[int, Field(ge=0)], Annotated[str, Field(pattern=r"^GT-[A-Z][A-Z0-9_-]*$")] | None
     ]
 
 
@@ -235,17 +236,8 @@ def label_parquet(
         )
         label_rows(rows, calibration, radius=settings.experiments.mode_match_radius)
     else:
-        try:
-            review = _ReviewedLabels.model_validate_json(
-                reviewed_labels.read_text(encoding="utf-8")
-            )
-        except PydanticValidationError as exc:
-            msg = "invalid reviewed reference labels"
-            raise errors.ValidationError(msg, context={"path": str(reviewed_labels)}) from exc
-        if sha256_file(source) != review.source_sha256:
-            msg = "reviewed labels refer to a different reference Parquet digest"
-            raise errors.ValidationError(msg)
-        _apply_reviewed_labels(rows, review.labels)
+        labels = read_reviewed_labels(reviewed_labels, sha256_file(source))
+        _apply_reviewed_labels(rows, labels)
     dest = output or source
     manifest_path = source.with_suffix(".manifest.json")
     manifest = (
@@ -262,7 +254,20 @@ def label_parquet(
     return dest, sum(1 for row in rows if row.get("gt_label"))
 
 
-def _apply_reviewed_labels(rows: list[dict[str, Any]], labels: Mapping[int, str]) -> None:
+def read_reviewed_labels(path: Path, source_digest: str) -> dict[int, str | None]:
+    """Read review dispositions bound to the exact source Parquet digest."""
+    try:
+        review = _ReviewedLabels.model_validate_json(path.read_bytes())
+    except (PydanticValidationError, OSError) as exc:
+        msg = "invalid reviewed reference labels"
+        raise errors.ValidationError(msg, context={"path": str(path)}) from exc
+    if review.source_sha256 != source_digest:
+        msg = "reviewed labels refer to a different reference Parquet digest"
+        raise errors.ValidationError(msg)
+    return review.labels
+
+
+def _apply_reviewed_labels(rows: list[dict[str, Any]], labels: Mapping[int, str | None]) -> None:
     failures = {row["ordinal"] for row in rows if row["verdict"] == Verdict.FAIL.value}
     invalid = sorted(labels.keys() - failures)
     if invalid:
