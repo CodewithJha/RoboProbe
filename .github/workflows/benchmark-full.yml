@@ -16,6 +16,11 @@ on:
         required: false
         default: "10"
         type: string
+      t105a_evaluation:
+        description: Run all preregistered EXP-02 and EXP-07 campaign cells
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -36,6 +41,7 @@ env:
 jobs:
   analytic:
     name: analytic-exp02
+    if: ${{ !inputs.t105a_evaluation }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -87,3 +93,103 @@ jobs:
             });
         env:
           PR_NUMBER: ${{ github.event.inputs.pr_number }}
+
+  full-evaluation:
+    name: T-105a ${{ matrix.arm }} shard ${{ matrix.shard }}
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      && inputs.t105a_evaluation
+      && github.repository == 'CodewithJha/RoboProbe'
+      && github.ref_name == 'compute/T-105a-full-evaluation'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        arm:
+          - exp02_analytic
+          - exp02_branin
+          - exp07_scalability
+          - exp07_scalability_d8
+          - exp07_scalability_noise2
+        shard: [0, 1, 2, 3, 4]
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: roboprobe-evaluation-fixture # Disposable service container.
+          POSTGRES_DB: evaluation
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d evaluation"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      ARM: ${{ matrix.arm }}
+      SHARD: ${{ matrix.shard }}
+      ROBOPROBE_DATABASE__URL: postgresql+psycopg://postgres:roboprobe-evaluation-fixture@127.0.0.1:5432/evaluation
+      ROBOPROBE_RUNNER__TICK_INTERVAL_S: "0.05"
+      ROBOPROBE_WORKER__POLL_INTERVAL_S: "0.05"
+      ROBOPROBE_OBSERVABILITY__METRICS_ENABLED: "false"
+      ROBOPROBE_LOGGING__LEVEL: "WARNING"
+      ROBOPROBE_SELECTION__BENCHMARKS__FUNCTION: ${{ matrix.arm == 'exp02_branin' && 'branin_falsify' || 'multi_mode_6d' }}
+      OPENBLAS_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Record evaluation environment
+        run: |
+          mkdir -p "$RUNNER_TEMP/t105a"
+          echo "ROBOPROBE_STORAGE__WORKDIR_ROOT=$RUNNER_TEMP/t105a-workdirs" >>"$GITHUB_ENV"
+          echo "ROBOPROBE_STORAGE__ARTIFACT_ROOT=$RUNNER_TEMP/t105a-episode-artifacts" >>"$GITHUB_ENV"
+          echo "MPLCONFIGDIR=$RUNNER_TEMP/t105a-matplotlib" >>"$GITHUB_ENV"
+          {
+            git rev-parse HEAD
+            uname -a
+            lscpu
+            free -b
+            uv run --directory backend python --version
+            uv pip freeze --python backend/.venv/bin/python
+            docker exec "${{ job.services.postgres.id }}" postgres --version
+            sha256sum backend/uv.lock
+          } >"$RUNNER_TEMP/t105a/environment.txt"
+      - name: Execute the frozen seed slice
+        run: |
+          backend/.venv/bin/roboprobe db upgrade
+          timeout --signal=TERM --kill-after=45s 315m backend/.venv/bin/python \
+            scripts/collect_t105a.py --arm "$ARM" --shard "$SHARD" --out "$RUNNER_TEMP/t105a"
+      - name: Render this shard's experiment report
+        run: |
+          export EVALUATION_METADATA="$RUNNER_TEMP/t105a/collection.json"
+          experiment_id=$(python3 -c 'import json, os; print(json.load(open(os.environ["EVALUATION_METADATA"]))["experiment_id"])')
+          backend/.venv/bin/roboprobe --json experiment report "$experiment_id" -o "$RUNNER_TEMP/t105a/report.html"
+      - name: Preserve raw run timing and partial database state
+        if: always()
+        env:
+          EVALUATION_PG: ${{ job.services.postgres.id }}
+        run: |
+          set -euo pipefail
+          destination="$RUNNER_TEMP/t105a"
+          mkdir -p "$destination"
+          docker exec "$EVALUATION_PG" pg_dump -U postgres -d evaluation --format=custom >"$destination/campaign-state.pgdump"
+          if docker exec "$EVALUATION_PG" psql -qAt -U postgres -d evaluation -c "SELECT to_regclass('public.runs') IS NOT NULL" | grep -qx t; then
+            docker exec "$EVALUATION_PG" psql -q -v ON_ERROR_STOP=1 -U postgres -d evaluation \
+              -c "COPY (SELECT c.strategy_id,c.experiment_rep,r.ordinal,r.repeat_index,r.status,r.verdict,r.enqueued_at,r.started_at,r.finished_at FROM runs r JOIN campaigns c ON c.id=r.campaign_id ORDER BY c.strategy_id,c.experiment_rep,r.ordinal,r.repeat_index) TO STDOUT WITH CSV HEADER" \
+              | gzip -n >"$destination/run-timing.csv.gz"
+          fi
+          cd "$destination"
+          sha256sum -- * >SHA256SUMS
+      - name: Upload scoped experiment evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: t105a-${{ matrix.arm }}-${{ matrix.shard }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/t105a/
+          retention-days: 5
+          if-no-files-found: error
