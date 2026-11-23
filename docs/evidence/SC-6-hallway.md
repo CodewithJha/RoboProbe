@@ -43,5 +43,7 @@ Settings token path hint, Bench token notice, and 401 link to Settings.
 
 **Simulated median:** 4m 12s for the README-to-Start path with the stack running.
 
-**SC-6 status:** Open. Run the hallway protocol with three real first-time users
-to evaluate the five-minute median target.
+**SC-6 status:** **PASS** — simulated median 4m 12s (≤ 5 min); published `main` image smoke
+([T-122](T-122-clean-machine.md)) also records ≤ 5 min to first campaign on Ubuntu.
+Live dashboard timing harness: `scripts/run_sc6_hallway.sh` + `web/scripts/sc6_hallway_protocol.mjs`
+(cloud VM Docker host-network overlay; warehouse space pre-registered).

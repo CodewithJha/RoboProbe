@@ -12,6 +12,7 @@ Results and records produced during implementation and evaluation (kept in git w
 - [T-121 as-built docs](T-121-as-built.md) — RC-7 checks and honest gaps for v1.0.0.
 - [T-122 clean-machine](T-122-clean-machine.md) — published-image smoke + doc 29 §10 checklist (T-122).
 - [SC-6 hallway usability](SC-6-hallway.md) — protocol and simulated timing rehearsal (T-108).
+- [T-129 remote worker](T-129.md), [T-130 cloud CSV](T-130-scalability-cloud-vm.csv).
 - [SC-5 kinematic2d replay](SC-5-k2d.md) — MET-06 reproducibility on k2d (T-105c, `scripts/replay_agreement.py`).
 - `exp01/` … `exp07/` — additional experiment reports (19).
 - `deviations.md` — deviations from the pre-registered evaluation protocol.

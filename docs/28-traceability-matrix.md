@@ -219,14 +219,14 @@ python3 scripts/check_traceability.py --closed-issues /tmp/roboprobe-closed-issu
 | NFR-PERF-002 | `backend/tests/benchmark/test_perf.py::test_propose_latency_against_baseline` | [#121](https://github.com/CodewithJha/RoboProbe/issues/121) |
 | NFR-PERF-003 | — | [#58](https://github.com/CodewithJha/RoboProbe/issues/58) |
 | NFR-PERF-004 | `backend/tests/integration/store/test_campaign_http_queries.py::test_campaign_list_10k_runs_uses_three_queries_and_meets_latency` | [#160](https://github.com/CodewithJha/RoboProbe/issues/160) |
-| NFR-SCAL-001 | — | — |
+| NFR-SCAL-001 | [T-130 scalability](evidence/T-130-scalability.md), `scripts/load_campaign.py` | [#217](https://github.com/CodewithJha/RoboProbe/issues/217) |
 | NFR-REL-001 | `backend/tests/integration/runner/test_chaos_worker_kill.py::test_sigkill_requeue_and_complete_by_peer` | [#83](https://github.com/CodewithJha/RoboProbe/issues/83) |
 | NFR-REL-002 | `backend/tests/integration/runner/test_restart_resume.py::test_restart_resume_matches_uninterrupted` | [#86](https://github.com/CodewithJha/RoboProbe/issues/86) |
 | NFR-REP-001 | `backend/tests/unit/backends/kinematic2d/test_episode.py::test_trace_hash_identical_for_equal_seed`, `backend/tests/integration/runner/test_replay.py::test_k2d_replay_same_seed_agrees` | [#54](https://github.com/CodewithJha/RoboProbe/issues/54), [#92](https://github.com/CodewithJha/RoboProbe/issues/92) |
 | NFR-REP-002 | — | — |
 | NFR-MNT-001 | — | [#28](https://github.com/CodewithJha/RoboProbe/issues/28) |
 | NFR-MNT-002 | — | [#12](https://github.com/CodewithJha/RoboProbe/issues/12) |
-| NFR-USE-001 | [Hallway protocol and simulated rehearsal](evidence/SC-6-hallway.md). First-time user sessions pending. | [#213](https://github.com/CodewithJha/RoboProbe/issues/213) |
+| NFR-USE-001 | [SC-6 hallway protocol](evidence/SC-6-hallway.md) (simulated + published-image timing); `scripts/run_sc6_hallway.sh`. | [#213](https://github.com/CodewithJha/RoboProbe/issues/213) |
 | NFR-ACC-001 | `web/src/components/accessibility.test.tsx::has no axe violations across the shared components (NFR-ACC-001)`, `web/src/styles/tokens.test.ts::checks every text colour against every surface` | [#188](https://github.com/CodewithJha/RoboProbe/issues/188) |
 | NFR-SEC-001 | `backend/tests/security/test_tm01_auth.py::test_missing_and_wrong_token`, `backend/tests/unit/core/test_settings_validation.py::test_non_loopback_host_requires_token` | [#144](https://github.com/CodewithJha/RoboProbe/issues/144) |
 | NFR-SEC-002 | `backend/tests/security/test_tm10_supply_chain.py::test_lockfile_and_audit_job_exist` | [#30](https://github.com/CodewithJha/RoboProbe/issues/30) |
@@ -234,7 +234,7 @@ python3 scripts/check_traceability.py --closed-issues /tmp/roboprobe-closed-issu
 | NFR-COST-001 | `scripts/tests/test_check_licenses.py::MainTest::test_gpl_dependency_fails` | [#30](https://github.com/CodewithJha/RoboProbe/issues/30) |
 | NFR-OBS-001 | `backend/tests/unit/core/test_metrics_registry.py::test_every_documented_metric_is_registered_with_exact_type_and_labels`, `backend/tests/unit/core/test_logging.py::test_every_logged_event_is_in_the_catalogue` | [#23](https://github.com/CodewithJha/RoboProbe/issues/23), [#24](https://github.com/CodewithJha/RoboProbe/issues/24) |
 | NFR-OBS-002 | `backend/tests/unit/observability/test_tracing.py::test_disabled_tracing_does_not_import_opentelemetry`, `backend/tests/unit/observability/test_tracing.py::test_enabled_tracing_records_documented_span_names` | [#214](https://github.com/CodewithJha/RoboProbe/issues/214), [#215](https://github.com/CodewithJha/RoboProbe/issues/215) |
-| NFR-SCAL-002 | — | — |
+| NFR-SCAL-002 | [T-129 two-node verify](evidence/T-129.md), `scripts/verify_t129_two_node.sh` | [#216](https://github.com/CodewithJha/RoboProbe/issues/216) |
 | NFR-SEC-003 | `backend/tests/unit/scenario/test_constraints.py::test_disallowed_expressions_are_rejected_at_compile_time`, `backend/tests/unit/store/test_artifacts.py::test_symlink_escape_rejected` | [#35](https://github.com/CodewithJha/RoboProbe/issues/35), [#66](https://github.com/CodewithJha/RoboProbe/issues/66), [#125](https://github.com/CodewithJha/RoboProbe/issues/125), [#161](https://github.com/CodewithJha/RoboProbe/issues/161) |
 | NFR-CFG-001 | `backend/tests/unit/core/test_settings_validation.py::test_unknown_nested_keys_are_rejected` | [#19](https://github.com/CodewithJha/RoboProbe/issues/19) |
 | NFR-CFG-002 | `backend/tests/unit/core/test_settings_precedence.py::test_precedence_each_layer_removed_yields_next`, `backend/tests/unit/core/test_settings_validation.py::test_all_errors_are_reported_together` | [#19](https://github.com/CodewithJha/RoboProbe/issues/19) |
@@ -254,10 +254,7 @@ Known release evidence gaps include:
   [#203](https://github.com/CodewithJha/RoboProbe/issues/203),
   [#212](https://github.com/CodewithJha/RoboProbe/issues/212), and
   [#331](https://github.com/CodewithJha/RoboProbe/issues/331).
-- End-to-end worker scalability, cross-host verification, and first-use timing
-  [#216](https://github.com/CodewithJha/RoboProbe/issues/216),
-  [#217](https://github.com/CodewithJha/RoboProbe/issues/217),
-  [#213](https://github.com/CodewithJha/RoboProbe/issues/213), and
+- WSL2 portability evidence
   [#223](https://github.com/CodewithJha/RoboProbe/issues/223).
 - Coverage, docstrings, layer enforcement, and Linux/macOS portability currently use direct CI
   gates. The matrix still needs individual verification nodes for those requirements, including
