@@ -16,6 +16,11 @@ on:
         required: false
         default: "10"
         type: string
+      t105b_ablation:
+        description: Collect the preregistered EXP-03 ablation campaigns
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -36,6 +41,7 @@ env:
 jobs:
   analytic:
     name: analytic-exp02
+    if: ${{ !inputs.t105b_ablation }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -87,3 +93,97 @@ jobs:
             });
         env:
           PR_NUMBER: ${{ github.event.inputs.pr_number }}
+
+  ablation-evaluation:
+    name: T-105b EXP-03 shard ${{ matrix.shard }}
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      && inputs.t105b_ablation
+      && github.repository == 'CodewithJha/RoboProbe'
+      && github.ref_name == 'compute/T-105b-exp03'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: roboprobe-ablation-fixture # Disposable service container.
+          POSTGRES_DB: ablation
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ablation"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      SHARD: ${{ matrix.shard }}
+      ROBOPROBE_DATABASE__URL: postgresql+psycopg://postgres:roboprobe-ablation-fixture@127.0.0.1:5432/ablation
+      ROBOPROBE_RUNNER__TICK_INTERVAL_S: "0.05"
+      ROBOPROBE_WORKER__POLL_INTERVAL_S: "0.05"
+      ROBOPROBE_OBSERVABILITY__METRICS_ENABLED: "false"
+      ROBOPROBE_LOGGING__LEVEL: "WARNING"
+      OPENBLAS_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-backend
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Record ablation environment
+        env:
+          EVALUATION_PG: ${{ job.services.postgres.id }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/t105b"
+          echo "ROBOPROBE_STORAGE__WORKDIR_ROOT=$RUNNER_TEMP/t105b-workdirs" >>"$GITHUB_ENV"
+          echo "ROBOPROBE_STORAGE__ARTIFACT_ROOT=$RUNNER_TEMP/t105b-episode-artifacts" >>"$GITHUB_ENV"
+          echo "MPLCONFIGDIR=$RUNNER_TEMP/t105b-matplotlib" >>"$GITHUB_ENV"
+          {
+            git rev-parse HEAD
+            uname -a
+            lscpu
+            free -b
+            uv run --directory backend python --version
+            uv pip freeze --python backend/.venv/bin/python
+            docker exec "$EVALUATION_PG" postgres --version
+            sha256sum backend/uv.lock
+          } >"$RUNNER_TEMP/t105b/environment.txt"
+      - name: Execute the frozen ablation seed slice
+        run: |
+          backend/.venv/bin/roboprobe db upgrade
+          timeout --signal=TERM --kill-after=45s 315m backend/.venv/bin/python \
+            scripts/collect_t105b_ablation.py --arm exp03_ablation --shard "$SHARD" --out "$RUNNER_TEMP/t105b"
+      - name: Render available per-slice metrics
+        run: |
+          report_metadata="$RUNNER_TEMP/t105b/collection.json"
+          experiment_id=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["experiment_id"])' "$report_metadata")
+          backend/.venv/bin/roboprobe --json experiment report "$experiment_id" -o "$RUNNER_TEMP/t105b/report.html"
+      - name: Preserve observation timing and checkpoint state
+        if: always()
+        env:
+          EVALUATION_PG: ${{ job.services.postgres.id }}
+        run: |
+          set -euo pipefail
+          destination="$RUNNER_TEMP/t105b"
+          mkdir -p "$destination"
+          docker exec "$EVALUATION_PG" pg_dump -U postgres -d ablation --format=custom >"$destination/campaign-state.pgdump"
+          if docker exec "$EVALUATION_PG" psql -qAt -U postgres -d ablation -c "SELECT to_regclass('public.runs') IS NOT NULL" | grep -qx t; then
+            docker exec "$EVALUATION_PG" psql -q -v ON_ERROR_STOP=1 -U postgres -d ablation \
+              -c "COPY (SELECT c.id AS campaign_id,c.strategy_id,c.tags,c.experiment_rep,r.ordinal,r.repeat_index,r.status,r.verdict,r.enqueued_at,r.started_at,r.finished_at FROM runs r JOIN campaigns c ON c.id=r.campaign_id ORDER BY c.id,r.ordinal,r.repeat_index) TO STDOUT WITH CSV HEADER" \
+              | gzip -n >"$destination/run-timing.csv.gz"
+          fi
+          cd "$destination"
+          sha256sum -- * >SHA256SUMS
+      - name: Upload scoped ablation evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: t105b-exp03-${{ matrix.shard }}-attempt-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/t105b/
+          retention-days: 5
+          if-no-files-found: error
