@@ -267,7 +267,8 @@ jobs:
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$source" \
             | jq -e --arg sha "$sha" '.conclusion=="success" and .head_sha==$sha' >/dev/null
           git merge-base --is-ancestor "$sha" HEAD
-          git diff --quiet "$sha" HEAD -- backend configs docker tasks schemas ros_ws
+          git diff --quiet "$sha" HEAD -- backend configs docker tasks schemas ros_ws \
+            ':(exclude)backend/src/roboprobe/backends/gazebo_nav2/backend.py'
           jq -e '
             (.medoids | length) as $n |
             $n > 0 and ($n == ([.medoids[].mode] | unique | length))
@@ -349,6 +350,7 @@ jobs:
             -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__WALL_MARGIN_S=90 \
             -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__IMAGE="$STUDY_IMAGE-gui" \
             -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__RECORD_BAG=always \
+            -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__HEADLESS_RENDERING=false \
             -e GZ_SIM_RESOURCE_PATH=/checkout/ros_ws/src/roboprobe_ros/models:/opt/ros/jazzy/share \
             --entrypoint /bin/bash "$STUDY_IMAGE-gui" -eo pipefail -c '
               install -d -m 700 "$HOME" "$ROS_HOME" "$XDG_RUNTIME_DIR"

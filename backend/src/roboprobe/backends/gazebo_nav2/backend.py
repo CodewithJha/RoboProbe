@@ -247,6 +247,7 @@ class GazeboNav2Backend:
                     self._gazebo.launch_package,
                     self._gazebo.launch_file,
                     f"workdir:={workdir}",
+                    f"headless:={str(self._gazebo.headless_rendering).lower()}",
                 ],
                 workdir=workdir,
                 env=self._episode_env(slot),

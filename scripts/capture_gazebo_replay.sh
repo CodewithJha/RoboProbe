@@ -19,19 +19,6 @@ for ((i=0; i<50; i++)); do
     sleep 0.2
 done
 xdpyinfo >/dev/null
-# The worker uses the standard launch file. Enable only its existing GUI launch flag.
-mkdir -p /tmp/replay-bin
-cat >/tmp/replay-bin/ros2 <<'SH'
-#!/bin/sh
-set -eu
-real=/opt/ros/jazzy/bin/ros2
-if [ "${1:-}" = launch ] && [ "${2:-}" = roboprobe_ros ] && [ "${3:-}" = episode.launch.py ]; then
-    exec "$real" "$@" headless:=false
-fi
-exec "$real" "$@"
-SH
-chmod 755 /tmp/replay-bin/ros2
-export PATH="/tmp/replay-bin:$PATH"
 /opt/roboprobe/venv/bin/roboprobe --json replay --repeats 1 "$MEDOID_ID" >"$output/gui-replay.json" 2>"$output/replay.log" &
 replay_pid=$!
 visible=0
