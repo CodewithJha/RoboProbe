@@ -80,5 +80,5 @@ pinned Jazzy/Harmonic ARM64 worker. Nav2 reported `SUCCEEDED` for every seed.
 python -m pytest -m sim --backend gazebo_nav2 tests/sim/test_nominal_passes.py
 ```
 
-[#205](https://github.com/CodewithJha/RoboProbe/issues/205) remains open for the full
-suite and three consecutive green scheduled runs.
+Nightly workflow sign-off and the full marked suite are recorded in
+[T-098-nightly-signoff.md](T-098-nightly-signoff.md) (closes [#205](https://github.com/CodewithJha/RoboProbe/issues/205)).

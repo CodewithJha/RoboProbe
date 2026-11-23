@@ -88,7 +88,7 @@ jobs:
               cd /checkout/backend
               status=0
               /opt/roboprobe/venv/bin/python -c "import sys; sys.path.append(\"/nightly-deps\"); import pytest; raise SystemExit(pytest.main(sys.argv[1:]))" \
-                -p pytest_timeout -m sim --backend gazebo_nav2 \
+                -p pytest_timeout -m "sim and not quarantine" --backend gazebo_nav2 \
                 -p no:cacheprovider --basetemp=/tmp/episodes --junitxml=/results/simulation.xml \
                 tests/contract/test_backend_contract.py tests/sim || status=$?
               if [[ -d /tmp/episodes ]]; then

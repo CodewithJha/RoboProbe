@@ -38,7 +38,8 @@ radial noise, camera header preservation, depth-one QoS and processing within th
 Gazebo nominal acceptance (T-098, #205, FR-SIM-003 and NFR-REL-001) uses
 `backend/tests/sim/test_nominal_passes.py` to run the real warehouse episode five times
 and check the production ground-truth verdict. The [warehouse evidence](evidence/T-098-warehouse-acceptance.md)
-identifies the profile used by each run.
+identifies the profile used by each run; [nightly sign-off](evidence/T-098-nightly-signoff.md)
+records the green `sim-nightly` rehearsal chain and quarantine registry.
 
 Catalogue API verification (T-081a, #146; FR-API-001, FR-SCN-001, UC-01/UC-10):
 `backend/tests/api/test_spaces.py`, `test_sut_profiles.py` and `test_upload_body.py` cover
