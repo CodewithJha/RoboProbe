@@ -1,89 +1,81 @@
-# Weekly / manual full analytic benchmark (doc 20 §1, T-064).
-# EXP-02-style calibrate run + reduced seed count; compare against committed baseline.
-name: benchmark-full
+name: T-130 isolated scaling baseline
 
 on:
-  schedule:
-    - cron: "0 3 * * 1"
   workflow_dispatch:
-    inputs:
-      pr_number:
-        description: Optional pull request number to comment on
-        required: false
-        type: string
-      seeds:
-        description: Seed count for the analytic calibrate run
-        required: false
-        default: "10"
-        type: string
 
 permissions:
   contents: read
-  pull-requests: write
-
-concurrency:
-  group: benchmark-full-${{ github.ref }}
-  cancel-in-progress: true
-
-env:
-  PYTHON_VERSION: "3.12"
-  ROBOPROBE_ENV: ci
-  OMP_NUM_THREADS: "1"
-  MKL_NUM_THREADS: "1"
-  TORCH_NUM_THREADS: "1"
-  BENCH_TOLERANCE: "0.2"
 
 jobs:
-  analytic:
-    name: analytic-exp02
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+  scale:
+    name: 1, 2, 4, and 8 workers × 10,000 runs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: roboprobe
+          POSTGRES_PASSWORD: roboprobe-ci
+          POSTGRES_DB: roboprobe_scale
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U roboprobe -d roboprobe_scale"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      ROBOPROBE_ENV: ci
+      ROBOPROBE_DATABASE__URL: postgresql+psycopg://roboprobe:roboprobe-ci@127.0.0.1:5432/roboprobe_scale
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      TORCH_NUM_THREADS: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-backend
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-      - name: Calibrate analytic EXP-02 (reduced seeds)
-        working-directory: backend
-        env:
-          CALIBRATION_SEEDS: ${{ inputs.seeds || '10' }}
-        run: >
-          uv run python ../scripts/calibrate_benchmarks.py
-          --seeds "$CALIBRATION_SEEDS"
-          --budget 150
-          --out /tmp/benchmark-current.json
-      - name: Compare against weekly baseline
-        id: compare
-        working-directory: backend
+          python-version: "3.12"
+      - name: Record isolated runner and workload provenance
         run: |
-          set -o pipefail
-          set +e
-          uv run python ../scripts/compare_benchmark.py \
-            tests/benchmark/baselines/full_weekly.json \
-            /tmp/benchmark-current.json \
-            --tolerance "${{ env.BENCH_TOLERANCE }}" \
-            --summary | tee /tmp/benchmark-summary.md
-          status=$?
-          set -e
-          cat /tmp/benchmark-summary.md >>"$GITHUB_STEP_SUMMARY"
-          echo "exit_code=${status}" >>"$GITHUB_OUTPUT"
-          exit "${status}"
-      - name: Comment on PR (manual dispatch)
-        if: >-
-          always()
-          && github.event_name == 'workflow_dispatch'
-          && github.event.inputs.pr_number != ''
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+          mkdir -p "$RUNNER_TEMP/t130"
+          {
+            printf 'UTC=%s\nImageOS=%s\nImageVersion=%s\n' "$(date -u +%FT%TZ)" "$ImageOS" "$ImageVersion"
+            printf 'Run=%s/%s/actions/runs/%s\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+            git rev-parse HEAD HEAD^
+            sha256sum scripts/load_campaign.py backend/uv.lock
+            uname -a
+            nproc
+            lscpu
+            free -h
+            df -h "$RUNNER_TEMP"
+            docker image inspect postgres:17 --format '{{json .RepoDigests}}'
+            for file in /sys/fs/cgroup/{cpu.max,cpuset.cpus.effective,memory.max}; do
+              if [[ -r "$file" ]]; then
+                printf '%s: ' "$file"
+                cat "$file"
+              fi
+            done
+          } | tee "$RUNNER_TEMP/t130/host.txt"
+      - name: Run the full scaling matrix and enforce the original gate
+        shell: bash
+        run: |
+          uv run --no-sync --directory backend python ../scripts/load_campaign.py \
+            --workers 1,2,4,8 --runs 10000 --backend benchmark --out "$RUNNER_TEMP/t130" \
+            2>&1 | tee "$RUNNER_TEMP/t130/harness.log"
+      - name: Preserve measurements and checksums
+        if: ${{ always() }}
+        run: |
+          cd "$RUNNER_TEMP/t130"
+          find . -type f \( -name '*.csv' -o -name '*.log' -o -name '*.txt' -o -name campaign.json \) \
+            -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          cat ./*/results.csv >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
         with:
-          script: |
-            const fs = require('fs');
-            const body = fs.readFileSync('/tmp/benchmark-summary.md', 'utf8');
-            const pr = Number(process.env.PR_NUMBER);
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr,
-              body: body,
-            });
-        env:
-          PR_NUMBER: ${{ github.event.inputs.pr_number }}
+          name: t130-isolated-scaling
+          path: |
+            ${{ runner.temp }}/t130/host.txt
+            ${{ runner.temp }}/t130/harness.log
+            ${{ runner.temp }}/t130/SHA256SUMS
+            ${{ runner.temp }}/t130/*/results.csv
+            ${{ runner.temp }}/t130/*/workers-*/*.log
+            ${{ runner.temp }}/t130/*/workers-*/campaign.json
