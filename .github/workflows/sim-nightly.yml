@@ -81,7 +81,6 @@ jobs:
             --env ROBOPROBE_BACKENDS__GAZEBO_NAV2__STARTUP_TIMEOUT_S=150 \
             --env ROBOPROBE_BACKENDS__GAZEBO_NAV2__WALL_MARGIN_S=90 \
             "${graphics[@]}" --entrypoint /bin/bash "$SIM_IMAGE" -eo pipefail -c '
-              trap "chmod -R a+rX /results" EXIT
               mkdir -p "$HOME" "$ROS_HOME" "$XDG_RUNTIME_DIR"
               chmod 700 "$XDG_RUNTIME_DIR"
               source /opt/ros/jazzy/setup.bash
@@ -93,6 +92,7 @@ jobs:
                 -p no:cacheprovider --basetemp=/tmp/episodes --junitxml=/results/simulation.xml \
                 tests/contract/test_backend_contract.py tests/sim || status=$?
               if [[ -d /tmp/episodes ]]; then
+                chmod -R a+rX /tmp/episodes
                 cp -R /tmp/episodes /results
               fi
               python3 /checkout/scripts/sim_nightly_summary.py /results --annotate-junit >/dev/null || status=1
