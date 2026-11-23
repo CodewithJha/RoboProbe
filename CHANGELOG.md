@@ -245,6 +245,7 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 ### Changed
 
 - Load only selector observation fields when reading campaign history (T-130).
+- Compare proposal distances to history and pending runs in vectorized batches (T-130).
 
 - Add an opt-in Gazebo Nav2 profile with a longer action acknowledgement window and a real
   warehouse collision test (T-098).
