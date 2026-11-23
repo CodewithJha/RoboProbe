@@ -2,7 +2,7 @@
 
 > **Project:** RoboProbe — Intelligent Virtual Robotics Testing & Failure Discovery Platform
 > **Author / Owner:** Priyanshu Jha ([@CodewithJha](https://github.com/CodewithJha))
-> **Doc set version:** 1.1.0 · **Status:** v1.0 verification in progress
+> **Doc set version:** 1.2.0 · **Status:** as-built for RoboProbe **v1.0.0** (M11)
 > **Audience:** AI coding agents (primary), the project owner, reviewers/evaluators
 
 This folder is the **single source of truth** for RoboProbe requirements and design decisions.

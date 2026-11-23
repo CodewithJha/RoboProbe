@@ -5,6 +5,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-23
+
 ### Added
 
 - EXP-05 / EXP-06 evidence (T-120b, T-120c): `tb4_nav2_tuned` SUT profile, per-arm
