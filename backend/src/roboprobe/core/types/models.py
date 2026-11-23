@@ -5,7 +5,7 @@ Implements: FR-ORC-002, FR-RUN-004
 
 from __future__ import annotations
 
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal, NamedTuple, Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 from roboprobe.core.types.enums import FailureClass, Verdict
 
 __all__ = [
+    "CampaignSchedulingSnapshot",
     "GoalTolerance",
     "InjectedObstacle",
     "Observation",
@@ -30,6 +31,15 @@ __all__ = [
     "TaskSpec",
     "TimeLimitSpec",
 ]
+
+
+class CampaignSchedulingSnapshot(NamedTuple):
+    """Budget use, next ordinal, and in-flight unit vectors from one read."""
+
+    budget_used: int
+    next_ordinal: int
+    inflight_vectors: tuple[tuple[float, ...], ...]
+
 
 # --------------------------------------------------------------------------- aliases
 
