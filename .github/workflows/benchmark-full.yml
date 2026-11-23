@@ -22,8 +22,8 @@ on:
         required: false
         type: string
 
-      exp06_replay:
-        description: Replay the verified EXP-04 medoid inventory
+      exp04_media:
+        description: Capture a GUI replay and bag for the observed EXP-04 collision medoid
         required: false
         type: boolean
         default: false
@@ -46,7 +46,7 @@ env:
 
 jobs:
   analytic:
-    if: ${{ inputs.exp04_preflight == '' && !inputs.exp06_replay }}
+    if: ${{ inputs.exp04_preflight == '' && !inputs.exp04_media }}
     name: analytic-exp02
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -240,8 +240,8 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch'
       && github.repository == 'CodewithJha/RoboProbe'
-      && github.ref == 'refs/heads/compute/t-120-gazebo-studies'
-      && inputs.exp06_replay
+      && github.ref == 'refs/heads/compute/t-120a-exp04-gazebo-media'
+      && inputs.exp04_media
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -273,11 +273,11 @@ jobs:
             $n > 0 and ($n == ([.medoids[].mode] | unique | length))
             and ($n == ([.medoids[].run_id] | unique | length))
           ' "$manifest" >/dev/null
-          printf 'cells=%s\n' "$(jq -c .medoids "$manifest")" >>"$GITHUB_OUTPUT"
+          printf 'cells=%s\n' "$(jq -c '[.medoids[]|select(.mode=="EXP04-R0-FM02")]' "$manifest")" >>"$GITHUB_OUTPUT"
           printf 'source=%s\n' "$source" >>"$GITHUB_OUTPUT"
 
   exp06:
-    name: EXP-06 ${{ matrix.cell.mode }}
+    name: EXP-04 GUI replay ${{ matrix.cell.mode }}
     needs: exp06-inventory
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -320,12 +320,19 @@ jobs:
           timeout 90 bash -c 'until docker exec exp06-db pg_isready -h 127.0.0.1 -U roboprobe -d roboprobe; do sleep 2; done'
           docker exec -i exp06-db pg_restore --exit-on-error --no-owner --no-privileges \
             -U roboprobe -d roboprobe <"$source/campaign.dump"
-      - name: Build and warm the same pinned native Gazebo runtime
+      - name: Build pinned Gazebo and add the display capture tools
         run: |
           docker build --build-arg "REVISION=$GITHUB_SHA" -f docker/gazebo/Dockerfile -t "$STUDY_IMAGE" .
           docker volume create exp06-fuel
           docker run --rm --read-only --tmpfs /tmp -v exp06-fuel:/data/gazebo-fuel "$STUDY_IMAGE" prefetch-fuel
-      - name: Replay the original medoid with five same seeds and five fresh seeds
+          docker build -t "$STUDY_IMAGE-gui" --build-arg "BASE_IMAGE=$STUDY_IMAGE" -f - . <<'DOCKERFILE'
+          ARG BASE_IMAGE
+          FROM ${BASE_IMAGE}
+          USER root
+          RUN apt-get update && apt-get install -y --no-install-recommends xvfb ffmpeg x11-utils && rm -rf /var/lib/apt/lists/*
+          USER 10001:10001
+          DOCKERFILE
+      - name: Record the actual Gazebo GUI and MCAP on the original collision seed
         timeout-minutes: 65
         run: |
           docker run --name exp06-replayer --init --network exp06-net --read-only --tmpfs /tmp --shm-size=1g \
@@ -340,29 +347,33 @@ jobs:
             -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__SOFTWARE_RENDERING=true \
             -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__STARTUP_TIMEOUT_S=150 \
             -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__WALL_MARGIN_S=90 \
-            -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__IMAGE="$STUDY_IMAGE" \
+            -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__IMAGE="$STUDY_IMAGE-gui" \
+            -e ROBOPROBE_BACKENDS__GAZEBO_NAV2__RECORD_BAG=always \
             -e GZ_SIM_RESOURCE_PATH=/checkout/ros_ws/src/roboprobe_ros/models:/opt/ros/jazzy/share \
-            --entrypoint /bin/bash "$STUDY_IMAGE" -eo pipefail -c '
+            --entrypoint /bin/bash "$STUDY_IMAGE-gui" -eo pipefail -c '
               install -d -m 700 "$HOME" "$ROS_HOME" "$XDG_RUNTIME_DIR"
               source /opt/ros/jazzy/setup.bash
               source /opt/roboprobe/ros_ws/install/setup.bash
               cd /checkout/backend
-              /opt/roboprobe/venv/bin/roboprobe --json replay --repeats 5 "$MEDOID_ID" >/results/same-seeds.json
-              /opt/roboprobe/venv/bin/roboprobe --json replay --repeats 5 --fresh-seeds "$MEDOID_ID" >/results/fresh-seeds.json
+              bash /checkout/scripts/capture_gazebo_replay.sh
             '
-      - name: Verify complete paired replay evidence
+      - name: Verify video duration, collision verdict and attached MCAP
         run: |
           sudo chmod -R a+rX "$REPLAY_OUTPUT"
-          for phase in same-seeds fresh-seeds; do
-            jq -e --arg source "$MEDOID_ID" '
-              .source_run_id==$source and .source_verdict=="FAIL"
-              and (.rows | length)==5 and (.replay_ids | unique | length)==5
-              and (.agreements+.disagreements)==5
-              and all(.rows[]; .verdict!=null)
-            ' "$REPLAY_OUTPUT/$phase.json" >/dev/null
-          done
-          jq -e -s '([.[].replay_ids[]] | unique | length)==10' \
-            "$REPLAY_OUTPUT/same-seeds.json" "$REPLAY_OUTPUT/fresh-seeds.json" >/dev/null
+          jq -e --arg source "$MEDOID_ID" '
+            .source_run_id==$source and .source_verdict=="FAIL" and (.rows|length)==1
+            and .rows[0].primary_failure=="F-COL" and .rows[0].agree
+          ' "$REPLAY_OUTPUT/gui-replay.json" >/dev/null
+          jq -e '(.format.duration|tonumber) > 0 and (.format.duration|tonumber) <= 120' \
+            "$REPLAY_OUTPUT/video-metadata.json" >/dev/null
+          replay_id=$(jq -r '.rows[0].run_id' "$REPLAY_OUTPUT/gui-replay.json")
+          [[ "$replay_id" =~ ^[0-9a-f-]{36}$ ]]
+          bag=$(docker exec -i exp06-db psql -XqtA -v ON_ERROR_STOP=1 -v "replay_id=$replay_id" -U roboprobe -d roboprobe <<'SQL'
+          SELECT rel_path FROM artifacts WHERE run_id=:'replay_id' AND kind='bag';
+          SQL
+          )
+          [[ "$bag" == sha256/* && -s "$REPLAY_OUTPUT/artifacts/$bag" ]]
+          sudo cp "$REPLAY_OUTPUT/artifacts/$bag" "$REPLAY_OUTPUT/gazebo-replay.mcap"
       - name: Preserve replay and failure artifacts
         if: ${{ always() }}
         run: |
@@ -375,6 +386,6 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ always() }}
         with:
-          name: exp06-${{ matrix.cell.mode }}-attempt${{ github.run_attempt }}
+          name: exp04-gui-replay-${{ matrix.cell.mode }}-attempt${{ github.run_attempt }}
           path: ${{ env.REPLAY_OUTPUT }}
           retention-days: 14
