@@ -272,9 +272,6 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   PR template renamed to `.github/PULL_REQUEST_TEMPLATE.md`.
 - The Console cancellation dialog wraps keyboard focus in both directions and returns focus
   to the trigger when dismissed.
-
-### Changed
-
 - README five-minute first-campaign checklist; Settings and Bench guide users to `secrets/api_token` (T-108).
 
 ### Fixed
