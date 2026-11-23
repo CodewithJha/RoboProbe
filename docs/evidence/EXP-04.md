@@ -88,13 +88,13 @@ When a mode is confirmed, fill the table below and attach demo assets (not in gi
 
 | Field | Value |
 |-------|-------|
-| Mode id | _pending_ |
-| Medoid run id | _pending_ |
-| Parameters (interaction) | _pending_ |
-| Confirm-interaction campaign | _pending_ |
-| Demo video (release asset) | _pending — ≤ 2 min Gazebo GUI replay per doc 17 §6_ |
-| MCAP / bag (release asset) | _pending_ |
-| `make gz-debug RUN=<id>` notes | _optional_ |
+| Mode id | *pending* |
+| Medoid run id | *pending* |
+| Parameters (interaction) | *pending* |
+| Confirm-interaction campaign | *pending* |
+| Demo video (release asset) | *pending — ≤ 2 min Gazebo GUI replay per doc 17 §6* |
+| MCAP / bag (release asset) | *pending* |
+| `make gz-debug RUN=<id>` notes | *optional* |
 
 ## Results and interpretation
 
@@ -125,6 +125,6 @@ See [deviations.md](deviations.md).
 | Artefact | Path | SHA-256 |
 |----------|------|---------|
 | Pilot design | [exp04-pilot/design.yaml](exp04-pilot/design.yaml) | `9f4a6f3892048e6d041b1c9c4aea925ddad49819e0493e500f7252af0c2a9cf1` |
-| Pilot Parquet | `exp04-pilot/runs.parquet` | _after smoke run_ |
-| Preregistered Parquet | `exp04_gazebo.parquet` | _after full run_ |
-| HTML reports | release asset if > 5 MB | _after runs_ |
+| Pilot Parquet | `exp04-pilot/runs.parquet` | *after smoke run* |
+| Preregistered Parquet | `exp04_gazebo.parquet` | *after full run* |
+| HTML reports | release asset if > 5 MB | *after runs* |
