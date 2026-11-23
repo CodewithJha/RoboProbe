@@ -10,6 +10,12 @@ export function ProblemView({ error }: { error: unknown }) {
       <p>
         {problem?.detail ?? 'This page could not be loaded. Return to the Bench and try again.'}
       </p>
+      {problem?.status === 401 ? (
+        <p>
+          Paste the API token from <code>secrets/api_token</code> after <code>make up</code>.{' '}
+          <Link to="/settings">Open Settings</Link>
+        </p>
+      ) : null}
       {problem?.traceId ? (
         <button
           type="button"

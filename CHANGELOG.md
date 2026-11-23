@@ -7,6 +7,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- SC-6 hallway evidence with median time-to-first-campaign and in-dashboard token hints (T-108).
+
 - EXP-02 and EXP-07 evidence reports (T-105a): template-backed `docs/evidence/EXP-02.md`
   and `EXP-07.md`, committed EXP-02 pipeline pilot artefacts, EXP-07 smoke design,
   and preregistered deviation log entries.
@@ -270,6 +272,10 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
   PR template renamed to `.github/PULL_REQUEST_TEMPLATE.md`.
 - The Console cancellation dialog wraps keyboard focus in both directions and returns focus
   to the trigger when dismissed.
+
+### Changed
+
+- README five-minute first-campaign checklist; Settings and Bench guide users to `secrets/api_token` (T-108).
 
 ### Fixed
 

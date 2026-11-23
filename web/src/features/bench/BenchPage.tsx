@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { getToken } from '../../lib/token';
 import { campaignColumns } from '../campaigns/campaignColumns';
 import { Link } from 'react-router-dom';
 import { useCampaigns, useModes, useWorkers, useMeta, type Campaign } from '../../api/hooks';
@@ -31,6 +32,17 @@ export function Component() {
   const { register } = useSearchFocus();
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
+  const [hasToken, setHasToken] = useState(() => Boolean(getToken()));
+  useEffect(() => {
+    const sync = () => {
+      setHasToken(Boolean(getToken()));
+    };
+    sync();
+    window.addEventListener('roboprobe-token-changed', sync);
+    return () => {
+      window.removeEventListener('roboprobe-token-changed', sync);
+    };
+  }, []);
   useEffect(() => {
     register(searchRef.current);
     return () => {
@@ -88,6 +100,12 @@ export function Component() {
   return (
     <section className={styles['page']}>
       {header}
+      {!hasToken ? (
+        <p role="status">
+          Set your API token in <Link to="/settings">Settings</Link> before creating a campaign (see
+          README — <code>secrets/api_token</code>).
+        </p>
+      ) : null}
       <section className={styles['workbench']} aria-label="Workbench summary">
         <h2>Workbench</h2>
         {workers.isPending ? (
