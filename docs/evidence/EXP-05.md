@@ -63,7 +63,9 @@ The conditional paired 95% intervals by seed were +0.04779 to +0.05951,
 bootstrap 95% interval for the mean was +0.01599 to +0.02295. The reconstruction
 used the original Ubuntu runtime, matched all six stored risk summaries
 exactly, and checked equality of the two Sobol point arrays within each seed.
-[Paired intervals and point labels](https://github.com/CodewithJha/RoboProbe/actions/runs/45335161116/artifacts/14892913859)
+[Paired interval workflow](https://github.com/CodewithJha/RoboProbe/actions/runs/45335161116)
+
+Download `exp05-paired-met07` from the workflow's Artifacts section.
 
 This is a positive mean contrast conditional on the fitted risk models. The
 three independent seed pairs give a descriptive seed-resampled interval of

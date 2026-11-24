@@ -67,7 +67,9 @@ EXP04-R0-FM02 medoid `01a2069d-17ab-77bb-aa96-d6b49e87cea4` with its original
 scenario and seed. GUI replay `01a20734-2b8f-7217-9651-b77806d4935c` reproduced
 the `FAIL/F-COL` verdict and class. The genuine 1280×720 Gazebo Sim capture
 runs for 103.933 seconds. The replay attached its MCAP bag.
-[Download the GUI video and MCAP from GitHub Actions](https://github.com/CodewithJha/RoboProbe/actions/runs/45127309138/artifacts/14797015190)
+[GUI replay workflow](https://github.com/CodewithJha/RoboProbe/actions/runs/45127309138)
+
+Download `exp04-gui-replay-EXP04-R0-FM02-attempt1` from the workflow's Artifacts section.
 
 | File | SHA-256 |
 |------|---------|
