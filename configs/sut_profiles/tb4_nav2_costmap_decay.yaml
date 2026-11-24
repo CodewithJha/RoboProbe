@@ -1,0 +1,27 @@
+# T-120b, profile B. In the 800 paired EXP-04 runs, all 449 F-COL verdicts
+# occurred below 0.70 m obstacle clearance. There were 0/258 at or above it.
+# The shipped global and local inflation layers already reach 0.70 m with
+# cost scaling 3.0. Lowering the cost decay to 2.0 increases the obstacle
+# penalty within that range. EXP-05 tests the collision and timeout trade-off.
+# Source: https://github.com/CodewithJha/RoboProbe/actions/runs/45108261669
+schema_version: 1
+id: tb4_nav2_costmap_decay
+backend: gazebo_nav2
+name: TurtleBot 4 Nav2 costmap clearance
+description: Slower costmap inflation decay inside the default obstacle influence radius.
+config:
+  base_nav2_params: nav2_bringup/params/nav2_params.yaml
+  speed_param_paths:
+    - controller_server.ros__parameters.FollowPath.vx_max
+    - velocity_smoother.ros__parameters.max_velocity[0]
+  nav2_overrides:
+    local_costmap:
+      local_costmap:
+        ros__parameters:
+          inflation_layer:
+            cost_scaling_factor: 2.0
+    global_costmap:
+      global_costmap:
+        ros__parameters:
+          inflation_layer:
+            cost_scaling_factor: 2.0

@@ -16,16 +16,12 @@ Log every post-freeze change to S-PROBE defaults or benchmark thresholds here
 | EXP-02 | Pipeline pilot: 1 seed, 2 strategies, budget 8 on `multi_mode_6d` only; Branin arm not run at preregistered scale | Validate experiment CLI persistence and reporting before 50×8×150 analytic campaigns ([#369](https://github.com/CodewithJha/RoboProbe/pull/369)) |
 | EXP-07 | Preregistered three-arm comparison not executed; committed d=6 smoke design only | Kinematic full runs scheduled on compute lane (T-105b); see [EXP-07.md](EXP-07.md) |
 
-## T-120a EXP-04 Gazebo / SC-4 (2026-11-23)
+## T-120a / T-120b / T-120c Gazebo studies (2026-11-23)
 
-| Experiment | Deviation | Rationale |
-|------------|-----------|-----------|
-| EXP-04 | Preregistered 5×80 Gazebo matrix not executed; committed smoke design and SC-4 **PENDING** evidence only | Long compute runs on owner hardware; EXP-01 ([#208](https://github.com/CodewithJha/RoboProbe/issues/208)) not required to schedule Gazebo campaigns |
-
-## T-120b / T-120c EXP-05 and EXP-06 (2026-11-23)
-
-| Experiment | Deviation | Rationale |
-|------------|-----------|-----------|
-| EXP-05 | Profile B derived from k2d rule (doc 09 §4.3), not yet from Gazebo EXP-04 modes; MET-07 **PENDING** | EXP-04 medoids not available; tuned profile ships for compute lane |
-| EXP-05 | Preregistered 3×80 Gazebo matrix not executed | ≈7 h compute on owner hardware |
-| EXP-06 | No medoid replays; MET-06 **PENDING** | Blocked on EXP-04 completion and medoid export |
+| Experiment | Execution detail | Rationale |
+| ---------- | ---------------- | --------- |
+| [EXP-04](EXP-04.md) | The OFAT arm used a separate 30-episode campaign and the first registered common seed. | The schema v1 design has one budget field. |
+| [EXP-04](EXP-04.md) | A setup-only run stopped on package metadata retrieval. The corrected run retained the original simulator and scientific inputs. | The runner can identify its installed vendor package directly. |
+| [EXP-04](EXP-04.md) | No pooled mode met the multifactor confirmation prerequisites. A separate GUI replay recorded a collision medoid. | The sample yielded a negative SC-4 result. |
+| [EXP-05](EXP-05.md) | The frozen schema-v1 file recorded one profile field. The collector explicitly applied the EXP-04-informed tuned profile to arm B. | The two arms kept the registered seeds, scenario, strategy settings and budgets. |
+| [EXP-06](EXP-06.md) | After the first drain expired, the analysis retained eight completed medoid replays and filled the two pending fresh-seed slots from the recovery. | The recovery extended only the worker drain time. |

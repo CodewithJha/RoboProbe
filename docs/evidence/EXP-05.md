@@ -1,68 +1,87 @@
-# EXP-05 profile A vs profile B evidence (H6)
+# EXP-05 — Gazebo profile A versus profile B
 
-## Design and hypotheses
+## Design and inputs
 
-EXP-05 tests hypothesis **H6**: tuning the SUT profile using failure-mode insight raises the
-**robustness score** (doc [09 §5.4](../../docs/09-failure-analysis-and-risk-mapping.md#54-volumes--robustness-score)).
-Preregistered design:
+The preregistered design ran all six 80-episode S-PROBE campaigns on the
+warehouse space. Each group of two campaigns shares its original campaign
+seed, and each arm was simulated afresh. All 480 episodes reached `DONE`
+with a usable verdict. [Native profile comparison](https://github.com/CodewithJha/RoboProbe/actions/runs/45120816975)
 
-| Config | Path | SHA-256 (file) |
-|--------|------|----------------|
-| PROBE on profile A / B | [exp05_profiles.yaml](../../configs/experiments/exp05_profiles.yaml) | `6523e113a32ddc58ebb4fcf72f09c5d94171418da9e59f2a33885b34e2c7b445` |
-| Profile A (default Nav2) | [tb4_nav2_default.yaml](../../configs/sut_profiles/tb4_nav2_default.yaml) | — |
-| Profile B (tuned) | [tb4_nav2_tuned.yaml](../../configs/sut_profiles/tb4_nav2_tuned.yaml) | `b54889db41befb01c1a9e2f4222f626d8a44c485540b4205d28d239cf4d2a8f5` |
+[Profile A](../../configs/sut_profiles/tb4_nav2_default.yaml) retained the
+original Nav2 settings. [Tested Profile B](https://github.com/CodewithJha/RoboProbe/blob/e6387727727fc4aeadfbec367671004b853826ee/configs/sut_profiles/tb4_nav2_tuned.yaml)
+changed local and global costmap inflation scaling from 3.0 to 2.0, extending
+obstacle cost pressure within the existing 0.70 m radius. In the paired
+[EXP-04](EXP-04.md) matrix, all 449 collision verdicts occurred below 0.70 m
+episode minimum obstacle clearance. The other 258 episodes at or above
+0.70 m had zero collisions. This observation motivated the single tuning
+change. Both arms retained the same speed mapping and classification rules.
 
-Two `S-PROBE` arms (`profile_A`, `profile_B`), three seeds (`root: 20261119`), budget 80 → **6
-campaigns**. Primary metrics: MET-06, MET-07 (`Δ = score_B − score_A` with bootstrap CI).
+The exact [preregistered YAML](https://github.com/CodewithJha/RoboProbe/blob/e6387727727fc4aeadfbec367671004b853826ee/configs/experiments/exp05_profiles.yaml)
+has SHA-256 `ce40a7f73893dc10f1ae04c5af53f04bb4f31cc723d3f142c6692705db10b24a`.
+Its schema-v1 file used the same default profile field for both arms. The
+[original collector](https://github.com/CodewithJha/RoboProbe/blob/e6387727727fc4aeadfbec367671004b853826ee/scripts/collect_exp05.py)
+applied the tuned profile to the B arm only after it matched the frozen plan.
+The [current CLI design](../../configs/experiments/exp05_profiles.yaml)
+declares that assignment explicitly using
+[`tb4_nav2_costmap_decay`](../../configs/sut_profiles/tb4_nav2_costmap_decay.yaml),
+a distinct profile ID with the same tested simulator parameters. Published
+[`tb4_nav2_tuned`](../../configs/sut_profiles/tb4_nav2_tuned.yaml) retains its
+existing immutable registration. The CLI design retains the original scenario
+space, matched seed schedule, strategy settings, budget and batch size.
 
-Profile B overrides are documented in the tuned YAML (k2d rule for F-COL: speed cap 0.38 m/s,
-wider costmap inflation). Full Gazebo mode review from EXP-04 may refine them when
-[#210](https://github.com/CodewithJha/RoboProbe/issues/210) compute lands.
+The tested profile A and B file SHA-256 values are
+`125ce5539a41d8b39ef1d850dbead8aee02e2fac16f1c9708441eb7ece6a4944` and
+`65072c480d58e780282a8536e903bb32a2a88db31146631cb9592474f937edfb`,
+respectively. The verifier restored all campaign databases and checked the
+immutable raw Parquet hashes and completed analysis reports.
+[Database and report verification](https://github.com/CodewithJha/RoboProbe/actions/runs/45334012957)
 
-This evidence uses the [`_experiment_template`](_experiment_template.md).
+## Estimated volumes and scores
 
-## Environment and reproduction
+The risk map evaluates 8,192 scrambled Sobol points for each fitted campaign
+model. Percentages in parentheses are Wilson 95% intervals for each region
+volume under its fitted model. A and B use the same Sobol points within each
+seed pair.
 
-Requires PostgreSQL, orchestrator, and `worker-gazebo` (see [EXP-04](EXP-04.md) pre-flight).
+| Replicate | Profile | SAFE | UNCERTAIN | FAILURE | Robustness score |
+| --------- | ------- | ---- | --------- | ------- | ---------------- |
+| 0 | A | 7.98% (7.42–8.59%) | 48.56% (47.48–49.64%) | 43.46% (42.39–44.53%) | 0.32263 |
+| 0 | B | 23.52% (22.62–24.45%) | 28.21% (27.25–29.20%) | 48.27% (47.19–49.35%) | 0.37628 |
+| 1 | A | 12.17% (11.48–12.90%) | 46.46% (45.38–47.54%) | 41.37% (40.31–42.44%) | 0.35400 |
+| 1 | B | 17.79% (16.97–18.63%) | 32.63% (31.62–33.65%) | 49.58% (48.50–50.67%) | 0.34100 |
+| 2 | A | 12.07% (11.38–12.80%) | 44.25% (43.18–45.33%) | 43.68% (42.61–44.75%) | 0.34198 |
+| 2 | B | 17.66% (16.85–18.50%) | 36.61% (35.57–37.66%) | 45.73% (44.65–46.81%) | 0.35968 |
 
-```sh
-make db-up migrate
-docker compose -f docker/compose.yaml --profile core --profile gazebo up -d orchestrator worker-gazebo
-roboprobe --json experiment run configs/experiments/exp05_profiles.yaml \
-  --workers 1 --raw-parquet exp05_profiles.parquet > run.json
-experiment_id=$(python3 -c 'import json; print(json.load(open("run.json"))["experiment_id"])')
-roboprobe --json experiment report "$experiment_id" -o exp05_profiles.html
-```
+## Paired MET-07 and failure modes
 
-After each arm completes, run campaign analysis and record `robustness_score` plus Wilson CIs on
-SAFE / UNCERTAIN / FAILURE volumes per profile.
+The paired score differences for the three registered seeds were +0.05365,
+−0.01300, and +0.01770 (mean +0.01945). Profile B produced a larger estimated
+SAFE volume and a larger FAILURE volume in all three pairs, with less
+UNCERTAIN volume. The estimated robustness score fell in one pair.
+The conditional paired 95% intervals by seed were +0.04779 to +0.05951,
+−0.01971 to −0.00616, and +0.01190 to +0.02362. The stratified common-point
+bootstrap 95% interval for the mean was +0.01599 to +0.02295. The reconstruction
+used the original Ubuntu runtime, matched all six stored risk summaries
+exactly, and checked equality of the two Sobol point arrays within each seed.
+[Paired interval workflow](https://github.com/CodewithJha/RoboProbe/actions/runs/45335161116)
 
-## Results and interpretation (MET-07)
+Download `exp05-paired-met07` from the workflow's Artifacts section.
 
-| Arm | `robustness_score` (point) | Wilson CI on volumes | Campaigns completed |
-|-----|----------------------------|----------------------|---------------------|
-| profile A (`tb4_nav2_default`) | *pending* | *pending* | 0 / 3 |
-| profile B (`tb4_nav2_tuned`) | *pending* | *pending* | 0 / 3 |
-| **MET-07 Δ (B − A)** | *pending* | bootstrap CI *pending* | — |
+This is a positive mean contrast conditional on the fitted risk models. The
+three independent seed pairs give a descriptive seed-resampled interval of
+−0.00635 to +0.04586. **The study did not establish H6 across campaign seeds.**
 
-**H6 verdict:** **PENDING** — preregistered Gazebo matrix not executed on this repository record.
+The original episode verdicts were 213 failures under A and 214 under B,
+with respectively 153 and 155 collisions and 60 and 59 timeouts. The verdict
+counts describe the adaptive sample. The volume estimates describe the
+modelled scenario space.
+Joint HDBSCAN over the failures from A and B identified two modes in each
+replicate, corresponding to collision and timeout. Both profiles had members
+in both modes for every replicate. This check used persisted trajectory
+features with missing-value handling, so it could miss a finer-grained mode.
 
-When data exist, state whether zero lies outside the MET-07 CI and note any new failure modes
-introduced by profile B (trade-offs).
-
-## Deviations and threats
-
-| Item | Preregistered | This record |
-|------|---------------|-------------|
-| Seeds | 3 | Not run |
-| Budget | 80 | Not run |
-| Profile B rationale | From EXP-04 modes | Uses kinematic EXP-01 rule (doc 09 §4.3) until EXP-04 modes confirm |
-
-See [deviations.md](deviations.md).
-
-## Raw data and reports
-
-| Artefact | Path | SHA-256 |
-|----------|------|---------|
-| Parquet | `exp05_profiles.parquet` | *after run* |
-| HTML report | release asset if > 5 MB | *after run* |
+The optional feature-importance and rule extractors rejected the three
+64-bit campaign seeds in the scikit-learn estimators that require 32-bit
+`random_state` values. The six core risk analyses completed and retain their
+volume outputs. The optional feature-importance and rule evidence is
+unavailable for this comparison.

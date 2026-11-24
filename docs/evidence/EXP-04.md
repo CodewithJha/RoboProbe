@@ -1,130 +1,101 @@
-# EXP-04 Gazebo evidence (SC-4)
+# EXP-04 — Gazebo RANDOM vs PROBE
 
-## Design and hypotheses
+## Design and provenance
 
-EXP-04 is the real-stack comparison for H1–H3 on the six-dimensional `warehouse_v1`
-space with the TB4 Nav2 profile. Preregistered design:
+The native Ubuntu 24.04 collection completed the registered 800-episode
+RANDOM/PROBE matrix and the separate 30-episode OFAT campaign. All 830 original
+episodes reached `DONE`. Independent verification compared the proposal-order
+Parquet rows with the restored PostgreSQL data and verified the SHA-256 of the
+registered trace, manifest, and log artifacts. [Native collection workflow](https://github.com/CodewithJha/RoboProbe/actions/runs/45108261669)
 
-| Config | Path | SHA-256 (file) |
-|--------|------|----------------|
-| RANDOM vs PROBE | [exp04_gazebo.yaml](../../configs/experiments/exp04_gazebo.yaml) | `1e5b74000d42ae4b2be121d5d94aec31e55c97c915e1733e110f07129fb34d7a` |
+The frozen design SHA-256 is
+`1e5b74000d42ae4b2be121d5d94aec31e55c97c915e1733e110f07129fb34d7a`.
+All cells used `tb4_nav2_default`, seed root 20261119, batch size 1, and one
+Gazebo worker per host. The OFAT campaign used the first registered common seed
+and stays outside the paired statistical comparison. The study ran after the
+current-main physical preflight passed. [Preflight](https://github.com/CodewithJha/RoboProbe/actions/runs/45105276569)
 
-Two strategies (S-RANDOM, S-PROBE), five seeds (`root: 20261119`), budget 80 → **10
-campaigns**. Primary metric MET-03; MET-01, MET-02 recorded. Doc 19's one-off OFAT arm
-(30 runs) is **not** in this schema-v1 file — track any OFAT run separately in
-[deviations.md](deviations.md).
+## Outcome and discovery
 
-H3 and **SC-4** require at least one **confirmed interaction failure mode** on Gazebo
-(doc [19 §6](../../docs/19-evaluation-and-experiment-plan.md#6-success-thresholds-link-to-01-7),
-[01 §7](../../docs/01-vision-and-product-brief.md#7-success-criteria-project-level-acceptance)).
-Kinematic evidence from EXP-01 ([#208](https://github.com/CodewithJha/RoboProbe/issues/208))
-is **not** a prerequisite for scheduling EXP-04; comparisons here are scoped to this
-experiment only.
+| Replicate | Shared seed | RANDOM failures | PROBE failures | Pooled mode hits (R / P) | First failure (R / P) |
+|-----------|-------------|-----------------|----------------|--------------------------|-----------------------|
+| 0 | `2179776959060123449` | 65/80 | 72/80 | 2 / 2 | 1 / 1 |
+| 1 | `3234007610454330333` | 70/80 | 71/80 | 2 / 2 | 1 / 1 |
+| 2 | `5655397147810014433` | 63/80 | 69/80 | 2 / 2 | 1 / 1 |
+| 3 | `5748673534120150065` | 67/80 | 66/80 | 2 / 2 | 1 / 1 |
+| 4 | `227276608207929910` | 69/80 | 69/80 | 2 / 2 | 1 / 1 |
 
-This evidence uses the [`_experiment_template`](_experiment_template.md).
+PROBE had 347 failures in 400 episodes, RANDOM 334 in 400, and the supplementary
+OFAT campaign 20 in 30. The matched campaigns recorded 449 F-COL and 232
+F-TIMEOUT outcomes. No episode returned INVALID. The supplementary OFAT
+campaign is excluded from these matched failure-class counts.
 
-### Pipeline smoke (reduced)
+| Metric | RANDOM median (95% bootstrap CI) | PROBE median (95% bootstrap CI) | Holm-adjusted p | Â12 |
+|--------|----------------------------------|---------------------------------|-----------------|-----|
+| MET-01 failure discovery rate | 0.8375 (0.7875–0.8750) | 0.8625 (0.8250–0.9000) | 0.2045 | 0.76 |
+| MET-02 known pooled modes hit | 2 (2–2) | 2 (2–2) | 1.0000 | 0.50 |
+| MET-03 simulations to first failure | 1 (1–1) | 1 (1–1) | 1.0000 | 0.50 |
 
-The [pilot design](exp04-pilot/design.yaml) uses one seed, two strategies, budget 4 (two
-campaign cells). File SHA-256:
-`9f4a6f3892048e6d041b1c9c4aea925ddad49819e0493e500f7252af0c2a9cf1`.
+Both strategies found a failure on the first episode of every paired cell and
+hit both identified pooled modes in every replicate. With five replicates per
+arm, these data give no statistical support for a discovery advantage.
 
-## Pre-flight
+## SC-4 interaction assessment
 
-Complete before starting the ≈22 h campaign matrix (doc 19 §4):
+The registered pooled analysis used RoboProbe's weighted HDBSCAN pipeline
+independently for each paired seed. All ten primary modes were chiefly collision
+or timeout. No mode had two or more characteristic parameters under the
+configured coverage rule. The original worker summaries omitted trajectory
+keys used by the feature builder. That builder applied its documented missing
+metric handling.
 
-1. [T-098 nightly sign-off](T-098-nightly-signoff.md) green on `main` ([#205](https://github.com/CodewithJha/RoboProbe/issues/205) closed).
-2. `make gz-build` and Fuel prefetch per [doc 17 §5](../../docs/17-dev-environment-and-docker.md#5-images).
-3. Compose `core` + `gazebo` profiles; set
-   `ROBOPROBE_BACKENDS__GAZEBO_NAV2__MAX_PARALLEL_PER_HOST` to what the host sustains
-   (see [RB-02](../../docs/30-operations-runbook.md#rb-02-gazebo-episodes-slow-rtf--05)).
-4. `make backup`; confirm disk headroom for MCAP bags.
-5. Monitor dashboard/SSE during long runs; on auto-pause see
-   [RB-01](../../docs/30-operations-runbook.md#rb-01-campaign-auto-paused-with-infra_unhealthy),
-   [RB-03](../../docs/30-operations-runbook.md#rb-03-nav2-never-becomes-active),
-   [RB-04](../../docs/30-operations-runbook.md#rb-04-orphan-gzros2-processes-memory-climbing).
+A sensitivity analysis rebuilt trajectory features from the 701 original
+failing traces and their stored oracle violation times. It recovered progress
+at the oracle violation for 471 failures. In the remaining 230, the timeout
+oracle timestamp was outside the recorded trace, so progress was left missing.
+All ten mode memberships were unchanged and three representative medoids
+changed. The trajectory-aware analysis again found zero modes with two or more
+characteristic parameters. Under the registered mode-selection rule there was
+no multifactor candidate to take into the three-repeat confirmation procedure.
+**The study did not meet SC-4.** The result applies to this configuration and
+budget.
 
-## Environment and reproduction
+## Supplemental Gazebo replay and capture
 
-### Preregistered run (comparative result pending)
+As a reproducible example from the observed collision mode, the study replayed
+EXP04-R0-FM02 medoid `01a2069d-17ab-77bb-aa96-d6b49e87cea4` with its original
+scenario and seed. GUI replay `01a20734-2b8f-7217-9651-b77806d4935c` reproduced
+the `FAIL/F-COL` verdict and class. The genuine 1280×720 Gazebo Sim capture
+runs for 103.933 seconds. The replay attached its MCAP bag.
+[GUI replay workflow](https://github.com/CodewithJha/RoboProbe/actions/runs/45127309138)
 
-Requires PostgreSQL, orchestrator, and `worker-gazebo` (or equivalent remote workers).
+Download `exp04-gui-replay-EXP04-R0-FM02-attempt1` from the workflow's Artifacts section.
 
-```sh
-make db-up migrate
-docker compose -f docker/compose.yaml --profile core --profile gazebo up -d orchestrator worker-gazebo
-roboprobe --json experiment run configs/experiments/exp04_gazebo.yaml \
-  --workers 1 --raw-parquet exp04_gazebo.parquet > run.json
-experiment_id=$(python3 -c 'import json; print(json.load(open("run.json"))["experiment_id"])')
-roboprobe --json experiment report "$experiment_id" -o exp04_gazebo.html
-```
+| File | SHA-256 |
+|------|---------|
+| `gazebo-replay.mp4` | `22cea34998c0b5a00feaff5f957341f2ce6eadee3598dc3eaa33e6c9ee88b31b` |
+| `gazebo-replay.mcap` | `14980f738a0192435b7c6db90d500e384366785a899d5b86e99f7fd2f3cd50e2` |
 
-After campaigns finish, run analysis on each campaign with failures, then confirm
-interactions on top modes (`POST /api/v1/modes/{mode_id}:confirm-interaction` or
-Casebook **Confirm interaction**). Pick one SC-4 showcase mode (medoid run id).
+The collision replay is a demonstration of an observed single failure class.
+The interaction assessment above uses the five paired campaign pools.
 
-### Pipeline smoke (reduced)
+GitHub Actions applies a retention period to the source archive. The asset
+hashes identify the retained files.
 
-```sh
-make db-up migrate
-docker compose -f docker/compose.yaml --profile core --profile gazebo up -d orchestrator worker-gazebo
-roboprobe --json experiment run docs/evidence/exp04-pilot/design.yaml \
-  --workers 1 --raw-parquet docs/evidence/exp04-pilot/runs.parquet > run.json
-experiment_id=$(python3 -c 'import json; print(json.load(open("run.json"))["experiment_id"])')
-roboprobe --json experiment report "$experiment_id" -o exp04_smoke.html
-```
+## Reproduction
 
-Record wall time, worker image digest, and mean episode RTF from run artefacts when executed.
+The [exact collection source](https://github.com/CodewithJha/RoboProbe/tree/79b3c3e91a9ac1eb251e74a147754d9f2f410471)
+runs the frozen [EXP-04 design](../../configs/experiments/exp04_gazebo.yaml)
+with native Gazebo Harmonic, ROS 2 Jazzy, Nav2, pinned Fuel assets, software
+rendering, and isolated PostgreSQL per matrix cell. Each cell starts one
+Gazebo worker. The successful workflow records the runner environment,
+campaign manifests, raw Parquet, database dumps, and per-episode artifacts.
 
-## SC-4 verdict
+The setup-only first attempt required a package-metadata correction before
+the successful collection. The successful workflow retained the preregistered
+scenario space, profile, seeds, batch size and budgets. The OFAT arm is
+documented separately because the experiment schema has a single budget.
+[Setup-only attempt](https://github.com/CodewithJha/RoboProbe/actions/runs/45105992162)
 
-| Criterion | Preregistered threshold | This record |
-|-----------|-------------------------|-------------|
-| SC-4 | ≥ 1 confirmed **interaction** failure mode on Gazebo | **PENDING** — preregistered campaigns not completed on this repository record |
-
-When a mode is confirmed, fill the table below and attach demo assets (not in git if > 5 MB).
-
-### Interaction failure case (to complete after run)
-
-| Field | Value |
-|-------|-------|
-| Mode id | *pending* |
-| Medoid run id | *pending* |
-| Parameters (interaction) | *pending* |
-| Confirm-interaction campaign | *pending* |
-| Demo video (release asset) | *pending — ≤ 2 min Gazebo GUI replay per doc 17 §6* |
-| MCAP / bag (release asset) | *pending* |
-| `make gz-debug RUN=<id>` notes | *optional* |
-
-## Results and interpretation
-
-### Preregistered matrix
-
-No EXP-04 preregistered cell has completed on this repository record. Median/IQR
-comparisons for MET-03, mode counts (MET-02), Holm-adjusted p-values, and Â12 for H1–H2
-are **pending**.
-
-### Pipeline smoke
-
-The committed smoke design is ready for execution; Parquet and HTML hashes will be
-recorded here when the owner runs the smoke commands on a Gazebo-capable host.
-
-## Deviations and threats
-
-| Item | Preregistered | This record |
-|------|---------------|-------------|
-| Seeds | 5 | Smoke uses 1 (not yet executed) |
-| Budget | 80 | Smoke uses 4 |
-| OFAT arm (doc 19) | once, 30 runs | Not in `exp04_gazebo.yaml` (schema v1) — log separately if run |
-| EXP-01 k2d stats ([#208](https://github.com/CodewithJha/RoboProbe/issues/208)) | informs paper narrative | Not required to **start** EXP-04; Gazebo claims stand on this experiment |
-
-See [deviations.md](deviations.md).
-
-## Raw data and reports
-
-| Artefact | Path | SHA-256 |
-|----------|------|---------|
-| Pilot design | [exp04-pilot/design.yaml](exp04-pilot/design.yaml) | `9f4a6f3892048e6d041b1c9c4aea925ddad49819e0493e500f7252af0c2a9cf1` |
-| Pilot Parquet | `exp04-pilot/runs.parquet` | *after smoke run* |
-| Preregistered Parquet | `exp04_gazebo.parquet` | *after full run* |
-| HTML reports | release asset if > 5 MB | *after runs* |
+The ten paired medoids and their repeat results are recorded in
+[EXP-06](EXP-06.md).
