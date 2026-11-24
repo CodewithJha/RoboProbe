@@ -39,6 +39,11 @@ on:
         type: boolean
         default: false
 
+      exp05_paired:
+        description: Reconstruct MET-07 common-point confidence intervals on Ubuntu
+        type: boolean
+        default: false
+
 permissions:
   contents: read
   pull-requests: write
@@ -57,7 +62,7 @@ env:
 
 jobs:
   analytic:
-    if: ${{ inputs.exp04_preflight == '' && !inputs.exp06_replay && !inputs.exp0x_evidence }}
+    if: ${{ inputs.exp04_preflight == '' && !inputs.exp06_replay && !inputs.exp0x_evidence && !inputs.exp05_paired }}
     name: analytic-exp02
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -502,5 +507,53 @@ jobs:
         with:
           name: exp04-gazebo-mcap-and-video
           path: ${{ runner.temp }}/exp04-media-verified
+          if-no-files-found: error
+          retention-days: 30
+
+  exp05-paired-evidence:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      && github.repository == 'CodewithJha/RoboProbe'
+      && github.ref == 'refs/heads/compute/t-120-gazebo-evidence'
+      && inputs.exp05_paired
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: exp05-verified-summary
+          run-id: 45334012957
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/exp05-paired
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: e6387727727fc4aeadfbec367671004b853826ee
+          path: original-exp05-source
+          persist-credentials: false
+      - name: Reconstruct both risk predictions on the same original Sobol points
+        run: |
+          set -euo pipefail
+          docker build --build-arg REVISION=e6387727727fc4aeadfbec367671004b853826ee \
+            -f original-exp05-source/docker/gazebo/Dockerfile -t exp05-original:local original-exp05-source
+          chmod 1777 "$RUNNER_TEMP/exp05-paired"
+          docker run --rm --network none --read-only --tmpfs /tmp --entrypoint /bin/bash \
+            --mount "type=bind,src=$PWD/original-exp05-source,dst=/checkout,readonly" \
+            --mount "type=bind,src=$PWD/scripts/reconstruct_exp05_paired.py,dst=/reconstruct.py,readonly" \
+            --mount "type=bind,src=$RUNNER_TEMP/exp05-paired,dst=/results" \
+            -e PYTHONPATH=/checkout/backend/src -e OPENBLAS_NUM_THREADS=1 \
+            -e OMP_NUM_THREADS=1 -e MKL_NUM_THREADS=1 \
+            exp05-original:local -ec 'cd /checkout; /opt/roboprobe/venv/bin/python /reconstruct.py /results'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: exp05-paired-met07
+          path: |
+            ${{ runner.temp }}/exp05-paired/exp05-paired-met07.json
+            ${{ runner.temp }}/exp05-paired/profile-pair-*-sobol.npz
           if-no-files-found: error
           retention-days: 30
