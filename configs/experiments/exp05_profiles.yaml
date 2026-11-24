@@ -4,7 +4,7 @@ schema_version: 1
 id: exp05_profiles
 name: profile A vs profile B (H6)
 description: Hypothesis H6. Primary metric MET-07. Alpha 0.05. Profile A uses tb4_nav2_default;
-  profile B sets strategy.params.sut_profile_id tb4_nav2_tuned (EXP-04 / k2d rule rationale).
+  profile B sets strategy.params.sut_profile_id tb4_nav2_costmap_decay (EXP-04 collision rationale).
 backend: gazebo_nav2
 space:
   id: warehouse_v1
@@ -18,7 +18,7 @@ strategies:
   label: profile_B
   params:
     epsilon: 0.05
-    sut_profile_id: tb4_nav2_tuned
+    sut_profile_id: tb4_nav2_costmap_decay
 seeds:
   root: 20261119
   count: 3

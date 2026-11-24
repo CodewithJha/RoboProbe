@@ -7,6 +7,8 @@ versioning: [Semantic Versioning 2.0.0](https://semver.org/) (policy in `docs/33
 
 ### Added
 
+- Verified native Gazebo results for EXP-04, EXP-05 and EXP-06, with the tested Nav2 tuned
+  profile and checksummed collision replay video and MCAP evidence (T-120a/b/c).
 - `scripts/verify_t129_two_node.sh` and `scripts/run_sc6_hallway.sh` for M10 evidence on disposable stacks.
 - Cloud VM scalability CSV and T-129 two-node TLS verification in `docs/evidence/`.
 

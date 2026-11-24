@@ -149,6 +149,11 @@ Rationale and alternatives for each choice: [15 Tech stack & ADRs](docs/15-tech-
 | M10 | Preregistered experiments and reproducibility | In progress |
 | M11 | Deployment verification and v1.0 release | In progress |
 
+The [Gazebo evaluation](docs/evidence/EXP-04.md) includes the 830-episode
+warehouse study, an actual Gazebo Sim [collision replay video and MCAP](docs/evidence/EXP-04.md#supplemental-gazebo-replay-and-capture),
+the [paired Nav2 profiles](docs/evidence/EXP-05.md), and
+[100 medoid replays](docs/evidence/EXP-06.md).
+
 See the [implementation roadmap](docs/22-roadmap-and-implementation-plan.md), the
 [test and experiment evidence](docs/evidence/README.md), and the current states
 of [M9](https://github.com/CodewithJha/RoboProbe/issues/9),

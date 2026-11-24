@@ -76,7 +76,7 @@ def test_exp05_profile_b_uses_tuned_nav2_stack() -> None:
     for spec in specs:
         by_label.setdefault(spec.strategy_label, set()).add(spec.sut_profile_id)
     assert by_label["profile_A"] == {"tb4_nav2_default"}
-    assert by_label["profile_B"] == {"tb4_nav2_tuned"}
+    assert by_label["profile_B"] == {"tb4_nav2_costmap_decay"}
 
 
 def test_exp06_is_a_replay_of_exp04() -> None:
