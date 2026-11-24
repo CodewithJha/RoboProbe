@@ -33,6 +33,12 @@ on:
         required: false
         type: string
 
+      exp0x_evidence:
+        description: Verify and condense the completed Gazebo research artifacts
+        required: false
+        type: boolean
+        default: false
+
 permissions:
   contents: read
   pull-requests: write
@@ -51,7 +57,7 @@ env:
 
 jobs:
   analytic:
-    if: ${{ inputs.exp04_preflight == '' && !inputs.exp06_replay }}
+    if: ${{ inputs.exp04_preflight == '' && !inputs.exp06_replay && !inputs.exp0x_evidence }}
     name: analytic-exp02
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -390,3 +396,111 @@ jobs:
           name: exp06-${{ matrix.cell.mode }}-attempt${{ github.run_attempt }}
           path: ${{ env.REPLAY_OUTPUT }}
           retention-days: 14
+
+  exp05-evidence:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      && github.repository == 'CodewithJha/RoboProbe'
+      && github.ref == 'refs/heads/compute/t-120-gazebo-evidence'
+      && inputs.exp0x_evidence
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: exp05-profile_*-rep*-attempt1
+          run-id: 45120816975
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/exp05
+      - name: Verify full risk scores from the original databases
+        run: python3 scripts/verify_gazebo_study_evidence.py "$RUNNER_TEMP" exp05
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: exp05-verified-summary
+          path: ${{ runner.temp }}/exp05-verified
+          if-no-files-found: error
+          retention-days: 30
+
+  exp06-evidence:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      && github.repository == 'CodewithJha/RoboProbe'
+      && github.ref == 'refs/heads/compute/t-120-gazebo-evidence'
+      && inputs.exp0x_evidence
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: exp06-EXP04-*-attempt1
+          run-id: 45119937477
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/exp06
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: exp06-EXP04-R3-FM02-attempt1
+          run-id: 45127477971
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/exp06-recovery
+      - name: Verify ten medoids, both seed arms and manifests
+        run: python3 scripts/verify_gazebo_study_evidence.py "$RUNNER_TEMP" exp06
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: exp06-verified-summary
+          path: ${{ runner.temp }}/exp06-verified
+          if-no-files-found: error
+          retention-days: 30
+
+  exp04-media-evidence:
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      && github.repository == 'CodewithJha/RoboProbe'
+      && github.ref == 'refs/heads/compute/t-120-gazebo-evidence'
+      && inputs.exp0x_evidence
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: exp04-gui-replay-EXP04-R0-FM02-attempt1
+          run-id: 45127309138
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/exp04-media
+      - name: Verify and package the actual Gazebo GUI capture and attached MCAP
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/exp04-media"
+          jq -e '.source_run_id=="01a2069d-17ab-77bb-aa96-d6b49e87cea4" and
+            .source_verdict=="FAIL" and .rows[0].agree and .rows[0].primary_failure=="F-COL"' gui-replay.json
+          jq -e '.format.duration|tonumber|.>0 and .<=120' video-metadata.json
+          [[ "$(head -c8 gazebo-replay.mcap | xxd -p)" == 894d434150300d0a ]]
+          [[ "$(tail -c8 gazebo-replay.mcap | xxd -p)" == 894d434150300d0a ]]
+          test -s gazebo-replay.mp4
+          files=(gazebo-replay.mp4 gazebo-replay.mcap gui-replay.json video-metadata.json)
+          mkdir -p "$RUNNER_TEMP/exp04-media-verified"
+          sha256sum "${files[@]}" | tee "$RUNNER_TEMP/exp04-media-verified/SHA256SUMS"
+          cp "${files[@]}" "$RUNNER_TEMP/exp04-media-verified"
+          jq '{source_run_id,rows}' gui-replay.json
+          jq '{duration: .format.duration, size: .format.size, codec: .streams[0].codec_name,
+            width: .streams[0].width, height: .streams[0].height}' video-metadata.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: exp04-gazebo-mcap-and-video
+          path: ${{ runner.temp }}/exp04-media-verified
+          if-no-files-found: error
+          retention-days: 30
